@@ -530,6 +530,9 @@ export function TestingPanel({ config, onChanged }) {
                 }),
                 h('span', { className: 'ds-check-text', style: { fontSize: 12 } }, name),
               )),
+              (hook.events ?? []).length === 0
+                ? h('span', { className: 'ds-hint', style: { fontSize: 12 } }, '一个都没勾 = 订阅全部事件')
+                : null,
             ),
           )),
         hooks.length === 0 ? null : h('div', { className: 'ds-row', style: { justifyContent: 'flex-end' } },
