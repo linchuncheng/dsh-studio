@@ -410,6 +410,16 @@ sudo systemctl restart dsh-web
 - `GET /costs`（工具 `studio_costs`）返回总次数、已结束次数、平均耗时，以及按专家 / 按模型 / 按提示词版本 / 按天的次数分布。
 - 边界：宿主没有把 token 用量回传给插件，所以这里统计的是**次数与时长**，不是钱；要算钱得等宿主暴露用量。
 
+### 成本口径（接真实用量之前先定死，免得以后对不上账）
+
+1. **只统计本平台的会话**：`studio-<taskId>-<expertId>`。你自己在 DSH 里开的会话不算，哪怕用的是同一个模型。
+2. **订阅套餐通道不计钱，只计 token**：模型 id 以 `-coding` / `-token-plan` 结尾的走订阅额度，成本记 0，token 照记——否则会把"包月"算成"每次都在烧钱"。
+3. **按 turn 记，不按会话记**：一次派单可能追加多轮，钱是按 turn 出的。
+4. **三级汇总**：卡（taskId）→ 专家（expertId）→ 项目（project）；卡的成本是它所有 turn 之和，专家的是他所有卡之和，项目的是它所有卡之和。
+5. **缓存命中要分开记**：命中 cache 的输入 token 单价通常低一个量级，混在一起算会高估。拿不到就标"未知"，不要按 0 算。
+6. **价目表跟着日期走**：模型调价后，历史记录按当时单价算，不重算——所以每条记录要存 `{ at, model, inputTokens, outputTokens, cacheHitTokens, unitPrice }`。
+7. **拿不到用量就不写 0**：`cost: null` 表示未知，页面显示"未接入/未知"，不能让报表看起来"很便宜"。
+
 ## 负载与燃尽（里程碑视图的轻量版）
 
 - `GET /workload`（工具 `studio_workload`）：每位专家 `running / open / done7d / overdue`，外加 `busy` 汇总——谁被压住了、谁闲着，一眼能看出来。
