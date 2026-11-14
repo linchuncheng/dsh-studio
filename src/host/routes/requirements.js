@@ -7,6 +7,7 @@ import {
   sanitizeRequirementPool,
   text,
 } from '../domain.js'
+import { casesOfTasks, impactSummary } from '../impact.js'
 import {
   ensureReqFolder,
   mutateReqDoc,
@@ -405,7 +406,25 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     host.sendJson(res, 200, { ok: true, requirement: result, state: host.publicState(store) })
     return true
   }
-  if (method === 'POST' && route === '/requirement/pull') {
+  if (method === 'POST' && route === '/requirement/impact') {
+  // 需求一改，这条需求下面的卡和用例就要重看。这里只算、不改数据。
+  const body = await host.readJsonBody(req)
+  const id = String(body.id ?? '')
+  const snapshot = store.snapshot()
+  const requirement = (snapshot.requirements ?? []).find(item => item.id === id)
+  if (requirement === undefined) throw new Error(`no requirement ${id}`)
+  const tasks = (snapshot.tasks ?? []).filter(task => task.requirementId === id)
+  const summary = impactSummary(tasks)
+  const cases = casesOfTasks(tasks, 60)
+  host.sendJson(res, 200, {
+    ok: true,
+    summary,
+    cases,
+    cards: tasks.map(task => ({ id: task.id, code: task.code ?? '', title: task.title ?? '', status: task.status ?? '' })),
+  })
+  return true
+}
+if (method === 'POST' && route === '/requirement/pull') {
     const body = await host.readJsonBody(req)
     const result = await pullFeishuDoc(body.url ?? body.docUrl ?? '')
     host.sendJson(res, 200, { ok: true, ...result })

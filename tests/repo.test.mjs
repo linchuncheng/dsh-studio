@@ -623,6 +623,24 @@ test('host: the design gate only blocks when it is switched on', async () => {
   assert.equal(sanitizeDesign({ link: '  http://x  ', status: 'approved' }).link, 'http://x')
 })
 
+test('host: impact counts shell and db cases as runnable', async () => {
+  const { casesOfTasks, impactSummary } = await import('../src/host/impact.js')
+  const tasks = [
+    { id: 't1', code: 'DEV-1', cases: [
+      { id: 'c1', title: 'a', result: 'pending', http: { method: 'GET', url: '/x' } },
+      { id: 'c2', title: 'b', result: 'pass', shell: { command: 'echo 1' } },
+      { id: 'c3', title: 'c', result: 'fail', db: { file: '/tmp/x.db', sql: 'select 1' } },
+      { id: 'c4', title: 'd', result: 'pending', http: null },
+    ] },
+  ]
+  const rows = casesOfTasks(tasks)
+  assert.equal(rows.length, 4)
+  assert.equal(rows.filter(item => item.runnable).length, 3, 'http + shell + db are runnable, manual is not')
+  const summary = impactSummary(tasks)
+  assert.equal(summary.runnable, 3)
+  assert.equal(summary.failing, 1)
+})
+
 test('host: a requirement change lists the cases that must be re-run', async () => {
   const { casesOfTasks, impactSummary } = await import('../src/host/impact.js')
   const tasks = [
@@ -634,7 +652,7 @@ test('host: a requirement change lists the cases that must be re-run', async () 
   assert.equal(cases.length, 3)
   assert.equal(cases[0].key, 't1:c1')
   assert.equal(cases[0].taskCode, 'DEV-1')
-  assert.deepEqual(impactSummary(tasks), { cards: 3, cases: 3, runnable: 2, failing: 1 })
+  assert.deepEqual(impactSummary(tasks), { cards: 3, cases: 3, runnable: 3, failing: 1 })
   assert.equal(casesOfTasks(tasks, 2).length, 2, 'limit holds')
 })
 

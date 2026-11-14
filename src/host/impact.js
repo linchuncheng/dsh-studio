@@ -13,7 +13,9 @@ export function casesOfTasks(tasks, limit = 40) {
         key: `${task.id}:${item.id}`,
         title: String(item.title ?? '').slice(0, 160),
         result: String(item.result ?? 'pending'),
-        http: item.http === true,
+        // 能自动跑的判断要和执行器一致：接口 / shell / 数据库任一都算。
+        http: item.http !== null && item.http !== undefined,
+        runnable: item.http != null || item.shell != null || item.db != null,
       })
     }
   }
@@ -26,7 +28,7 @@ export function impactSummary(tasks) {
   return {
     cards: (Array.isArray(tasks) ? tasks : []).length,
     cases: cases.length,
-    runnable: cases.filter(item => item.http).length,
+    runnable: cases.filter(item => item.runnable === true).length,
     failing: cases.filter(item => item.result === 'fail').length,
   }
 }

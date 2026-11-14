@@ -125,6 +125,17 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
       const [reqOrder, setReqOrder] = React.useState('0')
       const [reqDeps, setReqDeps] = React.useState([])
       const [depNote, setDepNote] = React.useState(null)
+      // ---- 影响面：这条需求改动之后，哪些卡和用例要重看
+      const [impact, setImpact] = React.useState(null)
+      const [impactBusy, setImpactBusy] = React.useState(false)
+      const loadImpact = async () => {
+        if (currentForDeps === null) return
+        setImpactBusy(true)
+        try {
+          const json = await api('/requirement/impact', { id: currentForDeps.id })
+          setImpact({ summary: json.summary, cards: json.cards ?? [], cases: json.cases ?? [] })
+        } catch (cause) { setDepNote(cause instanceof Error ? cause.message : String(cause)) } finally { setImpactBusy(false) }
+      }
 
       const currentForDeps = requirements.find(item => item.id === selected) ?? null
       React.useEffect(() => {
@@ -970,6 +981,25 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
               ),
             ),
           ),
+          h('div', { className: 'ds-pane-head', style: { marginTop: 16 } },
+            h('div', { className: 'ds-pane-title' }, '需求变更影响面'),
+            h('div', { className: 'ds-pane-desc' }, '需求一改，下面这些卡和用例就要重看。点一下现算，不改任何数据。'),
+          ),
+          h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', marginBottom: 6 } },
+            h('button', { className: 'ds-btn', disabled: impactBusy || currentForDeps === null, onClick: () => void loadImpact() }, impactBusy ? '计算中…' : '算一下影响面'),
+            impact === null
+              ? h('span', { className: 'ds-hint' }, '还没算过')
+              : h('span', { className: 'ds-hint' }, `卡 ${impact.summary.cards} · 用例 ${impact.summary.cases}（能自动跑 ${impact.summary.runnable}）· 失败 ${impact.summary.failing}`),
+          ),
+          impact === null || impact.cards.length === 0
+            ? null
+            : h('div', { className: 'ds-sec-body', style: { maxHeight: 160, overflow: 'auto' } },
+              impact.cards.slice(0, 12).map(item => h('div', { key: item.id, className: 'ds-art-row' },
+                h('span', { className: 'ds-art-title' }, (item.code === '' ? '' : item.code + ' ') + item.title),
+                h('span', { className: 'ds-hint' }, item.status),
+              )),
+              impact.cards.length > 12 ? h('div', { className: 'ds-hint' }, `还有 ${impact.cards.length - 12} 张`) : null,
+            ),
           h('div', { className: 'ds-pane-head', style: { marginTop: 16 } },
             h('div', { className: 'ds-pane-title' }, '功能点与可追溯矩阵'),
             h('div', { className: 'ds-pane-desc' }, '功能点是需求的骨架：一条功能点对若干张卡、若干条用例。卡和用例上都挂 pointId，这里就能看出哪条没人做、哪条没被验证。'),
