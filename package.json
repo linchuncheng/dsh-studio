@@ -11,7 +11,9 @@
   "scripts": {
     "test": "node --test tests/repo.test.mjs tests/store-boot.test.mjs tests/client-units.test.mjs tests/notify.test.mjs",
     "check": "node --check index.js && node --check client.src.js && node --test tests/repo.test.mjs tests/store-boot.test.mjs tests/client-units.test.mjs tests/notify.test.mjs",
-    "smoke:store": "node scripts/smoke-store.mjs"
+    "smoke:store": "node scripts/smoke-store.mjs",
+    "mock:gitlab": "node tools/mock-gitlab.mjs",
+    "verify:gitlab": "node tools/verify-gitlab-facts.mjs"
   },
   "exports": {
     ".": "./index.js",

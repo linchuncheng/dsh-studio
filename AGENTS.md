@@ -53,7 +53,9 @@ STUDIO_TOKEN=$(sudo journalctl -u dsh-web -n 50 | grep -o 'token=[A-Za-z0-9_-]*'
 ```
 
 > `tools/deploy.mjs` 会打印 `active=` / `files=` / `state=`，`active` 不是 active 就以非零退出。
-> 它依赖 `ssh2`（devDependency，只给部署用，不进插件运行时）；`tools/visual/smoke.mjs` 依赖 `puppeteer-core`（同样只在 devDependencies 里），浏览器用系统 Chrome，可用 `CHROME_PATH` 指定。
+> 它依赖 `ssh2`（devDependency，只给部署用，不进插件运行时）；`tools/mock-gitlab.mjs` 是本地 GitLab 打桩（三个接口，3 文件 / 3 提交），配合 `tools/verify-gitlab-facts.mjs` 可以在没有真实令牌时把「MR 事实 → 与自报值对账」整条链跑通：`node tools/mock-gitlab.mjs` + `STUDIO_BASE=<host> node tools/verify-gitlab-facts.mjs`。
+
+`tools/visual/smoke.mjs` 依赖 `puppeteer-core`（同样只在 devDependencies 里），浏览器用系统 Chrome，可用 `CHROME_PATH` 指定。
 
 > 目标机上那个老的 `deploy-all.sh` 只作兜底（它拷 `/tmp/` 下的两个文件和 `src/`）。日常用 `tools/deploy.mjs`，别再手工 scp 拼路径。改了 `package.json`（包头、`engines`、`dsh.*`、`files`）、`cordis.patch.yml`、`locale/*.json` 时必须单独上传到插件目录（`~/dsh-studio/` 或 profile 的 `node_modules` 下）再重启，否则改了个寂寞。改动前先 `cp package.json /tmp/package.json.bak` 留退路。
 >
