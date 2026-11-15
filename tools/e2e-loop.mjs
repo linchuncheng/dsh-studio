@@ -89,6 +89,16 @@ await post('/release/link', { id: release.id, taskIds: cardsNow.map(c => c.id) }
 const published = await post('/release/publish', { id: release.id, by: '产品' })
 expect('版本发布', published.body.release?.status === 'released', String(published.body.release?.status ?? published.body.error).slice(0, 60))
 
+// 自检会真的建需求和卡：默认跑完就删，避免看板里堆垃圾；想看结果就带 --keep
+const keep = process.argv.includes('--keep')
+if (!keep) {
+  for (const card of cardsNow) await post('/task/delete', { id: card.id })
+  await post('/requirement/delete', { id: req.id })
+  if (release.id !== undefined) await post('/release/delete', { id: release.id })
+  const left = await state()
+  step('清理', left.tasks.filter(t => t.requirementId === req.id).length === 0 ? 'ok 已删除自检数据' : 'FAIL 还有残留')
+}
+
 console.log('')
 console.log(failures.length === 0 ? '全闭环通过' : '失败 ' + failures.length + ' 项：' + failures.join(' / '))
 process.exit(failures.length === 0 ? 0 : 1)
