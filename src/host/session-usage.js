@@ -5,7 +5,7 @@ import { promisify } from 'node:util'
 import { readdir, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { parseUsageLines, summarizeUsage } from './usage.js'
+import { isSubscriptionModel, parseUsageLines, priceOf as priceOfModel, summarizeUsage } from './usage.js'
 
 const run = promisify(execFile)
 const CACHE = new Map()
@@ -59,13 +59,21 @@ export async function collectSessionUsage(root = sessionsRoot()) {
 }
 
 /** 按卡 / 按专家汇总 token 与钱；prices 来自 config.costs.prices。 */
-export function aggregateUsage(sessions, tasks, prices, costOf) {
+export function aggregateUsage(sessions, tasks, prices, costOf, priceOf) {
+  const unpriced = new Map()
   const byCard = new Map()
   const byExpert = new Map()
   const totals = { calls: 0, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 }
   for (const session of sessions) {
     const summary = summarizeUsage(session.usage)
     const money = costOf(prices, session.usage)
+    // 哪些模型还没配价目：直接告诉用户要补哪几行，比只说「719 次未知」有用
+    for (const item of session.usage) {
+      const model = String(item.model ?? '(未记录模型)')
+      if (priceOfModel(prices, item.model) !== null) continue
+      if (isSubscriptionModel(item.model)) continue
+      unpriced.set(model, (unpriced.get(model) ?? 0) + 1)
+    }
     for (const key of ['calls', 'input', 'output', 'cacheRead', 'cacheWrite', 'total']) totals[key] += summary[key]
     const card = byCard.get(session.taskId) ?? { taskId: session.taskId, ...{ calls: 0, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 }, cost: 0, unknownCalls: 0 }
     for (const key of ['calls', 'input', 'output', 'cacheRead', 'cacheWrite', 'total']) card[key] += summary[key]
@@ -95,6 +103,7 @@ export function aggregateUsage(sessions, tasks, prices, costOf) {
       unknownCalls: cards.reduce((sum, card) => sum + card.unknownCalls, 0),
     },
     cards: cards.slice(0, 50),
+    unpricedModels: [...unpriced.entries()].map(([model, calls]) => ({ model, calls })).sort((a, b) => b.calls - a.calls).slice(0, 10),
     experts: [...byExpert.values()].map((row) => ({ ...row, cost: round(row.cost) })).sort((a, b) => b.total - a.total),
   }
 }

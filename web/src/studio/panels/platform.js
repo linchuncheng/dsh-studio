@@ -215,6 +215,32 @@ export function CostsPanel({ config, onChanged }) {
   const [runs, setRuns] = React.useState(String(costs.budgetRuns ?? 500))
   const [hours, setHours] = React.useState(String(costs.budgetHours ?? 80))
   const [warnAt, setWarnAt] = React.useState(String(costs.warnAt ?? 80))
+  const [prices, setPrices] = React.useState(() => (Array.isArray(costs.prices) ? costs.prices.map(item => ({ ...item })) : []))
+  const savePrices = async () => {
+    setBusy(true); setNote(null); setError(null)
+    try {
+      const cleaned = prices
+        .filter(item => String(item.model ?? '').trim() !== '')
+        .map(item => ({
+          model: String(item.model).trim(),
+          input: Number(item.input) || 0,
+          output: Number(item.output) || 0,
+          cacheRead: Number(item.cacheRead) || 0,
+          cacheWrite: Number(item.cacheWrite) || 0,
+        }))
+      await api('/config', {
+        costs: {
+          budgetRuns: Number(costs.budgetRuns ?? 500),
+          budgetHours: Number(costs.budgetHours ?? 80),
+          warnAt: Number(costs.warnAt ?? 80),
+          prices: cleaned,
+        },
+      })
+      setPrices(cleaned)
+      setNote('已保存：价目表 ' + cleaned.length + ' 行')
+      await onChanged()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
   const [busy, setBusy] = React.useState(false)
   const [note, setNote] = React.useState(null)
   const [error, setError] = React.useState(null)
@@ -231,6 +257,8 @@ export function CostsPanel({ config, onChanged }) {
           budgetRuns: Math.round(runValue),
           budgetHours: Math.round(hourValue),
           warnAt: Number.isFinite(warnValue) ? Math.min(100, Math.max(10, Math.round(warnValue))) : 80,
+          // 保存预算时必须把价目表带上，否则 sanitizeCosts 会把它当空数组清掉
+          prices,
         },
       })
       setNote('已保存：预算')
@@ -254,6 +282,22 @@ export function CostsPanel({ config, onChanged }) {
       ),
       h('div', { className: 'ds-field ds-span' },
         h('div', { className: 'ds-hint' }, '效能页的「AI 执行成本」会显示真实 token 用量（读 studio-* 会话日志）。要显示钱就在 config.costs.prices 里配价目表：[{ "model": "deepseek-v4.1-flash", "input": 2, "output": 8, "cacheRead": 0.2 }]，单位是元 / 百万 token；没配价目的调用记「未知」，不按 0 算。'),
+      ),
+      h('div', { className: 'ds-field ds-span' },
+        h('div', { className: 'ds-label' }, '价目表（元 / 百万 token）'),
+        prices.length === 0
+          ? h('div', { className: 'ds-hint' }, '还是空的：只统计 token，不算钱。点「＋ 加一行」把常见模型的价格填进来。')
+          : prices.map((item, index) => h('div', { className: 'ds-row', key: index, style: { gap: 6, alignItems: 'center', marginTop: 6, flexWrap: 'wrap' } },
+            h(TextField, { className: 'ds-input', style: { flex: '2 1 180px' }, placeholder: '模型 id，如 deepseek-v4.1-flash', value: item.model ?? '', onChange: event => setPrices(list => list.map((row, i) => (i === index ? { ...row, model: event.target.value } : row))) }),
+            h(TextField, { className: 'ds-input', style: { flex: '1 1 70px' }, placeholder: '输入', value: String(item.input ?? ''), onChange: event => setPrices(list => list.map((row, i) => (i === index ? { ...row, input: Number(event.target.value) || 0 } : row))) }),
+            h(TextField, { className: 'ds-input', style: { flex: '1 1 70px' }, placeholder: '输出', value: String(item.output ?? ''), onChange: event => setPrices(list => list.map((row, i) => (i === index ? { ...row, output: Number(event.target.value) || 0 } : row))) }),
+            h(TextField, { className: 'ds-input', style: { flex: '1 1 70px' }, placeholder: '缓存读', value: String(item.cacheRead ?? ''), onChange: event => setPrices(list => list.map((row, i) => (i === index ? { ...row, cacheRead: Number(event.target.value) || 0 } : row))) }),
+            h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => setPrices(list => list.filter((_, i) => i !== index)) }, '×'),
+          )),
+        h('div', { className: 'ds-row', style: { gap: 8, marginTop: 8, justifyContent: 'flex-end' } },
+          h('button', { className: 'ds-btn', disabled: busy, onClick: () => setPrices(list => [...list, { model: '', input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }]) }, '＋ 加一行'),
+          h('button', { className: 'ds-btn ds-btn-primary', disabled: busy, onClick: () => void savePrices() }, busy ? '保存中…' : '保存价目表'),
+        ),
       ),
       h('div', { className: 'ds-row', style: { justifyContent: 'flex-end' } },
         h('button', { className: 'ds-btn ds-btn-primary', disabled: busy, onClick: () => void save() }, busy ? '保存中…' : '保存预算'),

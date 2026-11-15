@@ -216,6 +216,9 @@ export function AnalyticsPage({ state, onOpenTask }) {
           h('div', { className: 'ds-an-kv' }, h('span', {}, '平均执行时长'), h('b', {}, `${Math.round((costs?.avgMs ?? 0) / 1000)} 秒`)),
           (costs?.byModel ?? []).slice(0, 3).map(item => h('div', { key: `m-${item.key}`, className: 'ds-an-kv' }, h('span', {}, `模型 ${item.key}`), h('b', {}, `${item.runs} 次`))),
           (costs?.byPromptVersion ?? []).slice(0, 3).map(item => h('div', { key: `p-${item.key}`, className: 'ds-an-kv' }, h('span', {}, `提示词 ${item.key}`), h('b', {}, `${item.runs} 次`))),
+          (costs?.usage?.unpricedModels ?? []).length === 0
+            ? null
+            : h('div', { className: 'ds-hint' }, '未配价目的模型：' + costs.usage.unpricedModels.map(item => item.model + ' ×' + item.calls).join('、')),
           h('div', { className: 'ds-hint' }, costs?.note ?? ''),
           costs?.budget === null || costs?.budget === undefined
             ? null
