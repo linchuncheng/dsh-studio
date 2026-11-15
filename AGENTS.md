@@ -18,6 +18,7 @@
 | `docs/compatibility.md` | 我们对 dsh 宿主接口的依赖清单与升级 runbook | ✅ 改动宿主调用时必须同步 |
 | `docs/quickstart.md` | 第一天上手：clone → 测试 → 构建 → 部署 → 冒烟，每条都在全新 clone 上验过 | ✅ 命令变了就同步 |
 | `docs/publish.md` | 发布到 DSH 插件市场：发版、收录条目结构、自查清单 | ✅ 改发版流程时同步 |
+| `docs/history.md` | 按日期归档的实现流水账（体检、补完、UI 收尾），从 README 移出来的 | ✅ 只追加，不改历史 |
 
 ## 2. 三个前端文件的关系（最容易搞错的地方）
 
