@@ -443,6 +443,18 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
           setDocNote(err.message)
         }
       }
+      const rollbackBaseline = async () => {
+        const version = current?.baseline?.version ?? ''
+        if (!(await confirmDialog('把 PRD 正文恢复到基线 ' + version + '？版本号会 +1，验收签字作废。', { title: '回滚到基线', okText: '回滚' }))) return
+        try {
+          await api('/requirement/doc', { id: current.id, action: 'rollback', by: '人' })
+          setBaseDiff(null)
+          setDocNote('已回滚到基线 ' + version + '：版本号 +1，签字作废。')
+          if (typeof onChanged === 'function') onChanged()
+        } catch (err) {
+          setDocNote(err.message)
+        }
+      }
       const clearBaseline = async () => {
         try {
           await api('/requirement/doc', { id: current.id, action: 'clear-baseline' })
@@ -897,6 +909,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
                 h('span', null, `${current.baseline.title} · 生效于 ${fmtTime(current.baseline.at)} · ${current.baseline.by || '人'} · 正文 ${current.baseline.contentLength ?? 0} 字`),
               ),
               h('button', { className: 'ds-btn ds-btn-ghost', title: '把当前文档和这份基线逐行比一遍（只读）', onClick: () => void compareBaseline() }, baseDiff === null ? '对比基线' : '收起对比'),
+              h('button', { className: 'ds-btn ds-btn-ghost', title: '把正文恢复到这一版基线；版本号 +1，签字作废', onClick: () => void rollbackBaseline() }, '回滚到基线'),
               h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => void clearBaseline() }, '取消基线'),
             )
             : h('div', { className: 'ds-base-box', 'data-empty': '1' },

@@ -43,6 +43,37 @@ test('store: boots, persists and reloads a state file', async () => {
   }
 })
 
+test('store: rolling back restores the baseline text and voids the signoff', async () => {
+  const { mkdtemp, rm } = await import('node:fs/promises')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const { StudioStore, SecretStore } = await import('../src/host/store.js')
+  const { saveRequirement, mutateReqDoc } = await import('../src/host/executor.js')
+  const dir = await mkdtemp(join(tmpdir(), 'dsh-studio-rollback-'))
+  const store = new StudioStore(join(dir, 'dsh-studio.json'), { dbFile: join(dir, 'dsh-studio.db'), secrets: new SecretStore(join(dir, '.secrets.json')) })
+  try {
+    await store.ready
+    const req = await saveRequirement(store, { title: '需求回滚', docs: [{ id: 'd1', title: 'PRD', content: 'v1 原始正文', version: 'v1.0' }] })
+    const docId = req.docs[0].id
+    await mutateReqDoc(store, { id: req.id, action: 'baseline', docId, by: '产品' })
+    await mutateReqDoc(store, { id: req.id, action: 'update', docId, doc: { content: 'v2 改坏的正文' } })
+    await store.mutate((state) => {
+      const found = state.requirements.find((item) => item.id === req.id)
+      found.signoff = { by: '产品', at: 1, note: '已验收' }
+    })
+    await mutateReqDoc(store, { id: req.id, action: 'rollback', by: '产品' })
+    const after = store.snapshot().requirements.find((item) => item.id === req.id)
+    assert.equal(after.docs[0].content, 'v1 原始正文', '正文回到基线')
+    assert.equal(after.docs[0].version, 'v1.1', '版本号 +1')
+    assert.equal(after.signoff, null, '回滚是实质变更，签字作废')
+    assert.ok(after.history.some((entry) => entry.field === 'PRD 回滚'), '历史留一条回滚记录')
+    assert.equal(after.baseline.version, 'v1.1', '基线跟着指向恢复后的版本')
+  } finally {
+    try { store.db?.close?.() } catch { /* already closed */ }
+    await rm(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 }).catch(() => {})
+  }
+})
+
 test('store: saving a requirement twice keeps the answers added later', async () => {
   const { mkdtemp, rm } = await import('node:fs/promises')
   const { tmpdir } = await import('node:os')

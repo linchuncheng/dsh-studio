@@ -1245,6 +1245,16 @@ export async function syncRequirementArtifacts(store, requirementId) {
   return report
 }
 
+/** 回滚时给文档版本号 +1：v1.0 → v1.1；已经是 -rN 的就继续 +1。 */
+function bumpDocVersion(version) {
+  const text = String(version ?? '').trim()
+  const plain = /^v(\d+)\.(\d+)$/.exec(text)
+  if (plain !== null) return 'v' + plain[1] + '.' + (Number(plain[2]) + 1)
+  const rolled = /-r(\d+)$/.exec(text)
+  if (rolled !== null) return text.replace(/-r\d+$/, '-r' + (Number(rolled[1]) + 1))
+  return (text === '' ? 'v1.0' : text) + '-r1'
+}
+
 /** 需求文档的增删改与「评审通过、冻结为基线」。 */
 export async function mutateReqDoc(store, body) {
   const requirementId = String(body.id ?? '')
@@ -1281,6 +1291,30 @@ export async function mutateReqDoc(store, body) {
         by: String(body.by ?? '人').slice(0, 40),
       })
       if (requirement.status === 'draft') requirement.status = 'active'
+    } else if (action === 'rollback') {
+      // 回到基线正文：版本号 +1、签字作废、留一条历史——回滚是实质变更，不能悄悄改。
+      const baseline = requirement.baseline
+      if (baseline === null || baseline === undefined) throw new Error('这条需求还没有基线，先挑一份文档「设为基线」再回滚')
+      const target = requirement.docs.find(item => item.id === baseline.docId) ?? requirement.docs[0]
+      if (target === undefined) throw new Error('基线对应的文档已经删了，没法回滚')
+      const by = String(body.by ?? '人').trim().slice(0, 40) || '人'
+      const previousVersion = String(target.version ?? '')
+      target.content = baseline.content
+      target.version = bumpDocVersion(target.version)
+      target.status = 'baseline'
+      target.at = Date.now()
+      for (const doc of requirement.docs) if (doc.id !== target.id && doc.status === 'baseline') doc.status = 'draft'
+      requirement.baseline = sanitizeBaseline({ ...baseline, version: target.version, content: target.content, at: Date.now(), by })
+      const hadSignoff = requirement.signoff !== null && requirement.signoff !== undefined
+      requirement.signoff = null
+      requirement.history = [...(requirement.history ?? []), {
+        at: Date.now(),
+        by,
+        field: 'PRD 回滚',
+        from: previousVersion,
+        to: baseline.version,
+        note: hadSignoff ? '回滚到基线，原验收签字作废' : '回滚到基线',
+      }]
     } else if (action === 'clear-baseline') {
       requirement.baseline = null
       for (const doc of requirement.docs) if (doc.status === 'baseline') doc.status = 'review'
