@@ -46,7 +46,7 @@ export async function handleInsightsRoute({ method, route, req, res, store, url 
     return true
   }
   if (method === 'GET' && route === '/quality') {
-    // AI 质量：派单量 / 一次通过率 / 返工率 / 平均耗时。成本未接入（见 README 口径）。
+    // AI 质量：派单量 / 一次通过率 / 返工率 / 平均耗时；成本见 /costs 的 usage（读会话日志 + 价目表）。
     host.sendJson(res, 200, { ok: true, quality: buildQuality(store.snapshot(), runSummary()) })
     return true
   }
