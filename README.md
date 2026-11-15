@@ -1,13 +1,16 @@
 # dsh-studio
 
 [![ci](https://github.com/marsken88/dsh-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/marsken88/dsh-studio/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@marsken%2Fdsh-studio)](https://www.npmjs.com/package/@marsken/dsh-studio)
+[![downloads](https://img.shields.io/npm/dm/@marsken%2Fdsh-studio)](https://www.npmjs.com/package/@marsken/dsh-studio)
+[![license](https://img.shields.io/npm/l/@marsken%2Fdsh-studio)](LICENSE)
+![node](https://img.shields.io/badge/node-22%2B-brightgreen)
+![dsh](https://img.shields.io/badge/DSH-0.2.2--rc.1-blue)
 
 给一家公司用的「需求&任务工作空间」：一个常驻的 DSH 插件，把**看板 + 角色 agent + 内部市场**装进 DSH Web 的同一个页面里。
 自建 GitLab 管代码、飞书管交流，agent 负责产品 / 架构 / 研发 / 测试四个角色的具体活儿。
 
 运行环境：DSH `0.2.2-rc.1`，Node 22 以上，Linux/macOS（Windows 原生不支持 `link:` 安装 + systemd 托管）。
-
-## 它长什么样
 
 ## 它长什么样
 
