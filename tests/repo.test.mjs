@@ -817,6 +817,18 @@ test('host: the team memory block only lists what the team actually did', async 
   assert.match(block, /导出进度展示（踩过 33\.3% 取整的坑）/)
   assert.match(block, /库存超卖/)
   assert.equal(teamMemoryBlock([{ outcome: 'x', title: 'y' }], 0), '')
+  // 反复出现的经验要变成约束，只出现一次的不算
+  const { memoryLessons } = await import('../src/host/team-memory.js')
+  const repeated = [
+    { outcome: '完成', title: '卡1', note: '忘了跑 pnpm build 就提交' },
+    { outcome: '完成', title: '卡2', note: '忘了跑 pnpm build  就提交' },
+    { outcome: '完成', title: '卡3', note: '只跑了一次' },
+  ]
+  const lessons = memoryLessons(repeated)
+  assert.equal(lessons.length, 1, '只有重复的那条算经验')
+  assert.ok(lessons[0].hits >= 2)
+  assert.match(teamMemoryBlock(repeated), /反复出过的问题/)
+  assert.equal(memoryLessons([{ note: '只出现一次' }]).length, 0)
 })
 
 test('host: a regression summary adds up the per-card results', async () => {

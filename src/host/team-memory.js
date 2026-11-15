@@ -37,10 +37,40 @@ export async function clearTeamMemory(store, teamId) {
   await store.writeSide(KEY, all).catch(() => {})
 }
 
+/** 归一化一条经验：去掉数字和标点，留下能比对的主干。 */
+function lessonKey(note) {
+  return String(note ?? '').toLowerCase().replace(/[0-9]+/g, '#').replace(/[^\p{L}\p{N}#]+/gu, '').slice(0, 24)
+}
+
+/**
+ * 从一堆记忆里提炼「反复出现」的坑：同一条经验出现 ≥ minHits 次才算数。
+ * 只记下来不回流，等于没记——这段会被拼进派单提示词当约束。
+ */
+export function memoryLessons(entries, minHits = 2, limit = 3) {
+  const counts = new Map()
+  for (const item of Array.isArray(entries) ? entries : []) {
+    const note = String(item?.note ?? '').trim()
+    if (note === '') continue
+    const key = lessonKey(note)
+    if (key.length < 4) continue
+    const record = counts.get(key) ?? { note: note.slice(0, 80), hits: 0 }
+    record.hits += 1
+    counts.set(key, record)
+  }
+  return [...counts.values()]
+    .filter(item => item.hits >= Math.max(2, Number(minHits) || 2))
+    .sort((a, b) => b.hits - a.hits)
+    .slice(0, Math.max(0, Number(limit) || 3))
+}
+
 /** 拼进专家提示词的那一段；纯函数，方便单测。 */
 export function teamMemoryBlock(entries, limit = IN_PROMPT) {
   const list = Array.isArray(entries) ? entries.slice(0, Math.max(0, limit)) : []
   if (list.length === 0) return ''
   const lines = list.map(item => `- ${item.outcome || '经手'}：${item.title}${item.note ? `（${item.note}）` : ''}`)
-  return `\n这个团最近经手过的卡（先看有没有踩过的坑，别重复犯）：\n${lines.join('\n')}`
+  const lessons = memoryLessons(entries)
+  const lessonText = lessons.length === 0
+    ? ''
+    : `\n这个团反复出过的问题（这次先规避）：\n${lessons.map(item => `- ${item.note}（出现 ${item.hits} 次）`).join('\n')}`
+  return `\n这个团最近经手过的卡（先看有没有踩过的坑，别重复犯）：\n${lines.join('\n')}` + lessonText
 }
