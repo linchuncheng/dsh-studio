@@ -118,7 +118,7 @@ export function buildQuality(state, runs) {
     },
     cost: {
       wired: false,
-      note: '成本还没接真实 token usage：平台目前只记录派单次数与耗时，没有按卡/按项目记账。接上 usage 之后这里才会有数字。',
+      note: '成本按真实 token 用量算：读 studio-* 会话日志，按卡 / 按专家汇总；价目表没配时只给 token，花费显示未知。',
     },
   }
 }

@@ -295,7 +295,7 @@ export function runSummary() {
     byModel: sort(byModel),
     byPromptVersion: sort(byPrompt),
     days: [...byDay.values()].sort((a, b) => (a.day < b.day ? -1 : 1)).slice(-14),
-    note: '宿主没有回传 token 用量，这里统计的是派单次数与执行时长；成本按你们自己的模型单价乘次数即可。',
+    note: 'token 用量读自 studio-* 会话日志（每次模型调用都记一次）；钱要显示得先在「成本与预算」里配价目表，没配的模型会单独列出来。',
   }
 }
 

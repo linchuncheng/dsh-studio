@@ -766,7 +766,7 @@ node /tmp/verify-dashboard.mjs  # 工作台风险计数 / flaky 不开缺陷 / �
 
 - `config.costs = { budgetRuns, budgetHours, warnAt }`（默认 500 次 / 80 小时 / 80%）。
 - `GET /costs` 返回 `budget: { runs, hours, runRate, hourRate, level, hint }`，`level` 为 `ok|warn|over`；效能页「AI 执行成本」下方是一条预算进度条，超 `warnAt` 变黄、超 100% 变红。
-- 口径仍是「派单次数 + 机上时长」，宿主没有回传 token 用量。
+- 口径分两层：**次数 + 机上时长**（派单日志）与 **token + 花费**（会话日志 + 价目表），两者口径不同，别混着看。
 
 ### 集成失败升级
 
