@@ -1555,7 +1555,10 @@ function serviceConflicts(state, task) {
 
 /** 一卡一分支名：优先用卡号（DEV-001），没编号就用 id。 */
 function worktreeBranch(task) {
-  const label = String(task?.code ?? '').trim() || String(task?.id ?? '').trim()
+  // 卡号只在一条需求内唯一（两条需求都会拆出 REQ-001）：带上 id 后半段，否则 git 不让同一分支挂两个 worktree
+  const code = String(task?.code ?? '').trim(), id = String(task?.id ?? '').trim()
+  const tail = id.replace(/[^a-z0-9]/gi, '').slice(-8)
+  const label = code === '' ? id : `${code}-${tail}`
   return `task/${label}`.slice(0, 120)
 }
 
@@ -1582,9 +1585,17 @@ async function ensureWorktree(store, task, config) {
     if (alive.ok && String(alive.stdout).includes(`worktree ${existing.path}`)) return existing
   }
   const branch = worktreeBranch(task)
-  const path = join(worktreeRoot(config), String(task?.code ?? '').trim() || String(task?.id ?? 'card'))
+  const path = join(worktreeRoot(config), branch.replace(/^[a-z]+\//, ''))
   await mkdir(dirname(path), { recursive: true })
-  const base = String(service?.baseBranch ?? project.baseBranch ?? '').trim() || 'main'
+  // 基准分支没有显式配就用仓库当前检出的分支：默认写死 main 会在用 master 的仓库上直接失败
+  // 配置里默认写的是 main（sanitizeProject 的默认值），但很多仓库还在用 master：
+  // 先确认这个分支真的存在，不存在就退回仓库当前检出的分支。
+  let base = String(service?.baseBranch ?? project.baseBranch ?? '').trim()
+  const branchOk = async (name) => name !== '' && (await runCommand('git', ['-C', repo, 'rev-parse', '--verify', 'refs/heads/' + name], 20000)).ok
+  if (!(await branchOk(base))) {
+    const current = await runCommand('git', ['-C', repo, 'rev-parse', '--abbrev-ref', 'HEAD'], 20000)
+    base = (current.ok ? String(current.stdout).trim() : '') || base || 'main'
+  }
   const branches = await runCommand('git', ['-C', repo, 'branch', '--list', branch], 20000)
   const exists = branches.ok && String(branches.stdout).trim().length > 0
   const added = exists

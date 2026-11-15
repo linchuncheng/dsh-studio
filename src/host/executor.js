@@ -342,7 +342,6 @@ export async function runTaskCases(store, taskId, options = {}) {
   if (task === undefined) throw new Error('任务不存在')
   const config = state.config
   const envs = config.testing.envs
-  if (envs.length === 0) throw new Error('还没有配置测试环境（设置 → 测试执行）')
   const envId = String(options.env ?? config.testing.defaultEnv ?? '')
   const env = envs.find(item => item.id === envId) ?? envs[0]
   const wanted = Array.isArray(options.caseIds) && options.caseIds.length > 0
@@ -350,11 +349,15 @@ export async function runTaskCases(store, taskId, options = {}) {
     : null
   const targets = (Array.isArray(task.cases) ? task.cases : [])
     .filter(item => (wanted === null ? item.http != null || item.shell != null : wanted.has(item.id)))
-  if (targets.length === 0) throw new Error('没有可执行的用例：用例上要填 method + url（相对地址会拼环境 baseUrl）')
+  if (targets.length === 0) throw new Error('没有可执行的用例：接口用例要填 method + url（相对地址拼环境 baseUrl），shell / 数据库用例要填 command / sql')
 
-  const probe = await probeEnv(env, config)
-  if (probe.ok !== true) {
-    throw new Error(`测试环境「${env.name || env.id}」不可达（${probe.error}）：一条用例都没跑，先把 ${probe.baseUrl || 'baseUrl'} 起来`)
+  // 只有接口用例才需要测试环境；纯 shell / 数据库用例不该被「环境不可达」挡住。
+  if (targets.some(item => item.http != null)) {
+    if (env === undefined) throw new Error('还没有配置测试环境（设置 → 测试执行）')
+    const probe = await probeEnv(env, config)
+    if (probe.ok !== true) {
+      throw new Error(`测试环境「${env.name || env.id}」不可达（${probe.error}）：一条用例都没跑，先把 ${probe.baseUrl || 'baseUrl'} 起来`)
+    }
   }
 
   const by = String(options.by ?? '系统').slice(0, 40)

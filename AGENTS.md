@@ -80,7 +80,8 @@ STUDIO_TOKEN=$(sudo journalctl -u dsh-web -n 50 | grep -o 'token=[A-Za-z0-9_-]*'
 8. 真库自检：`npm run smoke:store -- ~/.dsh/dsh-studio.db`（把 `.db/-wal/-shm` 拷到临时目录起一遍真实 `StudioStore`，专抓「空库能起、真库就炸」的导入问题）
 9. 成本数字可疑时跑 `npm run verify:usage [taskId]`：ssh 取原始会话日志现算一遍 token，与 `/costs` 对账（两条路径不同：一条走 session-usage 的 zstd 缓存，一条走 usage.js 直接解析）。
 10. 发版后跑 `npm run verify:release`：比对 package.json 版本 / 本地 tag / origin main 与 tag / npm registry，不一致直接退出码 1。
-11. CI 在 `.github/workflows/ci.yml`：语法 → 契约 → `web/` 里 `pnpm install --frozen-lockfile && pnpm build` → `cmp dist/client.js client.js` → `git diff --exit-code`（产物必须可复现，改了前端忘记构建会直接红）
+11. 全闭环自检：`STUDIO_BASE=http://<host>:18080 node tools/e2e-loop.mjs`——真建一条需求和卡，跑完需求评审→拆卡→各列→代码事实→用例→验收→版本发布。**会写入真实数据**，跑完记得清。
+12. CI 在 `.github/workflows/ci.yml`：语法 → 契约 → `web/` 里 `pnpm install --frozen-lockfile && pnpm build` → `cmp dist/client.js client.js` → `git diff --exit-code`（产物必须可复现，改了前端忘记构建会直接红）
 
 ## 5. 禁止事项
 
