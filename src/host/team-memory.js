@@ -42,25 +42,44 @@ function lessonKey(note) {
   return String(note ?? '').toLowerCase().replace(/[0-9]+/g, '#').replace(/[^\p{L}\p{N}#]+/gu, '').slice(0, 24)
 }
 
+/** 二元组集合，用来算相似度（中文没有空格，按字符切最稳）。 */
+function bigrams(text) {
+  const set = new Set()
+  for (let index = 0; index < text.length - 1; index += 1) set.add(text.slice(index, index + 2))
+  return set
+}
+
+/** Jaccard 相似度：0 完全不同，1 完全相同。 */
+function similarity(a, b) {
+  const left = bigrams(a)
+  const right = bigrams(b)
+  if (left.size === 0 || right.size === 0) return 0
+  let shared = 0
+  for (const gram of left) if (right.has(gram)) shared += 1
+  return shared / (left.size + right.size - shared)
+}
+
 /**
  * 从一堆记忆里提炼「反复出现」的坑：同一条经验出现 ≥ minHits 次才算数。
+ * 措辞不会每次都一样（多了个「了」、换个说法），所以按相似度聚类，不做精确匹配。
  * 只记下来不回流，等于没记——这段会被拼进派单提示词当约束。
  */
 export function memoryLessons(entries, minHits = 2, limit = 3) {
-  const counts = new Map()
+  const clusters = []
   for (const item of Array.isArray(entries) ? entries : []) {
     const note = String(item?.note ?? '').trim()
     if (note === '') continue
     const key = lessonKey(note)
     if (key.length < 4) continue
-    const record = counts.get(key) ?? { note: note.slice(0, 80), hits: 0 }
-    record.hits += 1
-    counts.set(key, record)
+    const bucket = clusters.find(cluster => similarity(cluster.key, key) >= 0.6)
+    if (bucket === undefined) clusters.push({ key, note: note.slice(0, 80), hits: 1 })
+    else bucket.hits += 1
   }
-  return [...counts.values()]
+  return clusters
     .filter(item => item.hits >= Math.max(2, Number(minHits) || 2))
     .sort((a, b) => b.hits - a.hits)
     .slice(0, Math.max(0, Number(limit) || 3))
+    .map(item => ({ note: item.note, hits: item.hits }))
 }
 
 /** 拼进专家提示词的那一段；纯函数，方便单测。 */

@@ -829,6 +829,15 @@ test('host: the team memory block only lists what the team actually did', async 
   assert.ok(lessons[0].hits >= 2)
   assert.match(teamMemoryBlock(repeated), /反复出过的问题/)
   assert.equal(memoryLessons([{ note: '只出现一次' }]).length, 0)
+  // 措辞不同但意思相同（多了个「了」）也要算同一条
+  const wordier = [
+    { note: '提交前忘了跑 pnpm build' },
+    { note: '提交前忘了跑 pnpm build 了' },
+    { note: '这完全是一条不相干的经验' },
+  ]
+  const merged = memoryLessons(wordier)
+  assert.equal(merged.length, 1, JSON.stringify(merged))
+  assert.equal(merged[0].hits, 2)
 })
 
 test('host: a regression summary adds up the per-card results', async () => {
