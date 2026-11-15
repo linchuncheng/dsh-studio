@@ -16,6 +16,21 @@ export function ExpertsPanel({ config, onChanged }) {
     '🗂️', '🔐', '🌐', '☁️', '🗄️', '🧬', '🩺', '⚖️',
   ]
 
+  // 角色模板：新建专家时按角色套用 label / 模型 / 提示词；改这里不动已有专家
+  const ROLE_KEYS = ['product', 'architect', 'dev', 'qa']
+  const [roles, setRoles] = React.useState(() => {
+    const src = config.roles ?? {}
+    const out = {}
+    for (const key of ROLE_KEYS) out[key] = { label: String(src[key]?.label ?? ''), model: String(src[key]?.model ?? ''), prompt: String(src[key]?.prompt ?? '') }
+    return out
+  })
+  const [rolesNote, setRolesNote] = React.useState(null)
+  const saveRoles = async () => {
+    setBusy(true); setError(null); setRolesNote(null)
+    try { await api('/config', { roles }); setRolesNote('角色模板已保存'); toast('角色模板已保存'); await onChanged() }
+    catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+
   const save = async () => {
     if (draft === null) return
     setBusy(true); setError(null)
@@ -107,6 +122,23 @@ export function ExpertsPanel({ config, onChanged }) {
   ))
 
   return h('div', { className: 'ds-pane-stack' },
+    h('div', { className: 'ds-panel', style: { marginBottom: 12 } },
+      h('div', { className: 'ds-panel-head' }, '角色模板',
+        h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } }, '新建专家时套用；改这里不影响已有专家')),
+      h('div', { className: 'ds-panel-body' },
+        ROLE_KEYS.map(key => h('div', { key, className: 'ds-field' },
+          h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center' } },
+            h(TextField, { className: 'ds-input', style: { width: 120 }, placeholder: '角色名', value: roles[key].label, onChange: e => setRoles({ ...roles, [key]: { ...roles[key], label: e.target.value } }) }),
+            h(TextField, { className: 'ds-input', style: { flex: 1 }, placeholder: '模型 id，如 deepseek-v4.1-flash', value: roles[key].model, onChange: e => setRoles({ ...roles, [key]: { ...roles[key], model: e.target.value } }) }),
+          ),
+          h(TextAreaField, { className: 'ds-input', rows: 2, placeholder: '角色提示词（留空退回内置说明）', value: roles[key].prompt, onChange: e => setRoles({ ...roles, [key]: { ...roles[key], prompt: e.target.value } }) }),
+        )),
+        h('div', { className: 'ds-row', style: { justifyContent: 'flex-end' } },
+          h('button', { className: 'ds-btn ds-btn-primary', disabled: busy, onClick: () => void saveRoles() }, '保存角色模板'),
+        ),
+        rolesNote === null ? null : h('div', { className: 'ds-ok' }, rolesNote),
+      ),
+    ),
     h(Editor, {
       title: '专家（可在评论里 @ 他们）',
       hint: '每个专家有名字、业务领域、角色提示词和技能；评论里 @名字 就会把这条工作派给他。',
