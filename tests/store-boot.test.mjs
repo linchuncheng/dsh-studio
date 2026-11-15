@@ -43,6 +43,29 @@ test('store: boots, persists and reloads a state file', async () => {
   }
 })
 
+test('store: saving a requirement twice keeps the answers added later', async () => {
+  const { mkdtemp, rm } = await import('node:fs/promises')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const { StudioStore, SecretStore } = await import('../src/host/store.js')
+  const { saveRequirement } = await import('../src/host/executor.js')
+  const { discoveryGaps } = await import('../src/host/discovery.js')
+  const dir = await mkdtemp(join(tmpdir(), 'dsh-studio-req-'))
+  const store = new StudioStore(join(dir, 'dsh-studio.json'), { dbFile: join(dir, 'dsh-studio.db'), secrets: new SecretStore(join(dir, '.secrets.json')) })
+  try {
+    await store.ready
+    const first = await saveRequirement(store, { title: '管理后台' })
+    assert.equal(discoveryGaps(first).length, 3, '新需求三问都空')
+    const second = await saveRequirement(store, { id: first.id, discovery: { server: 'node:sqlite', auth: '服务端 403', boundary: '前后端' } })
+    assert.equal(discoveryGaps(second).length, 0, '补答之后要存下来')
+    const reread = store.snapshot().requirements.find(item => item.id === first.id)
+    assert.equal(reread.discovery.auth, '服务端 403')
+  } finally {
+    try { store.db?.close?.() } catch { /* already closed */ }
+    await rm(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 }).catch(() => {})
+  }
+})
+
 test('store: an agent failure emits agent/failed', async () => {
   const { mkdtemp, rm } = await import('node:fs/promises')
   const { tmpdir } = await import('node:os')

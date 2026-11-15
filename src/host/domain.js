@@ -1,6 +1,7 @@
 /** dsh-studio 的领域层：板列、卡片/需求/发布的数据形状与清洗、默认配置、编号生成。纯函数，可单测。 */
 import { createHash, randomBytes } from 'node:crypto'
 import { sanitizeDbCase } from './db-runner.js'
+import { sanitizeDiscovery } from './discovery.js'
 import { sanitizePrices } from './usage.js'
 import { sanitizeWebhooks } from './webhooks.js'
 import { sanitizeCaseShell } from './shell-case.js'
@@ -979,8 +980,7 @@ export function sanitizeRequirement(raw) {
   const title = String(raw.title ?? '').trim().slice(0, 200)
   if (title.length === 0) return undefined
   const now = Date.now()
-  const links = raw.links !== null && typeof raw.links === 'object' ? raw.links : {}
-  const folderRaw = raw.folder !== null && typeof raw.folder === 'object' ? raw.folder : {}
+  const links = raw.links !== null && typeof raw.links === 'object' ? raw.links : {}, folderRaw = raw.folder !== null && typeof raw.folder === 'object' ? raw.folder : {}
   return {
     id: cleanId(raw.id ?? '', 'req'),
     code: String(raw.code ?? '').trim().toUpperCase().slice(0, 40),
@@ -992,6 +992,7 @@ export function sanitizeRequirement(raw) {
     /** 业务领域：卡没写领域时继承它，用来把卡路由给同领域专家。 */
     domain: String(raw.domain ?? '').trim().slice(0, 40),
     priority: PRIORITIES.includes(String(raw.priority)) ? String(raw.priority) : 'normal',
+    discovery: sanitizeDiscovery(raw.discovery), // 澄清三问，空的会在拆卡时被拦
     status: REQ_STATUSES.includes(String(raw.status)) ? String(raw.status) : 'draft',
     links: {
       prd: String(links.prd ?? '').trim().slice(0, 500),
@@ -1854,8 +1855,7 @@ export function sanitizeReleases(input) {
 
 export function sanitizeRelease(raw, index = 0) {
   if (raw === null || typeof raw !== 'object') return null
-  const version = String(raw.version ?? '').trim().slice(0, 40)
-  const name = String(raw.name ?? '').trim().slice(0, 120)
+  const version = String(raw.version ?? '').trim().slice(0, 40), name = String(raw.name ?? '').trim().slice(0, 120)
   if (version === '' && name === '') return null
   return {
     id: cleanId(raw.id ?? (version === '' ? name : version), `rel-${index}`),

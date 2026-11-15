@@ -515,7 +515,8 @@ export async function saveRequirement(store, input) {
       points: requirementPointsFingerprint(existing.points),
       links: JSON.stringify(existing.links ?? {}),
     }
-    for (const key of ['title', 'description', 'project', 'iteration', 'owner', 'domain', 'priority', 'status', 'links']) {
+    // 更新时的字段白名单：漏一个就会「保存成功但字段没变」（discovery 就是这样丢过一次）
+    for (const key of ['title', 'description', 'project', 'iteration', 'owner', 'domain', 'priority', 'status', 'links', 'discovery']) {
       existing[key] = draft[key]
     }
     // 排序与依赖单独处理：显式给了才覆盖，避免详情页保存别的字段时把它们清空。

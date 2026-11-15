@@ -623,6 +623,20 @@ test('host: the design gate only blocks when it is switched on', async () => {
   assert.equal(sanitizeDesign({ link: '  http://x  ', status: 'approved' }).link, 'http://x')
 })
 
+test('host: a requirement needs three answers before it can be split', async () => {
+  const { discoveryGaps, sanitizeDiscovery } = await import('../src/host/discovery.js')
+  const { sanitizeRequirement } = await import('../src/host/domain.js')
+  assert.equal(discoveryGaps({}).length, 3, 'empty requirement misses all three')
+  const saved = sanitizeRequirement({ title: '管理后台', discovery: { server: ' 有，node:sqlite ', auth: '', boundary: '' } })
+  assert.equal(saved.discovery.server, '有，node:sqlite', 'trimmed')
+  const gaps = discoveryGaps(saved)
+  assert.equal(gaps.length, 2)
+  assert.ok(gaps[0].includes('鉴权'), gaps.join('|'))
+  const done = sanitizeRequirement({ title: '管理后台', discovery: { server: 'a', auth: 'b', boundary: 'c' } })
+  assert.equal(discoveryGaps(done).length, 0)
+  assert.deepEqual(sanitizeDiscovery(null), { server: '', auth: '', boundary: '' })
+})
+
 test('host: usage parsing takes one usage per message and prices what it can', async () => {
   const { costOf, isSubscriptionModel, parseUsageLines, priceOf, summarizeUsage } = await import('../src/host/usage.js')
   const lines = [

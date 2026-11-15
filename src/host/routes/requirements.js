@@ -7,6 +7,7 @@ import {
   sanitizeRequirementPool,
   text,
 } from '../domain.js'
+import { discoveryGaps } from '../discovery.js'
 import { casesOfTasks, impactSummary } from '../impact.js'
 import {
   ensureReqFolder,
@@ -198,6 +199,8 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     const approved = (requirement.review ?? null)?.status === 'approved'
     const started = ['active', 'delivered', 'closed'].includes(requirement.status)
     if (!approved && !started) throw new Error('需求还没评审通过，先过评审再拆卡')
+    const gaps = discoveryGaps(requirement)
+    if (gaps.length > 0) throw new Error('拆卡前先把澄清答完：' + gaps.join('；'))
     const points = (requirement.points ?? []).filter(point => requested.length === 0 || requested.includes(point.id))
     const uncovered = points.filter(point => !before.tasks.some(task => task.requirementId === id && task.pointId === point.id))
     if (uncovered.length === 0) throw new Error('这些功能点都已经有卡了')
