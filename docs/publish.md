@@ -147,4 +147,9 @@ token 只写进临时 npmrc（放在仓库外或 `tmp/` 且不提交），发完
 
 1. `npm run check` + `pnpm build` + `cmp -s dist/client.js client.js`（产物必须逐字节一致）；
 2. 发完**在临时 profile 里装一遍**并跑 `dsh --profile <tmp> --dump-config | grep dsh-studio`，确认宿主真认到了，然后把 profile 删掉；
-3. 部署脚本退出码 0 **不等于服务活着**——它打印的 `state=` 要自己看一眼，再单独 `curl -o /dev/null -w '%{http_code}' <host>/studio-api/state` 确认 200（2026-11-13 有过一次 `state=404` 被当成成功，线上挂了十分钟）。
+3. **npm 上有、git 上没有**是真实发生过的：`git tag -f vX.Y.Z && git push origin main vX.Y.Z 2>&1 | tail -1` 会把 push 的失败信息吞掉，看着像成功。发完必须单独确认一次：
+   ```bash
+   git status -sb | head -1                                  # 不能是 ahead
+   git ls-remote origin refs/heads/main refs/tags/vX.Y.Z      # 两个 SHA 都要在
+   ```
+4. 部署脚本退出码 0 **不等于服务活着**——它打印的 `state=` 要自己看一眼，再单独 `curl -o /dev/null -w '%{http_code}' <host>/studio-api/state` 确认 200（2026-11-13 有过一次 `state=404` 被当成成功，线上挂了十分钟）。
