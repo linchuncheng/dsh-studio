@@ -1,7 +1,8 @@
 import { INTEGRATION, feishuPush, gitlabReady, gitlabRequest, gitlabSync, healthReport, projectReady } from '../integrations.js'
 import { cleanId } from '../domain.js'
-const INJECTED = ["applyConfig","installedPackages","publicState","readJsonBody","resolvePackageName","runPluginCli","sendJson","getSyncTimer","upsertById"]
+const INJECTED = ['mirrorCardsToBitable', "applyConfig","installedPackages","publicState","readJsonBody","resolvePackageName","runPluginCli","sendJson","getSyncTimer","upsertById"]
 let host = {
+  mirrorCardsToBitable: () => ({ ok: false, error: '未注入' }),
   applyConfig: () => {},
   installedPackages: () => {},
   publicState: () => {},
@@ -140,6 +141,13 @@ if (method === 'POST' && route === '/bots/delete') {
   host.sendJson(res, 200, { ok: true, state: host.publicState(store) })
   return true
 }
+if (method === 'POST' && route === '/feishu/mirror') {
+    // 把卡片镜像进飞书多维表格；dryRun 只算条数不写
+    const body = await host.readJsonBody(req)
+    const result = await host.mirrorCardsToBitable(store, { requirementId: body.requirementId ?? '', dryRun: body.dryRun === true })
+    host.sendJson(res, 200, { ok: result.ok === true, ...result, state: result.ok === true ? host.publicState(store) : undefined })
+    return true
+  }
 if (method === 'POST' && route === '/feishu/test') {
   const body = await host.readJsonBody(req).catch(() => ({}))
   const config = store.snapshot().config

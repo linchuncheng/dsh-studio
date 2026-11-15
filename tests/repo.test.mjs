@@ -623,6 +623,24 @@ test('host: the design gate only blocks when it is switched on', async () => {
   assert.equal(sanitizeDesign({ link: '  http://x  ', status: 'approved' }).link, 'http://x')
 })
 
+test('host: cards turn into bitable records and batch at 200', async () => {
+  const { BATCH_LIMIT, cardToRecord, mirrorConfigGaps, recordsPayload } = await import('../src/host/bitable.js')
+  const record = cardToRecord({ id: 't-1', code: 'DEV-001', title: '登录', status: 'dev', expert: 'dev', priority: 'urgent', requirementId: 'req-1', updatedAt: 1794757921042 })
+  assert.equal(record['编号'], 'DEV-001')
+  assert.equal(record['标题'], '登录')
+  assert.equal(record['状态'], 'dev')
+  assert.ok(record['更新时间'].startsWith('2026-'))
+  assert.equal(record['编号'], 'DEV-001')
+  assert.equal(cardToRecord({ id: 't-2', title: '没编号' })['编号'], 't-2', '没编号就用 id')
+  const many = Array.from({ length: BATCH_LIMIT + 5 }, (_, index) => ({ id: 't-' + index, title: 'x' }))
+  const batches = recordsPayload(many)
+  assert.equal(batches.length, 2)
+  assert.equal(batches[0].length, BATCH_LIMIT)
+  assert.equal(batches[1].length, 5)
+  assert.deepEqual(mirrorConfigGaps({}), ['baseToken（多维表格 app_token）', 'tableId（数据表 id）'])
+  assert.deepEqual(mirrorConfigGaps({ feishu: { baseToken: 'b', tableId: 't' } }), [])
+})
+
 test('host: a failing case files a bug at the severity of the case', async () => {
   const { bugSeverityFor } = await import('../src/host/bugs.js')
   assert.deepEqual(bugSeverityFor('p0', 'dev'), { severity: 'p0', priority: 'urgent', regression: false })
