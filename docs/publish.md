@@ -151,6 +151,7 @@ token 只写进临时 npmrc（放在仓库外或 `tmp/` 且不提交），发完
 3. **发版一致性用命令查，不靠记性**：`npm run verify:release`（= `node tools/verify-release.mjs`）比对五处——
    package.json 版本、本地 tag、tag 里的 package.json、origin/main 与 origin 上的 tag、npm registry 的版本与 latest。
    全绿输出「发版一致」，有不一致退出码 1。
+   **刚 publish 完那几分钟 registry 还看不到新版本**，这时用 `npm run verify:release -- --wait 180` 让它自己轮询等待，别把「还没同步」当成「没发」。
    这条是因为 0.1.15/0.1.16 真的发到 npm 了、git 却没推上去：`git tag -f vX.Y.Z && git push ... | tail -1` 会把 push 的失败吞掉。
    npm latest 滞后（刚发几分钟）只算 warn，不算失败。
 4. 部署脚本退出码 0 **不等于服务活着**——它打印的 `state=` 要自己看一眼，再单独 `curl -o /dev/null -w '%{http_code}' <host>/studio-api/state` 确认 200（2026-11-13 有过一次 `state=404` 被当成成功，线上挂了十分钟）。

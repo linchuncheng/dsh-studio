@@ -45,11 +45,23 @@ if (head !== '') {
   }
 }
 
-// npm 侧：版本必须已发布；latest 可能滞后几分钟，只当警告
-try {
+// npm 侧：版本必须已发布；latest 可能滞后几分钟，只当警告。
+// 刚 publish 完的那几分钟 registry 还看不到新版本，所以支持 --wait <秒> 轮询等待。
+const waitArg = process.argv.indexOf('--wait')
+const waitSeconds = waitArg > 0 ? Number(process.argv[waitArg + 1]) || 0 : 0
+const readRegistry = async () => {
   const res = await fetch('https://registry.npmjs.org/' + encodeURIComponent(PKG), { signal: AbortSignal.timeout(20000) })
-  const reg = await res.json()
-  add('npm 上已发布 ' + pkg.version, Boolean(reg.versions?.[pkg.version]), pkg.version)
+  return res.json()
+}
+try {
+  let reg = await readRegistry()
+  const deadline = Date.now() + waitSeconds * 1000
+  while (reg.versions?.[pkg.version] === undefined && Date.now() < deadline) {
+    console.log('… npm 上还没有 ' + pkg.version + '，15 秒后再查（最多等到 ' + waitSeconds + ' 秒）')
+    await new Promise(r => setTimeout(r, 15000))
+    reg = await readRegistry()
+  }
+  add('npm 上已发布 ' + pkg.version, Boolean(reg.versions?.[pkg.version]), reg.versions?.[pkg.version] === undefined ? pkg.version + '（刚发布的话可以用 --wait 120 等一等）' : pkg.version)
   const latest = reg['dist-tags']?.latest ?? '(无)'
   add('npm latest == ' + pkg.version, latest === pkg.version, latest === pkg.version ? latest : 'latest 还是 ' + latest + '（可能还没同步，等几分钟）')
 } catch (e) {
