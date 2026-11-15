@@ -11,7 +11,7 @@
 ```bash
 git clone ssh://git@ssh.github.com:443/marsken88/dsh-studio.git
 cd dsh-studio
-npm test                      # 1) 77 条测试，不用先装依赖
+npm test                      # 1) 全部测试，不用先装依赖（条数以输出为准）
 ```
 
 只跑到这一步，你已经知道「代码是好的」——测试不需要任何依赖，因为它们只碰纯函数和一个临时 SQLite。
@@ -22,6 +22,13 @@ cmp -s dist/client.js client.js && echo same                     #    产物必�
 ```
 
 `pnpm install` 会提示 `Ignored build scripts: esbuild` —— **正常**，vite 用的是预编译 esbuild，构建照样过。
+
+没有 GitLab 令牌时，也可以验「MR 事实 vs 自报执行记录」这条链：先在跑 dsh 的那台机器上起打桩，再从本机驱动。
+
+```bash
+node tools/mock-gitlab.mjs                                   # 在 dsh 主机上，127.0.0.1:18098
+STUDIO_BASE=http://<host>:18080 node tools/verify-gitlab-facts.mjs   # 本机，7 项断言
+```
 `cmp` 打出 `same` 说明你构建的产物和仓库里那份**逐字节一致**（CI 的红线就是这个）。
 
 ```bash
@@ -33,7 +40,7 @@ DSH_DEPLOY_HOST=<host> DSH_DEPLOY_USER=<user> DSH_DEPLOY_PASSWORD=<pw> node tool
 ## 然后：证明它真的活着
 
 ```bash
-STUDIO_TOKEN=<面板 token> node tools/visual/smoke.mjs
+STUDIO_TOKEN=<面板 token> STUDIO_BASE=http://<host>:18080 node tools/visual/smoke.mjs
 ```
 
 九项检查：能打开 → 侧栏进得去 → 面板挂载 → 六个页签 → 看板有卡 → 用例库有行 → 套件渲染 → `pageerror` 必须为空。任何一项不过退出码非零。

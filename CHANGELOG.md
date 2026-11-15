@@ -3,6 +3,14 @@
 只记**用户能感知**的变化。内部重构、测试增补不单列（看 `git log`）。
 日期是发布日，格式参照 Keep a Changelog，版本号遵循语义化。
 
+## [0.1.16] — 2026-11-15
+
+### 文档
+- quickstart 里 `npm test` 写着「77 条测试」（实际 94），条数不再写死；冒烟命令补上 `STUDIO_BASE`——
+  远程主机上漏了它只会连本机 127.0.0.1，得到的是一句 ERR_CONNECTION_REFUSED。
+- quickstart 增加「没有 GitLab 令牌也能验」的两条命令（打桩 + verify-gitlab-facts）。
+- AGENTS 常见故障加一条：用脚本改文档时文本里的反引号会截断模板字符串，编辑一句都不执行却只报个 ReferenceError。
+
 ## [0.1.15] — 2026-11-15
 
 ### 文档

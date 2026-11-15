@@ -149,3 +149,4 @@ GIT_SSH_COMMAND="ssh -p 443" git push
 | 点击页面卡顿 | DevTools Performance 找长任务；`keyboardPatch` 之类全量扫描是历史元凶 |
 | 派单没留言 | 会话日志里找 `turn/end reason.kind=error`；常见是模型无可用通道（503） |
 | 保存成功但字段为空 | `publicConfig`/`mergeConfig`/`sanitize*` 白名单漏字段 |
+| 用脚本改文档后「什么都没变」 | 生成脚本文本里带了反引号，把模板字符串截断了：Node 抛 `ReferenceError: xxx is not defined` 但**编辑一句都没执行**。改完看 `git status`，别只看脚本退出码 |
