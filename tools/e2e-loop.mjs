@@ -42,7 +42,8 @@ for (const card of cards) {
   const info = wt.body.worktree ?? {}
   await post('/task/coding', { id: card.id, action: 'update', coding: { agent: 'dev', branch: info.branch ?? '', files: [], commits: [], tests: { total: 9, passed: 9 } } })
   await post('/task/case', { id: card.id, action: 'add', cases: [
-    { title: 'pnpm test', expected: '9 passed', shell: { command: 'pnpm test', expectExit: 0, expectContains: 'Tests  9 passed', timeoutMs: 120000 } },
+    // 断言用「fail 0」而不是条数：加测试不该让用例变红，条数写死只会误伤
+    { title: 'pnpm test', expected: '没有失败', shell: { command: 'pnpm test', expectExit: 0, expectContains: 'fail 0', timeoutMs: 180000 } },
     { title: 'pnpm build', expected: 'built in', shell: { command: 'pnpm build', expectExit: 0, expectContains: 'built in', timeoutMs: 180000 } },
   ] })
   for (const status of ['design', 'dev_ready', 'dev', 'review']) await post('/task/update', { id: card.id, status })
