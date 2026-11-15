@@ -1268,3 +1268,7 @@ GET /studio-api/audit/export.csv?by=<人>&q=<关键字>&failed=1&token=<会话>
 - `/columns/save` 保留成员原本的 `kind`（`team` / `role` / `expert`），不会再被强行洗成 expert。
 
 实测（.218，看板 20 张卡）：把「退款对账」需求的领域设为「支付」后新建一张测试卡，派单落到**支付测试工程师**（`expert-87de8b`）；同一列为 `role:qa` 时，没写领域的卡落到**测试工程师**（`expert-d3c58341`）。
+
+## 许可证
+
+Apache-2.0，见 [LICENSE](LICENSE)。仓库里不含公司数据，配置示例里的地址 / token / 主机名都是占位值。
