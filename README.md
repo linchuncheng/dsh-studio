@@ -9,13 +9,29 @@
 
 ## 它长什么样
 
-| 看板：八列、角色负责人、卡片带进度/评论/用例 | 用例库：跨卡聚合、套件、最近回归 |
-| --- | --- |
-| ![看板](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/board.png) | ![用例库](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/cases.png) |
+## 它长什么样
 
-| 效能：一次通过率、返工率、按专家看质量 |
-| --- |
-| ![效能](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/quality.png) |
+| 工作台：今天该做什么、谁在忙 | 看板：八列、角色负责人、卡片带进度/用例 |
+| --- | --- |
+| ![workbench](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/workbench.png) | ![board](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/board.png) |
+
+| 卡片抽屉：状态 / 清单 / 用例 / 执行记录 | 需求：基线、变更影响面、可追溯矩阵 |
+| --- | --- |
+| ![drawer](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/drawer.png) | ![requirements](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/requirements.png) |
+
+| 用例库：跨卡聚合、套件、最近回归 | 效能：一次通过率、返工率、按专家 + token 成本 |
+| --- | --- |
+| ![cases](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/cases.png) | ![quality](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/quality.png) |
+
+| 版本：发布、灰度、部署记录 | 设置·测试执行：执行开关、数量上限、出站 webhook |
+| --- | --- |
+| ![releases](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/releases.png) | ![settings-execution](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/settings-execution.png) |
+
+| 设置·成本与预算：价目表（元/百万 token） | 设置·专家：8 位专家、模型与提示词 |
+| --- | --- |
+| ![settings-cost](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/settings-cost.png) | ![settings-experts](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/settings-experts.png) |
+
+截图不是手截的：`npm run shots`（`tools/visual/capture.mjs`）会登录面板、逐个页签截一遍，顺手断言没有「渲染失败」。
 
 
 ## 部署
