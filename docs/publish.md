@@ -147,9 +147,9 @@ token 只写进临时 npmrc（放在仓库外或 `tmp/` 且不提交），发完
 
 1. `npm run check` + `pnpm build` + `cmp -s dist/client.js client.js`（产物必须逐字节一致）；
 2. 发完**在临时 profile 里装一遍**并跑 `dsh --profile <tmp> --dump-config | grep dsh-studio`，确认宿主真认到了，然后把 profile 删掉；
-3. **npm 上有、git 上没有**是真实发生过的：`git tag -f vX.Y.Z && git push origin main vX.Y.Z 2>&1 | tail -1` 会把 push 的失败信息吞掉，看着像成功。发完必须单独确认一次：
-   ```bash
-   git status -sb | head -1                                  # 不能是 ahead
-   git ls-remote origin refs/heads/main refs/tags/vX.Y.Z      # 两个 SHA 都要在
-   ```
+3. **发版一致性用命令查，不靠记性**：`npm run verify:release`（= `node tools/verify-release.mjs`）比对五处——
+   package.json 版本、本地 tag、tag 里的 package.json、origin/main 与 origin 上的 tag、npm registry 的版本与 latest。
+   全绿输出「发版一致」，有不一致退出码 1。
+   这条是因为 0.1.15/0.1.16 真的发到 npm 了、git 却没推上去：`git tag -f vX.Y.Z && git push ... | tail -1` 会把 push 的失败吞掉。
+   npm latest 滞后（刚发几分钟）只算 warn，不算失败。
 4. 部署脚本退出码 0 **不等于服务活着**——它打印的 `state=` 要自己看一眼，再单独 `curl -o /dev/null -w '%{http_code}' <host>/studio-api/state` 确认 200（2026-11-13 有过一次 `state=404` 被当成成功，线上挂了十分钟）。
