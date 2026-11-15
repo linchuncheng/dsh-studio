@@ -78,8 +78,9 @@ STUDIO_TOKEN=$(sudo journalctl -u dsh-web -n 50 | grep -o 'token=[A-Za-z0-9_-]*'
 6. `npm test`（条数以 `npm run check` 打印的为准，别再写死数字；覆盖范围是：`tests/repo.test.mjs` 管 manifest / 产物一致 / 宿主接口 / 领域层拆分与导入 / **导入只读绑定不许赋值** / **跨模块符号必须导入** / 迁移 / 文档 / locale / **用了 `React.` 的组件必须从 `client()` 或工厂参数拿到 `React`**；`tests/client-units.test.mjs` 用真实模块跑标签表/负责人/日期/命令面板检索这些纯函数；`tests/notify.test.mjs` 起一个本地 HTTP 桩验证飞书通知（正文归一、`botWants` 的事件矩阵、`feishuBroadcast` 只发给订阅该事件的机器人）；`tests/store-boot.test.mjs` 真的起一个 `StudioStore`，把「搬完代码启动就炸」这类问题挡在部署前。想连真数据验证：把生产库三个文件（`.db`/`-wal`/`-shm`）拷到临时目录，用 `new StudioStore()` + `await store.ready` 跑一遍，`tmp/boot-real.mjs` 就是这么写的）；`npm run check` = 语法 + 契约一把过
 7. 构建期守卫：`web/scripts/guard.mjs`（`pnpm build` 自动跑两次）——禁 CSS 里出现 `hsl(var(--x))`、禁 Radix Portal 不挂 `container={portalRoot()}`、产物里必须留下 `data-dsh-studio-portal`。单独跑：`cd web && npm run guard`
 8. 真库自检：`npm run smoke:store -- ~/.dsh/dsh-studio.db`（把 `.db/-wal/-shm` 拷到临时目录起一遍真实 `StudioStore`，专抓「空库能起、真库就炸」的导入问题）
-9. 发版后跑 `npm run verify:release`：比对 package.json 版本 / 本地 tag / origin main 与 tag / npm registry，不一致直接退出码 1。
-10. CI 在 `.github/workflows/ci.yml`：语法 → 契约 → `web/` 里 `pnpm install --frozen-lockfile && pnpm build` → `cmp dist/client.js client.js` → `git diff --exit-code`（产物必须可复现，改了前端忘记构建会直接红）
+9. 成本数字可疑时跑 `npm run verify:usage [taskId]`：ssh 取原始会话日志现算一遍 token，与 `/costs` 对账（两条路径不同：一条走 session-usage 的 zstd 缓存，一条走 usage.js 直接解析）。
+10. 发版后跑 `npm run verify:release`：比对 package.json 版本 / 本地 tag / origin main 与 tag / npm registry，不一致直接退出码 1。
+11. CI 在 `.github/workflows/ci.yml`：语法 → 契约 → `web/` 里 `pnpm install --frozen-lockfile && pnpm build` → `cmp dist/client.js client.js` → `git diff --exit-code`（产物必须可复现，改了前端忘记构建会直接红）
 
 ## 5. 禁止事项
 

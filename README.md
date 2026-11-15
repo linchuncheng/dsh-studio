@@ -417,6 +417,8 @@ sudo systemctl restart dsh-web
   ] } }
   ```
 
+  对账命令：`npm run verify:usage [taskId]`——ssh 取原始日志现算一遍，和 `/costs` 的数字比。
+
   **实测**（线上 3045 次调用 / 2.42 亿 token）：配价目表后算出 ¥81.47，其中 719 次调用因模型没配价目记「未知」；清空价目表后花费显示 `null`（未知），不会按 0 算。
 - 口径见上一节七条；订阅通道（`*-coding` / `*-token-plan`）记 token、不计钱。
 
