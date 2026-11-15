@@ -623,6 +623,17 @@ test('host: the design gate only blocks when it is switched on', async () => {
   assert.equal(sanitizeDesign({ link: '  http://x  ', status: 'approved' }).link, 'http://x')
 })
 
+test('host: a failing case files a bug at the severity of the case', async () => {
+  const { bugSeverityFor } = await import('../src/host/bugs.js')
+  assert.deepEqual(bugSeverityFor('p0', 'dev'), { severity: 'p0', priority: 'urgent', regression: false })
+  assert.deepEqual(bugSeverityFor('p1', 'test'), { severity: 'p1', priority: 'normal', regression: false })
+  assert.deepEqual(bugSeverityFor('p3', 'dev'), { severity: 'p3', priority: 'relaxed', regression: false })
+  assert.deepEqual(bugSeverityFor(undefined, 'dev'), { severity: 'p2', priority: 'normal', regression: false }, '没填优先级按 p2')
+  // 已完成/待验收的卡上失败 = 回归，升一级
+  assert.deepEqual(bugSeverityFor('p2', 'done'), { severity: 'p1', priority: 'normal', regression: true })
+  assert.deepEqual(bugSeverityFor('p0', 'done'), { severity: 'p0', priority: 'urgent', regression: true }, 'p0 封顶')
+})
+
 test('host: a requirement needs three answers before it can be split', async () => {
   const { discoveryGaps, sanitizeDiscovery } = await import('../src/host/discovery.js')
   const { sanitizeRequirement } = await import('../src/host/domain.js')
