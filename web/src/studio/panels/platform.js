@@ -253,7 +253,7 @@ export function CostsPanel({ config, onChanged }) {
         h(TextField, { className: 'ds-input', value: warnAt, onChange: event => setWarnAt(event.target.value) }),
       ),
       h('div', { className: 'ds-field ds-span' },
-        h('div', { className: 'ds-hint' }, '效能页的「AI 执行成本」下方会出现预算条；口径是派单次数与机上时长，宿主没有回传 token 用量。'),
+        h('div', { className: 'ds-hint' }, '效能页的「AI 执行成本」会显示真实 token 用量（读 studio-* 会话日志）。要显示钱就在 config.costs.prices 里配价目表：[{ "model": "deepseek-v4.1-flash", "input": 2, "output": 8, "cacheRead": 0.2 }]，单位是元 / 百万 token；没配价目的调用记「未知」，不按 0 算。'),
       ),
       h('div', { className: 'ds-row', style: { justifyContent: 'flex-end' } },
         h('button', { className: 'ds-btn ds-btn-primary', disabled: busy, onClick: () => void save() }, busy ? '保存中…' : '保存预算'),

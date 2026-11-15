@@ -2,6 +2,8 @@ import {
   buildDashboard,
 } from '../executor.js'
 import { runSummary } from '../dispatcher.js'
+import { collectSessionUsage, aggregateUsage } from '../session-usage.js'
+import { costOf } from '../usage.js'
 const INJECTED = ['getDispatcher', "buildAnalytics","buildMetrics","burndownReport","sendJson","workloadReport"]
 let host = {
   getDispatcher: () => undefined,
@@ -74,9 +76,12 @@ export async function handleInsightsRoute({ method, route, req, res, store, url 
     const level = Math.max(runRate, hourRate) >= 100
       ? 'over'
       : Math.max(runRate, hourRate) >= budget.warnAt ? 'warn' : 'ok'
+    // 真实 token 用量：读 studio-* 会话日志，按卡 / 按专家汇总；价目表为空时只给 token。
+    const usage = aggregateUsage(await collectSessionUsage(), store.snapshot().tasks, budget.prices ?? [], costOf)
     host.sendJson(res, 200, {
       ok: true,
       costs: summary,
+      usage,
       budget: {
         ...budget,
         runs,

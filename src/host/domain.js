@@ -1,6 +1,7 @@
 /** dsh-studio 的领域层：板列、卡片/需求/发布的数据形状与清洗、默认配置、编号生成。纯函数，可单测。 */
 import { createHash, randomBytes } from 'node:crypto'
 import { sanitizeDbCase } from './db-runner.js'
+import { sanitizePrices } from './usage.js'
 import { sanitizeWebhooks } from './webhooks.js'
 import { sanitizeCaseShell } from './shell-case.js'
 import { LIMIT_DEFAULTS, sanitizeLimits } from './limits.js'
@@ -465,17 +466,16 @@ export function sanitizeSla(raw) {
   }
   return out
 }
-
-/** 成本预算：跑多少轮、机上多少小时，超过 warnAt% 就在界面标黄。 */
+/** 成本预算 + 价目表（元/百万 token；空表只报 token 不报钱）。 */
 export function sanitizeCosts(raw) {
   const input = raw !== null && typeof raw === 'object' ? raw : {}
   const budgetRuns = Number(input.budgetRuns)
-  const budgetHours = Number(input.budgetHours)
-  const warnAt = Number(input.warnAt)
+  const budgetHours = Number(input.budgetHours), warnAt = Number(input.warnAt)
   return {
     budgetRuns: Number.isFinite(budgetRuns) && budgetRuns > 0 ? Math.min(Math.round(budgetRuns), 100000) : 500,
     budgetHours: Number.isFinite(budgetHours) && budgetHours > 0 ? Math.min(Math.round(budgetHours), 100000) : 80,
     warnAt: Number.isFinite(warnAt) && warnAt > 0 ? Math.max(10, Math.min(Math.round(warnAt), 100)) : 80,
+    prices: sanitizePrices(input.prices), // 元/百万 token；空表只报 token 不报钱
   }
 }
 export function cleanId(value, prefix) {

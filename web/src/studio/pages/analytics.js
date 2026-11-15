@@ -26,7 +26,7 @@ export function AnalyticsPage({ state, onOpenTask }) {
         if (!alive) return
         setLoad(loadOut.workload ?? null)
         setBurn(burnOut.burndown ?? null)
-        setCosts({ ...(costOut.costs ?? {}), budget: costOut.budget ?? null })
+        setCosts({ ...(costOut.costs ?? {}), budget: costOut.budget ?? null, usage: costOut.usage ?? null })
         setQuality(qualityOut.quality ?? null)
       })
       .catch(() => {})
@@ -200,6 +200,19 @@ export function AnalyticsPage({ state, onOpenTask }) {
       h('div', { className: 'ds-panel ds-span-4' },
         h('div', { className: 'ds-panel-head' }, 'AI 执行成本', h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } }, `${costs?.total ?? 0} 次派单`)),
         h('div', { className: 'ds-panel-body' },
+          costs?.usage?.totals === null || costs?.usage?.totals === undefined
+            ? null
+            : h('div', { className: 'ds-an-kv' }, h('span', {}, 'token 用量'),
+              h('b', {}, (costs.usage.totals.total / 1000).toFixed(1) + 'k'),
+              h('span', { className: 'ds-hint', style: { marginLeft: 8 } },
+                '入 ' + (costs.usage.totals.input / 1000).toFixed(1) + 'k · 出 ' + (costs.usage.totals.output / 1000).toFixed(1) + 'k · 缓存 ' + (costs.usage.totals.cacheRead / 1000).toFixed(1) + 'k')),
+          costs?.usage?.totals === null || costs?.usage?.totals === undefined
+            ? null
+            : h('div', { className: 'ds-an-kv' }, h('span', {}, '预估花费'),
+              h('b', {}, costs.usage.totals.cost === null ? '未知（价目表没配）' : '¥' + Number(costs.usage.totals.cost).toFixed(2)),
+              (costs.usage.totals.unknownCalls ?? 0) > 0
+                ? h('span', { className: 'ds-hint', style: { marginLeft: 8 } }, costs.usage.totals.unknownCalls + ' 次无价目')
+                : null),
           h('div', { className: 'ds-an-kv' }, h('span', {}, '平均执行时长'), h('b', {}, `${Math.round((costs?.avgMs ?? 0) / 1000)} 秒`)),
           (costs?.byModel ?? []).slice(0, 3).map(item => h('div', { key: `m-${item.key}`, className: 'ds-an-kv' }, h('span', {}, `模型 ${item.key}`), h('b', {}, `${item.runs} 次`))),
           (costs?.byPromptVersion ?? []).slice(0, 3).map(item => h('div', { key: `p-${item.key}`, className: 'ds-an-kv' }, h('span', {}, `提示词 ${item.key}`), h('b', {}, `${item.runs} 次`))),

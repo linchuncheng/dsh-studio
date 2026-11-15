@@ -623,6 +623,38 @@ test('host: the design gate only blocks when it is switched on', async () => {
   assert.equal(sanitizeDesign({ link: '  http://x  ', status: 'approved' }).link, 'http://x')
 })
 
+test('host: usage parsing takes one usage per message and prices what it can', async () => {
+  const { costOf, isSubscriptionModel, parseUsageLines, priceOf, summarizeUsage } = await import('../src/host/usage.js')
+  const lines = [
+    '{"type":"session","version":4,"id":"studio-t-1-dev"}',
+    '{"type":"assistant/message","time":100,"data":{"turn":1,"step":1,"message":{"role":"assistant"},"usage":{"inputTokens":1000,"outputTokens":200,"cacheReadTokens":5000,"cacheWriteTokens":0,"totalTokens":6200},"stream":[{"type":"chunk","chunk":{"type":"usage","usage":{"inputTokens":1000,"outputTokens":200}}}]}}',
+    'not json at all',
+    '{"type":"assistant/message","time":200,"data":{"turn":1,"step":2,"message":{"role":"assistant"},"usage":{"inputTokens":10,"outputTokens":5,"totalTokens":15}}}',
+    '{"type":"turn/end","data":{"turn":1}}',
+  ]
+  const parsed = parseUsageLines(lines)
+  assert.equal(parsed.length, 2, 'only assistant/message entries carry usage, one each')
+  assert.equal(parsed[0].model, '', 'no model declared yet')
+  const withModel = parseUsageLines([
+    '{"type":"session/request/context","data":{"model":"deepseek-v4.1-flash"}}',
+    '{"type":"assistant/message","data":{"usage":{"inputTokens":5,"outputTokens":1}}}',
+  ])
+  assert.equal(withModel[0].model, 'deepseek-v4.1-flash', 'model inherited from the request context')
+  assert.equal(parsed[0].cacheRead, 5000)
+  const totals = summarizeUsage(parsed)
+  assert.deepEqual({ calls: totals.calls, input: totals.input, output: totals.output, cacheRead: totals.cacheRead }, { calls: 2, input: 1010, output: 205, cacheRead: 5000 })
+  assert.equal(isSubscriptionModel('deepseek-v4.1-flash-coding'), true)
+  assert.equal(isSubscriptionModel('deepseek-v4.1-flash'), false)
+  const prices = [{ model: 'deepseek-v4.1-flash', input: 2, output: 8, cacheRead: 0.2 }]
+  assert.equal(priceOf(prices, 'unknown-model'), null)
+  const priced = costOf(prices, [{ model: 'deepseek-v4.1-flash', input: 1000000, output: 1000000, cacheRead: 1000000 }])
+  assert.equal(priced.cost, 10.2, '2 + 8 + 0.2 per million')
+  const unknown = costOf(prices, [{ model: 'mystery', input: 10, output: 10 }])
+  assert.equal(unknown.cost, null, 'unknown model must not be reported as zero')
+  const subscription = costOf(prices, [{ model: 'x-coding', input: 999999, output: 999999 }])
+  assert.equal(subscription.cost, 0, 'subscription channels cost nothing extra')
+})
+
 test('host: impact counts shell and db cases as runnable', async () => {
   const { casesOfTasks, impactSummary } = await import('../src/host/impact.js')
   const tasks = [
