@@ -58,7 +58,6 @@ flowchart LR
 
 截图不是手截的：`npm run shots`（`tools/visual/capture.mjs`）会登录面板、逐个页签截一遍，顺手断言没有「渲染失败」。
 
-
 ## 部署
 
 仓库：https://github.com/marsken88/dsh-studio（`main` 分支，含可直接安装的构建产物 `client.js`，clone 下来就能装，不用先构建）。
@@ -91,6 +90,18 @@ sudo systemctl restart dsh-web
 | `npm test` | 57 条契约：manifest、产物哈希、宿主接口、跨模块导入、只读绑定赋值、迁移与文档一致性、快捷键解析 |
 
 `pnpm build` 已串上守卫（`make-legacy → guard --pre → vite build → sync-client → guard --post`），CI 也会跑：忘记构建或写出上面两类样式，流水线直接红。
+
+## 更多文档
+
+| 想了解 | 看这里 |
+| --- | --- |
+| 登录与免登录（LDAP / 本地超管 / 会话落库） | [docs/auth.md](docs/auth.md) |
+| 界面实现（shadcn 对齐 / 构建链 / 布局一致性 / 暗色巡检） | [docs/ui.md](docs/ui.md) |
+| 第一天上手（三条命令，全新 clone 验过） | [docs/quickstart.md](docs/quickstart.md) |
+| 发版到插件市场 | [docs/publish.md](docs/publish.md) |
+| 宿主接口依赖与升级 runbook | [docs/compatibility.md](docs/compatibility.md) |
+| 过程记录（按日期的实现流水账） | [docs/history.md](docs/history.md) |
+| 每个版本改了什么 | [CHANGELOG.md](CHANGELOG.md) |
 
 ## 开发与兼容性
 
@@ -351,7 +362,6 @@ sudo systemctl restart dsh-web
 - **最近回归留痕**（2026-11-13）：每次批量跑完记一条（时间、谁跑的、几张卡 / 多少条、通过 / 不通过 / 自动开缺陷），保留最近 20 次，列在「用例」页的工具栏下方一行小 chip，有失败的那次标红；夜里定时跑的那批 `by=定时回归`，早上打开页面就知道昨晚跑成什么样。记录放在 SQLite 的 side 键里，不占 state、不涨 revision。
 - **跑之前平台自己先探环境**（2026-11-13）：开跑前对 `baseUrl` 发一个请求，连不上就直接回「测试环境「X」不可达（ECONNREFUSED）：一条用例都没跑」，**不会把整批用例刷成失败**。任何 HTTP 响应（含 404/500）都算活着——那是服务在跑，只是接口不对。
 
-
 ## shell 用例（默认关闭）
 
 用例除了打接口，还能跑一条命令并断言结果——补上「单测 / 脚本类」用例长期只能手工回填的缺口。
@@ -369,6 +379,7 @@ sudo systemctl restart dsh-web
 | `expectContains` / `expectNotContains` | 输出里必须出现 / 不能出现的内容 |
 
 两个入口：卡片抽屉用例区的 **「＋ shell」**（命令 + 期望输出两步录入），或调 `POST /studio-api/task/case` 直接写 `shell: { … }`。
+
 ## 数据库用例（默认关闭）
 
 第三种执行方式：对着一个 SQLite 库跑一条语句，断言行数与首行某列的值。适合「库存不能被扣成负数」这类只有查库才能确认的验收。
@@ -417,6 +428,7 @@ sudo systemctl restart dsh-web
 ```
 
 范围 1–500，写非法值会退回默认。
+
 ## 用例自动生成（从功能点长出来，不是凭空写）
 
 测试用例不用一条条手敲：需求拆了功能点、每个功能点带验收条件，平台就能照着生成。
@@ -629,32 +641,6 @@ DSH 的 web 只有一张登录 cookie，所有人共用；所以平台自己记�
 
 成本怎么来的（0.1.12 起）：宿主仍然没有把 usage 暴露给插件，所以改成自己读会话日志——`assistant/message` 上带 `usage`（入/出/缓存读/缓存写），模型名在请求上下文里继承。同一条消息里 usage 会出现两次（消息体 + 流式 chunk），只认消息上的那份。价目表要自己配，没配的模型花费记「未知」而不是 0。（`dsh-ui-usage-billing` 那类插件是自带解析器 + 价目表的）。要真算钱得先解决这两件事，已单开一张卡跟踪。
 
-## 过程记录（已移出）
-
-「哪一轮体检发现了什么、补了哪些入口、UI 怎么收尾」这类流水账挪到了 [docs/history.md](docs/history.md)；
-README 只留**现在是什么样**。每个版本对外改了什么看 [CHANGELOG.md](CHANGELOG.md)。
-
-## 已知限制
-
-- 多维表格镜像是**手动触发**的（`POST /studio-api/feishu/mirror`，支持 `dryRun` 先看会写多少条）：一条记录 = 一张卡，200 条一批串行写；表里要有「编号 / 标题 / 状态 / 负责人 / 优先级 / 需求 / 更新时间」这几列。**还没在真实表格上验证成功路径**——本机 lark-cli 未完成用户授权时，它会如实返回 authorization 错误而不是假成功。
-- GitLab 同步 Issue 与**关联 MR**（`/issues/:iid/related_merge_requests`）；卡上挂 MR 后「从 GitLab 核对」会拉 MR 详情、`/changes` 与 `/pipelines`（流水线状态进 `coding.gitlab`）。**不同步 MR 的评论**；MR 的合并/关闭状态要等下一次同步才反映到卡上。
-- 用例记录存在卡上（`task.cases`）：跨卡的**用例总览**页签可以勾选批量跑（结果回写各自卡、失败照旧开缺陷），也支持**回归套件**（`/suite/*`：按规则或手选固定一批，一键重跑，`by` 记「套件：名字」）。但还没有「回归套件」这个对象——固定的用例集合、一键重跑、历次通过率趋势都还没有，批量跑是临时勾选、跑完即散。
-- 缺陷卡的严重级别默认 `P2`、优先级 `normal`：自动建卡不猜严重程度，由人或在评论里改。
-- 派单失败会记在 `/studio-api/integrations` 与卡片抽屉里，并按 `agentRetryPlan` **自动重试**（间隔递增、有上限）；超过上限才挂阻塞等人。
-- 集成健康现在会**落盘保留最近一次结果**（SQLite 的 `meta:side:integration-health`，不进 state、不涨 revision、不占快照）：重启 dsh-web 后四条通道不再回到「还没用过」。仍然只是「最近一次」，没有按小时/按天的长期趋势（要趋势还得上采集）。
-- 工具层权限只认会话名（`studio-<taskId>-<expertId>`）：如果哪个 agent 用了别的会话名，就会被当成「名单外」拦下写操作，需要在审计里看一眼。
-- 同一张卡在同一列只自动派一次（防止来回循环），需要再跑一轮就点「马上处理」，或在评论里 `@` 它。
-- 并发上限是全局的（设置 → 自动派单 → 同时最多几个 agent，默认 2）：名额满了新卡就排队，把在跑的会话停掉或把上限调大即可。
-- 删掉卡片会自动收回它占用的名额（原来会留一个幽灵会话把并发名额占死，已修）。
-- 专家团是「团长 + @ 接棒」的协作模式；2026-11-13 起有**团级记忆**：卡推进到「完成」时自动记一条（做了什么、遗留什么），派活时把这个团最近 5 条塞进专家提示词；0.1.24 起**同一条经验出现 ≥2 次会提炼成「这次先规避」的约束**（记忆里反复踩的坑才会变成硬提示），避免同一批人反复踩同一个坑。记忆存在 SQLite 的 side 键里，最多每个团 20 条，可在「设置 → 专家团」里清空。
-- 新写或改写的技能对**已经开着的会话**不立即生效（技能目录在会话开始时枚举），开新会话或下一次派单即可看到。
-- 「从链接拉飞书正文」与「产物归档到飞书云盘」都依赖宿主机的 `lark-cli` 与有效的用户授权；`auth status` 里 user 不是 ready 时页面会提示，按提示重新授权即可。
-- 归档出来的是云盘里的 Markdown 文件，不是飞书在线文档：同事能打开、能下载、能被搜索，但不能在线协同编辑与评论；正文由平台覆盖更新，人工在飞书上改的内容下次覆盖会丢。
-- 归档是同步写：一次要写很多产物时（比如批量补历史）会挨个调 `lark-cli`，几十份文档需要十几秒到几十秒。
-- 需求基线是快照：2026-11-13 起可以**逐行对比**「基线 vs 最新 PRD」（只读，`web/src/studio/diff.js` 的 LCS），但**不能回滚**——要回到旧版得把旧正文重新贴一份再设为基线；需求的评审仍是人工点按钮，没有独立审批流。
-- AI Coding 执行记录由 agent/人登记；卡上挂了 MR 后「从 GitLab 核对」（`/coding/gitlab`）会拉 MR 详情、`/changes`（改动文件清单 + 提交数）与 `/pipelines` 做事实比对。**仍缺**：提交列表逐条、单测结果、CI 产物——这几项目前只有上报值，没有仓库侧证据。下一步可用 `glab mr diff` + 流水线接口做自动回填。
-- 「业务负责人」与「期望完成」是可选项：没填时抽屉里显示「未指派」/「未排期」，不是数据丢失；需要时补上再点「保存改动」。
-
 ## 卡片详情（抽屉）布局 与 用例结果展示（2026-11-08）
 
 抽屉原来是一条到底的单列，内容一多就要滚很久。现在：
@@ -696,8 +682,11 @@ README 只留**现在是什么样**。每个版本对外改了什么看 [CHANGEL
 - 接口：`POST /requirement/matrix {id}` 返回 `{ points, loose, summary }`；`GET /state` 里的需求带 `points`（正文之外的字段都带）。
 - agent 侧：`studio_requirement_get` 返回 `matrix`，`studio_task_create` / `studio_task_update` 支持 `pointId`，`studio_task_case` 的 `cases[]` 也支持 `pointId`。
 
-## 准出规则与验收签字（2026-11-08）
+## 准出与验收（卡片 / 需求）
 
+两张门：一张管卡（taskExitGate），一张管整条需求（requirementGate）。
+
+### 卡片准出
 「已完成」不是拖过去就算完，而是过一道门（`taskExitGate`）：
 
 **拦截项（blockers，必须清掉）**
@@ -719,8 +708,7 @@ README 只留**现在是什么样**。每个版本对外改了什么看 [CHANGEL
 - 接口：`POST /task/gate {id}` 返回 `{ gate, signoff }`；`POST /task/signoff {id, action:'sign'|'clear', note, by}`。
 - agent 侧：`studio_task_signoff`；`studio_task_update` 支持 `override`。
 
-## 需求准出与验收签字（管理到每一条需求）
-
+### 需求准出
 卡片门禁只管一张卡；「这条需求能不能交付」是另一道门（`requirementGate`）。
 
 **拦截项（blockers）**
@@ -796,344 +784,6 @@ node /tmp/verify-dashboard.mjs  # 工作台风险计数 / flaky 不开缺陷 / �
 
 复验：`tools/verify-deploy-envs.mjs`（23/23 PASS：出厂三环境、改名后 id 稳定、登记只留痕不动状态、未知环境被拒、版本与需求都带足迹、收尾还原环境与版本数）。
 
-
-
-
-
-## 统一登录（LDAP，2026-11-09）
-
-平台自己不做密码库：账号和密码交给目录服务验证，验过之后把用户名记下来，归属和审计都挂在这个名字上。
-
-### 配置
-- `config.ldap = { enabled, url, baseDN, bindDN, bindPassword, userFilter, nameAttr, mailAttr, deptAttr, defaultRole, requireLogin, timeoutMs }`：
-  - `url` 必须是 `ldap://` 或 `ldaps://`；`userFilter` 里必须带 `{user}`（登录时替换成输入的用户名，且已经按 RFC 2254 转义 `\ * ( ) \0`）；
-  - `nameAttr` / `mailAttr` / `deptAttr` 决定显示名、邮箱、部门取哪个属性（AD 一般是 `displayName` / `mail` / `department`）；
-  - `requireLogin` 才是「锁门」，`enabled` 只表示启用登录（可以先配好、后开门）。
-- **服务账号密码只存在 `~/.dsh/dsh-studio.secrets.json`（0600）**：`/state` 里只有 `bindPasswordSet: true/false`，导出、快照、日志里都没有明文；保存时不传密码就沿用旧密码，要清掉得显式传 `clearBindPassword: true`。
-- 依赖系统里有 `ldapsearch`（Ubuntu：`apt-get install ldap-utils`），实现走 `ldapsearch -y <0600 临时文件>`，密码不出现在进程参数里，用完即删。
-
-### 登录与会话
-- `POST /auth/login { username, password, mode }`：`mode` 有三个值——
-  - `'ldap'`：只走目录（`userFilter` 查人 → 用这个人的 DN 重新绑一次验密码）；
-  - `'local'`：只走本地超管（scrypt 哈希比对），失败直接 401 并给出「本地超管的账号或口令不对…」；
-  - 不传（老调用方）：先本地、后目录，即目录故障时超管能兜底。
-  成功后返回 `{ token, expiresAt, user }`。
-- 会话是内存里的 `Map`（12 小时过期），请求头 `x-studio-session: <token>`；重启服务会话即失效，需要重新登录。
-- `GET /auth/me` 查当前会话，`POST /auth/logout` 主动销毁。
-- 首次登录把用户写进 `config.users`（`{ id, name, mail, dept, dn, role, source:'ldap', firstLoginAt, lastLoginAt, loginCount, lastIp }`），之后只更新登录次数与最近时间——这就是「获取正确的用户名并记录」。
-- 登录成功/失败都进审计日志（`登录失败` / `LDAP 登录成功` / `本地超管登录成功`）。
-
-### 锁门行为（requireLogin = true）
-- 未登录访问业务接口 → `401 { code: 'login_required' }`。
-- 未登录访问 `/state` → 200 但只回 `{ ok: true, locked: true, state: { revision, config, tasks: [], requirements: [], releases: [] } }`，前端据此渲染登录框（不进看板）。
-- 开放集合只有：`/`、`/state`、`/auth/login`、`/auth/me`、`/auth/logout`、`/auth/ldap/test`。
-
-### 界面
-- 登录框顶部是**两档切换**：`LDAP 账号` / `本地超管`，下面只有**一个**「登录」按钮，文案跟着当前档变（「登录（LDAP）」/「登录（本地超管）」）。
-  - 切到 `本地超管`：账号自动填成 `localAuth.username`（默认 `admin`），密码框占位提示「默认口令 admin」，回车即提交；
-  - LDAP 没启用时 `LDAP 账号` 那一档是禁用态，默认落在 `本地超管`；
-  - 失败提示分档：本地侧给「本地超管的账号或口令不对（账号 admin，还没改过口令就是默认的 admin）」，目录侧给中文原因。
-- 登录后页头 `👤` 显示「超级管理员」（本地）或 LDAP 的显示名，旁边是「退出登录」。
-- 设置 →「安全」→「统一登录（LDAP）」：启用、必须登录、服务器、超时、BASE DN、服务账号 DN、密码（已保存则留空表示不改）、过滤器、三个属性名；**「测试连接」**逐条给出「绑定服务账号 / 查人 / 验密码」的结果与耗时；底部列出登录过的人及次数。
-- 登录框只有开启「必须登录」时才强制出现；只开 `enabled` 时行为与以前一致。
-
-### 联调记录与网络前提（2026-11-09）
-- 本机用临时 slapd（`dc=test,dc=local`，`alice/Passw0rd!`、`bob/BobPass123`）跑过 `tools/verify-ldap.mjs`：**23/23 PASS**（配置写入、状态里无明文、测试连接、登录成功、显示名/邮箱/部门、users 记录、`/auth/me`、错密码 `badpass`、不存在 `notfound`、锁门 `/state` 与 401、带会话可访问、退出后失效、收尾关开关）；联调用的 slapd 与测试账号已卸载清空。
-- **公司 LDAP（`ldap.<公司域>:389`）从目标机不可达**（解析到内网地址，ping 全丢、TCP 389 不通，`ldapsearch` 超时）。真实参数已经写进配置（`url / baseDN / bindDN / 密码`），但 `enabled` 与 `requireLogin` **都关着**：等这台机器能访问目录服务（内网路由 / VPN / 防火墙放行 389），到设置里点「测试连接」通过后再打开开关，否则会把所有人锁在门外。
-- `parseLdif` 支持 RFC 2849 的 `attr:: base64`（AD 的中文 `displayName` 就是这样编码的）；`ldapsearch` 的过滤器必须排在属性**前面**，否则会被当成属性名、搜索退化成 `(objectClass=*)` 并触发 `Size limit exceeded`。
-
-## 本地超管账号与免登录（2026-11-09）
-
-登录界面一直都在（`LoginGate`），但**默认不需要登录**：没有配置 LDAP 的时候，平台直接以本地超管身份运行，写操作和审计都记在它名下。
-
-### 默认账号
-
-- 账号 `admin`，口令 `admin`（`config.localAuth.password === null` 表示「还是默认口令」，这样默认值稳定、不随服务启动变化）。
-- 改过密码之后，库里只存 `{ salt, hash, at }`（`scryptSync` + 16 字节随机盐），`/state` 只下发 `{ enabled, username, hasPassword, mustChange, updatedAt }`，**永远不下发口令或哈希**。
-- 官方建议：进「设置 → 安全 → 统一登录（LDAP）」把默认口令改掉，或直接点一下「重置为默认口令」（需要知道当前口令）。
-
-### 什么时候要登录
-
-`locked = ldap.enabled && ldap.requireLogin`：
-
-| LDAP 启用 | 必须登录 | 行为 |
-| --- | --- | --- |
-| 否 | 否 | **免登录**，请求算「超管 admin」，页头显示 `👤 超管 admin` + 「登录」按钮（可选用域账号登录） |
-| 是 | 否 | 免登录，但可以主动点「登录」换成个人身份 |
-| 是 | 是 | 弹登录框；LDAP 账号或本地超管都能登 |
-
-### 接口
-
-- `POST /auth/login { username, password }`：**先试本地超管**（用户名大小写不敏感），不匹配再走 LDAP；本地成功返回 `user.source = 'local'`、`role = 'admin'`。
-- `POST /auth/password { currentPassword, newPassword }`：改超管口令（新口令 ≥ 8 位）；`{ currentPassword, reset: true }` 重置回默认口令。
-- `GET /auth/me`、`POST /auth/logout` 不变。
-
-### 身份解析（谁写的、记谁）
-
-`resolveActor(req, config)`：有会话 → 会话里的显示名；没锁门 → 本地超管（`超管 admin`）；锁门且没会话 → 空（由权限检查拦）。请求管线和审计包装层都用它，所以免登录时的写操作不会记成匿名或请求头里的假名字。
-
-会话里直接带了 `{ userId, name, role, source }`，`sessionOf()` 不再要求这个人出现在 `config.users` 里——本地超管本来就不在 LDAP 名册中。
-
-### 界面
-
-- 页头：未登录显示 `👤 超管 admin` + 「登录」；登录后显示 `👤 姓名` + 「退出登录」（退出后回到超管身份）。
-- 登录框：提示「也可以用它自己的超管账号（本地）：admin」；LDAP 没启用时底部写「LDAP 还没启用：直接用超管账号登录」，并有「先不登录」按钮（免登录模式下可随时关掉）。
-- 设置 → 安全 →「统一登录（LDAP）」：最上面一块是「本地超管账号」，显示当前账号、是否已设密码，可改密码。
-
-### 验证
-
-`tools/verify-auth.mjs`（在 `.218` 上 `node /tmp/verify-auth.mjs`）**22/22 PASS**：默认不锁、下发 `localAuth` 不含口令、`admin/admin` 能登录、`/auth/me`、带会话写卡审计记「超级管理员」、不带会话写卡审计记「超管 admin」、错口令 401、改口令后旧口令失效新口令可用、短口令被拒、重置回默认、用户名大小写不敏感、清理测试卡后状态回基线。
-
-## 样式对齐 shadcn/ui（2026-11-09）
-
-参考 <https://ui.shadcn.com/> 的默认主题（zinc / neutral），把整套界面换成它的视觉语言。
-**没有引入 Tailwind，也没有加构建步骤**——仍然是一个 `client.js`，在原有 `<style>` 末尾追加
-一层「token + 组件规则」，用同名变量覆盖旧样式，所以不会破坏既有功能。
-
-### 为什么不是直接装 shadcn 组件
-
-shadcn 是「把 React + Tailwind 源码拷进项目」的分发方式，需要构建管线（Tailwind 编译、
-tsconfig 路径别名、Radix 依赖）。这个插件是宿主里的单文件 bundle（`window.__ModuleLoader__`
-+ `React.createElement`），加构建会破坏现在的零依赖部署方式。因此这里对齐的是**设计系统本身**：
-同一套 CSS 变量名、同一套圆角/描边/阴影/焦点环尺度、同样的组件外观。
-
-### Token
-
-```css
-[data-dsh-studio][data-theme="light"] {
-  --background:#fafafa; --foreground:#09090b;
-  --card:#ffffff;       --primary:#18181b; --primary-foreground:#fafafa;
-  --secondary:#f4f4f5;  --muted:#f4f4f5;  --muted-foreground:#71717a;
-  --destructive:#dc2626; --border:#e4e4e7; --input:#e4e4e7; --ring:#a1a1aa;
-}
-[data-dsh-studio][data-theme="dark"] {
-  --background:#09090b; --foreground:#fafafa;
-  --card:#111113;       --primary:#fafafa; --primary-foreground:#18181b;
-  --secondary:#1b1b1f;  --muted:#1b1b1f;  --muted-foreground:#a1a1aa;
-  --destructive:#ef4444; --border:#27272a; --input:#27272a; --ring:#52525b;
-}
-```
-
-旧的 `--ds-*` 变量保留，但都指向新 token（`--ds-bg→--background`、`--ds-surface→--card`、
-`--ds-surface-2→--muted`、`--ds-line→--border`、`--ds-accent→--primary`、`--ds-shadow`），
-所以几百处既有样式不用改。统一圆角 `--radius:10px`。
-
-### 逐项检查过的组件
-
-| 组件 | 处理 |
-| --- | --- |
-| 按钮 `.ds-btn` | shadcn `Button` 默认档：32px 高、12px 内边距、1px `--input` 描边、`--card` 底、`--muted` hover、圆角 10、`--ds-shadow` |
-| 主按钮 `.ds-btn-primary` | `bg-primary + text-primary-foreground`（浅色近黑、深色近白） |
-| 幽灵按钮 `.ds-btn-ghost` | 透明底、hover 出 `--muted`，用于「退出登录 / 导出」 |
-| 输入框 `.ds-input/.ds-select/.ds-textarea` | 1px `--input`、32px 高、hover 变 `--ring`、focus 出 `0 0 0 3px ring/35%` 光晕 |
-| 卡片/面板 `.ds-panel/.ds-card/.ds-kpi` | `--card` 底 + 1px `--border` + `--ds-shadow`，圆角 12 |
-| 徽标 `.ds-chip` | 21px 高胶囊，`--secondary` 底 + `--border`，语义色（缺陷/超时/通过）保留色相 |
-| 页签 `.ds-tabs/.ds-tab` | shadcn `Tabs` 胶囊：`--muted` 容器，选中项 `--card` + 阴影 |
-| 分段控件 `.ds-seg` | 同款胶囊，用于主题三档与登录方式切换 |
-| 看板 `.ds-col/.ds-card` | 列底 `--muted` + 描边；卡片白底、13px 标题、11px 元信息 |
-| 抽屉/弹窗 `.ds-side/.ds-drawer/.ds-modal` | `--card` 底、1px 描边、大阴影、遮罩 `rgb(9 9 11 / .5)` |
-| 表格化行 `.ds-listrow/.ds-doc-row/.ds-audit-row` | 行间 1px `--border`，hover 出 `--muted` |
-| 登录卡 | `Card` 同款：描边 + 20px 阴影 + 圆角 14 |
-| 焦点环 | 全局 `:focus-visible` → `2px solid --ring`，offset 2（键盘可达性那层仍然生效） |
-| 滚动条 | 拇指用 `foreground 20%/32%` 透明色，两套主题都可见 |
-
-### 验证
-
-- 浅色：工作台（KPI、分区、清单）、看板（列/卡片/徽标）、项目卡、设置-专家列表逐一截图核对。
-- 深色：截图整页平均亮度 **23.2**（浅色约 **246**），卡片/描边/文字在 `#09090b` 上可读。
-- 登录页、抽屉、表单沿用同一套 token，未单独写样式分支。
-## 构建链：真实 shadcn/ui（2026-11-09）
-
-前面几版是「手写一套 shadcn 风格 CSS」。现在 `dsh-studio/web/` 是一个真正的 Vite + Tailwind + Radix 工程，组件按 shadcn 官网源码 vendored 进来。
-
-### 为什么需要构建，以及为什么要桥接
-
-- 宿主只提供 `window.__ModuleLoader__.load({ id, factory })` 这个入口，`factory` 里 `require('react')` 拿到的是**宿主的 React**。
-- shadcn/Radix 需要 React 18 的 hooks dispatcher，且组件在自己的树里跑；两棵 React 树不能共享渲染。
-- 所以：React 打进插件自己的 bundle，宿主那边只渲染一个**类组件桥**（`web/src/bridge.jsx`，无 hooks），桥里用一个 `div`（`display:contents`）承载我们自己的 `createRoot`。两棵树互不干扰，元素对象靠 `Symbol.for('react.element')` 互通。
-
-### 目录
-
-| 路径 | 作用 |
-| --- | --- |
-| `web/vite.config.mjs` | IIFE、单文件 `../dist/client.js`、`cssCodeSplit:false`、`inlineDynamicImports` |
-| `web/tailwind.config.js` | `corePlugins.preflight=false`（CSS 会注入宿主页面，不能带全局 reset）、`darkMode:['selector','[data-theme="dark"]']`、颜色映射到 shadcn 的 HSL 变量 |
-| `web/src/index.css` | shadcn token（浅/深两套），作用域限定在 `[data-dsh-studio]` 与 `[data-dsh-studio-portal]`（Radix 浮层会被传送到 `<body>`） |
-| `web/src/components/ui.jsx` | vendored 原子组件：Button/Input/Textarea/Label/Card/Badge/Tabs/Dialog/Switch/Checkbox |
-| `web/src/components/login-gate.jsx` | 第一个真正替换的界面：登录卡片（Card + Tabs + Input + Button） |
-| `web/src/bridge.jsx` | 宿主 React ↔ 自带 React 的类组件桥 |
-| `web/src/main.jsx` | 入口：注入 Tailwind CSS、注册 `window.__ModuleLoader__.load` |
-| `web/scripts/make-legacy.mjs` | 把 `dsh-studio/client.src.js`（手写源码）转成 `web/src/legacy.js`（去掉 loader 包装，导出 `createStudio(React, h)`） |
-| `web/scripts/sync-client.mjs` | 构建后把 `dist/client.js` 复制回包根的 `client.js`，保证「仓库里的 `client.js` = 线上实际加载的那份」 |
-
-### 构建与部署
-
-```bash
-cd dsh-studio/web
-pnpm install          # pnpm 10 默认拦 esbuild 的构建脚本，首次可能提示 approve-builds
-pnpm build            # make-legacy → vite build → sync-client，一次跑完
-```
-
-三个文件的关系：
-
-| 文件 | 是什么 | 谁读它 |
-| --- | --- | --- |
-| `client.src.js` | 手写的单文件源码（约 520 KB，前端逻辑全量实现） | 构建第一步 `make-legacy.mjs` 读它生成 `web/src/legacy.js` |
-| `dist/client.js` | Vite 产物：单文件 IIFE，React 与 CSS 都打进（约 696 KB / gzip 207 KB） | 部署时上传它就是根目录 `client.js` 的来源 |
-| `client.js`（包根） | 构建产物的副本，由 `sync-client.mjs` 写出 | DSH 按 `package.json` 的 `./client` 导出加载它 |
-
-所以：**只改前端逻辑 → 改 `client.src.js`；改样式/组件 → 改 `web/src/**`**；两边都要在 `web/` 里跑一次 `pnpm build`，根目录 `client.js` 会自动同步，然后提交。
-
-部署到另一台机器只需要 `index.js` + `dist/client.js` + 整个 `src/host`：用 `node tools/deploy.mjs`（目标机、账号从环境变量传，脚本会备份、自检、`active` 不对就非零退出），具体命令见 `docs/quickstart.md`。
-
-### 已验证
-
-- 构建产物 `526 kB`（gzip 161 kB），单文件、无独立 CSS 资源。
-- Chrome 实测：刷新后登录卡是新组件（胶囊页签 + 圆角输入框 + 黑色主按钮），切「本地超管」后直接打字即可，`admin`/`admin` 登录进入工作台，主题切换与看板正常。
-﻿
----
-
-## 对话框与列表行（2026-11-10）
-
-原生 `window.confirm` / `window.prompt` 已全部换成 shadcn 风格的 Radix Dialog，23 处调用点（删除卡/需求/版本/专家/专家团/环境/项目/仓库/机器人/技能/文档/功能点、市场移除、插件装卸、清空审计、快照回滚、worktree 回收、标记阻塞、改领域、强制发布、回滚原因、评审打回）。
-
-- `web/src/components/studio-ui.jsx` 的 `DialogBox({ open, title, message, danger, okText, cancelText, input, value, placeholder, onChange, onOk, onCancel })`：标题 + 说明 + 「取消 / 确定」，`danger` 时确定按钮用破坏色，`input` 为真时带 3 行文本域（用于「强制发布原因」「回滚原因」这类需要写理由的场合）。
-- `client.js` 的 `confirmDialog(message, options)` / `promptDialog(message, options)` 返回 Promise，`DialogHost` 挂在工作区根节点上；没有 UIKIT 时自动回落原生弹窗，保证纯单文件产物仍可用。
-- 列表行统一：`.ds-listrow` 内按钮 26px 高、幽灵按钮 hover 才显形；`[data-danger="1"]` 的按钮红字 + 淡红 hover；`.ds-audit-row` 行高 7/14；窄屏（≤900px）缩小 spark 日期字号、≤760px 隔天显示，避免 14 个标签挤成一排。
-
-### 踩过的坑：Radix 门户跑出作用域
-
-Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fixed …`；而 Radix 的 Portal 默认挂到 `document.body`，门户里的元素不在这个子树里，定位类全部失效，弹窗会掉到页面末尾变成一段普通文本流（UIA 能读到文字、肉眼看不见）。
-
-修法两处：① 作用域插件同时产出 `[data-dsh-studio-portal] …` 前缀；② `studio-ui.jsx` 提供 `portalRoot()` 懒创建一个带 `data-dsh-studio-portal` + `data-theme` 的容器，四个 Portal（Dialog ×2、Select、Tooltip）都用 `container={portalRoot()}` 挂进去，明暗主题随工作区同步。
-﻿
----
-
-## 登录会话落库（2026-11-10）
-
-之前会话只存在服务端内存 `Map` 里，**每次部署重启都会把所有人踢下线**。现在会话同时写进 SQLite：
-
-- 新表 `sessions(token TEXT PRIMARY KEY, user_id, name, role, source, at, expires_at, ip)`，跟状态库同一个文件（`~/.dsh/dsh-studio.db`）。
-- `issueSession()` 发牌时既写内存也写库；`/auth/logout`、过期清理都会同时删两边；启动后第一次请求时把未过期的会话读回内存。
-- 会话仍然 12 小时过期，`source` 区分 `local`（内置超管）与 `ldap`（域账号），审计与卡片归属照旧读会话里的名字。
-
-### 踩过的坑：`attachSessionStore` 挂得太早
-
-`registerRoutes()` 是同步调用的，那时 `#boot()` 里的 `await import('node:sqlite')` 还没跑完，`store.db` 仍是 `null`——如果此时就记下「store 已挂载」，之后永远不会再读库，会话看起来「写进去了但恢复不出来」（`sessions` 表里有行、`/auth/me` 仍报 `login_required`）。
-
-修法：`attachSessionStore()` 见到 `store.db === null` 直接返回，不设标记；请求管线里 `await store.ready` 之后再 `if (SESSION_STORE === null) attachSessionStore(store)`，这样第一次请求一定能把库里的会话装回来。
-
-验证：登录拿到 token → `systemctl restart dsh-web` → 同一个 token 调 `/auth/me` 仍返回 `{ok:true,user:{id:'admin',role:'admin',source:'local'}}`。
-﻿
-### 卡片详情页签也换成 shadcn Tabs（2026-11-10）
-
-抽屉顶部原来是自己画的下划线页签（`.ds-dw-tabs` + `<button>`），现在有 UIKIT 时走 `TabsBar`：
-
-- `TabsBar` 的 `items` 支持 `{ id, label, count }`，`count` 会渲染成小号计数徽章（「讨论 3」这种），空值不显示；
-- 抽屉里的 7 个页签（概览 / 内容 / 计划 / 交付物 / 测试 / 执行记录 / 讨论）通过 `kit('TabsBar')` 渲染，键盘左右键可在页签间切换；
-- 没有 UIKIT 时仍回落原来的 `.ds-dw-tabs` 按钮组，单文件产物不会失样式。
-
-验证：Chrome 里点开看板任意一张卡，UIA 能枚举到 7 个 `TabItem`（含「讨论 3」的计数），切换页签内容正常刷新。
-﻿
-### 燃尽改成折线面积图（2026-11-10）
-
-效能页「燃尽（近 14 天剩余）」原来画柱子，剩余量常年是 0–2 张时柱高被 `min-height:2px` 压成一排小横线，看不出趋势。现在改成内联 SVG：
-
-- `client.js` 新增 `BurnChart({ series })`：`viewBox="0 0 100 40"` + `preserveAspectRatio="none"`，`y = 38 - (remaining / max) * 32`，折线用 `path` 拼 `M/L`，面积是折线闭合到基线后填充 14% 主色；
-- 每个点有 `circle` + `<title>`（悬停显示「11-05：还剩 3 张」），底部左右各标一个日期（首日 / 末日）；
-- CSS：`[data-dsh-studio] .ds-burn-svg { height:84px }`、`.ds-burn-area { fill: color-mix(in srgb, var(--ds-accent) 14%, transparent) }`、`.ds-burn-line { stroke: var(--ds-accent); stroke-width:1.6 }`、`.ds-burn-axis` 两端对齐 10.5px muted 文字。
-- 顺手给卡片详情页签补了轨道外观：`.ds-dw-shadcn-tabs [role="tablist"]` 28px 高、`var(--muted)` 底、`radius 8px`，`[role="tab"]` 24px 高 / 11.5px。
-
-验证：构建 625.33 kB / gzip 189.42 kB，01:20:01 部署；效能页截图确认折线 + 面积 + 日期轴正常，抽屉里 7 个页签是 Radix TabItem（含「讨论 3」计数），切页正常。
-﻿
-### 成本预算条换成 Radix Progress（2026-11-10）
-
-效能页「AI 执行成本」里的预算条原来是自绘的 `.ds-an-track` + `.ds-an-fill`，现在走 UIKIT：
-
-- `web/src/components/studio-ui.jsx` 新增 `ProgressBar({ value, tone })`：`ProgressPrimitive.Root`（`h-2 rounded-full bg-muted`）+ `Indicator`（`translateX(-${100-pct}%)`），`tone` 取 `over` 用 `bg-destructive`、`warn` 用 `bg-amber-500`、否则 `bg-primary`；
-- `client.js` 新增适配器 `ProgressField({ value, tone })`：有 `kit('ProgressBar')` 用 Radix，没有就回落原来的 `ds-an-track` 自绘条（单文件产物仍可用）；
-- 预算面板调用改成 `h(ProgressField, { value: Math.min(100, Math.max(runRate, hourRate)), tone: costs.budget.level })`。
-
-验证：构建 653794 字节部署（01:24），效能页预算条正常显示（3/500 次 · 1/80 小时），产物里 `role="progressbar"` 只出现一次（说明走的是 Radix 版本，回退分支不含该属性）。
-﻿
-### 关键按钮的 Tooltip 与看板状态点（2026-11-10）
-
-- `client.js` 新增 `tipOf(label, node)`：有 UIKIT 时用 Radix `Tip`（250ms 延迟、深色气泡 + 箭头、门户挂 `[data-dsh-studio-portal]`），同时**保留原生 `title`** 作为兜底（单文件产物 / 宿主没有 UIKIT 时也有提示）。
-- 挂上的四处：抽屉里「AI 失败 N 次 · 重新派单」、执行记录「核对代码事实」、版本详情「强制发布」、页头「退出登录」。
-- 看板卡片状态点改成有语义的颜色：`[data-running="1"]::after` 绿色（浅色 `hsl(152 62% 38%)` / 深色 `hsl(152 60% 56%)`）+ 光晕；`[data-blocked="1"]::after` 红色圆点（与红色描边、淡红底一起表示阻塞）；两者同时存在时按阻塞显示红色。
-- 之前用 `--primary`（近黑）画运行中圆点，浅色下几乎看不见，这次换成绿色后一眼能分辨。
-
-验证：构建 626.46 kB / gzip 189.82 kB，01:34 部署；看板截图里能看到开发中卡片右上角的绿色运行点，阻塞卡片是红点 + 红描边。
-﻿## 悬停说明与评论编辑区（2026-11-10）
-
-### 三种提示写法
-- `tipOf(label, node)`：给已有按钮/链接补一个 help 光标的气泡，同时保留原生 `title`（浏览器提示是兜底，Radix 气泡是主视觉）。
-- `tipLabel(text, hint)`：表单标签专用，返回 `.ds-label`（`cursor:help`）再包 `tipOf`；`hint` 为空时退化成普通标签。
-- `web/src/components/studio-ui.jsx` 里的内部 `Hint`：`TabsBar` 的 `item.hint` 走它——`TooltipProvider delayDuration={260}` + `Portal container={portalRoot()}`，所以抽屉/上下文中都能正常定位。
-
-覆盖范围：顶部 8 个页签、卡片详情 7 个页签、设置左导航全部条目、12 个行内/关键按钮、9 个容易填错的字段（Agent 预设、沙箱档位、角色位、业务领域、Coding Agent、单测总数、通过数、baseUrl、连续失败几次后升级）。
-
-### 评论编辑区
-- 结构：`.ds-composer`（外框 + `focus-within` 时的 3px 淡环）内放 `TextAreaField`，下面是 `.ds-composer-bar`（左提示、中间字数、右发表按钮）。
-- 快捷键：`Ctrl/⌘ + Enter` 直接发送；`@` 仍会唤起专家联想（↑↓ 选择、Enter 补全、Esc 关闭）。
-- `.ds-composer .ds-textarea` 去掉了自身边框/阴影/背景，让外框承担视觉。
-- 提示文案：`Markdown 可用 · 打 @ 派活 · Ctrl/⌘+Enter 发送`；空内容时右侧显示「还没写」，有内容显示字数。
-
-﻿## 轻提示（toast）（2026-11-10）
-
-保存、同步、归档这类动作的结果原来只写在各面板自己的小字里，面板一滚或一切页签就看不见了。现在多一层右下角的轻提示：
-
-- `toast(text, tone = 'success', ttl = 3200)`：右上角勾/感叹号图标区分成功与失败，3.2 秒自动消失；`dismissToast(id)` 可提前关；点提示上的 × 也能关。
-- 宿主是 `ToastHost`，挂在 `StudioPage` 根部（紧跟 `DialogHost`），只订阅 `TOAST_LISTENERS`，不持有业务状态；同一时刻的多条会纵向堆叠。
-- 样式在 `web/src/index.css`：`.ds-toasts` 固定右下 `z-index:120`、`pointer-events:none`（只有提示本身可点），`.ds-toast` 用 `--card` 底 + `--border` 描边 + 大阴影，`[data-tone="error"]` 换红描边与红图标。
-- 已接上的位置：专家/专家团/技能保存、部署环境保存、测试连接结果、云盘归档结果，以及三处 `catch` 分支（失败原因既写面板内小字、也弹一条红提示）。
-- 版本页的保存/发布/回滚/登记部署/灰度/挂卡全部走 `act(path, body, done)`，`done` 文案会同时进页面小条和 toast。
-- 需求页：正文保存、状态切换、签字/取消签字、排序与依赖保存。
-- 面板内的 `.ds-ok` / `.ds-err` 同时改成「图标 + 文字」的药丸（成功绿、失败红，深色主题各有一版），和 toast 的观感一致；`::before` 用 `content` 画 ✓ / !，不需要额外标签。
-
-
-
-### 发布门禁的操作区（2026-11-10）
-- 原来四个按钮平铺一行、主次不分；现在分成两段：左边「生成发布说明 / 审批通过」（辅助动作），右边「发布（主按钮）/ 强制发布（琥珀色描边）」，已发布状态右侧多一个「回滚」。
-- 容器是 `.ds-action-bar`：`space-between` + 顶部细线分隔，`.ds-action-bar-right` 用 `margin-left:auto` 贴右；窄屏自动换行。
-- 「强制发布」用 `data-force="1"` 单独配色（浅色 #b45309、深色 #fbbf24 文字 + 琥珀描边），不再是 ghost 灰按钮，避免和「取消」类混淆。
-
-### toast 去重
-- 同一个动作可能在极短时间内触发两次（按钮重复绑定、`onBlur` 与 `onClick` 各跑一遍等）。`toast()` 现在记住上一条文案与时间，600ms 内相同文案直接吞掉。
-- 实测：「生成发布说明」原来会在右下角堆两条一模一样的提示，加去重后只弹一条（2026-11-10 02:57 截图确认）。
-
-### 需求页的操作区（2026-11-10）
-- 需求抬头右侧从「状态下拉 + 编辑 + 删除（同等份量）」改成：状态下拉（宽度收窄）→ 编辑（常规按钮）→ 删除（红色 ghost）。
-- 评审面板里的「打回」也改成红色 ghost；「提交评审 / 评审通过」仍是主按钮。这样一屏里只有一个主操作，破坏性动作永远是弱化的红字。
-- CSS 新增 `.ds-req-actions`（flex + gap 8 + 窄状态下拉）与 `.ds-btn-ghost[data-danger="1"]`（红字红边，深色版用 #fca5a5）。
-
-### 按钮主次与深色表面（2026-11-10）
-- 主按钮 `.ds-btn-primary`、次级 `.ds-btn-ghost`、危险 `[data-danger="1"]`、警告 `[data-warn="1"]` 全部改用**实色**（不依赖 `hsl(var(--primary))`）。原因：变量在部分子树（尤其 Radix Portal）里解析不到，主按钮会退回成纯文字，主次看不出来。
-- 卡片详情「推进到」按列的先后自动分级：下一列是主按钮，往前退的列是 ghost，其余常规；「标记阻塞」是琥珀色警告，解除阻塞里的「只解除，先不派」是 ghost。
-- **Portal 要同时带两个属性**：抽屉/弹窗挂在 `document.body` 下，只带 `[data-dsh-studio-portal]` 时所有以 `[data-dsh-studio]` 为前缀的既有样式（按钮、chip、表单行）都不生效。现在 `portalRoot()` 会同时设置 `data-dsh-studio` 与 `data-dsh-studio-portal`，并用 `[data-dsh-studio]:not([data-dsh-studio-portal])` 读取主树的主题，避免自引用把主题锁死。
-- 深色主题下补了 legacy 的表面变量（`--ds-surface:#181b22`、`--ds-surface-2:#1e222a`、`--ds-line:#2c323d`）：legacy CSS 把 `--ds-surface` 写死成 `#ffffff`，导致抽屉在暗色下依然是白底。
-
-### 空状态统一（2026-11-10）
-- 面板里「还没有… / 暂无… / 没有可用的…」这类说明行统一用 `.ds-empty`：虚线框 + 淡底 + 居中 12px 文案，取代原来 40% 透明度的小灰字（对比度太低，容易被当成没加载出来）。
-- 本轮把 20 处 `className: 'ds-hint'` 的说明行换成 `.ds-empty`（专家/专家团/技能/机器人/项目/迭代/环境/成员/审计/评论等），加上原有的 5 处，全站 25 处空状态外观一致。
-- 需要「标题 + 说明」两级时用 `.ds-empty-title`（12.5px/600、前景色），正文仍走 `.ds-empty` 的 muted 色。
-
-### 项目页与市场页的卡片（2026-11-10）
-- 项目页原来三张卡被挤成 ~145px 的窄列（外层容器参与父级网格导致），现在用 `.ds-body:has(> .ds-proj-grid){display:block;width:100%}` 回到整行布局，每张项目卡占满一行，统计项与清单进度条不再换行挤压。
-- 项目卡、市场卡统一 shadcn Card 的解剖：`1px var(--border)` + `calc(var(--radius) - 1px)` 圆角 + `var(--ds-shadow)`，hover 时描边加深 + 抬起阴影；卡头（`.ds-proj-head/.ds-mc-head`）flex 对齐，标题 13px/600。
-- `.ds-proj-stats` 改成 `flex-wrap` + 6/12 间距，窄屏自动折行；`.ds-proj-bar` 高度 6px、圆角 999px、muted 底。
-
-### 效能页条形与零值（2026-11-10）
-- 周期分布 / 每列停留的条形：计数为 0 时不再画满宽的空轨道（会被误读成满格），改成一条虚线基线；非零但很小时保留 2px 最小宽度，避免"看不见"。
-- 实现：行上带 `data-empty`，CSS ` .ds-an-track[data-empty="1"]{ background:transparent; border-top:1px dashed var(--border) }`，填充条 `min-width:2px`。
-
-### 多实例派单锁与 SLA 升级（2026-11-10）
-- **派单租约**：多开一个 dsh-web（或两台机器连同一个库）时，卡片不能被两个进程同时派出去。实现是 SQLite 里的 `locks` 表（`name/owner/at`）+ 12 秒租约：`Dispatcher.tick()` 开头先 `claimDispatchLock()`，抢不到就跳过这一轮，抢到则每轮续租。没有数据库（纯内存模式）时直接放行，单实例行为不变。
-- `Dispatcher.status()` 现在带 `instance`（`pid-随机串`）与 `lock`（`{owner, at, mine}`），排查「谁在派单」时看这两个字段（`/state` 的 `state.agents`）。实测：进程重启后 `instance` 变化、`lock.owner` 在 12 秒租约过期后自动交接给新进程。
-- **缺陷 SLA 升级**：`escalateOverdue()` 在每轮 tick 里扫缺陷卡，`bugSla()` 判定 `overdue` 且还没升级过的，写一次 `escalatedAt` + 一条历史「SLA 超时 N 小时，已升级提醒」，并按现有飞书机器人配置广播一条；同一张卡只升一次（重复 tick 不会再写）。
-- 验证：`tools/test-sla-escalation.mjs`（在 .218 跑，会临时停服改库再起服）——建 p0 缺陷卡 → 把 `createdAt` 回拨 10 小时 → 等一个 tick → 断言 `escalatedAt > 0`、历史正好一条「SLA 超时 6 小时」→ 删测试卡，7/7 PASS。
-
-
 ## 审计日志的检索与导出（2026-11-10）
 
 设置 → 权限与审计 → 审计日志，标题右侧现在有三样东西：**关键字框**（同时匹配动作、操作人、详情）、**按人下拉**、**只看失败**，三者可叠加；标题里的计数是「显示 N / 命中 M / 共 K」，筛选后没有结果时会提示「没有符合筛选条件的记录」，而不是误报「还没有记录」。
@@ -1171,61 +821,6 @@ GET /studio-api/audit/export.csv?by=<人>&q=<关键字>&failed=1&token=<会话>
 - **Radix Select 不接受空字符串作为可展示项**：`h('option', { value: '' }, '所有人')` 会一直显示 placeholder「请选择」。改成哨兵值 `__all__`，提交时再映射回空字符串。
 - `agents.log` 是内存环形日志，重启后清空；要留档请用导出。
 - 两处导出的鉴权都在**服务端**做（`openRoutes` 放行的只是路由本身，数据仍要校验 token），这样即便前端被绕过也拿不到全量日志。
-
-## 布局与 Markdown 一致性（2026-11-10）
-
-这一轮修的是「看起来哪里都不对」的根因，而不是逐个页面调参数。
-
-### 1. 同名 CSS token 被两种格式覆盖
-- `web/src/index.css` 里 shadcn token 原本是 HSL 三元组（`--border: 240 6% 90%`），约定 `hsl(var(--x))`；
-  legacy `client.js` 又把同名变量定义成 hex（`--border:#e4e4e7`），特异性更高、注入更晚。
-- 结果：所有 `hsl(var(--x))` 变成 `hsl(#e4e4e7)`，声明非法被丢弃 —— 列底色透明、卡片描边消失、按钮没底色。
-- 修法：**全站统一为 hex + 裸 `var(--x)`**。`tailwind.config.js` 19 处、`index.css` 92 处、`client.js` 1 处；
-  `hsl(var(--x) / a)` 改写成 `color-mix(in srgb, var(--x) N%, transparent)`。判断依据是页面内
-  `getComputedStyle(el).getPropertyValue('--border')` 返回的是 `#e4e4e7` 而不是三元组。
-
-### 2. `.ds-row` / `.ds-field` 只有 min-width，没有 display
-- 全站 97 处 `ds-row`、151 处 `ds-field`，布局原本靠行内 `style={{ gap, alignItems, flex }}`；
-  但 CSS 里这两个类只有 `min-width:0`，于是它们退化成块级堆叠 —— 专家编辑里标签和控件互相压住。
-- 修法（`index.css`）：
-  `[data-dsh-studio] .ds-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0}`、
-  `[data-dsh-studio] .ds-field{display:flex;flex-direction:column;gap:5px;min-width:0}`、
-  `.ds-row > .ds-field{flex:1 1 220px}`；字段内的 `.ds-hint` 取消 `margin-left:auto`。
-
-### 3. uiKit 缺 Input / Textarea，多行输入只剩 32px
-- `web/src/main.jsx` 的 `uiKit` 只注入了 SheetDrawer/TabsBar/SelectBox/SwitchBox/Tip/ProgressBar/DialogBox/Badge，
-  `kit('Input')`、`kit('Textarea')` 全是 null → 112 处 TextField、14 处 TextAreaField 回落成原生控件。
-- 原生 textarea 又被表单 reset 清了 padding，`rows=9` 实测只有 32px 高（角色提示词框就是这个）。
-- 修法：uiKit 补 `Input, Textarea, Label`；`TextAreaField` 不再丢弃调用方 className，
-  并按 `rows` 计算 `minHeight = max(84, rows*21+26)`（9 行 → 215px）。
-
-### 4. Markdown：输入处给预览，展示处统一渲染
-- 新增 `MdField`（`client.js`，在 `tipLabel` 之前）：工具行「支持 Markdown：标题 / 列表 / 粗体 / 代码块 / 表格」+
-  「预览渲染 / 回到编辑」切换，预览复用 `renderMarkdown()`。
-- 换用位置：需求正文、文档正文、交付物正文、技能正文、任务需求/背景、功能点说明、发布说明。
-- 展示处保持渲染 Markdown 的：需求明细、功能点说明、评论、发布说明（复制前可预览）。
-- 验收方式：无头 Chrome 打开「需求 → 编辑」，`.ds-md-bar` 存在、textarea 219px、点「预览渲染」后
-  `.ds-md-preview` 出现且 `li` 数量与原文条目一致。
-
-### 5. 看板列与滚轮
-- `.ds-col` 实色底 + 1px 描边 + `scroll-snap-align:start`；`.ds-col-head` 卡片底色；`.ds-card{min-width:0;max-width:100%}`。
-- 滚轮改原生 `{ passive:false }` 监听（React 的 onWheel 在 root 上是 passive，`preventDefault` 无效），
-  命中 `.ds-board` 时把 `deltaY` 转成 `scrollLeft`。
-﻿
-## 直接阅读与暗色巡检（2026-11-10）
-
-### A. 交付物 / 文档正文可直接展开阅读
-
-- 交付物：`artRead` 状态记「当前展开的交付物 id」，行按钮「阅读 / 收起」；展开区 `.ds-md-preview.ds-reader`（`max-height:360px; overflow:auto`）用 `renderMarkdown(content)` 渲染，空正文提示「这条交付物还没有正文。」
-- 文档：`docReader` 状态 + `readDoc(docId)`——点「阅读」时按需 `POST /studio-api/requirement/get` 取回完整 `docs[]`（列表接口只给 `contentLength`），再渲染 Markdown；读取中显示「读取中…」，空正文提示「这条文档还没有正文。」；再点「收起」关闭。
-- 实测：TEST-002 卡片 → 交付物 → 阅读，`.ds-reader` 高 360、65 个块；需求 `REQ-2026-001` → 文档 → 阅读，`.ds-reader` 高 235、5 个块、正文以「会员积分抵扣背景…」开头。
-
-### B. 暗色逐页巡检（明亮 + 黑暗各一遍）
-
-- 巡检方式：`tools/visual/probe-dark-sweep.mjs`（headless Chrome 登录 → 挂载面板 → 逐页签截图 + 采集 `getComputedStyle`），截图落在 `tmp/dark-*.png` / `tmp/dark2-*.png`。
-- 修复：看板工具栏 `.ds-board-bar` 之前被压成 `padding: 0 0 10px`，第一个搜索框紧贴面板左边缘、看着像被裁掉；改成 `padding: 12px 20px 10px; border-bottom: 1px solid var(--border)`，与看板列的 20px 内边距对齐，工具行与内容之间也有分隔线。
-- 复核：看板（列底 `--muted`、列头 `--card`、卡片描边与文字 `rgb(230,232,238)`）、版本（面板/操作区/发布按钮）、效能（KPI 卡、柱状与日期轴、燃尽折线）、项目（整行卡片、统计框、服务行 chip）、市场（专家卡与角色 chip、空态虚线框）、需求（评审、矩阵、文档、变更影响）六页在暗色下均无白底突兀、无不可读文字。
-- 已知边界：无头 Chrome 未装 emoji 字体，截图里 📎 ✅ 之类的图标会显示成空心方块，这不是页面问题。
 
 ## 需求管理补强（2026-11-11）
 
@@ -1268,6 +863,32 @@ GET /studio-api/audit/export.csv?by=<人>&q=<关键字>&failed=1&token=<会话>
 - `/columns/save` 保留成员原本的 `kind`（`team` / `role` / `expert`），不会再被强行洗成 expert。
 
 实测（.218，看板 20 张卡）：把「退款对账」需求的领域设为「支付」后新建一张测试卡，派单落到**支付测试工程师**（`expert-87de8b`）；同一列为 `role:qa` 时，没写领域的卡落到**测试工程师**（`expert-d3c58341`）。
+
+## 过程记录（已移出）
+
+「哪一轮体检发现了什么、补了哪些入口、UI 怎么收尾」这类流水账挪到了 [docs/history.md](docs/history.md)；
+README 只留**现在是什么样**。每个版本对外改了什么看 [CHANGELOG.md](CHANGELOG.md)。
+
+## 已知限制
+
+- 多维表格镜像是**手动触发**的（`POST /studio-api/feishu/mirror`，支持 `dryRun` 先看会写多少条）：一条记录 = 一张卡，200 条一批串行写；表里要有「编号 / 标题 / 状态 / 负责人 / 优先级 / 需求 / 更新时间」这几列。**还没在真实表格上验证成功路径**——本机 lark-cli 未完成用户授权时，它会如实返回 authorization 错误而不是假成功。
+- GitLab 同步 Issue 与**关联 MR**（`/issues/:iid/related_merge_requests`）；卡上挂 MR 后「从 GitLab 核对」会拉 MR 详情、`/changes` 与 `/pipelines`（流水线状态进 `coding.gitlab`）。**不同步 MR 的评论**；MR 的合并/关闭状态要等下一次同步才反映到卡上。
+- 用例记录存在卡上（`task.cases`）：跨卡的**用例总览**页签可以勾选批量跑（结果回写各自卡、失败照旧开缺陷），也支持**回归套件**（`/suite/*`：按规则或手选固定一批，一键重跑，`by` 记「套件：名字」）。但还没有「回归套件」这个对象——固定的用例集合、一键重跑、历次通过率趋势都还没有，批量跑是临时勾选、跑完即散。
+- 缺陷卡的严重级别默认 `P2`、优先级 `normal`：自动建卡不猜严重程度，由人或在评论里改。
+- 派单失败会记在 `/studio-api/integrations` 与卡片抽屉里，并按 `agentRetryPlan` **自动重试**（间隔递增、有上限）；超过上限才挂阻塞等人。
+- 集成健康现在会**落盘保留最近一次结果**（SQLite 的 `meta:side:integration-health`，不进 state、不涨 revision、不占快照）：重启 dsh-web 后四条通道不再回到「还没用过」。仍然只是「最近一次」，没有按小时/按天的长期趋势（要趋势还得上采集）。
+- 工具层权限只认会话名（`studio-<taskId>-<expertId>`）：如果哪个 agent 用了别的会话名，就会被当成「名单外」拦下写操作，需要在审计里看一眼。
+- 同一张卡在同一列只自动派一次（防止来回循环），需要再跑一轮就点「马上处理」，或在评论里 `@` 它。
+- 并发上限是全局的（设置 → 自动派单 → 同时最多几个 agent，默认 2）：名额满了新卡就排队，把在跑的会话停掉或把上限调大即可。
+- 删掉卡片会自动收回它占用的名额（原来会留一个幽灵会话把并发名额占死，已修）。
+- 专家团是「团长 + @ 接棒」的协作模式；2026-11-13 起有**团级记忆**：卡推进到「完成」时自动记一条（做了什么、遗留什么），派活时把这个团最近 5 条塞进专家提示词；0.1.24 起**同一条经验出现 ≥2 次会提炼成「这次先规避」的约束**（记忆里反复踩的坑才会变成硬提示），避免同一批人反复踩同一个坑。记忆存在 SQLite 的 side 键里，最多每个团 20 条，可在「设置 → 专家团」里清空。
+- 新写或改写的技能对**已经开着的会话**不立即生效（技能目录在会话开始时枚举），开新会话或下一次派单即可看到。
+- 「从链接拉飞书正文」与「产物归档到飞书云盘」都依赖宿主机的 `lark-cli` 与有效的用户授权；`auth status` 里 user 不是 ready 时页面会提示，按提示重新授权即可。
+- 归档出来的是云盘里的 Markdown 文件，不是飞书在线文档：同事能打开、能下载、能被搜索，但不能在线协同编辑与评论；正文由平台覆盖更新，人工在飞书上改的内容下次覆盖会丢。
+- 归档是同步写：一次要写很多产物时（比如批量补历史）会挨个调 `lark-cli`，几十份文档需要十几秒到几十秒。
+- 需求基线是快照：2026-11-13 起可以**逐行对比**「基线 vs 最新 PRD」（只读，`web/src/studio/diff.js` 的 LCS），但**不能回滚**——要回到旧版得把旧正文重新贴一份再设为基线；需求的评审仍是人工点按钮，没有独立审批流。
+- AI Coding 执行记录由 agent/人登记；卡上挂了 MR 后「从 GitLab 核对」（`/coding/gitlab`）会拉 MR 详情、`/changes`（改动文件清单 + 提交数）与 `/pipelines` 做事实比对。**仍缺**：提交列表逐条、单测结果、CI 产物——这几项目前只有上报值，没有仓库侧证据。下一步可用 `glab mr diff` + 流水线接口做自动回填。
+- 「业务负责人」与「期望完成」是可选项：没填时抽屉里显示「未指派」/「未排期」，不是数据丢失；需要时补上再点「保存改动」。
 
 ## 许可证
 

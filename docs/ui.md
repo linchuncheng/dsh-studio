@@ -1,0 +1,186 @@
+# 界面：样式与构建链
+
+从 README 拆出来的界面实现记录。要看界面长什么样，回 [README](../README.md) 看图。
+
+## 样式对齐 shadcn/ui（2026-11-09）
+
+参考 <https://ui.shadcn.com/> 的默认主题（zinc / neutral），把整套界面换成它的视觉语言。
+**没有引入 Tailwind，也没有加构建步骤**——仍然是一个 `client.js`，在原有 `<style>` 末尾追加
+一层「token + 组件规则」，用同名变量覆盖旧样式，所以不会破坏既有功能。
+
+### 为什么不是直接装 shadcn 组件
+
+shadcn 是「把 React + Tailwind 源码拷进项目」的分发方式，需要构建管线（Tailwind 编译、
+tsconfig 路径别名、Radix 依赖）。这个插件是宿主里的单文件 bundle（`window.__ModuleLoader__`
++ `React.createElement`），加构建会破坏现在的零依赖部署方式。因此这里对齐的是**设计系统本身**：
+同一套 CSS 变量名、同一套圆角/描边/阴影/焦点环尺度、同样的组件外观。
+
+### Token
+
+```css
+[data-dsh-studio][data-theme="light"] {
+  --background:#fafafa; --foreground:#09090b;
+  --card:#ffffff;       --primary:#18181b; --primary-foreground:#fafafa;
+  --secondary:#f4f4f5;  --muted:#f4f4f5;  --muted-foreground:#71717a;
+  --destructive:#dc2626; --border:#e4e4e7; --input:#e4e4e7; --ring:#a1a1aa;
+}
+[data-dsh-studio][data-theme="dark"] {
+  --background:#09090b; --foreground:#fafafa;
+  --card:#111113;       --primary:#fafafa; --primary-foreground:#18181b;
+  --secondary:#1b1b1f;  --muted:#1b1b1f;  --muted-foreground:#a1a1aa;
+  --destructive:#ef4444; --border:#27272a; --input:#27272a; --ring:#52525b;
+}
+```
+
+旧的 `--ds-*` 变量保留，但都指向新 token（`--ds-bg→--background`、`--ds-surface→--card`、
+`--ds-surface-2→--muted`、`--ds-line→--border`、`--ds-accent→--primary`、`--ds-shadow`），
+所以几百处既有样式不用改。统一圆角 `--radius:10px`。
+
+### 逐项检查过的组件
+
+| 组件 | 处理 |
+| --- | --- |
+| 按钮 `.ds-btn` | shadcn `Button` 默认档：32px 高、12px 内边距、1px `--input` 描边、`--card` 底、`--muted` hover、圆角 10、`--ds-shadow` |
+| 主按钮 `.ds-btn-primary` | `bg-primary + text-primary-foreground`（浅色近黑、深色近白） |
+| 幽灵按钮 `.ds-btn-ghost` | 透明底、hover 出 `--muted`，用于「退出登录 / 导出」 |
+| 输入框 `.ds-input/.ds-select/.ds-textarea` | 1px `--input`、32px 高、hover 变 `--ring`、focus 出 `0 0 0 3px ring/35%` 光晕 |
+| 卡片/面板 `.ds-panel/.ds-card/.ds-kpi` | `--card` 底 + 1px `--border` + `--ds-shadow`，圆角 12 |
+| 徽标 `.ds-chip` | 21px 高胶囊，`--secondary` 底 + `--border`，语义色（缺陷/超时/通过）保留色相 |
+| 页签 `.ds-tabs/.ds-tab` | shadcn `Tabs` 胶囊：`--muted` 容器，选中项 `--card` + 阴影 |
+| 分段控件 `.ds-seg` | 同款胶囊，用于主题三档与登录方式切换 |
+| 看板 `.ds-col/.ds-card` | 列底 `--muted` + 描边；卡片白底、13px 标题、11px 元信息 |
+| 抽屉/弹窗 `.ds-side/.ds-drawer/.ds-modal` | `--card` 底、1px 描边、大阴影、遮罩 `rgb(9 9 11 / .5)` |
+| 表格化行 `.ds-listrow/.ds-doc-row/.ds-audit-row` | 行间 1px `--border`，hover 出 `--muted` |
+| 登录卡 | `Card` 同款：描边 + 20px 阴影 + 圆角 14 |
+| 焦点环 | 全局 `:focus-visible` → `2px solid --ring`，offset 2（键盘可达性那层仍然生效） |
+| 滚动条 | 拇指用 `foreground 20%/32%` 透明色，两套主题都可见 |
+
+### 验证
+
+- 浅色：工作台（KPI、分区、清单）、看板（列/卡片/徽标）、项目卡、设置-专家列表逐一截图核对。
+- 深色：截图整页平均亮度 **23.2**（浅色约 **246**），卡片/描边/文字在 `#09090b` 上可读。
+- 登录页、抽屉、表单沿用同一套 token，未单独写样式分支。
+
+## 构建链：真实 shadcn/ui（2026-11-09）
+
+前面几版是「手写一套 shadcn 风格 CSS」。现在 `dsh-studio/web/` 是一个真正的 Vite + Tailwind + Radix 工程，组件按 shadcn 官网源码 vendored 进来。
+
+### 为什么需要构建，以及为什么要桥接
+
+- 宿主只提供 `window.__ModuleLoader__.load({ id, factory })` 这个入口，`factory` 里 `require('react')` 拿到的是**宿主的 React**。
+- shadcn/Radix 需要 React 18 的 hooks dispatcher，且组件在自己的树里跑；两棵 React 树不能共享渲染。
+- 所以：React 打进插件自己的 bundle，宿主那边只渲染一个**类组件桥**（`web/src/bridge.jsx`，无 hooks），桥里用一个 `div`（`display:contents`）承载我们自己的 `createRoot`。两棵树互不干扰，元素对象靠 `Symbol.for('react.element')` 互通。
+
+### 目录
+
+| 路径 | 作用 |
+| --- | --- |
+| `web/vite.config.mjs` | IIFE、单文件 `../dist/client.js`、`cssCodeSplit:false`、`inlineDynamicImports` |
+| `web/tailwind.config.js` | `corePlugins.preflight=false`（CSS 会注入宿主页面，不能带全局 reset）、`darkMode:['selector','[data-theme="dark"]']`、颜色映射到 shadcn 的 HSL 变量 |
+| `web/src/index.css` | shadcn token（浅/深两套），作用域限定在 `[data-dsh-studio]` 与 `[data-dsh-studio-portal]`（Radix 浮层会被传送到 `<body>`） |
+| `web/src/components/ui.jsx` | vendored 原子组件：Button/Input/Textarea/Label/Card/Badge/Tabs/Dialog/Switch/Checkbox |
+| `web/src/components/login-gate.jsx` | 第一个真正替换的界面：登录卡片（Card + Tabs + Input + Button） |
+| `web/src/bridge.jsx` | 宿主 React ↔ 自带 React 的类组件桥 |
+| `web/src/main.jsx` | 入口：注入 Tailwind CSS、注册 `window.__ModuleLoader__.load` |
+| `web/scripts/make-legacy.mjs` | 把 `dsh-studio/client.src.js`（手写源码）转成 `web/src/legacy.js`（去掉 loader 包装，导出 `createStudio(React, h)`） |
+| `web/scripts/sync-client.mjs` | 构建后把 `dist/client.js` 复制回包根的 `client.js`，保证「仓库里的 `client.js` = 线上实际加载的那份」 |
+
+### 构建与部署
+
+```bash
+cd dsh-studio/web
+pnpm install          # pnpm 10 默认拦 esbuild 的构建脚本，首次可能提示 approve-builds
+pnpm build            # make-legacy → vite build → sync-client，一次跑完
+```
+
+三个文件的关系：
+
+| 文件 | 是什么 | 谁读它 |
+| --- | --- | --- |
+| `client.src.js` | 手写的单文件源码（约 520 KB，前端逻辑全量实现） | 构建第一步 `make-legacy.mjs` 读它生成 `web/src/legacy.js` |
+| `dist/client.js` | Vite 产物：单文件 IIFE，React 与 CSS 都打进（约 696 KB / gzip 207 KB） | 部署时上传它就是根目录 `client.js` 的来源 |
+| `client.js`（包根） | 构建产物的副本，由 `sync-client.mjs` 写出 | DSH 按 `package.json` 的 `./client` 导出加载它 |
+
+所以：**只改前端逻辑 → 改 `client.src.js`；改样式/组件 → 改 `web/src/**`**；两边都要在 `web/` 里跑一次 `pnpm build`，根目录 `client.js` 会自动同步，然后提交。
+
+部署到另一台机器只需要 `index.js` + `dist/client.js` + 整个 `src/host`：用 `node tools/deploy.mjs`（目标机、账号从环境变量传，脚本会备份、自检、`active` 不对就非零退出），具体命令见 `docs/quickstart.md`。
+
+### 已验证
+
+- 构建产物 `526 kB`（gzip 161 kB），单文件、无独立 CSS 资源。
+- Chrome 实测：刷新后登录卡是新组件（胶囊页签 + 圆角输入框 + 黑色主按钮），切「本地超管」后直接打字即可，`admin`/`admin` 登录进入工作台，主题切换与看板正常。
+﻿
+---
+
+## 对话框与列表行（2026-11-10）
+
+原生 `window.confirm` / `window.prompt` 已全部换成 shadcn 风格的 Radix Dialog，23 处调用点（删除卡/需求/版本/专家/专家团/环境/项目/仓库/机器人/技能/文档/功能点、市场移除、插件装卸、清空审计、快照回滚、worktree 回收、标记阻塞、改领域、强制发布、回滚原因、评审打回）。
+
+- `web/src/components/studio-ui.jsx` 的 `DialogBox({ open, title, message, danger, okText, cancelText, input, value, placeholder, onChange, onOk, onCancel })`：标题 + 说明 + 「取消 / 确定」，`danger` 时确定按钮用破坏色，`input` 为真时带 3 行文本域（用于「强制发布原因」「回滚原因」这类需要写理由的场合）。
+- `client.js` 的 `confirmDialog(message, options)` / `promptDialog(message, options)` 返回 Promise，`DialogHost` 挂在工作区根节点上；没有 UIKIT 时自动回落原生弹窗，保证纯单文件产物仍可用。
+- 列表行统一：`.ds-listrow` 内按钮 26px 高、幽灵按钮 hover 才显形；`[data-danger="1"]` 的按钮红字 + 淡红 hover；`.ds-audit-row` 行高 7/14；窄屏（≤900px）缩小 spark 日期字号、≤760px 隔天显示，避免 14 个标签挤成一排。
+
+### 踩过的坑：Radix 门户跑出作用域
+
+Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fixed …`；而 Radix 的 Portal 默认挂到 `document.body`，门户里的元素不在这个子树里，定位类全部失效，弹窗会掉到页面末尾变成一段普通文本流（UIA 能读到文字、肉眼看不见）。
+
+修法两处：① 作用域插件同时产出 `[data-dsh-studio-portal] …` 前缀；② `studio-ui.jsx` 提供 `portalRoot()` 懒创建一个带 `data-dsh-studio-portal` + `data-theme` 的容器，四个 Portal（Dialog ×2、Select、Tooltip）都用 `container={portalRoot()}` 挂进去，明暗主题随工作区同步。
+﻿
+---
+
+## 布局与 Markdown 一致性（2026-11-10）
+
+这一轮修的是「看起来哪里都不对」的根因，而不是逐个页面调参数。
+
+### 1. 同名 CSS token 被两种格式覆盖
+- `web/src/index.css` 里 shadcn token 原本是 HSL 三元组（`--border: 240 6% 90%`），约定 `hsl(var(--x))`；
+  legacy `client.js` 又把同名变量定义成 hex（`--border:#e4e4e7`），特异性更高、注入更晚。
+- 结果：所有 `hsl(var(--x))` 变成 `hsl(#e4e4e7)`，声明非法被丢弃 —— 列底色透明、卡片描边消失、按钮没底色。
+- 修法：**全站统一为 hex + 裸 `var(--x)`**。`tailwind.config.js` 19 处、`index.css` 92 处、`client.js` 1 处；
+  `hsl(var(--x) / a)` 改写成 `color-mix(in srgb, var(--x) N%, transparent)`。判断依据是页面内
+  `getComputedStyle(el).getPropertyValue('--border')` 返回的是 `#e4e4e7` 而不是三元组。
+
+### 2. `.ds-row` / `.ds-field` 只有 min-width，没有 display
+- 全站 97 处 `ds-row`、151 处 `ds-field`，布局原本靠行内 `style={{ gap, alignItems, flex }}`；
+  但 CSS 里这两个类只有 `min-width:0`，于是它们退化成块级堆叠 —— 专家编辑里标签和控件互相压住。
+- 修法（`index.css`）：
+  `[data-dsh-studio] .ds-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0}`、
+  `[data-dsh-studio] .ds-field{display:flex;flex-direction:column;gap:5px;min-width:0}`、
+  `.ds-row > .ds-field{flex:1 1 220px}`；字段内的 `.ds-hint` 取消 `margin-left:auto`。
+
+### 3. uiKit 缺 Input / Textarea，多行输入只剩 32px
+- `web/src/main.jsx` 的 `uiKit` 只注入了 SheetDrawer/TabsBar/SelectBox/SwitchBox/Tip/ProgressBar/DialogBox/Badge，
+  `kit('Input')`、`kit('Textarea')` 全是 null → 112 处 TextField、14 处 TextAreaField 回落成原生控件。
+- 原生 textarea 又被表单 reset 清了 padding，`rows=9` 实测只有 32px 高（角色提示词框就是这个）。
+- 修法：uiKit 补 `Input, Textarea, Label`；`TextAreaField` 不再丢弃调用方 className，
+  并按 `rows` 计算 `minHeight = max(84, rows*21+26)`（9 行 → 215px）。
+
+### 4. Markdown：输入处给预览，展示处统一渲染
+- 新增 `MdField`（`client.js`，在 `tipLabel` 之前）：工具行「支持 Markdown：标题 / 列表 / 粗体 / 代码块 / 表格」+
+  「预览渲染 / 回到编辑」切换，预览复用 `renderMarkdown()`。
+- 换用位置：需求正文、文档正文、交付物正文、技能正文、任务需求/背景、功能点说明、发布说明。
+- 展示处保持渲染 Markdown 的：需求明细、功能点说明、评论、发布说明（复制前可预览）。
+- 验收方式：无头 Chrome 打开「需求 → 编辑」，`.ds-md-bar` 存在、textarea 219px、点「预览渲染」后
+  `.ds-md-preview` 出现且 `li` 数量与原文条目一致。
+
+### 5. 看板列与滚轮
+- `.ds-col` 实色底 + 1px 描边 + `scroll-snap-align:start`；`.ds-col-head` 卡片底色；`.ds-card{min-width:0;max-width:100%}`。
+- 滚轮改原生 `{ passive:false }` 监听（React 的 onWheel 在 root 上是 passive，`preventDefault` 无效），
+  命中 `.ds-board` 时把 `deltaY` 转成 `scrollLeft`。
+﻿
+
+## 直接阅读与暗色巡检（2026-11-10）
+
+### A. 交付物 / 文档正文可直接展开阅读
+
+- 交付物：`artRead` 状态记「当前展开的交付物 id」，行按钮「阅读 / 收起」；展开区 `.ds-md-preview.ds-reader`（`max-height:360px; overflow:auto`）用 `renderMarkdown(content)` 渲染，空正文提示「这条交付物还没有正文。」
+- 文档：`docReader` 状态 + `readDoc(docId)`——点「阅读」时按需 `POST /studio-api/requirement/get` 取回完整 `docs[]`（列表接口只给 `contentLength`），再渲染 Markdown；读取中显示「读取中…」，空正文提示「这条文档还没有正文。」；再点「收起」关闭。
+- 实测：TEST-002 卡片 → 交付物 → 阅读，`.ds-reader` 高 360、65 个块；需求 `REQ-2026-001` → 文档 → 阅读，`.ds-reader` 高 235、5 个块、正文以「会员积分抵扣背景…」开头。
+
+### B. 暗色逐页巡检（明亮 + 黑暗各一遍）
+
+- 巡检方式：`tools/visual/probe-dark-sweep.mjs`（headless Chrome 登录 → 挂载面板 → 逐页签截图 + 采集 `getComputedStyle`），截图落在 `tmp/dark-*.png` / `tmp/dark2-*.png`。
+- 修复：看板工具栏 `.ds-board-bar` 之前被压成 `padding: 0 0 10px`，第一个搜索框紧贴面板左边缘、看着像被裁掉；改成 `padding: 12px 20px 10px; border-bottom: 1px solid var(--border)`，与看板列的 20px 内边距对齐，工具行与内容之间也有分隔线。
+- 复核：看板（列底 `--muted`、列头 `--card`、卡片描边与文字 `rgb(230,232,238)`）、版本（面板/操作区/发布按钮）、效能（KPI 卡、柱状与日期轴、燃尽折线）、项目（整行卡片、统计框、服务行 chip）、市场（专家卡与角色 chip、空态虚线框）、需求（评审、矩阵、文档、变更影响）六页在暗色下均无白底突兀、无不可读文字。
+- 已知边界：无头 Chrome 未装 emoji 字体，截图里 📎 ✅ 之类的图标会显示成空心方块，这不是页面问题。
+
