@@ -13,7 +13,8 @@
     "check": "node --check index.js && node --check client.src.js && node --test tests/repo.test.mjs tests/store-boot.test.mjs tests/client-units.test.mjs tests/notify.test.mjs",
     "smoke:store": "node scripts/smoke-store.mjs",
     "mock:gitlab": "node tools/mock-gitlab.mjs",
-    "verify:gitlab": "node tools/verify-gitlab-facts.mjs"
+    "verify:gitlab": "node tools/verify-gitlab-facts.mjs",
+    "verify:release": "node tools/verify-release.mjs"
   },
   "exports": {
     ".": "./index.js",
