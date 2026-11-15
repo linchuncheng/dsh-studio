@@ -331,9 +331,10 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
         try {
           const json = await api('/requirement/split', { id: current.id })
           const created = json.created ?? []
-          setSplitNote(created.length === 0
+          const warnings = Array.isArray(json.warnings) ? json.warnings : []
+          setSplitNote((created.length === 0
             ? '没有可拆的功能点：要么都覆盖了，要么还没加功能点。'
-            : `已建 ${created.length} 张卡：${created.map(item => item.code || item.id).join('、')}`)
+            : `已建 ${created.length} 张卡：${created.map(item => item.code || item.id).join('、')}`) + (warnings.length === 0 ? '' : ' ⚠ ' + warnings.join('；')))
           if (typeof onChanged === 'function') onChanged()
         } catch (err) {
           setSplitNote(err.message)

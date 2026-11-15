@@ -635,6 +635,11 @@ test('host: a requirement needs three answers before it can be split', async () 
   const done = sanitizeRequirement({ title: '管理后台', discovery: { server: 'a', auth: 'b', boundary: 'c' } })
   assert.equal(discoveryGaps(done).length, 0)
   assert.deepEqual(sanitizeDiscovery(null), { server: '', auth: '', boundary: '' })
+  const { backendCoverageWarning } = await import('../src/host/discovery.js')
+  assert.equal(backendCoverageWarning({ discovery: { server: '没有，纯前端演示' }, points: [] }), null, '说没有就不提示')
+  const warned = backendCoverageWarning({ discovery: { server: '有，node:sqlite' }, points: [{ title: '登录页' }] })
+  assert.ok(warned !== null && warned.includes('后端'), String(warned))
+  assert.equal(backendCoverageWarning({ discovery: { server: '有，node:sqlite' }, points: [{ title: '订单接口与建表' }] }), null)
 })
 
 test('host: usage parsing takes one usage per message and prices what it can', async () => {

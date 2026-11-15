@@ -7,7 +7,7 @@ import {
   sanitizeRequirementPool,
   text,
 } from '../domain.js'
-import { discoveryGaps } from '../discovery.js'
+import { backendCoverageWarning, discoveryGaps } from '../discovery.js'
 import { casesOfTasks, impactSummary } from '../impact.js'
 import {
   ensureReqFolder,
@@ -219,7 +219,9 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
       })
       created.push(task)
     }
-    host.sendJson(res, 200, { ok: true, created, state: host.publicState(store) })
+    // 说了有后端却没有后端功能点：给个提示，不拦（后端可能确实在别的需求里）
+    const warning = backendCoverageWarning(requirement)
+    host.sendJson(res, 200, { ok: true, created, warnings: warning === null ? [] : [warning], state: host.publicState(store) })
     return true
   }
   if (method === 'POST' && route === '/requirement/pool') {

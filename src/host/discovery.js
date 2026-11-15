@@ -16,6 +16,22 @@ export function sanitizeDiscovery(raw) {
   }
 }
 
+const BACKEND_HINT = /接口|api|数据库|数据表|建表|后端|服务端|鉴权|sqlite|postgres|持久化|存储/i
+const BACKEND_YES = /^(有|yes|是|需要|要)/i
+
+/**
+ * 说了「有服务端」，功能点里却没有一条跟后端有关 —— 大概率又要只交付一半。
+ * 只提示、不拦：有的需求后端在别的仓库或别的需求里，硬拦会误伤。
+ */
+export function backendCoverageWarning(requirement) {
+  const answer = String(requirement?.discovery?.server ?? '').trim()
+  if (answer === '' || BACKEND_YES.test(answer) !== true) return null
+  const points = Array.isArray(requirement?.points) ? requirement.points : []
+  const hit = points.some(point => BACKEND_HINT.test(String(point?.title ?? '') + ' ' + String(point?.description ?? '')))
+  if (hit) return null
+  return '澄清里说有服务端，但功能点没有一条讲接口 / 数据表 / 鉴权：后端在哪一块交付？'
+}
+
 /** 还缺哪几项澄清；空了才允许拆卡。 */
 export function discoveryGaps(requirement) {
   const discovery = requirement?.discovery ?? {}
