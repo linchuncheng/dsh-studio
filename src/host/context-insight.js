@@ -15,6 +15,40 @@ export function contextOfUsage(usage) {
   return { peak, model, calls: Array.isArray(usage) ? usage.length : 0 }
 }
 
+/** 字符 → token 的粗略换算（中英混排约 3 字符/token）；只用来排序和看比例。 */
+export function charsToTokens(chars) {
+  return Math.round(Number(chars ?? 0) / 3)
+}
+
+/**
+ * 单次会话的上下文构成：峰值窗口 + 四类内容的体积占比。
+ * 系统提示来自平台自己的配置（日志里没有），其余来自日志各类事件的文本体积。
+ */
+export function breakdownContext(session, promptChars) {
+  const volume = session?.volume ?? {}
+  const parts = [
+    { key: 'prompt', label: '系统提示（平台拼的）', chars: Number(promptChars ?? 0) },
+    { key: 'tool', label: '工具调用与结果', chars: Number(volume.tool ?? 0) },
+    { key: 'assistant', label: '助手输出', chars: Number(volume.assistant ?? 0) },
+    { key: 'user', label: '输入与人机往返', chars: Number(volume.user ?? 0) },
+    { key: 'other', label: '事件与会话元数据', chars: Number(volume.other ?? 0) },
+  ]
+  const total = parts.reduce((sum, part) => sum + part.chars, 0)
+  const peak = contextOfUsage(session?.usage).peak
+  return {
+    peak,
+    peakTokens: peak,
+    chars: total,
+    approxTokens: charsToTokens(total),
+    parts: parts.map(part => ({ ...part, percent: total === 0 ? 0 : Math.round((part.chars / total) * 100) })),
+    turns: Number(session?.counts?.turns ?? 0),
+    toolCalls: Number(session?.counts?.toolCalls ?? 0),
+    retries: Number(session?.counts?.retries ?? 0),
+    at: Number(session?.at ?? 0),
+    taskId: String(session?.taskId ?? ''),
+  }
+}
+
 /** 按专家汇总；sessions 每项 { expert, taskId, at, usage, counts }。 */
 export function aggregateContext(sessions) {
   const byExpert = new Map()

@@ -2662,7 +2662,7 @@ export function apply(ctx) {
     configureConnectRoutes({ mirrorCardsToBitable, applyConfig, installedPackages, publicState, readJsonBody, resolvePackageName, runPluginCli, sendJson, upsertById, getSyncTimer: () => syncTimer })
     configureAdminRoutes({ applyConfig, checkToolAccess, operatorFromSessionId, operatorOf, publicState, readJsonBody, sendJson })
     configureSkillsRoutes({ isSkillName, readJsonBody, sendJson, skillFromMarkdown, skillFromZip, skillsRoot, getSkills: () => activeSkills })
-    configureInsightsRoutes({ getDispatcher: () => activeDispatcher, sendJson, buildMetrics, buildAnalytics, workloadReport, burndownReport })
+    configureInsightsRoutes({ readJsonBody, getDispatcher: () => activeDispatcher, sendJson, buildMetrics, buildAnalytics, workloadReport, burndownReport })
     configureReleasesRoutes({ sendJson, readJsonBody, publicState, releaseGate, releaseNotes, releaseRequirements, releaseRuleViolations, releaseDeploys })
     configureRequirementRoutes({ sendJson, readJsonBody, createTask, publicState })
     configureTaskRoutes({

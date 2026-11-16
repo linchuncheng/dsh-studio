@@ -16,6 +16,14 @@ export function AnalyticsPage({ state, onOpenTask }) {
   const [quality, setQuality] = React.useState(null)
   // 上下文洞察：每个专家的窗口占用峰值 / 回合 / 工具调用 / 重试（读会话日志，不额外花 token）
   const [contexts, setContexts] = React.useState(null)
+  const [ctxDetail, setCtxDetail] = React.useState(null)
+  const [ctxOpen, setCtxOpen] = React.useState('')
+  const openContext = async (expert) => {
+    if (ctxOpen === expert) { setCtxOpen(''); return }
+    setCtxOpen(expert)
+    setCtxDetail(null)
+    try { setCtxDetail(await api('/contexts/session', { expert })) } catch (cause) { setCtxDetail({ ok: false, error: cause instanceof Error ? cause.message : String(cause) }) }
+  }
 
   React.useEffect(() => {
     let alive = true
@@ -279,14 +287,34 @@ export function AnalyticsPage({ state, onOpenTask }) {
           ? h('div', { className: 'ds-hint' }, '正在读会话日志…')
           : (contexts.rows ?? []).length === 0
             ? h('div', { className: 'ds-hint' }, '还没有专家会话记录。')
-            : contexts.rows.map(row => h('div', { key: row.expert, className: 'ds-listrow' },
-              h('div', { className: 'ds-listrow-main' },
-                h('div', null, `${row.expert}${row.model === '' ? '' : ' · ' + row.model}`),
-                h('div', { className: 'ds-hint' },
-                  `${row.sessions} 个会话 · 窗口峰值 ${Math.round(row.peak / 1000)}k · 回合 ${row.turns} · 工具 ${row.toolCalls} · 重试 ${row.retries} · 最近 ${fmtTime(Math.round(row.lastAt))}`),
+            : contexts.rows.map(row => h('div', { key: row.expert },
+              h('div', { className: 'ds-listrow', style: { cursor: 'pointer' }, onClick: () => void openContext(row.expert) },
+                h('div', { className: 'ds-listrow-main' },
+                  h('div', null, `${row.expert}${row.model === '' ? '' : ' · ' + row.model}`),
+                  h('div', { className: 'ds-hint' },
+                    `${row.sessions} 个会话 · 窗口峰值 ${Math.round(row.peak / 1000)}k · 回合 ${row.turns} · 工具 ${row.toolCalls} · 重试 ${row.retries} · 最近 ${fmtTime(Math.round(row.lastAt))}`),
+                ),
+                h('div', { className: 'ds-listrow-actions' },
+                  h('span', { className: 'ds-hint', 'data-warn': row.peak > 180000 ? '1' : undefined }, row.peak > 180000 ? '接近上限（>180k）' : ''),
+                  h('span', { className: 'ds-hint' }, ctxOpen === row.expert ? '▲' : '▼'),
+                ),
               ),
-              h('div', { className: 'ds-listrow-actions' },
-                h('span', { className: 'ds-hint', 'data-warn': row.peak > 180000 ? '1' : undefined }, row.peak > 180000 ? '接近上限（>180k）' : ''),
+              ctxOpen !== row.expert ? null : (
+                ctxDetail === null
+                  ? h('div', { className: 'ds-hint', style: { padding: '4px 12px 8px' } }, '正在算这次会话的上下文构成…')
+                  : ctxDetail.ok !== true
+                    ? h('div', { className: 'ds-hint', style: { padding: '4px 12px 8px' } }, ctxDetail.error ?? '读不到')
+                    : h('div', { style: { padding: '4px 12px 10px' } },
+                      h('div', { className: 'ds-hint' },
+                        `最近一次会话 ${fmtTime(Math.round(ctxDetail.breakdown.at))} · 窗口峰值 ${Math.round(ctxDetail.breakdown.peak / 1000)}k token · 总共 ${Math.round(ctxDetail.breakdown.approxTokens / 1000)}k token 文本`),
+                      ctxDetail.breakdown.parts.map(part => h('div', { key: part.key, className: 'ds-row', style: { gap: 8, alignItems: 'center' } },
+                        h('span', { style: { width: 150, fontSize: 12 } }, part.label),
+                        h('span', { style: { flex: 1, height: 6, background: 'var(--ds-line)', borderRadius: 3, overflow: 'hidden' } },
+                          h('span', { style: { display: 'block', width: part.percent + '%', height: '100%', background: 'var(--ds-accent)' } })),
+                        h('span', { className: 'ds-hint', style: { width: 78, textAlign: 'right' } }, `${part.percent}% · ${Math.round(part.chars / 1000)}k 字`),
+                      )),
+                      h('div', { className: 'ds-hint' }, '按会话日志里各类事件的文本体积估算；宿主不暴露真实 token 分配，所以这是比例而非账目。'),
+                    )
               ),
             )),
       ),

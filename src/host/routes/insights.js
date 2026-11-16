@@ -3,11 +3,12 @@ import {
 } from '../executor.js'
 import { runSummary } from '../dispatcher.js'
 import { collectSessionUsage, aggregateUsage } from '../session-usage.js'
-import { aggregateContext } from '../context-insight.js'
+import { aggregateContext, breakdownContext } from '../context-insight.js'
 import { costOf } from '../usage.js'
-const INJECTED = ['getDispatcher', "buildAnalytics","buildMetrics","burndownReport","sendJson","workloadReport"]
+const INJECTED = ['readJsonBody', 'getDispatcher', "buildAnalytics","buildMetrics","burndownReport","sendJson","workloadReport"]
 let host = {
   getDispatcher: () => undefined,
+  readJsonBody: async () => ({}),
   buildAnalytics: () => {},
   buildMetrics: () => {},
   burndownReport: () => {},
@@ -26,6 +27,25 @@ if (method === 'POST' && route === '/contexts') {
     const sessions = await collectSessionUsage()
     const aggregated = aggregateContext(sessions)
     host.sendJson(res, 200, { ok: true, ...aggregated, at: Date.now() })
+    return true
+  }
+  if (method === 'POST' && route === '/contexts/session') {
+    // 单个专家的最近一次会话：峰值窗口 + 四类内容的体积占比（系统提示来自平台配置，其余按日志体积估算）
+    const body = await host.readJsonBody(req)
+    const expert = String(body.expert ?? '')
+    const sessions = await collectSessionUsage()
+    const mine = sessions.filter(item => item.expert === expert).sort((a, b) => Number(b.at) - Number(a.at))
+    if (mine.length === 0) {
+      host.sendJson(res, 200, { ok: false, error: '这个专家还没有会话记录' })
+      return true
+    }
+    const expertConfig = (store.snapshot().config.experts ?? []).find(item => item.id === expert) ?? {}
+    host.sendJson(res, 200, {
+      ok: true,
+      expert,
+      sessions: mine.length,
+      breakdown: breakdownContext(mine[0], String(expertConfig.prompt ?? '').length),
+    })
     return true
   }
   if (method === 'GET' && route === '/metrics') {

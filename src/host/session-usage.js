@@ -25,9 +25,11 @@ async function readFileUsage(file) {
   let mtimeMs = 0
   try { mtimeMs = (await stat(file)).mtimeMs } catch { return null }
   const cached = CACHE.get(file)
-  if (cached !== undefined && cached.mtimeMs === mtimeMs) return cached
+  // 缓存命中也要带上 at：漏了它，界面上的「最近一次会话」会显示成 —
+  if (cached !== undefined && cached.mtimeMs === mtimeMs) return { ...cached, at: cached.mtimeMs }
   let usage = []
   let counts = { turns: 0, toolCalls: 0, retries: 0 }
+  const volume = { user: 0, assistant: 0, tool: 0, other: 0 }
   try {
     const { stdout } = await run('zstd', ['-dc', file], { maxBuffer: 256 * 1024 * 1024 })
     const lines = stdout.split('\n')
@@ -37,13 +39,22 @@ async function readFileUsage(file) {
       if (line.includes('"type":"step/start"')) counts.turns += 1
       else if (line.includes('"type":"tool-call"')) counts.toolCalls += 1
       else if (line.includes('"type":"llm/retry"')) counts.retries += 1
+      // 上下文构成按「日志里各类事件的文本体积」估算：宿主不暴露真实 token 分配，这是能拿到的最好近似
+      const kind = /"type":"([a-z-]+)\/?([a-z-]*)"/.exec(line)
+      if (kind !== null) {
+        const name = kind[1] + (kind[2] === '' ? '' : '/' + kind[2])
+        if (name.startsWith('tool')) volume.tool += line.length
+        else if (name.startsWith('assistant')) volume.assistant += line.length
+        else if (name.startsWith('user') || name.startsWith('inbox')) volume.user += line.length
+        else volume.other += line.length
+      }
     }
   } catch {
     // 没装 zstd 或者文件坏了：当作读不到，不抛，页面上显示未知
     usage = []
   }
-  CACHE.set(file, { mtimeMs, usage, counts })
-  return { usage, counts, at: mtimeMs }
+  CACHE.set(file, { mtimeMs, usage, counts, volume })
+  return { usage, counts, volume, at: mtimeMs }
 }
 
 /** 扫一遍所有 studio-* 会话，返回 [{ taskId, expert, at, usage }]。 */
@@ -60,7 +71,7 @@ export async function collectSessionUsage(root = sessionsRoot()) {
       if (parsed === null) continue
       const read = await readFileUsage(join(dir, entry, 'session.v4.jsonl.zstd'))
       if (read === null || read.usage.length === 0) continue
-      out.push({ taskId: parsed.taskId, expert: parsed.expert, at: read.at, usage: read.usage, counts: read.counts })
+      out.push({ taskId: parsed.taskId, expert: parsed.expert, at: read.at, usage: read.usage, counts: read.counts, volume: read.volume })
     }
   }
   return out
