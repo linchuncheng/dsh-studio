@@ -2649,8 +2649,8 @@ export function apply(ctx) {
     return () => disposeRoutes()
   })
 
-  ctx.inject(['agents', 'sessionController', 'workspaceRegistry', 'permissionPresets', 'agentDefaultModel'], dispatcherCtx => {
-    configureDispatcher({ feishuBroadcast, INTEGRATION, bugSla, removeWorktree, ensureWorktree, serviceOf, workProjectOf, serviceConflicts })
+  ctx.inject(['agents', 'sessionController', 'workspaceRegistry', 'permissionPresets', 'agentDefaultModel', 'sessionProjections'], dispatcherCtx => {
+    configureDispatcher({ sessionProjections: dispatcherCtx.sessionProjections, feishuBroadcast, INTEGRATION, bugSla, removeWorktree, ensureWorktree, serviceOf, workProjectOf, serviceConflicts })
     configureIntegrations({ newTaskId, serviceOf, getStore: () => activeStore })
   // 集成健康是旁路数据，启动时读回来，重启后不再显示成「还没用过」。
   restoreHealth()

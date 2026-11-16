@@ -449,9 +449,34 @@ export class Dispatcher {
       this.running.delete(slot)
       markDispatch(this.store, info.taskId, { ...info, state: 'idle', at: Date.now() }).catch(() => {})
       settleRun(sessionId)
+      // 会话刚空闲：趁 session 还活着，把引擎自己的 token 计量取下来（真实构成，不是估算）
+      void this.captureMeasurement(sessionId, info).catch(() => {})
       this.note(`${sessionId} went idle`)
       return
     }
+  }
+
+  /**
+   * 宿主把 sessionProjections 暴露给插件，其中 tokenMeasurement 就是引擎的计量。
+   * stateOf(session, key) 要的是**活会话对象**（传字符串会 session.snapshotEvents 报错），
+   * 所以只能在会话还活着的时候取——会话空闲就是最后的机会。
+   */
+  async captureMeasurement(sessionId, info) {
+    const service = host.sessionProjections
+    if (service === null || service === undefined || typeof service.stateOf !== 'function') return
+    const agent = this.ctx.agents?.get?.(sessionId)
+    const session = agent?.session
+    if (session === null || session === undefined) return
+    const measured = service.stateOf(session, 'tokenMeasurement')
+    if (measured === null || measured === undefined) return
+    let data
+    try { data = JSON.parse(JSON.stringify(measured)) } catch { return }
+    await this.store.mutate(state => {
+      const task = state.tasks.find(item => item.id === info.taskId)
+      if (task === undefined) return
+      task.insight = { source: 'tokenMeasurement', at: Date.now(), sessionId, data }
+    }).catch(() => {})
+    this.note('tokenMeasurement captured for ' + info.taskId)
   }
 
   /** Is any expert already working this card? */

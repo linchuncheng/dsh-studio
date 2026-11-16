@@ -43,11 +43,15 @@ if (method === 'POST' && route === '/contexts') {
       return true
     }
     const expertConfig = (store.snapshot().config.experts ?? []).find(item => item.id === expert) ?? {}
+    // 派单收尾时抓到的引擎计量（tokenMeasurement）优先给真实数字
+    const card = (store.snapshot().tasks ?? []).find(item => item.id === mine[0].taskId)
+    const anchor = card?.insight?.data?.anchor?.usage ?? null
     host.sendJson(res, 200, {
       ok: true,
       expert,
       sessions: mine.length,
       breakdown: breakdownContext(mine[0], String(expertConfig.prompt ?? '').length),
+      engine: anchor === null ? null : { total: Number(anchor.totalTokens ?? 0), input: Number(anchor.inputTokens ?? 0), output: Number(anchor.outputTokens ?? 0), cacheRead: Number(anchor.cacheReadTokens ?? 0), at: Number(card?.insight?.at ?? 0) },
     })
     return true
   }

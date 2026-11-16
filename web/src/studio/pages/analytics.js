@@ -127,7 +127,11 @@ export function AnalyticsPage({ state, onOpenTask }) {
       h('polygon', { points: '0,60 ' + trendPointsOf(trend) + ' 560,60', fill: CTX_COLORS[0], opacity: 0.12 }),
       h('polyline', { points: trendPointsOf(trend), fill: 'none', stroke: CTX_COLORS[0], strokeWidth: 1.6, vectorEffect: 'non-scaling-stroke' }),
       marks)
-    return h('div', { style: CTX_DETAIL }, h('div', { className: 'ds-hint', style: { marginBottom: 6 } }, head), stack, legend,
+    const engine = ctxDetail.engine ?? null
+    const engineLine = engine === null
+      ? null
+      : h('div', { className: 'ds-hint', style: { marginTop: 4 } }, '引擎计量（派单收尾取自宿主 tokenMeasurement）：total ' + Math.round(engine.total / 1000) + 'k · 输入 ' + Math.round(engine.input / 1000) + 'k · 缓存读 ' + Math.round(engine.cacheRead / 1000) + 'k · 输出 ' + Math.round(engine.output / 1000) + 'k')
+    return h('div', { style: CTX_DETAIL }, h('div', { className: 'ds-hint', style: { marginBottom: 6 } }, head), stack, legend, engineLine,
       h('div', { className: 'ds-hint', style: { margin: '10px 0 2px' } }, '每轮上下文增长'), chart,
       h('div', { className: 'ds-hint' }, trend.length + ' 个采样点 · ' + (drops.length === 0 ? '全程没有压缩' : '压缩 ' + drops.length + ' 次（虚线处掉了 ' + drops.map(drop => drop.drop + '%').join(' / ') + '）')))
   }

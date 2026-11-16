@@ -3,6 +3,18 @@
 只记**用户能感知**的变化。内部重构、测试增补不单列（看 `git log`）。
 日期是发布日，格式参照 Keep a Changelog，版本号遵循语义化。
 
+## [0.1.37] — 2026-11-16
+
+### 新增
+- **引擎计量接上了**：派单会话空闲时（`dispatcher.settle`），趁 session 还活着调
+  `sessionProjections.stateOf(session, 'tokenMeasurement')`，把引擎自己算的 token 记到卡的 `insight` 上；
+  上下文面板的详情里多一行「引擎计量：total 38.7k · 输入 2.0k · 缓存读 36.2k」。
+  实测：一次真实派单 60 秒后采到 `totalTokens=38713`（input 1981 / cacheRead 36224 / output 508）。
+
+### 说明
+- `tokenMeasurement` 给的是**引擎的 token 总量**（input/output/cacheRead/total），**不是**「工具 vs 助手 vs 输入」的构成拆分；
+  构成占比仍是按日志体积估算（面板上两行分开放，来源写清楚）。
+
 ## [0.1.36] — 2026-11-16
 
 ### 修复（重要）
