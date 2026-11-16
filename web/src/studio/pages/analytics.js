@@ -110,12 +110,26 @@ export function AnalyticsPage({ state, onOpenTask }) {
       h('span', { style: { width: 34, textAlign: 'right' } }, part.percent + '%'),
       h('span', { className: 'ds-hint', style: { width: 58, textAlign: 'right' } }, Math.round(part.chars / 1000) + 'k 字'))))
     const trend = Array.isArray(data.trend) ? data.trend : []
+    const drops = Array.isArray(data.drops) ? data.drops : []
+    // 压缩点：曲线掉下去的那一轮画一条竖虚线 + 一个点，标出掉了多少
+    const marks = drops.map((drop, index) => h('line', {
+      key: 'drop-' + index,
+      x1: (drop.index / Math.max(1, trend.length - 1)) * 560,
+      y1: 0,
+      x2: (drop.index / Math.max(1, trend.length - 1)) * 560,
+      y2: 56,
+      stroke: CTX_COLORS[3],
+      strokeWidth: 1,
+      strokeDasharray: '3 3',
+      vectorEffect: 'non-scaling-stroke',
+    }))
     const chart = h('svg', { style: { display: 'block', width: '100%', height: 52 }, viewBox: '0 0 560 60', preserveAspectRatio: 'none' },
       h('polygon', { points: '0,60 ' + trendPointsOf(trend) + ' 560,60', fill: CTX_COLORS[0], opacity: 0.12 }),
-      h('polyline', { points: trendPointsOf(trend), fill: 'none', stroke: CTX_COLORS[0], strokeWidth: 1.6, vectorEffect: 'non-scaling-stroke' }))
+      h('polyline', { points: trendPointsOf(trend), fill: 'none', stroke: CTX_COLORS[0], strokeWidth: 1.6, vectorEffect: 'non-scaling-stroke' }),
+      marks)
     return h('div', { style: CTX_DETAIL }, h('div', { className: 'ds-hint', style: { marginBottom: 6 } }, head), stack, legend,
       h('div', { className: 'ds-hint', style: { margin: '10px 0 2px' } }, '每轮上下文增长'), chart,
-      h('div', { className: 'ds-hint' }, trend.length + ' 个采样点：一路往上说明没压缩过，突然掉下来则是压缩过'))
+      h('div', { className: 'ds-hint' }, trend.length + ' 个采样点 · ' + (drops.length === 0 ? '全程没有压缩' : '压缩 ' + drops.length + ' 次（虚线处掉了 ' + drops.map(drop => drop.drop + '%').join(' / ') + '）')))
   }
   const renderContextRow = (row) => {
     const share = Math.max(2, Math.round((row.peak / Math.max(1, contexts?.totals?.peak ?? 1)) * 100))

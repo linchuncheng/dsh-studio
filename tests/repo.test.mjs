@@ -658,6 +658,19 @@ test('host: injected helpers are only called through host.', async () => {
   }
 })
 
+test('host: a falling trend marks where the context was compacted', async () => {
+  const { contextDrops } = await import('../src/host/context-insight.js')
+  assert.deepEqual(contextDrops([100, 200, 300]), [], '一路上升没有压缩')
+  const drops = contextDrops([100, 400, 120, 500])
+  assert.equal(drops.length, 1)
+  assert.equal(drops[0].index, 2)
+  assert.equal(drops[0].from, 400)
+  assert.equal(drops[0].to, 120)
+  assert.ok(drops[0].drop >= 70)
+  assert.deepEqual(contextDrops([]), [])
+  assert.deepEqual(contextDrops([0, 0]), [], '起点为 0 不算掉')
+})
+
 test('host: a tool-heavy session gets a plain-language warning', async () => {
   const { breakdownContext, toolHeavyWarning, TOOL_HEAVY_THRESHOLD } = await import('../src/host/context-insight.js')
   const heavy = breakdownContext({ usage: [{ input: 100, cacheRead: 900 }], counts: { turns: 2 }, volume: { tool: 8000, assistant: 1000, user: 500, other: 500 } }, 300)

@@ -28,6 +28,23 @@ export function trendOfUsage(usage, maxPoints = 48) {
   return Array.from({ length: maxPoints }, (_, index) => points[Math.min(points.length - 1, Math.round(index * step))])
 }
 
+/**
+ * 曲线掉下来的地方就是压缩点：某一轮上下文比上一轮少了 ratio 以上，
+ * 说明引擎把历史裁掉了。返回 [{ index, from, to, drop }]，index 是掉下去那一轮。
+ */
+export function contextDrops(trend, ratio = 0.7) {
+  const list = Array.isArray(trend) ? trend : []
+  const drops = []
+  for (let index = 1; index < list.length; index += 1) {
+    const from = Number(list[index - 1] ?? 0)
+    const to = Number(list[index] ?? 0)
+    if (from <= 0) continue
+    if (to >= from * ratio) continue
+    drops.push({ index, from, to, drop: Math.round(((from - to) / from) * 100) })
+  }
+  return drops
+}
+
 /** 字符 → token 的粗略换算（中英混排约 3 字符/token）；只用来排序和看比例。 */
 export function charsToTokens(chars) {
   return Math.round(Number(chars ?? 0) / 3)
@@ -52,6 +69,7 @@ export function breakdownContext(session, promptChars) {
     peak,
     peakTokens: peak,
     trend: trendOfUsage(session?.usage),
+    drops: contextDrops(trendOfUsage(session?.usage)),
     chars: total,
     approxTokens: charsToTokens(total),
     parts: parts.map(part => ({ ...part, percent: total === 0 ? 0 : Math.round((part.chars / total) * 100) })),
