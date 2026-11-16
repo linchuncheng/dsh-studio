@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { readArtifactImage } from '../artifact-image.js'
 import { applyFidelityItem, applySpecItem, pushDiffHistory, sanitizeDesign } from '../design.js'
 import { emitEvent } from '../events.js'
 import { collectCases, groupCaseKeys, loadSuites, resolveSuiteKeys, sanitizeSuite, saveSuites, summarizeRun } from '../cases.js'
@@ -406,6 +407,17 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
     })
     const task = snapshot.tasks.find(entry => entry.id === id)
     host.sendJson(res, 200, { ok: true, task, state: host.publicState(store) })
+    return true
+  }
+  if (method === 'POST' && route === '/task/artifact/image') {
+    // 截图预览：只读、只认白名单目录下的图片，读成 data URL 回去（不暴露静态文件系统）
+    const body = await host.readJsonBody(req)
+    const task = store.snapshot().tasks.find(t => t.id === String(body.id ?? ''))
+    if (task === undefined) throw new Error('no task ' + String(body.id ?? ''))
+    const artifact = (task.artifacts ?? []).find(item => item.id === String(body.artifactId ?? ''))
+    if (artifact === undefined) throw new Error('找不到这条交付物')
+    const out = await readArtifactImage(artifact.ref)
+    host.sendJson(res, out.ok === true ? 200 : 400, out)
     return true
   }
   if (method === 'POST' && route === '/task/artifact/sync') {

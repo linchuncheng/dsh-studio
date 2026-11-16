@@ -23,6 +23,19 @@ function Board({ state, onOpen, onMove, onWip }) {
   const [onlyNoBody, setOnlyNoBody] = React.useState(false)
   // 每列当前渲染到第几张；点「显示更多」一页一页加。
   const [shown, setShown] = React.useState({})
+  // 筛选后视角常停在最左边的空列：自动滚到第一个有卡的列（只在开启筛选时做，别打断正常浏览）
+  React.useEffect(() => {
+    const filtering = query !== '' || expertFilter !== '' || typeFilter !== '' || projectFilter !== '' || iterationFilter !== '' || serviceFilter !== '' || requirementFilter !== '' || onlyBlocked === true || onlyNoBody === true
+    if (!filtering) return undefined
+    const timer = setTimeout(() => {
+      const columns = [...document.querySelectorAll('[data-dsh-studio] [data-col]')]
+      // 空列里也有一行「暂无任务」，所以要看真正的卡片，不能数子节点
+      const first = columns.find(node => (node.querySelectorAll('.ds-col-body .ds-card').length) > 0)
+      if (first !== undefined && typeof first.scrollIntoView === 'function') first.scrollIntoView({ block: 'nearest', inline: 'start' })
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [query, expertFilter, typeFilter, projectFilter, iterationFilter, serviceFilter, requirementFilter, onlyBlocked, onlyNoBody])
+
   const projects = config.projects ?? []
   const activeProject = projects.find(item => item.id === projectFilter)
   const byStatus = React.useMemo(() => {

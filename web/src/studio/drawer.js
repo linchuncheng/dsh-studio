@@ -33,6 +33,10 @@ function Drawer({ task, state, onClose, onChanged }) {
   const [artifact, setArtifact] = React.useState({ kind: 'doc', title: '', ref: '', content: '' })
   const [artEdit, setArtEdit] = React.useState(null)
   const [artRead, setArtRead] = React.useState(null)
+  // 截图预览：只取 data URL，不把磁盘路径变成静态资源
+  const [imageOf, setImageOf] = React.useState('')
+  const [imageData, setImageData] = React.useState(null)
+  const [imageError, setImageError] = React.useState(null)
   // 正文不随轮询下发（一条能到几十 KB），点「阅读 / 正文」时才单独取，取过的缓存在这里。
   const [artBodies, setArtBodies] = React.useState({})
   // 评论正文同样不随轮询下发（一条讨论动辄几百字），抽屉打开时按卡取一次。
@@ -79,6 +83,15 @@ function Drawer({ task, state, onClose, onChanged }) {
     setArtRead(item.id)
     if (artBodies[item.id] !== undefined) return
     try { await loadArtifactBody(item) } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)); setArtRead(null) }
+  }
+  const previewArtifact = async (item) => {
+    if (imageOf === item.id) { setImageOf(''); return }
+    setImageOf(item.id); setImageData(null); setImageError(null)
+    try {
+      const out = await api('/task/artifact/image', { id: task.id, artifactId: item.id })
+      if (out?.ok === true) setImageData(String(out.dataUrl ?? ''))
+      else setImageError(String(out?.error ?? '读不到这张图'))
+    } catch (cause) { setImageError(cause instanceof Error ? cause.message : String(cause)) }
   }
   const editArtifact = async (item) => {
     if (artEdit !== null && artEdit.id === item.id) { setArtEdit(null); return }
@@ -1073,10 +1086,30 @@ function Drawer({ task, state, onClose, onChanged }) {
                   ? h('a', { className: 'ds-art-ref', href: item.doc.url, target: '_blank', rel: 'noreferrer' }, `📄 ${item.doc.name || '云盘文档'}`)
                   : (item.doc?.error ? h('div', { className: 'ds-error' }, item.doc.error) : null),
               ),
+              /\.(png|jpe?g|webp|gif)$/i.test(String(item.ref ?? ''))
+                ? h('button', {
+                  className: 'ds-btn ds-btn-ghost', disabled: busy, title: '看这张截图（只读，来自白名单目录）',
+                  onClick: () => void previewArtifact(item),
+                }, imageOf === item.id ? '收起图' : '看图')
+                : null,
               h('button', {
                 className: 'ds-btn ds-btn-ghost', disabled: busy, title: '直接读正文（Markdown 渲染）',
                 onClick: () => void readArtifact(item),
               }, artRead === item.id ? '收起' : '阅读'),
+              imageOf !== item.id ? null : h('div', {
+                className: 'ds-art-image',
+                onClick: () => setImageOf(''),
+                style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70, cursor: 'zoom-out' },
+              },
+                imageError !== null
+                  ? h('div', { className: 'ds-error', style: { background: '#fff', padding: 12, borderRadius: 8 } }, imageError)
+                  : (imageData === null
+                    ? h('div', { className: 'ds-hint', style: { background: '#fff', padding: 12, borderRadius: 8 } }, '正在读这张图…')
+                    : h('img', {
+                      src: imageData, alt: item.title,
+                      onClick: event => event.stopPropagation(),
+                      style: { maxWidth: '92vw', maxHeight: '86vh', borderRadius: 8, border: '1px solid var(--ds-line)', background: '#fff', boxShadow: '0 12px 40px rgba(0,0,0,0.35)' },
+                    }))),
               h('button', {
                 className: 'ds-btn ds-btn-ghost', disabled: busy, title: '编辑正文',
                 onClick: () => void editArtifact(item),
