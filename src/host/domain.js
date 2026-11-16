@@ -2,6 +2,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { sanitizeDbCase } from './db-runner.js'
 import { sanitizeDiscovery } from './discovery.js'
+import { sanitizeOverride } from './override.js'
 import { sanitizePrices } from './usage.js'
 import { sanitizeWebhooks } from './webhooks.js'
 import { sanitizeCaseShell } from './shell-case.js'
@@ -946,10 +947,8 @@ export function sanitizeRequirementHistory(raw) {
 export function sanitizeRequirementPool(raw) {
   if (raw === null || raw === undefined || typeof raw !== 'object') return { reach: 0, impact: 0, confidence: 0, effort: 0, score: 0 }
   const num = (value, max) => { const n = Number(value); return Number.isFinite(n) ? Math.min(max, Math.max(0, n)) : 0 }
-  const reach = Math.round(num(raw.reach, 100000))
-  const impact = num(raw.impact, 3)
-  const confidence = num(raw.confidence, 100)
-  const effort = num(raw.effort, 365)
+  const reach = Math.round(num(raw.reach, 100000)), impact = num(raw.impact, 3)
+  const confidence = num(raw.confidence, 100), effort = num(raw.effort, 365)
   const score = effort <= 0 ? 0 : Math.round((reach * impact * (confidence / 100) / effort) * 10) / 10
   return { reach, impact, confidence, effort, score }
 }
@@ -1751,6 +1750,7 @@ export function normalizePatch(input) {
   for (const key of ['gitlabIssue', 'owner', 'blockedReason', 'feishuThread']) {
     if (input[key] !== undefined) patch[key] = text(input[key], 500) ?? ''
   }
+  if (input.override !== undefined) { const next = sanitizeOverride(input.override); if (next !== undefined) patch.override = next }
   // MR 不是字符串：卡片上的 gitlabMR 是对象，之前用 text() 一律压成空串（实测存进去是 ""）。
   // 允许传对象，也允许传 "!12" / MR 链接（从里面取 iid）。
   if (input.gitlabMR !== undefined) {

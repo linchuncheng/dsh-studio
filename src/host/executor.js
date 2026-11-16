@@ -713,6 +713,11 @@ export function requirementGate(state, requirement) {
   }
   const blocked = tasks.filter(task => task.blocked !== null && task.blocked !== undefined)
   if (blocked.length > 0) blockers.push(`${blocked.length} 张卡还卡在阻塞：${blocked.slice(0, 3).map(task => task.code || task.id).join('、')}`)
+  // 绕过门禁完成的卡：不拦（override 本来就是有意开的逃生舱），但交付时必须被看见。
+  const overridden = tasks.filter(task => task.status === 'done' && task.override !== null && task.override !== undefined)
+  if (overridden.length > 0) {
+    warnings.push(overridden.length + ' 张卡是绕过准出完成的：' + overridden.slice(0, 3).map(task => (task.code || task.id) + (task.override?.reason ? '（' + String(task.override.reason).slice(0, 40) + '）' : '')).join('、'))
+  }
   const bugs = tasks.filter(task => task.type === 'bug' && task.status !== 'done')
   if (bugs.length > 0) blockers.push(`还有 ${bugs.length} 个缺陷没关闭：${bugs.slice(0, 3).map(task => task.code || task.id).join('、')}`)
   const failing = []
@@ -1401,7 +1406,8 @@ export async function updateTask(store, id, patch) {
     // 换列时负责人会被这一列的默认负责人覆盖，团队记忆要用「换列前」的那个人去认团。
     const expertBefore = task.expert
     if (normalized.status !== undefined) {
-      task.history.push({ at: task.updatedAt, by, status: normalized.status, ...(override !== '' ? { note: `override：${override}` } : {}) })
+      if (override !== '') task.override = { by, at: Date.now(), reason: String(override).slice(0, 300) }
+    task.history.push({ at: task.updatedAt, by, status: normalized.status, ...(override !== '' ? { note: `override：${override}` } : {}) })
       // 缺陷从「已完成」被打回去 = 重开，重开次数是质量信号（谁的老毛病又犯了）。
       if (task.type === 'bug' && previous === 'done' && normalized.status !== 'done') {
         task.reopenCount = (Number(task.reopenCount) || 0) + 1
