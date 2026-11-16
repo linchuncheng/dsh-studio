@@ -4,6 +4,14 @@ import { client } from '../context.js'
 import { BurnChart, ProgressField } from '../charts.js'
 import { fmtTime } from '../format.js'
 
+const CTX_COLORS = ['#4A5699', '#C45FA0', '#6277BA', '#F39A2B', '#94a3b8']
+const CTX_NUM = { width: 56, textAlign: 'right', fontSize: 12, flexShrink: 0 }
+const CTX_ROW = { display: 'flex', alignItems: 'center', gap: 10, padding: '7px 6px', borderTop: '1px solid var(--ds-line)', cursor: 'pointer' }
+const CTX_DETAIL = { padding: '6px 8px 12px', borderTop: '1px dashed var(--ds-line)' }
+const CTX_STACK = { display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden', background: 'var(--ds-line)', margin: '4px 0 10px' }
+const CTX_LEGEND = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontSize: 12 }
+const CTX_CHIP = { display: 'flex', flexDirection: 'column', gap: 2, padding: '6px 10px', border: '1px solid var(--ds-line)', borderRadius: 8, minWidth: 84 }
+
 export function AnalyticsPage({ state, onOpenTask }) {
   const { h, React, api, SelectField } = client()
   const [days, setDays] = React.useState(30)
@@ -87,6 +95,61 @@ export function AnalyticsPage({ state, onOpenTask }) {
   const loadOverdue = enabledExperts.reduce((sum, item) => sum + (item.overdue ?? 0), 0)
   const burnSeries = burn?.series ?? []
   const burnTail = burnSeries.length === 0 ? null : burnSeries[burnSeries.length - 1]
+
+  // 上下文洞察面板：数据已经算好，这里只负责画（内联样式，避免再引一套 CSS）
+  const renderContextDetail = () => {
+    if (ctxDetail === null) return h('div', { className: 'ds-hint', style: CTX_DETAIL }, '正在算这次会话的上下文构成…')
+    if (ctxDetail.ok !== true) return h('div', { className: 'ds-hint', style: CTX_DETAIL }, ctxDetail.error ?? '读不到')
+    const data = ctxDetail.breakdown ?? {}
+    const parts = Array.isArray(data.parts) ? data.parts : []
+    const head = '最近一次会话 ' + fmtTime(Math.round(data.at)) + ' · 峰值 ' + Math.round(data.peak / 1000) + 'k token · 全程约 ' + Math.round(data.approxTokens / 1000) + 'k token'
+    const stack = h('div', { style: CTX_STACK }, parts.map((part, index) => h('span', { key: part.key, title: part.label + ' ' + part.percent + '%', style: { width: Math.max(part.percent, 0.5) + '%', background: CTX_COLORS[index % CTX_COLORS.length] } })))
+    const legend = h('div', { style: CTX_LEGEND }, parts.map((part, index) => h('div', { key: part.key, style: { display: 'flex', alignItems: 'center', gap: 6 } },
+      h('span', { style: { width: 8, height: 8, borderRadius: 2, flexShrink: 0, background: CTX_COLORS[index % CTX_COLORS.length] } }),
+      h('span', { style: { flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, part.label),
+      h('span', { style: { width: 34, textAlign: 'right' } }, part.percent + '%'),
+      h('span', { className: 'ds-hint', style: { width: 58, textAlign: 'right' } }, Math.round(part.chars / 1000) + 'k 字'))))
+    const trend = Array.isArray(data.trend) ? data.trend : []
+    const chart = h('svg', { style: { display: 'block', width: '100%', height: 52 }, viewBox: '0 0 560 60', preserveAspectRatio: 'none' },
+      h('polygon', { points: '0,60 ' + trendPointsOf(trend) + ' 560,60', fill: CTX_COLORS[0], opacity: 0.12 }),
+      h('polyline', { points: trendPointsOf(trend), fill: 'none', stroke: CTX_COLORS[0], strokeWidth: 1.6, vectorEffect: 'non-scaling-stroke' }))
+    return h('div', { style: CTX_DETAIL }, h('div', { className: 'ds-hint', style: { marginBottom: 6 } }, head), stack, legend,
+      h('div', { className: 'ds-hint', style: { margin: '10px 0 2px' } }, '每轮上下文增长'), chart,
+      h('div', { className: 'ds-hint' }, trend.length + ' 个采样点：一路往上说明没压缩过，突然掉下来则是压缩过'))
+  }
+  const renderContextRow = (row) => {
+    const share = Math.max(2, Math.round((row.peak / Math.max(1, contexts?.totals?.peak ?? 1)) * 100))
+    const open = ctxOpen === row.expert
+    const main = h('div', { onClick: () => void openContext(row.expert), style: CTX_ROW },
+      h('div', { style: { flex: 1, minWidth: 0 } },
+        h('div', { style: { fontWeight: 600, fontSize: 13 } }, row.expert),
+        h('div', { className: 'ds-hint', style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
+          (row.model === '' ? '模型未知' : row.model) + ' · ' + row.sessions + ' 个会话 · 最近 ' + fmtTime(Math.round(row.lastAt)))),
+      h('div', { style: { width: 130, height: 6, background: 'var(--ds-line)', borderRadius: 3, overflow: 'hidden', flexShrink: 0 } },
+        h('span', { style: { display: 'block', height: '100%', width: share + '%', background: row.peak > 180000 ? CTX_COLORS[3] : CTX_COLORS[2] } })),
+      h('div', { style: CTX_NUM }, Math.round(row.peak / 1000) + 'k'),
+      h('div', { style: { ...CTX_NUM, color: row.retries > 100 ? CTX_COLORS[3] : 'inherit' } }, '重试 ' + row.retries),
+      h('div', { style: { ...CTX_NUM, color: row.alert === '' ? 'inherit' : CTX_COLORS[3] } }, '工具 ' + row.toolShare + '%'),
+      h('div', { style: { width: 12, textAlign: 'right', fontSize: 11, opacity: 0.6 } }, open ? '▲' : '▼'))
+    return h('div', { key: row.expert }, main, open ? renderContextDetail() : null)
+  }
+  const renderContextPanel = () => {
+    const totals = contexts?.totals ?? {}
+    const rows = Array.isArray(contexts?.rows) ? contexts.rows : []
+    const head = h('div', { className: 'ds-panel-head' }, '上下文洞察（每个专家）',
+      h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } }, contexts === null ? '正在读会话日志…' : '点开一行看这次会话被什么占满'))
+    const chip = (label, text, warn) => h('div', { style: CTX_CHIP },
+      h('span', { className: 'ds-hint', style: { fontSize: 11 } }, label),
+      h('span', { style: { fontSize: 15, fontWeight: 600, color: warn ? CTX_COLORS[3] : 'inherit' } }, text))
+    const kpis = h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', paddingBottom: 10 } },
+      chip('专家', String(totals.experts ?? 0)), chip('会话', String(totals.sessions ?? 0)),
+      chip('最高窗口', Math.round((totals.peak ?? 0) / 1000) + 'k', (totals.peak ?? 0) > 180000),
+      chip('工具喂胖', String(totals.alerts ?? 0), (totals.alerts ?? 0) > 0))
+    const body = contexts === null ? h('div', { className: 'ds-hint' }, '正在读会话日志…')
+      : rows.length === 0 ? h('div', { className: 'ds-hint' }, '还没有专家会话记录。')
+        : h('div', null, kpis, rows.map(renderContextRow))
+    return h('div', { className: 'ds-panel', style: { marginTop: 12 } }, head, h('div', { className: 'ds-panel-body' }, body))
+  }
 
   return h('div', { className: 'ds-body' },
     h('div', { className: 'ds-board-bar' },
@@ -283,56 +346,6 @@ export function AnalyticsPage({ state, onOpenTask }) {
         ),
       ),
     ),
-    h('div', { className: 'ds-panel', style: { marginTop: 12 } },
-      h('div', { className: 'ds-panel-head' },
-        '上下文洞察（每个专家）',
-        h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } },
-          contexts === null ? '正在读会话日志…' : `${contexts.totals.experts} 位专家 · ${contexts.totals.sessions} 个会话 · 最高窗口 ${Math.round((contexts.totals.peak ?? 0) / 1000)}k token` + ((contexts.totals.alerts ?? 0) === 0 ? '' : ` · ${contexts.totals.alerts} 个是工具喂胖的`)),
-      ),
-      h('div', { className: 'ds-panel-body' },
-        contexts === null
-          ? h('div', { className: 'ds-hint' }, '正在读会话日志…')
-          : (contexts.rows ?? []).length === 0
-            ? h('div', { className: 'ds-hint' }, '还没有专家会话记录。')
-            : contexts.rows.map(row => h('div', { key: row.expert },
-              h('div', { className: 'ds-listrow', style: { cursor: 'pointer' }, onClick: () => void openContext(row.expert) },
-                h('div', { className: 'ds-listrow-main' },
-                  h('div', null, `${row.expert}${row.model === '' ? '' : ' · ' + row.model}`),
-                  h('div', { className: 'ds-hint' },
-                    `${row.sessions} 个会话 · 窗口峰值 ${Math.round(row.peak / 1000)}k · 回合 ${row.turns} · 工具 ${row.toolCalls} · 重试 ${row.retries} · 最近 ${fmtTime(Math.round(row.lastAt))}`),
-                ),
-                h('div', { className: 'ds-listrow-actions' },
-                  row.alert === ''
-                  ? h('span', { className: 'ds-hint', 'data-warn': row.peak > 180000 ? '1' : undefined }, row.peak > 180000 ? '接近上限（>180k）' : '')
-                  : h('span', { className: 'ds-hint', 'data-warn': '1', title: row.alert }, `工具占 ${row.toolShare}%`),
-                  h('span', { className: 'ds-hint' }, ctxOpen === row.expert ? '▲' : '▼'),
-                ),
-              ),
-              ctxOpen !== row.expert ? null : (
-                ctxDetail === null
-                  ? h('div', { className: 'ds-hint', style: { padding: '4px 12px 8px' } }, '正在算这次会话的上下文构成…')
-                  : ctxDetail.ok !== true
-                    ? h('div', { className: 'ds-hint', style: { padding: '4px 12px 8px' } }, ctxDetail.error ?? '读不到')
-                    : h('div', { style: { padding: '4px 12px 10px' } },
-                      h('div', { className: 'ds-hint' },
-                        `最近一次会话 ${fmtTime(Math.round(ctxDetail.breakdown.at))} · 窗口峰值 ${Math.round(ctxDetail.breakdown.peak / 1000)}k token · 总共 ${Math.round(ctxDetail.breakdown.approxTokens / 1000)}k token 文本`),
-                      h('svg', { width: '100%', height: 58, viewBox: '0 0 560 56', preserveAspectRatio: 'none', style: { display: 'block', margin: '4px 0 2px' } },
-                        h('line', { x1: 0, y1: 55, x2: 560, y2: 55, stroke: 'var(--ds-line)', strokeWidth: 1, vectorEffect: 'non-scaling-stroke' }),
-                        h('polyline', { points: trendPointsOf(ctxDetail.breakdown.trend), fill: 'none', stroke: 'var(--ds-accent)', strokeWidth: 1.5, vectorEffect: 'non-scaling-stroke' }),
-                      ),
-                      h('div', { className: 'ds-hint' },
-                        `每轮上下文（${(ctxDetail.breakdown.trend ?? []).length} 个采样点）——一路往上说明没压缩过，突然掉下来说明压缩过`),
-                      ctxDetail.breakdown.parts.map(part => h('div', { key: part.key, className: 'ds-row', style: { gap: 8, alignItems: 'center' } },
-                        h('span', { style: { width: 150, fontSize: 12 } }, part.label),
-                        h('span', { style: { flex: 1, height: 6, background: 'var(--ds-line)', borderRadius: 3, overflow: 'hidden' } },
-                          h('span', { style: { display: 'block', width: part.percent + '%', height: '100%', background: 'var(--ds-accent)' } })),
-                        h('span', { className: 'ds-hint', style: { width: 78, textAlign: 'right' } }, `${part.percent}% · ${Math.round(part.chars / 1000)}k 字`),
-                      )),
-                      h('div', { className: 'ds-hint' }, '按会话日志里各类事件的文本体积估算；宿主不暴露真实 token 分配，所以这是比例而非账目。'),
-                    )
-              ),
-            )),
-      ),
-    ),
+    renderContextPanel(),
   )
 }
