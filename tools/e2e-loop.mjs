@@ -72,6 +72,21 @@ async function runOnce(round) {
       'worktree=' + (info.base ?? '?') + ' 核对=' + String(reviewed?.coding?.verified?.ok) + ' 用例=' + String(run.body.run?.passed) + '/' + String(run.body.run?.total))
   }
 
+  // 上下文洞察：占用率必须是引擎窗口算出来的，构成占比加起来要是 100
+  const contexts = await post('/contexts', {})
+  const rows = contexts.body?.rows ?? []
+  const totals = contexts.body?.totals ?? {}
+  step('上下文洞察', rows.length > 0 && Number(totals.window) > 0, rows.length + ' 位专家 · 窗口 ' + Math.round((Number(totals.window) || 0) / 1000) + 'k · 最高占用 ' + (totals.percent ?? 0) + '%')
+  const worstPercent = rows.reduce((max, row) => Math.max(max, Number(row.percent ?? 0)), 0)
+  step('占用率可信', worstPercent >= 0 && worstPercent <= 100, '最高 ' + worstPercent + '%')
+  const firstExpert = String(rows[0]?.expert ?? '')
+  if (firstExpert !== '') {
+    const detail = await post('/contexts/session', { expert: firstExpert })
+    const parts = detail.body?.breakdown?.parts ?? []
+    const sum = parts.reduce((total, part) => total + Number(part.percent ?? 0), 0)
+    step('构成占比自洽', parts.length >= 4 && sum >= 99 && sum <= 101, firstExpert + ' 五项合计 ' + sum + '%')
+  }
+
   const fin = await post('/requirement/signoff', { id: req.id, by: '产品', note: '全闭环自检通过' })
   const after = (await state()).requirements.find(r => r.id === req.id)
   step('需求交付', (fin.body.requirement?.status ?? after?.status) === 'delivered', String(fin.body.requirement?.status ?? after?.status))
