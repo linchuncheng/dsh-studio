@@ -75,6 +75,16 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     const note = String(body.note ?? '').trim().slice(0, 600)
     const by = String(body.by ?? req.headers['x-studio-user'] ?? '').trim().slice(0, 60) || '人'
     if (action === 'sign' && note === '') throw new Error('需求验收签字要写一句结论：交付了什么、遗留什么')
+    // 准出门禁必须在签字前生效：否则「需求自己说没准备好，人却点了签字」会直接变成已交付。
+    if (action === 'sign') {
+      // 用「假设这次签字已经生效」的副本算门禁：否则「还没有签字」会把自己挡住，永远签不上。
+      const current = store.snapshot().requirements.find(item => item.id === id) ?? {}
+      const gate = requirementGate(store.snapshot(), { ...current, signoff: { by, at: Date.now(), note } })
+      const override = String(body.override ?? '').trim()
+      if (gate.ready !== true && override === '') {
+        throw new Error('这条需求还过不了准出：' + gate.blockers.join('；') + '（确实要提前签，传 override 写一句原因）')
+      }
+    }
     const snapshot = await store.mutate(state => {
       const target = state.requirements.find(item => item.id === id)
       if (target === undefined) throw new Error('需求不存在')

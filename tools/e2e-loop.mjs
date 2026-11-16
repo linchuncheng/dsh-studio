@@ -44,6 +44,10 @@ async function runOnce(round) {
   step('未答三问被拦', blocked.status === 400 && String(blocked.body.error ?? '').includes('澄清'), String(blocked.status))
 
   await post('/requirement/save', { requirement: { id: req.id, title: req.title, description: req.description, project: PROJECT, discovery: { server: '有，node:sqlite 持久化', auth: '服务端校验，viewer 写接口 403', boundary: '前后端都交付，含测试' }, points } })
+  // 需求准出门禁要求有产品输出：先补一份 PRD 正文（真实流程也是这么走的）
+  await post('/requirement/doc', { id: req.id, action: 'add', by: '产品', doc: { id: 'prd', kind: 'prd', title: 'PRD', version: 'v1.0', content: '自检用 PRD：范围与验收标准各一句。' } })
+  await post('/requirement/pool', { id: req.id, pool: { reach: 100, impact: 1, confidence: 80, effort: 2 } })
+
   const split = await post('/requirement/split', { id: req.id })
   const created = split.body.created ?? []
   step('答完三问可拆卡', split.status === 200 && created.length > 0, created.length + ' 张')
