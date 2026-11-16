@@ -19,7 +19,8 @@
     "verify:usage": "node tools/verify-usage.mjs",
     "shots": "node tools/visual/capture.mjs",
     "verify:scale": "node tools/visual/board-scale.mjs",
-    "verify:costs": "node tools/visual/cost-price-probe.mjs"
+    "verify:costs": "node tools/visual/cost-price-probe.mjs",
+    "verify:facts": "node tools/visual/facts-probe.mjs"
   },
   "exports": {
     ".": "./index.js",

@@ -907,6 +907,38 @@ test('host: /state answers 304 when nothing changed (a thousand cards must not b
   assert.equal(handleStateRoute({ method: 'GET', route: '/tasks', req: { headers: {} }, res: makeRes(), store: {} }), false)
 })
 
+test('host: feishu doc fetch output is parsed without throwing on junk', async () => {
+  const { parseFeishuDocFetch } = await import('../src/host/lark-doc.js')
+  const ok = parseFeishuDocFetch(JSON.stringify({ ok: true, data: { document: { content: '<title>库存预占 PRD</title>\n# 背景\n正文' } } }))
+  assert.equal(ok.ok, true)
+  assert.equal(ok.title, '库存预占 PRD', 'title 标签要拔出来，别当成正文')
+  assert.equal(ok.text.startsWith('# 背景'), true)
+  const denied = parseFeishuDocFetch(JSON.stringify({ ok: false, error: { message: 'no permission' } }))
+  assert.equal(denied.ok, false)
+  assert.match(denied.error, /no permission/, '要把 lark-cli 的原始报错透出来')
+  assert.equal(parseFeishuDocFetch(JSON.stringify({ ok: true, data: { document: { content: '   ' } } })).ok, false, '空正文要算失败')
+  const plain = parseFeishuDocFetch('# 直接是 markdown')
+  assert.equal(plain.ok, true, '有的版本直接吐 markdown，原样当正文')
+  assert.equal(plain.text, '# 直接是 markdown')
+  assert.equal(parseFeishuDocFetch('').ok, false)
+})
+
+test('host: the requirement-doc chain keeps every entry the card asks for', async () => {
+  // 这条链（拉正文 → 设为基线 → 对比 → 回滚）的每个入口都要真的接在页面上，
+  // 光有后端路由不算数：以前「＋ 新建需求」就是绑了一个只写不读的 state，点了没反应。
+  const page = read('web/src/studio/pages/requirements.js')
+  for (const label of ['从链接拉正文', '设为基线', '对比基线', '回滚到基线', '取消基线']) {
+    assert.ok(page.includes(label), `需求页少了「${label}」入口`)
+  }
+  assert.ok(page.includes("api('/requirement/pull'"), '拉正文要真调 /requirement/pull')
+  assert.ok(page.includes("action: 'baseline'") && page.includes("action: 'rollback'"), '基线与回滚要走 /requirement/doc')
+  const executor = read('src/host/executor.js')
+  assert.ok(executor.includes("action === 'rollback'"), 'executor 必须真的处理 rollback')
+  assert.ok(executor.includes('parseFeishuDocFetch'), '拉正文的解析走 lark-doc.js 的纯函数')
+  const route = read('src/host/routes/requirements.js')
+  assert.ok(route.includes('/requirement/pull') && route.includes('/requirement/doc'), '路由要在 requirements.js 里')
+})
+
 test('host: quality counts rework from backwards moves, failures and reopens', async () => {
   const { taskRework, buildQuality } = await import('../src/host/quality.js')
   assert.equal(taskRework({ history: [{ status: 'clarify' }, { status: 'dev' }] }).rework, false)

@@ -13,6 +13,7 @@ import { pickRunner, registerRunner } from './runners.js'
 import { runDbCase } from './db-runner.js'
 import { emitEvent } from './events.js'
 import { runShellCase } from './shell-runner.js'
+import { parseFeishuDocFetch } from './lark-doc.js'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
@@ -999,8 +1000,13 @@ export function buildDashboard(state) {
 export function runCommand(command, args, timeoutMs = 20000) {
   return new Promise(resolvePromise => {
     let child
+    // Windows 上 npm 装的 CLI（lark-cli）是 .cmd 壳，spawn 直接执行会 ENOENT——
+    // 本地开发环境会一直报「服务器上没有可用的 lark-cli」。交给 cmd.exe 转一手，参数里没有空格依赖。
+    const viaCmd = process.platform === 'win32' && command === 'lark-cli'
     try {
-      child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+      child = viaCmd
+        ? spawn(process.env.ComSpec ?? 'cmd.exe', ['/c', command, ...args], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+        : spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] })
     } catch (error) {
       resolvePromise({ ok: false, code: -1, stdout: '', stderr: String(error?.message ?? error) })
       return
@@ -1040,22 +1046,8 @@ export async function pullFeishuDoc(url) {
   if (!pulled.ok) {
     return { ok: false, tool: true, text: '', error: `拉取失败：${(pulled.stderr || pulled.stdout).slice(0, 300)}` }
   }
-  const raw = pulled.stdout.trim()
-  let text = raw
-  try {
-    const parsed = JSON.parse(raw)
-    if (parsed.ok === false) {
-      const message = parsed.error?.message ?? '未知错误'
-      return { ok: false, tool: true, text: '', error: `lark-cli 报错：${String(message).slice(0, 260)}（可能是这个应用还没被加进文档协作者）` }
-    }
-    text = String(parsed.data?.document?.content ?? '')
-    if (text.trim() === '') return { ok: false, tool: true, text: '', error: '拉到了空正文：这个文档可能是空的，或者应用没有阅读权限' }
-    const title = text.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.trim() ?? ''
-    const body = text.replace(/<title>[\s\S]*?<\/title>\s*/, '')
-    return { ok: true, tool: true, title, text: body.slice(0, 60000), error: '' }
-  } catch {
-    return { ok: true, tool: true, title: '', text: raw.slice(0, 60000), error: '' }
-  }
+  // 解析（JSON / 裸 markdown / 报错）是纯函数，放在 lark-doc.js，坏输入不会抛。
+  return { tool: true, ...parseFeishuDocFetch(pulled.stdout) }
 }
 
 /** lark-cli 探活：60 秒内复用结果，别每次调用都起进程。 */
