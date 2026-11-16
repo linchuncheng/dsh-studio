@@ -590,6 +590,8 @@ DSH 的 web 只有一张登录 cookie，所有人共用；所以平台自己记�
 
 ## 效能分析（过程指标，不是拍脑袋）
 
+**上下文洞察**：效能页底部按专家汇总会话数、上下文窗口峰值（`input + cacheRead` 峰值）、回合数、工具调用、模型重试与最近活动；峰值超 180k 会标「接近上限」。数据直接读 `~/.dsh/sessions` 里的会话日志，不额外花 token（接口 `POST /studio-api/contexts`）。
+
 看板顶部「效能」页签，数据来自 `GET /analytics?days=7|30|90&project=<id>`，也可以让 agent 用 `studio_analytics` 读。
 
 **版式（2026-11-09 重排，两轮）**：原来是 `repeat(auto-fit,minmax(300px,1fr))`，1180px 宽时四块面板挤一行、每块不到 300px，柱条被压成一条线。现在改成 12 栅格 + 三段分区，并且面板按内容高度排（`align-items:start`），不再为了等高在底部拉出一片空白：

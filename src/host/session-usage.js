@@ -25,17 +25,25 @@ async function readFileUsage(file) {
   let mtimeMs = 0
   try { mtimeMs = (await stat(file)).mtimeMs } catch { return null }
   const cached = CACHE.get(file)
-  if (cached !== undefined && cached.mtimeMs === mtimeMs) return cached.usage
+  if (cached !== undefined && cached.mtimeMs === mtimeMs) return cached
   let usage = []
+  let counts = { turns: 0, toolCalls: 0, retries: 0 }
   try {
     const { stdout } = await run('zstd', ['-dc', file], { maxBuffer: 256 * 1024 * 1024 })
-    usage = parseUsageLines(stdout.split('\n'))
+    const lines = stdout.split('\n')
+    usage = parseUsageLines(lines)
+    // 顺手数一下回合/工具/重试：上下文洞察要用，不额外解压一遍
+    for (const line of lines) {
+      if (line.includes('"type":"step/start"')) counts.turns += 1
+      else if (line.includes('"type":"tool-call"')) counts.toolCalls += 1
+      else if (line.includes('"type":"llm/retry"')) counts.retries += 1
+    }
   } catch {
     // 没装 zstd 或者文件坏了：当作读不到，不抛，页面上显示未知
     usage = []
   }
-  CACHE.set(file, { mtimeMs, usage })
-  return usage
+  CACHE.set(file, { mtimeMs, usage, counts })
+  return { usage, counts, at: mtimeMs }
 }
 
 /** 扫一遍所有 studio-* 会话，返回 [{ taskId, expert, at, usage }]。 */
@@ -50,9 +58,9 @@ export async function collectSessionUsage(root = sessionsRoot()) {
     for (const entry of entries) {
       const parsed = parseSessionName(entry)
       if (parsed === null) continue
-      const usage = await readFileUsage(join(dir, entry, 'session.v4.jsonl.zstd'))
-      if (usage === null || usage.length === 0) continue
-      out.push({ taskId: parsed.taskId, expert: parsed.expert, usage })
+      const read = await readFileUsage(join(dir, entry, 'session.v4.jsonl.zstd'))
+      if (read === null || read.usage.length === 0) continue
+      out.push({ taskId: parsed.taskId, expert: parsed.expert, at: read.at, usage: read.usage, counts: read.counts })
     }
   }
   return out

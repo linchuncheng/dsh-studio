@@ -3,6 +3,7 @@ import {
 } from '../executor.js'
 import { runSummary } from '../dispatcher.js'
 import { collectSessionUsage, aggregateUsage } from '../session-usage.js'
+import { aggregateContext } from '../context-insight.js'
 import { costOf } from '../usage.js'
 const INJECTED = ['getDispatcher', "buildAnalytics","buildMetrics","burndownReport","sendJson","workloadReport"]
 let host = {
@@ -20,6 +21,13 @@ export function configureInsightsRoutes(services) {
   host = { ...host, ...(services ?? {}) }
 }
 export async function handleInsightsRoute({ method, route, req, res, store, url }) {
+if (method === 'POST' && route === '/contexts') {
+    // 每个专家会话的上下文洞察：窗口峰值、回合、工具调用、重试
+    const sessions = await collectSessionUsage()
+    const aggregated = aggregateContext(sessions)
+    host.sendJson(res, 200, { ok: true, ...aggregated, at: Date.now() })
+    return true
+  }
   if (method === 'GET' && route === '/metrics') {
     host.sendJson(res, 200, { ok: true, metrics: host.buildMetrics(store.snapshot()) })
     return true

@@ -2,6 +2,7 @@
 
 import { client } from '../context.js'
 import { BurnChart, ProgressField } from '../charts.js'
+import { fmtTime } from '../format.js'
 
 export function AnalyticsPage({ state, onOpenTask }) {
   const { h, React, api, SelectField } = client()
@@ -13,6 +14,16 @@ export function AnalyticsPage({ state, onOpenTask }) {
   const [burn, setBurn] = React.useState(null)
   const [costs, setCosts] = React.useState(null)
   const [quality, setQuality] = React.useState(null)
+  // 上下文洞察：每个专家的窗口占用峰值 / 回合 / 工具调用 / 重试（读会话日志，不额外花 token）
+  const [contexts, setContexts] = React.useState(null)
+
+  React.useEffect(() => {
+    let alive = true
+    api('/contexts', {})
+      .then(out => { if (alive) setContexts(out) })
+      .catch(() => { if (alive) setContexts({ rows: [], totals: { experts: 0, sessions: 0, peak: 1 } }) })
+    return () => { alive = false }
+  }, [state.revision])
 
   React.useEffect(() => {
     let alive = true
@@ -255,6 +266,29 @@ export function AnalyticsPage({ state, onOpenTask }) {
             ),
           )),
         ),
+      ),
+    ),
+    h('div', { className: 'ds-panel', style: { marginTop: 12 } },
+      h('div', { className: 'ds-panel-head' },
+        '上下文洞察（每个专家）',
+        h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } },
+          contexts === null ? '正在读会话日志…' : `${contexts.totals.experts} 位专家 · ${contexts.totals.sessions} 个会话 · 最高窗口 ${Math.round((contexts.totals.peak ?? 0) / 1000)}k token`),
+      ),
+      h('div', { className: 'ds-panel-body' },
+        contexts === null
+          ? h('div', { className: 'ds-hint' }, '正在读会话日志…')
+          : (contexts.rows ?? []).length === 0
+            ? h('div', { className: 'ds-hint' }, '还没有专家会话记录。')
+            : contexts.rows.map(row => h('div', { key: row.expert, className: 'ds-listrow' },
+              h('div', { className: 'ds-listrow-main' },
+                h('div', null, `${row.expert}${row.model === '' ? '' : ' · ' + row.model}`),
+                h('div', { className: 'ds-hint' },
+                  `${row.sessions} 个会话 · 窗口峰值 ${Math.round(row.peak / 1000)}k · 回合 ${row.turns} · 工具 ${row.toolCalls} · 重试 ${row.retries} · 最近 ${fmtTime(Math.round(row.lastAt))}`),
+              ),
+              h('div', { className: 'ds-listrow-actions' },
+                h('span', { className: 'ds-hint', 'data-warn': row.peak > 180000 ? '1' : undefined }, row.peak > 180000 ? '接近上限（>180k）' : ''),
+              ),
+            )),
       ),
     ),
   )
