@@ -641,6 +641,23 @@ test('host: cards turn into bitable records and batch at 200', async () => {
   assert.deepEqual(mirrorConfigGaps({ feishu: { baseToken: 'b', tableId: 't' } }), [])
 })
 
+test('host: injected helpers are only called through host.', async () => {
+  const { readFileSync } = await import('node:fs')
+  for (const name of ['tools.js', 'routes/tasks.js', 'routes/requirements.js', 'routes/connect.js', 'routes/insights.js']) {
+    const source = readFileSync(new URL('../src/host/' + name, import.meta.url), 'utf8')
+    const injected = /const INJECTED = \[([\s\S]*?)\]/.exec(source)?.[1] ?? ''
+    const names = [...injected.matchAll(/"([^"]+)"/g)].map(match => match[1])
+    if (names.length === 0) continue
+    // 去掉注释与字符串，剩下的才是真代码
+    const code = source.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/'[^']*'|"[^"]*"|`[^`]*`/g, '')
+    const bare = names.filter((name) => {
+      const pattern = new RegExp('(?<![.\\w$])' + name.replace(/\$/g, '\\$') + '\\s*\\(', 'g')
+      return pattern.test(code)
+    })
+    assert.deepEqual(bare, [], name + ' 里这些注入函数被直接调用（应该写成 host.xxx）')
+  }
+})
+
 test('host: a failing case files a bug at the severity of the case', async () => {
   const { bugSeverityFor } = await import('../src/host/bugs.js')
   assert.deepEqual(bugSeverityFor('p0', 'dev'), { severity: 'p0', priority: 'urgent', regression: false })

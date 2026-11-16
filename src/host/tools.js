@@ -279,7 +279,8 @@ export function registerTools(ctx, store) {
         .filter(t => args.requirementId === undefined || t.requirementId === '' || t.requirementId === args.requirementId)
         .slice(0, Number.isFinite(args.limit) ? Math.max(1, Math.min(200, args.limit)) : 50)
       if (tasks.length === 0) return '工作看板暂无匹配任务。'
-      return [`工作看板共 ${store.snapshot().tasks.length} 条，匹配 ${tasks.length} 条：`, ...tasks.map(taskLine)].join('\n')
+      // 注入函数的调用必须走 host.，直接写 taskLine 会 ReferenceError（2026-11-16 真实会话撞到）
+      return [`工作看板共 ${store.snapshot().tasks.length} 条，匹配 ${tasks.length} 条：`, ...tasks.map(item => host.taskLine(item))].join('\n')
     },
   }))
 
