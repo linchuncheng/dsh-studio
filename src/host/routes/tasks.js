@@ -481,6 +481,8 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
           by,
           at: Date.now(),
         })))
+        // 一条都没加进去就别报成功：以前传错 payload（比如漏了 title）会静默返回 200，调用方以为建好了。
+        if (added.length === 0) throw new Error('没有用例被加进去：每条用例至少要有标题（title）')
         for (const item of added) {
           if (list.length >= 60) break
           list.push({ ...item, id: `c${list.length + 1}-${randomBytes(2).toString('hex')}` })

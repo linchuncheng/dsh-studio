@@ -741,6 +741,18 @@ export function requirementGate(state, requirement) {
   // 只要求"跑过"（pass/fail 都算），不要求全绿：失败会走上面那条 blockers。
   const ranCases = tasks.reduce((sum, task) => sum + (task.cases ?? []).filter(item => item.result === 'pass' || item.result === 'fail').length, 0)
   if (ranCases === 0) blockers.push('这条需求下没有任何跑过的用例：交付没有可复现的证据')
+  // 跑过一条就算有证据，但「一半用例从没跑过」同样不该被当成验过：分开点名 pending 与 skip。
+  const unrun = []
+  const skipped = []
+  for (const task of tasks) {
+    for (const item of task.cases ?? []) {
+      const key = (task.code || task.id) + '·' + String(item.title ?? '')
+      if (item.result === 'pending') unrun.push(key)
+      if (item.result === 'skip') skipped.push(key)
+    }
+  }
+  if (unrun.length > 0) warnings.push(unrun.length + ' 条用例还没跑过：' + unrun.slice(0, 3).join('、') + (unrun.length > 3 ? ' 等' : ''))
+  if (skipped.length > 0) warnings.push(skipped.length + ' 条用例被标成跳过：' + skipped.slice(0, 3).join('、') + (skipped.length > 3 ? ' 等' : '') + '（跳过要有理由）')
   const artifacts = tasks.reduce((sum, task) => sum + (task.artifacts ?? []).length, 0)
   if (artifacts === 0) warnings.push('这条需求下还没有登记任何交付物')
   else {
