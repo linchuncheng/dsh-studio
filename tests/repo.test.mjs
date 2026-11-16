@@ -824,9 +824,39 @@ test('host: coding facts compare the self-reported numbers with the MR', async (
   assert.deepEqual(facts.files, { declared: 2, actual: 1 })
   assert.deepEqual(facts.commits, { declared: 1, actual: 3 })
   assert.equal(facts.mismatches.length, 2)
+  assert.deepEqual(facts.commitList, [], '拿不到提交明细时是空数组，不是 undefined')
+  assert.equal(facts.ci, null, '没有 CI 结果就是 null（未知），不编造成 0')
   const clean = compareCodingFacts({ files: [{ path: 'a.js' }], commits: [] }, mr, { pipeline: null, changes: { files: [{ path: 'a.js' }], commits: 0 } }, 1)
   assert.deepEqual(clean.mismatches, [])
   assert.equal(clean.pipeline, null)
+})
+
+test('host: commits and CI results are checked one by one, not just counted', async () => {
+  const { compareCodingFacts, missingDeclaredCommits } = await import('../src/host/gitlab-facts.js')
+  const actual = [{ id: 'x1', sha: 'a1b2c3d4', title: 'feat' }, { id: 'x2', sha: 'b2c3d4e5', title: 'test' }]
+  assert.deepEqual(missingDeclaredCommits([{ sha: 'a1b2c3' }], actual), [], '前缀对得上就算同一个提交')
+  assert.deepEqual(missingDeclaredCommits([{ sha: 'deadbeef' }], actual), ['deadbeef'], '编造的 sha 要能被点出来')
+  assert.deepEqual(missingDeclaredCommits([], actual), [], '没自报提交就没什么可比的')
+  assert.deepEqual(missingDeclaredCommits([{ sha: 'a1b2c3d4' }], []), ['a1b2c3d4'], 'MR 没给明细时，自报的提交算"对不上"')
+
+  const coding = { files: [{ path: 'a.js' }], commits: [{ sha: 'a1b2c3d4' }, { sha: 'deadbeef' }], unitTests: { total: 12, passed: 10 } }
+  const detail = {
+    pipeline: { status: 'success' },
+    changes: { files: [{ path: 'a.js' }], commits: 2 },
+    commits: actual,
+    ci: { total: 12, passed: 11, failed: 1, skipped: 0, source: 'test_report' },
+  }
+  const facts = compareCodingFacts(coding, { state: 'merged' }, detail, 5)
+  assert.equal(facts.commitList.length, 2)
+  assert.deepEqual(facts.missingCommits, ['deadbeef'])
+  assert.equal(facts.ci.source, 'test_report')
+  assert.equal(facts.mismatches.length, 2, '一处编造提交 + 一处单测数对不上')
+  assert.ok(facts.mismatches.some(line => line.includes('单测')), '要点名单测差在哪，不能只说"有差异"')
+
+  // jobs 口径是任务数不是用例数，拿它跟单测数比会冤枉人
+  const jobsOnly = compareCodingFacts(coding, {}, { ...detail, ci: { total: 5, passed: 4, failed: 1, skipped: 0, source: 'jobs' } }, 5)
+  assert.equal(jobsOnly.mismatches.length, 1)
+  assert.ok(jobsOnly.mismatches[0].includes('MR 里找不到'))
 })
 
 test('host: quality counts rework from backwards moves, failures and reopens', async () => {

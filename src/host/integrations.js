@@ -183,24 +183,27 @@ export function gitlabReady(config) {
 
 /** One GitLab REST call against one configured repository. */
 export async function gitlabRequest(config, project, path, init) {
+  const { quiet, ...rest } = init ?? {}
   const base = (project.url || config.gitlab.url).replace(/\/+$/, '')
   const token = project.token || config.gitlab.token
   const slug = encodeURIComponent(project.project)
   const headers = { 'PRIVATE-TOKEN': token }
-  if (init?.body !== undefined) headers['content-type'] = 'application/json'
+  if (rest?.body !== undefined) headers['content-type'] = 'application/json'
   let response
   try {
-    response = await fetch(`${base}/api/v4/projects/${slug}${path}`, { ...init, headers })
+    response = await fetch(`${base}/api/v4/projects/${slug}${path}`, { ...rest, headers })
   } catch (error) {
-    markHealth('gitlab', 'fail', `连不上 GitLab：${error?.message ?? error}`)
+    if (quiet !== true) markHealth('gitlab', 'fail', `连不上 GitLab：${error?.message ?? error}`)
     throw error
   }
   if (!response.ok) {
     const detail = (await response.text()).slice(0, 300)
-    markHealth('gitlab', 'fail', `HTTP ${response.status} ${detail}`)
+    // quiet 的调用（可选端点：changes / commits / test_report …）失败不该把整条通道判成不可用，
+    // 否则一个没开 CI 的仓库会把「GitLab 已接通」直接翻成故障。
+    if (quiet !== true) markHealth('gitlab', 'fail', `HTTP ${response.status} ${detail}`)
     throw new Error(`GitLab ${response.status}: ${detail}`)
   }
-  markHealth('gitlab', 'ok')
+  if (quiet !== true) markHealth('gitlab', 'ok')
   if (response.status === 204) return null
   return await response.json()
 }
@@ -210,11 +213,11 @@ export async function gitlabRequest(config, project, path, init) {
  * project it came from (`gitlabProject`) and is matched on (project, iid) so
  * two repositories can both have issue #12.
  */
-/** 一条 MR 的流水线状态与真实改动（拿不到就当没有，不算失败）。 */
+/** 一条 MR 的流水线、逐条提交、真实改动与 CI 单测结果（拿不到就当没有，不算失败）。 */
 export async function gitlabMergeRequestDetail(config, project, iid) {
-  const detail = { pipeline: null, changes: null }
+  const detail = { pipeline: null, changes: null, commits: [], ci: null }
   try {
-    const pipelines = await gitlabRequest(config, project, `/merge_requests/${iid}/pipelines`)
+    const pipelines = await gitlabRequest(config, project, `/merge_requests/${iid}/pipelines`, { quiet: true })
     const latest = Array.isArray(pipelines) ? pipelines[0] : undefined
     if (latest !== undefined) {
       detail.pipeline = {
@@ -227,7 +230,7 @@ export async function gitlabMergeRequestDetail(config, project, iid) {
     }
   } catch { /* 没开 CI 或没权限，不算错 */ }
   try {
-    const payload = await gitlabRequest(config, project, `/merge_requests/${iid}/changes`)
+    const payload = await gitlabRequest(config, project, `/merge_requests/${iid}/changes`, { quiet: true })
     const list = Array.isArray(payload?.changes) ? payload.changes : []
     detail.changes = {
       files: list.slice(0, 300).map((entry, index) => ({
@@ -240,6 +243,48 @@ export async function gitlabMergeRequestDetail(config, project, iid) {
       commits: Number(payload?.commits_count) || 0,
     }
   } catch { /* 同上 */ }
+  // 逐条提交：「自报 3 个提交」和「这 3 个提交真的在这个 MR 里」是两件事，后者要 sha 对得上。
+  try {
+    const list = await gitlabRequest(config, project, `/merge_requests/${iid}/commits?per_page=100`, { quiet: true })
+    if (Array.isArray(list)) {
+      detail.commits = list.slice(0, 100).map((entry, index) => ({
+        id: String(entry?.id ?? entry?.short_id ?? `c${index + 1}`).slice(0, 60),
+        sha: String(entry?.short_id ?? entry?.id ?? '').slice(0, 40),
+        title: String(entry?.title ?? entry?.message ?? '').split('\n')[0].slice(0, 160),
+        author: String(entry?.author_name ?? '').slice(0, 60),
+      }))
+    }
+  } catch { /* 同上 */ }
+  // 单测结果：GitLab 的 test_report 就是流水线跑出来的测试汇总；仓库没产出报告就退一步数 job 成败。
+  if (detail.pipeline !== null && detail.pipeline.id > 0) {
+    try {
+      const report = await gitlabRequest(config, project, `/pipelines/${detail.pipeline.id}/test_report`, { quiet: true })
+      const total = Number(report?.total_count) || 0
+      if (total > 0) {
+        detail.ci = {
+          total,
+          passed: Number(report.success_count) || 0,
+          failed: Number(report.failed_count) || 0,
+          skipped: (Number(report.skipped_count) || 0) + (Number(report.error_count) || 0),
+          source: 'test_report',
+        }
+      }
+    } catch { /* 老版本 GitLab 或权限不够 */ }
+    if (detail.ci === null) {
+      try {
+        const jobs = await gitlabRequest(config, project, `/pipelines/${detail.pipeline.id}/jobs?per_page=100`, { quiet: true })
+        if (Array.isArray(jobs) && jobs.length > 0) {
+          detail.ci = {
+            total: jobs.length,
+            passed: jobs.filter(job => job?.status === 'success').length,
+            failed: jobs.filter(job => job?.status === 'failed').length,
+            skipped: jobs.filter(job => job?.status === 'skipped' || job?.status === 'canceled').length,
+            source: 'jobs',
+          }
+        }
+      } catch { /* 同上 */ }
+    }
+  }
   return detail
 }
 

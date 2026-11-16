@@ -549,7 +549,7 @@ function Drawer({ task, state, onClose, onChanged }) {
       const facts = out?.facts ?? null
       setNotice(facts === null
         ? '核对完成，但没有拿到结果'
-        : `GitLab 核对：文件 ${facts.files.declared}→${facts.files.actual} · 提交 ${facts.commits.declared}→${facts.commits.actual}${facts.pipeline ? ` · 流水线 ${facts.pipeline}` : ''}${(facts.mismatches ?? []).length > 0 ? ` · ⚠ ${facts.mismatches.join('；')}` : ' · ✅ 一致'}`)
+        : `GitLab 核对：文件 ${facts.files.declared}→${facts.files.actual} · 提交 ${facts.commits.declared}→${facts.commits.actual}${(facts.commitList ?? []).length > 0 ? `（拿到 ${facts.commitList.length} 条明细）` : ''}${facts.pipeline ? ` · 流水线 ${facts.pipeline}` : ''}${facts.ci ? ` · CI ${facts.ci.passed}/${facts.ci.total}` : ''}${(facts.mismatches ?? []).length > 0 ? ` · ⚠ ${facts.mismatches.join('；')}` : ' · ✅ 一致'}`)
       await onChanged()
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
@@ -939,7 +939,7 @@ function Drawer({ task, state, onClose, onChanged }) {
                     onClick: () => void verifyCoding(),
                   }, verify.busy ? '核对中…' : (verify.line === '' ? '核对代码事实' : '再核对一次')),
                 ),
-                h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, title: '拉 MR 的改动与流水线，和自报的文件数/提交数比一遍', onClick: () => void verifyGitlab() }, '从 GitLab 核对'),
+                h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, title: '拉 MR 的改动、逐条提交、流水线与 CI 单测结果，和自报的文件数/提交数/单测数比一遍', onClick: () => void verifyGitlab() }, '从 GitLab 核对'),
               ),
               verify.line === ''
                 ? (coding.verified === null || coding.verified === undefined
@@ -951,11 +951,28 @@ function Drawer({ task, state, onClose, onChanged }) {
                   `${verify.ok === true ? '✅' : '⚠'} ${verify.line}`),
                               coding.gitlab === null || coding.gitlab === undefined
                 ? null
-                : h('div', { className: 'ds-hint', 'data-gitlab-facts': coding.gitlab.state },
-                  '上次 GitLab 核对 ' + fmtTime(coding.gitlab.at) + '：文件 ' + coding.gitlab.files.declared + '→' + coding.gitlab.files.actual +
-                  ' · 提交 ' + coding.gitlab.commits.declared + '→' + coding.gitlab.commits.actual +
-                  (coding.gitlab.pipeline === null ? '' : ' · 流水线 ' + coding.gitlab.pipeline) +
-                  ((coding.gitlab.mismatches ?? []).length === 0 ? ' · 一致' : ' · ' + coding.gitlab.mismatches.join('；'))),
+                : h('div', null,
+                  h('div', { className: 'ds-hint', 'data-gitlab-facts': coding.gitlab.state },
+                    '上次 GitLab 核对 ' + fmtTime(coding.gitlab.at) + '：文件 ' + coding.gitlab.files.declared + '→' + coding.gitlab.files.actual +
+                    ' · 提交 ' + coding.gitlab.commits.declared + '→' + coding.gitlab.commits.actual +
+                    (coding.gitlab.pipeline === null ? '' : ' · 流水线 ' + coding.gitlab.pipeline) +
+                    (coding.gitlab.ci === null || coding.gitlab.ci === undefined
+                      ? ''
+                      : coding.gitlab.ci.source === 'test_report'
+                        ? ' · CI 单测 ' + coding.gitlab.ci.passed + '/' + coding.gitlab.ci.total + (coding.gitlab.ci.failed > 0 ? `（失败 ${coding.gitlab.ci.failed}）` : '')
+                        : ' · CI 任务 ' + coding.gitlab.ci.passed + '/' + coding.gitlab.ci.total + ' 成功' + (coding.gitlab.ci.failed > 0 ? `（失败 ${coding.gitlab.ci.failed}）` : '')) +
+                    ((coding.gitlab.mismatches ?? []).length === 0 ? ' · 一致' : ' · ' + coding.gitlab.mismatches.join('；'))),
+                  (coding.gitlab.commitList ?? []).length === 0 ? null : h('div', { className: 'ds-code-list' },
+                    coding.gitlab.commitList.slice(0, 6).map(item => h('div', { key: 'gl-' + item.id, className: 'ds-code-item' },
+                      h('code', null, String(item.sha ?? '').slice(0, 8)),
+                      h('span', { className: 'ds-grow' }, item.title || '(无提交说明)'),
+                      h('span', { className: 'ds-hint' }, item.author || 'GitLab'),
+                    )),
+                    coding.gitlab.commitList.length > 6 ? h('div', { className: 'ds-hint' }, `MR 里还有 ${coding.gitlab.commitList.length - 6} 次提交`) : null,
+                  ),
+                  (coding.gitlab.missingCommits ?? []).length === 0 ? null : h('div', { className: 'ds-hint', 'data-warn': '1' },
+                    '这些自报提交在 MR 里找不到：' + coding.gitlab.missingCommits.map(sha => String(sha).slice(0, 8)).join('、')),
+                ),
               (coding.commits ?? []).length === 0 ? null : h('div', { className: 'ds-code-list' },
                 coding.commits.slice(0, 6).map(item => h('div', { key: item.id, className: 'ds-code-item' },
                   h('code', null, item.sha.slice(0, 8)),
