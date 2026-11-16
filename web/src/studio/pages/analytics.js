@@ -102,7 +102,7 @@ export function AnalyticsPage({ state, onOpenTask }) {
     if (ctxDetail.ok !== true) return h('div', { className: 'ds-hint', style: CTX_DETAIL }, ctxDetail.error ?? '读不到')
     const data = ctxDetail.breakdown ?? {}
     const parts = Array.isArray(data.parts) ? data.parts : []
-    const head = '最近一次会话 ' + fmtTime(Math.round(data.at)) + ' · 峰值 ' + Math.round(data.peak / 1000) + 'k token · 全程约 ' + Math.round(data.approxTokens / 1000) + 'k token'
+    const head = '最近一次会话 ' + fmtTime(Math.round(data.at)) + ' · 峰值 ' + Math.round(data.peak / 1000) + 'k / 窗口 ' + Math.round((data.window ?? 0) / 1000) + 'k（' + (data.percent ?? 0) + '%）· 全程约 ' + Math.round(data.approxTokens / 1000) + 'k token'
     const stack = h('div', { style: CTX_STACK }, parts.map((part, index) => h('span', { key: part.key, title: part.label + ' ' + part.percent + '%', style: { width: Math.max(part.percent, 0.5) + '%', background: CTX_COLORS[index % CTX_COLORS.length] } })))
     const legend = h('div', { style: CTX_LEGEND }, parts.map((part, index) => h('div', { key: part.key, style: { display: 'flex', alignItems: 'center', gap: 6 } },
       h('span', { style: { width: 8, height: 8, borderRadius: 2, flexShrink: 0, background: CTX_COLORS[index % CTX_COLORS.length] } }),
@@ -140,8 +140,9 @@ export function AnalyticsPage({ state, onOpenTask }) {
         h('div', { className: 'ds-hint', style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
           (row.model === '' ? '模型未知' : row.model) + ' · ' + row.sessions + ' 个会话 · 最近 ' + fmtTime(Math.round(row.lastAt)))),
       h('div', { style: { width: 130, height: 6, background: 'var(--ds-line)', borderRadius: 3, overflow: 'hidden', flexShrink: 0 } },
-        h('span', { style: { display: 'block', height: '100%', width: share + '%', background: row.peak > 180000 ? CTX_COLORS[3] : CTX_COLORS[2] } })),
+        h('span', { style: { display: 'block', height: '100%', width: Math.max(2, row.percent) + '%', background: row.percent >= 80 ? CTX_COLORS[3] : CTX_COLORS[2] } })),
       h('div', { style: CTX_NUM }, Math.round(row.peak / 1000) + 'k'),
+      h('div', { style: { ...CTX_NUM, width: 44, color: row.percent >= 80 ? CTX_COLORS[3] : 'inherit' } }, (row.window > 0 ? row.percent + '%' : '—')),
       h('div', { style: { ...CTX_NUM, color: row.retries > 100 ? CTX_COLORS[3] : 'inherit' } }, '重试 ' + row.retries),
       h('div', { style: { ...CTX_NUM, color: row.alert === '' ? 'inherit' : CTX_COLORS[3] } }, '工具 ' + row.toolShare + '%'),
       h('div', { style: { width: 12, textAlign: 'right', fontSize: 11, opacity: 0.6 } }, open ? '▲' : '▼'))
@@ -157,7 +158,8 @@ export function AnalyticsPage({ state, onOpenTask }) {
       h('span', { style: { fontSize: 15, fontWeight: 600, color: warn ? CTX_COLORS[3] : 'inherit' } }, text))
     const kpis = h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', paddingBottom: 10 } },
       chip('专家', String(totals.experts ?? 0)), chip('会话', String(totals.sessions ?? 0)),
-      chip('最高窗口', Math.round((totals.peak ?? 0) / 1000) + 'k', (totals.peak ?? 0) > 180000),
+      chip('最高窗口', Math.round((totals.peak ?? 0) / 1000) + 'k', false),
+      chip('最高占用', (totals.percent ?? 0) + '%', (totals.percent ?? 0) >= 80),
       chip('工具喂胖', String(totals.alerts ?? 0), (totals.alerts ?? 0) > 0))
     const body = contexts === null ? h('div', { className: 'ds-hint' }, '正在读会话日志…')
       : rows.length === 0 ? h('div', { className: 'ds-hint' }, '还没有专家会话记录。')

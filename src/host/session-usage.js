@@ -28,7 +28,7 @@ async function readFileUsage(file) {
   // 缓存命中也要带上 at：漏了它，界面上的「最近一次会话」会显示成 —
   if (cached !== undefined && cached.mtimeMs === mtimeMs) return { ...cached, at: cached.mtimeMs }
   let usage = []
-  let counts = { turns: 0, toolCalls: 0, retries: 0 }
+  let counts = { turns: 0, toolCalls: 0, retries: 0, contextWindow: 0, model: '' }
   const volume = { user: 0, assistant: 0, tool: 0, other: 0 }
   try {
     const { stdout } = await run('zstd', ['-dc', file], { maxBuffer: 256 * 1024 * 1024 })
@@ -39,6 +39,13 @@ async function readFileUsage(file) {
       if (line.includes('"type":"step/start"')) counts.turns += 1
       else if (line.includes('"type":"tool-call"')) counts.toolCalls += 1
       else if (line.includes('"type":"llm/retry"')) counts.retries += 1
+      // request/context 里有引擎真实的上下文窗口（实测 1,000,000）：占用率要用它算，不能猜
+      else if (line.includes('"type":"request/context"')) {
+        try {
+          const parsed = JSON.parse(line)?.data ?? {}
+          if (Number(parsed.contextWindow) > 0) { counts.contextWindow = Number(parsed.contextWindow); if (parsed.model) counts.model = String(parsed.model) }
+        } catch { /* 半行/坏行忽略 */ }
+      }
       // 上下文构成按「日志里各类事件的文本体积」估算：宿主不暴露真实 token 分配，这是能拿到的最好近似
       const kind = /"type":"([a-z-]+)\/?([a-z-]*)"/.exec(line)
       if (kind !== null) {

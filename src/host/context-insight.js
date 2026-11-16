@@ -68,6 +68,8 @@ export function breakdownContext(session, promptChars) {
   return {
     peak,
     peakTokens: peak,
+    window: Number(session?.counts?.contextWindow ?? 0),
+    percent: Number(session?.counts?.contextWindow ?? 0) > 0 ? Math.round((peak / Number(session.counts.contextWindow)) * 100) : 0,
     trend: trendOfUsage(session?.usage),
     drops: contextDrops(trendOfUsage(session?.usage)),
     chars: total,
@@ -103,7 +105,7 @@ export function aggregateContext(sessions, threshold = TOOL_HEAVY_THRESHOLD) {
     const key = String(session.expert ?? '').trim() || '(未知)'
     const stats = contextOfUsage(session.usage)
     const counts = session.counts ?? {}
-    const row = byExpert.get(key) ?? { expert: key, sessions: 0, peak: 0, calls: 0, turns: 0, toolCalls: 0, retries: 0, lastAt: 0, model: '', toolShare: 0, latestTaskId: '', alert: '' }
+    const row = byExpert.get(key) ?? { expert: key, sessions: 0, peak: 0, calls: 0, turns: 0, toolCalls: 0, retries: 0, lastAt: 0, model: '', toolShare: 0, latestTaskId: '', alert: '', window: 0, percent: 0 }
     row.sessions += 1
     row.peak = Math.max(row.peak, stats.peak)
     row.calls += stats.calls
@@ -119,8 +121,14 @@ export function aggregateContext(sessions, threshold = TOOL_HEAVY_THRESHOLD) {
       row.latestTaskId = String(session.taskId ?? '')
       row.alert = toolHeavyWarning(breakdown, threshold) ?? ''
     }
+    const window = Number(counts.contextWindow ?? 0)
+    if (window > row.window) row.window = window
     row.lastAt = Math.max(row.lastAt, at)
+    const modelName = String(counts.model ?? '')
     if (stats.model !== '') row.model = stats.model
+    if (modelName !== '') row.model = modelName
+    // 真实占用率：窗口来自 request/context，峰值来自 usage
+    row.percent = row.window > 0 ? Math.round((row.peak / row.window) * 100) : 0
     byExpert.set(key, row)
   }
   const rows = [...byExpert.values()].sort((a, b) => b.peak - a.peak)
@@ -131,6 +139,8 @@ export function aggregateContext(sessions, threshold = TOOL_HEAVY_THRESHOLD) {
     toolCalls: rows.reduce((sum, row) => sum + row.toolCalls, 0),
     retries: rows.reduce((sum, row) => sum + row.retries, 0),
     alerts: rows.filter(row => row.alert !== '').length,
+    percent: rows.reduce((max, row) => Math.max(max, row.percent), 0),
+    window: rows.reduce((max, row) => Math.max(max, row.window), 0),
   }
   return { rows, totals }
 }
