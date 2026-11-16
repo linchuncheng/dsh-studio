@@ -732,6 +732,10 @@ export function requirementGate(state, requirement) {
   if (uncovered.length > 0) warnings.push(`${uncovered.length} 个功能点还没有通过的用例覆盖：${uncovered.slice(0, 3).map(point => point.id).join('、')}`)
   if (matrix.summary.pointsWithoutCases > 0) warnings.push(`${matrix.summary.pointsWithoutCases} 个功能点还没有任何用例（测试覆盖率 ${matrix.summary.coverageRate}%）`)
   if (matrix.summary.looseCards > 0) warnings.push(`${matrix.summary.looseCards} 张卡还没归到功能点`)
+  // 证据：整条需求下**一条跑过的用例都没有**就不许交付——"做完了"和"验过了"是两件事。
+  // 只要求"跑过"（pass/fail 都算），不要求全绿：失败会走上面那条 blockers。
+  const ranCases = tasks.reduce((sum, task) => sum + (task.cases ?? []).filter(item => item.result === 'pass' || item.result === 'fail').length, 0)
+  if (ranCases === 0) blockers.push('这条需求下没有任何跑过的用例：交付没有可复现的证据')
   const artifacts = tasks.reduce((sum, task) => sum + (task.artifacts ?? []).length, 0)
   if (artifacts === 0) warnings.push('这条需求下还没有登记任何交付物')
   else {
