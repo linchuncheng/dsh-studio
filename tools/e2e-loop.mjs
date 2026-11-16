@@ -31,8 +31,8 @@ async function runOnce(round) {
   await post('/config', { testing: { ...cfg.testing, allowShell: true, shellCwd: SHELL_CWD } })
 
   const points = [
-    { id: 'p1', title: '订单接口与建表', description: 'API + SQLite', priority: 'normal', status: 'draft', acceptance: [] },
-    { id: 'p2', title: '可拆卡并建 worktree', description: '拆卡 + 分支', priority: 'normal', status: 'draft', acceptance: [] },
+    { id: 'p1', title: '订单接口与建表', description: 'API + SQLite', priority: 'normal', status: 'draft', acceptance: [{ text: 'GET /api/orders 返回 200 且含 note 字段' }] },
+    { id: 'p2', title: '可拆卡并建 worktree', description: '拆卡 + 分支', priority: 'normal', status: 'draft', acceptance: [{ text: '拆完卡能在 /tmp/studio-wt-test 下看到 worktree' }] },
   ]
   const saved = await post('/requirement/save', { requirement: { title: '全闭环自检 ' + stamp, description: 'tools/e2e-loop.mjs 生成', project: PROJECT, points } })
   const req = saved.body.requirement

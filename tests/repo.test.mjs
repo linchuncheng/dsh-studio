@@ -716,6 +716,12 @@ test('host: a requirement needs three answers before it can be split', async () 
   assert.ok(reverse !== null && reverse.includes('没有服务端'), String(reverse))
   assert.equal(frontendOnlyWarning({ discovery: { server: '有，node:sqlite' }, points: [{ title: '新增表' }] }), null, '说有后端就不归这条管')
   assert.equal(frontendOnlyWarning({}), null)
+  // 功能点没有验收标准
+  const { vaguePointsWarning } = await import('../src/host/discovery.js')
+  assert.equal(vaguePointsWarning({ points: [] }), null)
+  assert.equal(vaguePointsWarning({ points: [{ title: '有验收', acceptance: [{ text: '点了能下载' }] }] }), null)
+  const vague = vaguePointsWarning({ points: [{ title: '库存预警' }, { title: '阈值配置', acceptance: [] }] })
+  assert.ok(vague !== null && vague.includes('2 个功能点'), String(vague))
 })
 
 test('host: usage parsing takes one usage per message and prices what it can', async () => {

@@ -47,6 +47,19 @@ export function frontendOnlyWarning(requirement) {
   return '澄清里说没有服务端，但功能点「' + String(hit.title ?? '').slice(0, 24) + '」要动接口 / 数据表：要么补上后端，要么把这条改成前端能做的范围'
 }
 
+/**
+ * 功能点太虚：没有验收标准（acceptance 为空），拆出来的卡也没法长成用例。
+ * 关键词体检查不出这种"写得模糊"的情况，只能从结构上判断。只提示不拦。
+ */
+export function vaguePointsWarning(requirement) {
+  const points = Array.isArray(requirement?.points) ? requirement.points : []
+  if (points.length === 0) return null
+  const vague = points.filter(point => !Array.isArray(point?.acceptance) || point.acceptance.length === 0)
+  if (vague.length === 0) return null
+  const names = vague.slice(0, 3).map(point => String(point?.title ?? '').slice(0, 20)).join('、')
+  return '有 ' + vague.length + ' 个功能点没有验收标准（' + names + (vague.length > 3 ? ' 等' : '') + '）：写清楚怎么算做完，才能长成用例'
+}
+
 /** 还缺哪几项澄清；空了才允许拆卡。 */
 export function discoveryGaps(requirement) {
   const discovery = requirement?.discovery ?? {}
