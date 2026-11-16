@@ -729,6 +729,13 @@ export class Dispatcher {
     const wanted = String(expert?.sandbox ?? '').trim() || String(cfg.sandbox ?? '').trim()
     let sandbox = SANDBOX_MODES.includes(wanted) ? wanted : 'workspace-write'
     if (!SANDBOX_MODES.includes(wanted)) this.note(`sandbox "${wanted}" 不认识，按 workspace-write 执行`)
+    // worktree 隔离时，提交要写主仓的 .git（在 worktree 之外），workspace-write 会直接拒绝并弹审批；
+    // 无人值守的会话就卡死等审批（2026-11-16 实测：approval/asked 后再无动作）。
+    // 所以 worktree 模式一律提权到 danger-full-access，并在卡上留一句解释。
+    if (String(cfg.isolation ?? 'none') === 'worktree' && sandbox !== 'danger-full-access') {
+      sandbox = 'danger-full-access'
+      this.note('worktree 隔离需要写主仓 .git 才能提交，沙箱提到 danger-full-access')
+    }
     try {
       ctx.permissionPresets.set(agent.session, sandbox)
     } catch (error) {

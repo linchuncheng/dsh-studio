@@ -86,8 +86,8 @@ const runVariant = async (label, expertId) => {
   while (Date.now() - started < TIMEOUT_MS) {
     await sleep(6000)
     turns = Number((await ssh('zstd -dc ' + file + ' 2>/dev/null | grep -c turn/end')).trim() || '0')
-    const running = (await ssh('pgrep -fc "studio-' + TASK + '-' + expertId + '" || true')).trim()
-    if (turns > 0 && running === '0') break
+    // 不要用 pgrep -fc 判活：它会把执行它的那个 shell 也算进去，永远 >0（实测卡死 30 分钟）
+    if (turns > 0) break
   }
   const after = await state()
   const done = (after.tasks ?? []).find(item => item.id === TASK) ?? {}
