@@ -752,6 +752,14 @@ export function requirementGate(state, requirement) {
     }
   }
   if (unrun.length > 0) warnings.push(unrun.length + ' 条用例还没跑过：' + unrun.slice(0, 3).join('、') + (unrun.length > 3 ? ' 等' : ''))
+  // 「通过」有两种来源：跑出来的（有 lastRun）和人手标的（没有）。后者不能当验证证据。
+  const typed = []
+  for (const task of tasks) {
+    for (const item of task.cases ?? []) {
+      if (item.result === 'pass' && (item.lastRun === null || item.lastRun === undefined)) typed.push((task.code || task.id) + '·' + String(item.title ?? ''))
+    }
+  }
+  if (typed.length > 0) warnings.push(typed.length + ' 条用例的「通过」是手工标的、没有执行记录：' + typed.slice(0, 3).join('、') + (typed.length > 3 ? ' 等' : '') + '（跑一次才算验证过）')
   if (skipped.length > 0) warnings.push(skipped.length + ' 条用例被标成跳过：' + skipped.slice(0, 3).join('、') + (skipped.length > 3 ? ' 等' : '') + '（跳过要有理由）')
   const artifacts = tasks.reduce((sum, task) => sum + (task.artifacts ?? []).length, 0)
   if (artifacts === 0) warnings.push('这条需求下还没有登记任何交付物')
