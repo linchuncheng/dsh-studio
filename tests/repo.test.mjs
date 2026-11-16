@@ -859,6 +859,50 @@ test('host: commits and CI results are checked one by one, not just counted', as
   assert.ok(jobsOnly.mismatches[0].includes('MR 里找不到'))
 })
 
+test('host: /state answers 304 when nothing changed (a thousand cards must not be re-sent)', async () => {
+  const { configureStateRoutes, handleStateRoute, stateEtag } = await import('../src/host/routes/state.js')
+  const state = { revision: 42, tasks: [{ id: 'a' }, { id: 'b' }] }
+  const sent = []
+  configureStateRoutes({
+    publicState: () => state,
+    getDispatcher: () => undefined,
+    sendJson: (res, code, body) => { sent.push({ code, body, headers: res.headers }) },
+  })
+  const makeRes = () => {
+    const headers = {}
+    const res = { headers, ended: false, setHeader: (key, value) => { headers[key] = value }, end: () => { res.ended = true } }
+    return res
+  }
+  const etag = stateEtag(42, '李四')
+  assert.match(etag, /^W\/"42-/, 'ETag 里要有版本号')
+  assert.notEqual(stateEtag(42, '李四'), stateEtag(42, '王五'), '不同的人不能共用一份缓存')
+  assert.notEqual(stateEtag(42, '李四'), stateEtag(43, '李四'), '版本变了 ETag 必须变')
+
+  const first = makeRes()
+  assert.equal(handleStateRoute({ method: 'GET', route: '/state', req: { studioActor: '李四', headers: {} }, res: first, store: {} }), true)
+  assert.equal(sent.length, 1)
+  assert.equal(sent[0].code, 200)
+  assert.equal(sent[0].body.ok, true)
+  assert.equal(sent[0].body.state, state, '整包状态原样下发')
+  assert.equal(first.headers.etag, etag)
+  assert.equal(first.headers['cache-control'], 'no-cache')
+
+  // 第二次带上 ETag：一个字节都不发
+  const second = makeRes()
+  assert.equal(handleStateRoute({ method: 'GET', route: '/state', req: { studioActor: '李四', headers: { 'if-none-match': etag } }, res: second, store: {} }), true)
+  assert.equal(sent.length, 1, '304 时不要再调 sendJson')
+  assert.equal(second.ended, true)
+
+  // 换了人：内容可见范围可能不同，必须重发
+  const third = makeRes()
+  handleStateRoute({ method: 'GET', route: '/state', req: { studioActor: '王五', headers: { 'if-none-match': etag } }, res: third, store: {} })
+  assert.equal(sent.length, 2, '换人就不能用别人的 ETag')
+
+  // 非 GET / 非 /state 不归它管
+  assert.equal(handleStateRoute({ method: 'POST', route: '/state', req: { headers: {} }, res: makeRes(), store: {} }), false)
+  assert.equal(handleStateRoute({ method: 'GET', route: '/tasks', req: { headers: {} }, res: makeRes(), store: {} }), false)
+})
+
 test('host: quality counts rework from backwards moves, failures and reopens', async () => {
   const { taskRework, buildQuality } = await import('../src/host/quality.js')
   assert.equal(taskRework({ history: [{ status: 'clarify' }, { status: 'dev' }] }).rework, false)

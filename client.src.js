@@ -309,21 +309,25 @@ window.__ModuleLoader__.load({
 
     // ------------------------------------------------------------------ api
 
-    async function api(path, body) {
+    async function api(path, body, extraHeaders) {
       const headers = { 'x-studio-user': encodeURIComponent(currentUser()) }
       const token = sessionToken()
       if (token !== '') headers['x-studio-session'] = token
+      if (extraHeaders !== null && typeof extraHeaders === 'object') Object.assign(headers, extraHeaders)
       if (body !== undefined) headers['content-type'] = 'application/json'
       const init = body === undefined
         ? { method: 'GET', headers }
         : { method: 'POST', headers, body: JSON.stringify(body) }
       const response = await fetch(API + path, init)
+      // 304：数据没变（/state 的 ETag 命中），既不是错误也没有正文——上千张卡时省掉整包重传。
+      if (response.status === 304) return { ok: true, notModified: true, etag: response.headers.get('etag') ?? '' }
       let payload = {}
       try { payload = await response.json() } catch { /* non-JSON error page */ }
       if (!response.ok || payload.ok === false) {
         throw new Error(payload.error ?? `请求失败（HTTP ${response.status}）`)
       }
-      return payload
+      const etag = response.headers.get('etag')
+      return etag === null ? payload : { ...payload, etag }
     }
 
     // ---------------------------------------------------------------- style
@@ -1119,10 +1123,21 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
       const [error, setError] = React.useState(null)
       /** 上一次渲染用的数据指纹：轮询拿回来的东西没变就不重渲染（每次 /state 600KB 上下，重渲染一次够卡好几帧）。 */
       const signature = React.useRef('')
+      /** 上一次 /state 的 ETag：轮询带上它，服务端没变就回 304（连正文都不发）。 */
+      const etag = React.useRef('')
       const reload = React.useCallback(async (force = false) => {
         if (typeof document !== 'undefined' && document.hidden === true) return
         try {
-          const payload = await api('/state')
+          // force（人刚点了保存/推进）时不带 ETag，确保拿到的一定是变更后的整包。
+          const payload = force || etag.current === ''
+            ? await api('/state')
+            : await api('/state', undefined, { 'if-none-match': etag.current })
+          if (payload.notModified === true) {
+            if (typeof payload.etag === 'string' && payload.etag !== '') etag.current = payload.etag
+            setError(null)
+            return
+          }
+          if (typeof payload.etag === 'string' && payload.etag !== '') etag.current = payload.etag
           // 服务端在「必须登录」又没带会话时只回 { locked: true, state: 精简版 }，
           // locked 得留着，否则登录框不会出现。
           const next = { ...(payload.state ?? {}), locked: payload.locked === true }

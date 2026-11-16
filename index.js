@@ -44,6 +44,7 @@ import { configureCodingRoutes, handleCodingRoute } from './src/host/routes/codi
 import { configureToolHost, registerTools } from './src/host/tools.js'
 import { configureConnectRoutes, handleConnectRoute } from './src/host/routes/connect.js'
 import { configureInsightsRoutes, handleInsightsRoute } from './src/host/routes/insights.js'
+import { configureStateRoutes, handleStateRoute } from './src/host/routes/state.js'
 import { configureAdminRoutes, handleAdminRoute } from './src/host/routes/admin.js'
 import { configureSkillsRoutes, handleSkillsRoute } from './src/host/routes/skills.js'
 import { INTEGRATION, markHealth, escalateHealth, healthReport, restoreHealth, projectReady, gitlabReady, gitlabMergeRequestDetail, gitlabRequest, gitlabSync, feishuPush, feishuBroadcast, broadcastChange, configureIntegrations } from './src/host/integrations.js'
@@ -2397,12 +2398,8 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
         }
       }
 
-      if (method === 'GET' && (route === '/' || route === '/state')) {
-        const dispatcher = getDispatcher()
-        const state = publicState(store)
-        sendJson(res, 200, { ok: true, state: dispatcher === undefined ? state : { ...state, agents: dispatcher.status() } })
-        return
-      }
+      // /state 在 routes/state.js（带 ETag：上千张卡时轮询没变就 304，不再整包重传）。
+      if (method === 'GET' && (route === '/' || route === '/state')) { handleStateRoute({ method, route, req, res, store }); return }
       if (await handleAuthRoute({ method, route, req, res, store, url })) return
       if (method === 'GET' && route === '/agents/probe') {
         const dispatcher = getDispatcher()
@@ -2655,6 +2652,7 @@ export function apply(ctx) {
   // 集成健康是旁路数据，启动时读回来，重启后不再显示成「还没用过」。
   restoreHealth()
     configureExportRoutes({ sendCsv, requirementProgress, sessions: SESSIONS })
+    configureStateRoutes({ publicState, getDispatcher: () => activeDispatcher, sendJson })
     configureCodingRoutes({
   gitlabRequest,
   gitlabMergeRequestDetail, applyConfig, ensureWorktree, publicState, readJsonBody, removeWorktree, sendJson, serviceOf, upsertById, workProjectOf })
