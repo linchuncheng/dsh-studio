@@ -209,13 +209,31 @@ export function LdapPanel({ config, onChanged }) {
 }
 
 
-export function CostsPanel({ config, onChanged }) {
+export function CostsPanel({ config, onChanged, suggestModels }) {
   const { h, Editor, api, toast, confirmDialog, tipOf, TextField, CheckField, SelectField , React } = client()
   const costs = config.costs ?? {}
   const [runs, setRuns] = React.useState(String(costs.budgetRuns ?? 500))
   const [hours, setHours] = React.useState(String(costs.budgetHours ?? 80))
   const [warnAt, setWarnAt] = React.useState(String(costs.warnAt ?? 80))
   const [prices, setPrices] = React.useState(() => (Array.isArray(costs.prices) ? costs.prices.map(item => ({ ...item })) : []))
+  const [suggested, setSuggested] = React.useState(0)
+  // 效能页的「补价目」把「算不出钱的模型」带过来：缺哪行补哪行，已有的不重复加。
+  // 补进来的行单价是 0，必须人真填了再保存——0 元的价目会让报表看起来「很便宜」，比未知更糟。
+  React.useEffect(() => {
+    const wanted = (Array.isArray(suggestModels) ? suggestModels : [])
+      .map(name => String(name ?? '').trim())
+      .filter(name => name !== '')
+    if (wanted.length === 0) return
+    const have = new Set((Array.isArray(costs.prices) ? costs.prices : []).map(item => String(item.model ?? '').trim()))
+    const missing = wanted.filter(name => !have.has(name))
+    setSuggested(missing.length)
+    if (missing.length === 0) return
+    setPrices(list => {
+      const current = new Set(list.map(item => String(item.model ?? '').trim()))
+      const todo = missing.filter(name => !current.has(name))
+      return todo.length === 0 ? list : [...list, ...todo.map(name => ({ model: name, input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }))]
+    })
+  }, [suggestModels])
   const savePrices = async () => {
     setBusy(true); setNote(null); setError(null)
     try {
@@ -285,6 +303,10 @@ export function CostsPanel({ config, onChanged }) {
       ),
       h('div', { className: 'ds-field ds-span' },
         h('div', { className: 'ds-label' }, '价目表（元 / 百万 token）'),
+        suggested > 0
+          ? h('div', { className: 'ds-hint', 'data-suggested': String(suggested), style: { marginBottom: 4 } },
+            `已从效能页带过来 ${suggested} 个还没配价目的模型：填好单价再点「保存价目表」。单价留 0 的话仍然算「未知」，不会当成免费。`)
+          : null,
         prices.length === 0
           ? h('div', { className: 'ds-hint' }, '还是空的：只统计 token，不算钱。点「＋ 加一行」把常见模型的价格填进来。')
           : prices.map((item, index) => h('div', { className: 'ds-row', key: index, style: { gap: 6, alignItems: 'center', marginTop: 6, flexWrap: 'wrap' } },

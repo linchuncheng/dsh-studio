@@ -778,6 +778,10 @@ test('host: usage parsing takes one usage per message and prices what it can', a
   assert.equal(unknown.cost, null, 'unknown model must not be reported as zero')
   const subscription = costOf(prices, [{ model: 'x-coding', input: 999999, output: 999999 }])
   assert.equal(subscription.cost, 0, 'subscription channels cost nothing extra')
+  // 设置页「补价目」补进来的空行（四个单价都是 0）不能算命中：否则报表显示 ¥0.00，比「未知」更能骗人
+  const blank = [{ model: 'deepseek-v4.1-pro', input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }]
+  assert.equal(priceOf(blank, 'deepseek-v4.1-pro'), null)
+  assert.equal(costOf(blank, [{ model: 'deepseek-v4.1-pro', input: 1000, output: 1000 }]).cost, null)
 })
 
 test('host: impact counts shell and db cases as runnable', async () => {

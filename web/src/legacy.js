@@ -1404,7 +1404,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
     }
 
 
-    function Settings({ state, onChanged, initialSection, onSection }) {
+    function Settings({ state, onChanged, initialSection, onSection, suggestCosts }) {
       const config = state.config
       const [form, setForm] = React.useState({
         boardTitle: config.board.title,
@@ -1538,7 +1538,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         if (id === 'skills') return h(SkillsPanel, { config, onChanged })
         if (id === 'columns') return h(ColumnsPanel, { state, onChanged })
         if (id === 'testing') return h(TestingPanel, { config, onChanged })
-        if (id === 'costs') return h(CostsPanel, { config, onChanged })
+        if (id === 'costs') return h(CostsPanel, { config, onChanged, suggestModels: suggestCosts })
         if (id === 'environments') return h(EnvironmentsPanel, { config, onChanged })
         if (id === 'access') return h(AccessPanel, { state, config, onChanged })
         if (id === 'ldap') return h(LdapPanel, { config, onChanged })
@@ -2156,6 +2156,8 @@ function installKeyboardActivation() {
       const { state, error, reload } = useStudio()
       const [tab, setTab] = React.useState('dashboard')
       const [settingsSection, setSettingsSection] = React.useState('experts')
+      /** 效能页点「补价目」带过来的模型名：跳到设置的成本面板并预填成空价目行。 */
+      const [costSuggest, setCostSuggest] = React.useState([])
       const [openId, setOpenId] = React.useState(null)
       const [creating, setCreating] = React.useState(false)
       /** 命令面板里「先选动作、再选卡」的动作真正落地（逻辑在 palette.js，这里只执行副作用）。 */
@@ -2426,10 +2428,10 @@ function installKeyboardActivation() {
             : tab === 'projects'
               ? h(ProjectsOverview, { state, onOpenBoard: () => setTab('board') })
               : tab === 'analytics'
-                ? h(AnalyticsPage, { state, onOpenTask: setOpenId })
+                ? h(AnalyticsPage, { state, onOpenTask: setOpenId, onFixPrices: models => { setCostSuggest(Array.isArray(models) ? models : []); setSettingsSection('costs'); setTab('settings') } })
               : tab === 'market'
                 ? h('div', { className: 'ds-body' }, h(Market, { state, onChanged: reload }))
-                : h('div', { className: 'ds-body' }, h(Settings, { state, onChanged: reload, initialSection: settingsSection, onSection: setSettingsSection })),
+                : h('div', { className: 'ds-body' }, h(Settings, { state, onChanged: reload, initialSection: settingsSection, onSection: setSettingsSection, suggestCosts: costSuggest })),
         paletteOpen
           ? h(Palette, {
               state,

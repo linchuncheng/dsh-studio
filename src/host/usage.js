@@ -82,12 +82,16 @@ export function priceOf(prices, model) {
   const list = Array.isArray(prices) ? prices : []
   const hit = list.find((item) => String(item?.model ?? '') === name)
   if (hit === undefined) return null
-  return {
+  const price = {
     input: Number(hit.input) || 0,
     output: Number(hit.output) || 0,
     cacheRead: Number(hit.cacheRead) || 0,
     cacheWrite: Number(hit.cacheWrite) || 0,
   }
+  // 四个单价都是 0 = 「这行只建了还没填钱」（设置页「补价目」补进来的空行就长这样）。
+  // 当成命中价目表会算出 ¥0.00，比「未知」更能误导人，所以按未配处理。
+  if (price.input === 0 && price.output === 0 && price.cacheRead === 0 && price.cacheWrite === 0) return null
+  return price
 }
 
 /**

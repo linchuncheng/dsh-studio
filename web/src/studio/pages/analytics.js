@@ -12,7 +12,7 @@ const CTX_STACK = { display: 'flex', height: 10, borderRadius: 5, overflow: 'hid
 const CTX_LEGEND = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontSize: 12 }
 const CTX_CHIP = { display: 'flex', flexDirection: 'column', gap: 2, padding: '6px 10px', border: '1px solid var(--ds-line)', borderRadius: 8, minWidth: 84 }
 
-export function AnalyticsPage({ state, onOpenTask }) {
+export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
   const { h, React, api, SelectField } = client()
   const [days, setDays] = React.useState(30)
   const [project, setProject] = React.useState('')
@@ -21,6 +21,8 @@ export function AnalyticsPage({ state, onOpenTask }) {
   const [load, setLoad] = React.useState(null)
   const [burn, setBurn] = React.useState(null)
   const [costs, setCosts] = React.useState(null)
+  // 价目表行数：/costs 的 budget 里带着 config.costs.prices —— 就是设置页里维护的那张表。
+  const priceCount = Array.isArray(costs?.budget?.prices) ? costs.budget.prices.length : 0
   const [quality, setQuality] = React.useState(null)
   // 上下文洞察：每个专家的窗口占用峰值 / 回合 / 工具调用 / 重试（读会话日志，不额外花 token）
   const [contexts, setContexts] = React.useState(null)
@@ -325,9 +327,21 @@ export function AnalyticsPage({ state, onOpenTask }) {
           h('div', { className: 'ds-an-kv' }, h('span', {}, '平均执行时长'), h('b', {}, `${Math.round((costs?.avgMs ?? 0) / 1000)} 秒`)),
           (costs?.byModel ?? []).slice(0, 3).map(item => h('div', { key: `m-${item.key}`, className: 'ds-an-kv' }, h('span', {}, `模型 ${item.key}`), h('b', {}, `${item.runs} 次`))),
           (costs?.byPromptVersion ?? []).slice(0, 3).map(item => h('div', { key: `p-${item.key}`, className: 'ds-an-kv' }, h('span', {}, `提示词 ${item.key}`), h('b', {}, `${item.runs} 次`))),
+          // 钱是怎么来的，得写在钱旁边：币种、单位、价目表在哪维护、配了几个模型。
+          h('div', { className: 'ds-hint', 'data-price-source': String(priceCount) },
+            `币种 ¥（元）· 单位：元 / 百万 token · 价目来源：设置 →「成本与预算」的价目表（已配 ${priceCount} 个模型）` +
+            (priceCount === 0 ? '，现在只统计 token、不算钱' : '')),
           (costs?.usage?.unpricedModels ?? []).length === 0
             ? null
-            : h('div', { className: 'ds-hint' }, '未配价目的模型：' + costs.usage.unpricedModels.map(item => item.model + ' ×' + item.calls).join('、')),
+            : h('div', { className: 'ds-hint', 'data-unpriced': String(costs.usage.unpricedModels.length) },
+              '未配价目的模型：' + costs.usage.unpricedModels.map(item => item.model + ' ×' + item.calls).join('、'),
+              typeof onFixPrices === 'function'
+                ? h('button', {
+                  className: 'ds-btn ds-btn-ghost', style: { marginLeft: 8, padding: '2px 8px', fontSize: 12 },
+                  title: '把缺价目的模型带进设置页的价目表，填好单价保存即可算钱',
+                  onClick: () => onFixPrices(costs.usage.unpricedModels.map(item => item.model)),
+                }, '补价目')
+                : null),
           h('div', { className: 'ds-hint' }, costs?.note ?? ''),
           costs?.budget === null || costs?.budget === undefined
             ? null
