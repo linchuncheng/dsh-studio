@@ -1,27 +1,30 @@
-// 提示词 A/B：同一张卡、两个专家（提示词只差一段），跑完比较「用例通过 / 代码事实 / 返工 / 耗时」。
+// 提示词 A/B（有效版）：每轮建**两张同规格卡**，各派一个专家（提示词只差一段），并行跑，比结果。
 //
-//   node tools/prompt-ab.mjs --task <id> --variant '...'                 # 只看计划（免费）
-//   node tools/prompt-ab.mjs --task <id> --variant '...' --setup-only   # 建两个临时专家再删（免费）
-//   node tools/prompt-ab.mjs --task <id> --variant '...' --run          # 真跑两次（花 token）
+//   node tools/prompt-ab.mjs --variant '...'                       # 只看计划（免费）
+//   node tools/prompt-ab.mjs --variant '...' --setup-only          # 建/删专家验通路（免费）
+//   node tools/prompt-ab.mjs --variant '...' --rounds 3 --run      # 真跑 3 轮（每轮 2 次会话）
 //
-// 完成判定读宿主上的 session 日志（/agents 不报这类手动派单，靠它会在第一次轮询就收工）。
+// 判据：任务分支上的提交数、卡最终停在哪一列、代码事实核对、耗时。
+// 完成判定读宿主 session 日志的 turn/end（/agents 不报手动派单）。
 import { Client } from 'ssh2'
 const BASE = process.env.STUDIO_BASE ?? 'http://192.168.120.218:18080'
 const SSH = { host: process.env.DSH_DEPLOY_HOST ?? '192.168.120.218', username: process.env.DSH_DEPLOY_USER ?? 'lyf', password: process.env.DSH_DEPLOY_PASSWORD ?? '1234', readyTimeout: 15000 }
+const REPO = process.env.AB_REPO ?? '/home/lyf/repos/admin-portal'
 const argv = process.argv.slice(2)
 const flag = (name) => argv.includes('--' + name)
 const value = (name, fallback) => { const at = argv.indexOf('--' + name); return at >= 0 ? String(argv[at + 1] ?? '') : fallback }
-const TASK = value('task', '')
 const VARIANT = value('variant', '')
+const ROUNDS = Math.max(1, Math.min(5, Number(value('rounds', '1')) || 1))
 const RUN = flag('run')
 const SETUP_ONLY = flag('setup-only')
 const TIMEOUT_MS = Number(value('timeout', '1800')) * 1000
+const SPEC = value('spec', '给订单列表页加一列「备注」，只读展示 orders.note（GET /api/orders 已返回该字段）。改完跑 pnpm test。')
+const sleep = (ms) => new Promise(r => setTimeout(r, ms))
 const post = async (path, body) => {
   const res = await fetch(BASE + '/studio-api' + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) })
   return res.json().catch(() => ({}))
 }
 const state = async () => (await (await fetch(BASE + '/studio-api/state')).json()).state
-const sleep = (ms) => new Promise(r => setTimeout(r, ms))
 const ssh = (command) => new Promise((resolve, reject) => {
   const client = new Client()
   client.on('ready', () => client.exec(command, (err, stream) => {
@@ -33,87 +36,93 @@ const ssh = (command) => new Promise((resolve, reject) => {
   })).on('error', reject)
   client.connect(SSH)
 })
-if (TASK === '' || VARIANT === '') { console.error('用法：--task <卡片 id> --variant "这段提示词" [--run|--setup-only]'); process.exit(2) }
-const before = await state()
-const card = (before.tasks ?? []).find(item => item.id === TASK)
-if (card === undefined) { console.error('没有这张卡：' + TASK); process.exit(2) }
-const baseExpert = (before.config.experts ?? []).find(item => item.id === card.expert)
-const cases = Array.isArray(card.cases) ? card.cases : []
-const stamp = Date.now().toString(36).slice(-4)
+if (VARIANT === '') { console.error('用法：--variant "要对比的那段提示词" [--rounds 3] [--run]'); process.exit(2) }
 if (!RUN && !SETUP_ONLY) {
   console.log(JSON.stringify({
-    card: card.code + ' ' + card.title,
-    column: card.status,
-    baselineExpert: baseExpert === undefined ? '（卡上没专家，直接用变体专家派）' : baseExpert.name,
-    variantPrompt: VARIANT,
-    judgedBy: ['用例通过数 ' + cases.length + ' 条', '代码事实核对 verified', '卡上评论数（返工痕迹）', '耗时'],
-    completion: '读宿主 session 日志的 turn/end，不看 /agents（它不报手动派单）',
-    cost: '两个变体 = 两次真实 AI 会话',
+    design: '每轮两张同规格卡，各自 worktree、各自专家，并行跑',
+    rounds: ROUNDS,
+    spec: SPEC,
+    variant: VARIANT,
+    judgedBy: ['任务分支提交数', '卡最终列', '代码事实核对', '耗时'],
+    cost: '每轮 2 次真实会话，合计 ' + (ROUNDS * 2) + ' 次',
   }, null, 2))
   console.log('\n这是 dry-run：没有建专家、没有派单、没有花 token。')
   process.exit(0)
 }
+const knownExperts = new Set(((await state()).config.experts ?? []).map(item => item.id))
+const stamp = Date.now().toString(36).slice(-4)
 const makeExpert = async (name, prompt) => {
   const known = new Set(((await state()).config.experts ?? []).map(item => item.id))
   const saved = await post('/experts/save', { expert: { name, role: 'dev', description: 'A/B 临时专家', prompt, enabled: true } })
   const list = saved.experts ?? saved.state?.config?.experts ?? []
   const created = list.find(item => !known.has(item.id))
-  if (created === undefined) throw new Error('建专家失败：' + JSON.stringify(saved).slice(0, 160))
+  if (created === undefined) throw new Error('建专家失败')
   return String(created.id)
 }
 const delExpert = async (id) => { await post('/experts/delete', { id }) }
-const expertA = await makeExpert('AB-base-' + stamp, String(baseExpert?.prompt ?? ''))
-const expertB = await makeExpert('AB-variant-' + stamp, String(baseExpert?.prompt ?? '') + '\n\n' + VARIANT)
-console.log('建好两个临时专家：基线=' + expertA + ' 变体=' + expertB)
-if (SETUP_ONLY) {
-  await delExpert(expertA); await delExpert(expertB)
-  console.log('--setup-only：通路验证完成，已删除两个临时专家。')
-  process.exit(0)
-}
-const sessionFile = async (expertId) => {
-  const found = await ssh('ls -1t /home/lyf/.dsh/sessions/*/studio-' + TASK + '-' + expertId + '/session.v4.jsonl.zstd 2>/dev/null | head -1')
-  return found.trim()
-}
-const runVariant = async (label, expertId) => {
-  const started = Date.now()
-  await post('/task/update', { id: TASK, expert: expertId })
-  const launched = await post('/agents/run', { id: TASK, expert: expertId })
-  if (launched.ok !== true) return { label, ok: false, error: JSON.stringify(launched.error ?? launched).slice(0, 160), ms: 0 }
+const basePrompt = String((((await state()).config.experts ?? []).find(item => item.role === 'dev') ?? {}).prompt ?? '')
+const expertA = await makeExpert('AB-base-' + stamp, basePrompt)
+const expertB = await makeExpert('AB-var-' + stamp, basePrompt + '\n\n' + VARIANT)
+console.log('专家：基线=' + expertA + ' 变体=' + expertB)
+if (SETUP_ONLY) { await delExpert(expertA); await delExpert(expertB); console.log('--setup-only：通路验证完成，已删除。'); process.exit(0) }
+const sessionFile = async (taskId, expertId) => (await ssh('ls -1t /home/lyf/.dsh/sessions/*/studio-' + taskId + '-' + expertId + '/session.v4.jsonl.zstd 2>/dev/null | head -1')).trim()
+const waitTurn = async (taskId, expertId, started) => {
   let file = ''
-  for (let attempt = 0; attempt < 10 && file === ''; attempt += 1) { await sleep(3000); file = await sessionFile(expertId) }
-  if (file === '') return { label, ok: false, error: '没有找到会话日志', ms: Date.now() - started }
-  let turns = 0
+  for (let attempt = 0; attempt < 10 && file === ''; attempt += 1) { await sleep(3000); file = await sessionFile(taskId, expertId) }
+  if (file === '') return { ok: false, error: '没有会话日志', ms: Date.now() - started }
   while (Date.now() - started < TIMEOUT_MS) {
-    await sleep(6000)
-    turns = Number((await ssh('zstd -dc ' + file + ' 2>/dev/null | grep -c turn/end')).trim() || '0')
-    // 不要用 pgrep -fc 判活：它会把执行它的那个 shell 也算进去，永远 >0（实测卡死 30 分钟）
-    if (turns > 0) break
+    await sleep(10000)
+    const turns = Number((await ssh('zstd -dc ' + file + ' 2>/dev/null | grep -c turn/end')).trim() || '0')
+    if (turns > 0) return { ok: true, ms: Date.now() - started, turns }
   }
-  const after = await state()
-  const done = (after.tasks ?? []).find(item => item.id === TASK) ?? {}
-  const list = Array.isArray(done.cases) ? done.cases : []
-  const comments = (done.history ?? []).filter(item => item.by === 'agent' && String(item.text ?? '').trim() !== '')
-  return {
-    label,
-    ok: turns > 0,
-    ms: Date.now() - started,
-    turns,
-    passed: list.filter(item => item.result === 'pass').length,
-    cases: list.length,
-    verified: done.coding?.verified?.ok === true,
-    comments: comments.length,
-    lastComment: String(comments.slice(-1)[0]?.text ?? '').slice(0, 120),
+  return { ok: false, error: '超时未收尾', ms: Date.now() - started }
+}
+const measure = async (taskId) => {
+  const snapshot = await state()
+  const card = (snapshot.tasks ?? []).find(item => item.id === taskId) ?? {}
+  const candidates = ['task/' + taskId, 'task/' + (card.code === '' ? taskId : card.code) + '-' + taskId.slice(-8)]
+  let branch = candidates[0]
+  let commits = 0
+  for (const candidate of candidates) {
+    const count = Number((await ssh('cd ' + REPO + ' && git rev-list --count master..' + candidate + ' 2>/dev/null || echo 0')).trim() || '0')
+    if (count > 0) { branch = candidate; commits = count; break }
+  }
+  return { status: card.status, commits, verified: card.coding?.verified?.ok === true, branch }
+}
+const results = []
+for (let round = 1; round <= ROUNDS; round += 1) {
+  console.log('\n第 ' + round + '/' + ROUNDS + ' 轮')
+  const created = []
+  for (const label of ['A', 'B']) {
+    const saved = await post('/task/create', { title: 'AB-' + stamp + '-' + round + label + ' ' + SPEC.slice(0, 40), type: 'requirement', status: 'dev', priority: 'normal', project: 'admin-portal', requirement: SPEC })
+    created.push({ label, id: String(saved.task?.id ?? '') })
+  }
+  const pairs = [[created[0], expertA, '基线'], [created[1], expertB, '变体']]
+  for (const [card, expert] of pairs) {
+    await post('/task/update', { id: card.id, expert })
+  }
+  const started = Date.now()
+  for (const [card, expert] of pairs) await post('/agents/run', { id: card.id, expert })
+  const waits = await Promise.all(pairs.map(([card, expert]) => waitTurn(card.id, expert, started)))
+  for (let index = 0; index < pairs.length; index += 1) {
+    const [card, expert, label] = pairs[index]
+    await post('/agents/stop', { id: card.id })
+    const result = await measure(card.id)
+    const row = { round, label, side: label === 'A' ? '基线' : '变体', ok: waits[index].ok, secs: Math.round(waits[index].ms / 1000), commits: result.commits, status: result.status, verified: result.verified, error: waits[index].error }
+    results.push(row)
+    console.log([label, 'ok=' + row.ok, row.commits + ' 提交', '列=' + row.status, '核对=' + row.verified, row.secs + 's', row.error ?? ''].join('  '))
+    const branch = result.branch
+    await ssh('cd ' + REPO + ' && git worktree remove --force /tmp/studio-wt-test/' + card.id + ' 2>/dev/null; git branch -D ' + branch + ' 2>&1 | head -1')
+    await post('/task/delete', { id: card.id })
   }
 }
-const a = await runVariant('基线', expertA)
-await post('/agents/stop', { id: TASK })
-const b = await runVariant('变体', expertB)
-await post('/agents/stop', { id: TASK })
 await delExpert(expertA); await delExpert(expertB)
-const line = (row) => [row.label, 'ok=' + row.ok, '轮次 ' + (row.turns ?? 0), '用例 ' + (row.passed ?? 0) + '/' + (row.cases ?? 0), '核对=' + String(row.verified), '评论 ' + (row.comments ?? 0), Math.round((row.ms ?? 0) / 1000) + 's'].join('  ')
-console.log(line(a))
-console.log(line(b))
-if (a.error !== undefined) console.log('基线错误：' + a.error)
-if (b.error !== undefined) console.log('变体错误：' + b.error)
-const better = (b.passed ?? 0) > (a.passed ?? 0) || (b.verified === true && a.verified !== true)
-console.log('\n结论：' + (better ? '变体更好（用例更多或核对通过）' : '这次没有分出高下') + '；两次都是真实会话，样本太小，要反复几次再下判断。')
+const group = (side) => {
+  const rows = results.filter(item => item.side === side)
+  const avg = (key) => rows.length === 0 ? 0 : Math.round(rows.reduce((sum, item) => sum + Number(item[key] ?? 0), 0) / rows.length * 10) / 10
+  return { rows: rows.length, commits: avg('commits'), seconds: avg('secs'), done: rows.filter(item => item.status === 'test' || item.status === 'review' || item.status === 'done').length }
+}
+const a = group('基线'), b = group('变体')
+console.log('\n基线：' + JSON.stringify(a))
+console.log('变体：' + JSON.stringify(b))
+console.log('\n差异：提交 ' + (b.commits - a.commits) + ' / 推进 ' + (b.done - a.done) + ' / 耗时 ' + (b.seconds - a.seconds) + 's（样本 ' + ROUNDS + ' 轮，n 小，只当信号）')
