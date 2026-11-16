@@ -709,6 +709,13 @@ test('host: a requirement needs three answers before it can be split', async () 
   const warned = backendCoverageWarning({ discovery: { server: '有，node:sqlite' }, points: [{ title: '登录页' }] })
   assert.ok(warned !== null && warned.includes('后端'), String(warned))
   assert.equal(backendCoverageWarning({ discovery: { server: '有，node:sqlite' }, points: [{ title: '订单接口与建表' }] }), null)
+  // 反向：说了没后端却要建表
+  const { frontendOnlyWarning } = await import('../src/host/discovery.js')
+  assert.equal(frontendOnlyWarning({ discovery: { server: '没有，纯前端' }, points: [{ title: '导出按钮' }] }), null, '纯前端功能点不提示')
+  const reverse = frontendOnlyWarning({ discovery: { server: '没有，纯前端演示' }, points: [{ title: '新增库存表并写接口' }] })
+  assert.ok(reverse !== null && reverse.includes('没有服务端'), String(reverse))
+  assert.equal(frontendOnlyWarning({ discovery: { server: '有，node:sqlite' }, points: [{ title: '新增表' }] }), null, '说有后端就不归这条管')
+  assert.equal(frontendOnlyWarning({}), null)
 })
 
 test('host: usage parsing takes one usage per message and prices what it can', async () => {

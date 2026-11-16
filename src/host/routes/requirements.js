@@ -7,7 +7,7 @@ import {
   sanitizeRequirementPool,
   text,
 } from '../domain.js'
-import { backendCoverageWarning, discoveryGaps } from '../discovery.js'
+import { backendCoverageWarning, discoveryGaps, frontendOnlyWarning } from '../discovery.js'
 import { casesOfTasks, impactSummary } from '../impact.js'
 import {
   ensureReqFolder,
@@ -230,8 +230,9 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
       created.push(task)
     }
     // 说了有后端却没有后端功能点：给个提示，不拦（后端可能确实在别的需求里）
-    const warning = backendCoverageWarning(requirement)
-    host.sendJson(res, 200, { ok: true, created, warnings: warning === null ? [] : [warning], state: host.publicState(store) })
+    // 两个方向的体检：说了有后端却没覆盖，和说了没后端却要动接口/表
+    const warnings = [backendCoverageWarning(requirement), frontendOnlyWarning(requirement)].filter(item => item !== null)
+    host.sendJson(res, 200, { ok: true, created, warnings, state: host.publicState(store) })
     return true
   }
   if (method === 'POST' && route === '/requirement/pool') {

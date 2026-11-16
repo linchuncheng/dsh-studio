@@ -32,6 +32,21 @@ export function backendCoverageWarning(requirement) {
   return '澄清里说有服务端，但功能点没有一条讲接口 / 数据表 / 鉴权：后端在哪一块交付？'
 }
 
+const BACKEND_NO = /^(没有|无|不需要|不涉及|纯前端|不做)/i
+
+/**
+ * 反向体检：澄清里说「没有服务端」，功能点却要建表 / 写接口 / 加鉴权。
+ * 和 backendCoverageWarning 对称——一个防"少做"，一个防"说了不做却写了要做"。只提示不拦。
+ */
+export function frontendOnlyWarning(requirement) {
+  const answer = String(requirement?.discovery?.server ?? '').trim()
+  if (answer === '' || BACKEND_NO.test(answer) !== true) return null
+  const points = Array.isArray(requirement?.points) ? requirement.points : []
+  const hit = points.find(point => BACKEND_HINT.test(String(point?.title ?? '') + ' ' + String(point?.description ?? '')))
+  if (hit === undefined) return null
+  return '澄清里说没有服务端，但功能点「' + String(hit.title ?? '').slice(0, 24) + '」要动接口 / 数据表：要么补上后端，要么把这条改成前端能做的范围'
+}
+
 /** 还缺哪几项澄清；空了才允许拆卡。 */
 export function discoveryGaps(requirement) {
   const discovery = requirement?.discovery ?? {}
