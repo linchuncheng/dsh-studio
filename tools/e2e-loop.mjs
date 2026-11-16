@@ -84,6 +84,8 @@ async function runOnce(round) {
   step('版本发布', published.body.release?.status === 'released', String(published.body.release?.status ?? published.body.error).slice(0, 50))
 
   if (!keep) {
+    // 卡删掉但 worktree/分支留着的话会越积越多（实测积了 27 个）
+    for (const card of cardsNow) await post('/task/worktree', { id: card.id, action: 'remove' })
     for (const card of cardsNow) await post('/task/delete', { id: card.id })
     await post('/requirement/delete', { id: req.id })
     if (release.id !== undefined) await post('/release/delete', { id: release.id })
