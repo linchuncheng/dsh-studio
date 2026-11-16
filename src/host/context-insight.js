@@ -15,6 +15,19 @@ export function contextOfUsage(usage) {
   return { peak, model, calls: Array.isArray(usage) ? usage.length : 0 }
 }
 
+/**
+ * 每一轮的上下文规模（input + cacheRead），用来画上升曲线：
+ * 看它在第几步顶到天花板、压缩之后有没有掉下来。
+ * usage 本来就是按消息顺序排的，直接取；点太多时按等距抽样。
+ */
+export function trendOfUsage(usage, maxPoints = 48) {
+  const list = Array.isArray(usage) ? usage : []
+  const points = list.map(item => Number(item.input ?? 0) + Number(item.cacheRead ?? 0))
+  if (points.length <= maxPoints) return points
+  const step = points.length / maxPoints
+  return Array.from({ length: maxPoints }, (_, index) => points[Math.min(points.length - 1, Math.round(index * step))])
+}
+
 /** 字符 → token 的粗略换算（中英混排约 3 字符/token）；只用来排序和看比例。 */
 export function charsToTokens(chars) {
   return Math.round(Number(chars ?? 0) / 3)
@@ -38,6 +51,7 @@ export function breakdownContext(session, promptChars) {
   return {
     peak,
     peakTokens: peak,
+    trend: trendOfUsage(session?.usage),
     chars: total,
     approxTokens: charsToTokens(total),
     parts: parts.map(part => ({ ...part, percent: total === 0 ? 0 : Math.round((part.chars / total) * 100) })),

@@ -18,6 +18,13 @@ export function AnalyticsPage({ state, onOpenTask }) {
   const [contexts, setContexts] = React.useState(null)
   const [ctxDetail, setCtxDetail] = React.useState(null)
   const [ctxOpen, setCtxOpen] = React.useState('')
+  // 折线：每轮 input+cacheRead 的相对高度（0-56 的 viewBox）
+  const trendPointsOf = (trend) => {
+    const list = Array.isArray(trend) ? trend : []
+    if (list.length === 0) return ''
+    const max = Math.max(1, ...list)
+    return list.map((value, index) => `${(index / Math.max(1, list.length - 1)) * 560},${56 - (value / max) * 50}`).join(' ')
+  }
   const openContext = async (expert) => {
     if (ctxOpen === expert) { setCtxOpen(''); return }
     setCtxOpen(expert)
@@ -307,6 +314,12 @@ export function AnalyticsPage({ state, onOpenTask }) {
                     : h('div', { style: { padding: '4px 12px 10px' } },
                       h('div', { className: 'ds-hint' },
                         `最近一次会话 ${fmtTime(Math.round(ctxDetail.breakdown.at))} · 窗口峰值 ${Math.round(ctxDetail.breakdown.peak / 1000)}k token · 总共 ${Math.round(ctxDetail.breakdown.approxTokens / 1000)}k token 文本`),
+                      h('svg', { width: '100%', height: 58, viewBox: '0 0 560 56', preserveAspectRatio: 'none', style: { display: 'block', margin: '4px 0 2px' } },
+                        h('line', { x1: 0, y1: 55, x2: 560, y2: 55, stroke: 'var(--ds-line)', strokeWidth: 1, vectorEffect: 'non-scaling-stroke' }),
+                        h('polyline', { points: trendPointsOf(ctxDetail.breakdown.trend), fill: 'none', stroke: 'var(--ds-accent)', strokeWidth: 1.5, vectorEffect: 'non-scaling-stroke' }),
+                      ),
+                      h('div', { className: 'ds-hint' },
+                        `每轮上下文（${(ctxDetail.breakdown.trend ?? []).length} 个采样点）——一路往上说明没压缩过，突然掉下来说明压缩过`),
                       ctxDetail.breakdown.parts.map(part => h('div', { key: part.key, className: 'ds-row', style: { gap: 8, alignItems: 'center' } },
                         h('span', { style: { width: 150, fontSize: 12 } }, part.label),
                         h('span', { style: { flex: 1, height: 6, background: 'var(--ds-line)', borderRadius: 3, overflow: 'hidden' } },
