@@ -671,6 +671,30 @@ test('host: a falling trend marks where the context was compacted', async () => 
   assert.deepEqual(contextDrops([0, 0]), [], '起点为 0 不算掉')
 })
 
+test('host: a requirement with no product or architect discussion gets flagged', async () => {
+  const { requirementGate } = await import('../src/host/executor.js')
+  const config = { experts: [{ id: 'qa', name: '测试工程师', role: 'qa' }, { id: 'pm', name: '产品经理', role: 'product' }] }
+  const requirement = { id: 'r1', title: 'x', status: 'active', signoff: { by: '人', at: 1, note: 'ok' }, review: { status: 'approved' }, points: [], docs: [{ content: 'prd' }], pool: { score: 12 } }
+  const card = { id: 't1', requirementId: 'r1', code: 'DEV-001', status: 'done', comments: [{ author: '测试工程师', body: '跑完了' }], cases: [{ id: 'c1', result: 'pass', lastRun: { ok: true } }], checklist: [] }
+  const onlyQa = requirementGate({ config, tasks: [card], requirements: [requirement] }, requirement)
+  assert.ok(onlyQa.warnings.some(item => item.includes('没有经过澄清与方案')), JSON.stringify(onlyQa.warnings))
+  const withPm = requirementGate({ config, tasks: [{ ...card, comments: [{ author: '产品经理', body: '澄清：范围是…' }] }], requirements: [requirement] }, requirement)
+  assert.ok(!withPm.warnings.some(item => item.includes('没有经过澄清与方案')), JSON.stringify(withPm.warnings))
+})
+
+test('host: an expert with skills does not crash the prompt builder', async () => {
+  const { buildExpertPrompt, configureDispatcher } = await import('../src/host/dispatcher.js')
+  // 提示词构建依赖不少注入（serviceOf / workProjectOf / 技能库…）；用一个「任何属性都是空函数」的桩，
+  // 免得以后再加依赖就要改测试。注意 getActiveSkills 返回 undefined 时技能描述退化成名字。
+  configureDispatcher(new Proxy({}, { get: () => () => undefined }))
+  const expert = { id: 'dev', name: '开发工程师', emoji: '🛠️', role: 'dev', skills: ['lark-base', 'no-such-skill'] }
+  const task = { id: 't-1', code: 'DEV-001', title: '登录失败限制', comments: [] }
+  const column = { id: 'dev', label: '开发中' }
+  // 注入缺失时也不能炸（以前是裸的 activeSkills，直接 ReferenceError）
+  const prompt = buildExpertPrompt(task, expert, column, { experts: [expert] }, undefined, '', undefined, {}, [])
+  assert.ok(String(prompt).includes('lark-base'), '技能名要出现在提示词里')
+})
+
 test('host: a tool-heavy session gets a plain-language warning', async () => {
   const { breakdownContext, toolHeavyWarning, TOOL_HEAVY_THRESHOLD } = await import('../src/host/context-insight.js')
   const heavy = breakdownContext({ usage: [{ input: 100, cacheRead: 900 }], counts: { turns: 2 }, volume: { tool: 8000, assistant: 1000, user: 500, other: 500 } }, 300)

@@ -869,7 +869,8 @@ export function buildExpertPrompt(task, expert, column, config, team, instructio
     expert.description ? `\n你的定位：${expert.description}` : '',
     expert.domain ? `\n业务领域：${expert.domain}（判断与取舍以这个领域的规范和风险偏好为准）` : '',
     (expert.skills ?? []).length > 0 ? `\n你可以使用的技能：${(expert.skills ?? []).map(name => {
-      const known = activeSkills?.get(name)
+      // 注入可能还没就绪：这里必须容忍没有技能库（以前写成裸 activeSkills，一派单就 ReferenceError）
+      const known = host.getActiveSkills?.()?.get?.(name)
       return known === undefined ? name : `${name}（${known.description}）`
     }).join('、')}。需要时调用 skill 工具加载对应技能，再按其说明操作。` : '',
     team !== undefined ? `\n你在「${team.name}」专家团里协作，本团成员：\n${members}` : '',

@@ -714,6 +714,23 @@ export function requirementGate(state, requirement) {
   const blocked = tasks.filter(task => task.blocked !== null && task.blocked !== undefined)
   if (blocked.length > 0) blockers.push(`${blocked.length} 张卡还卡在阻塞：${blocked.slice(0, 3).map(task => task.code || task.id).join('、')}`)
   // 绕过门禁完成的卡：不拦（override 本来就是有意开的逃生舱），但交付时必须被看见。
+  // 协作：光有「测试跑完了」这种自动汇总不算协作过——必须有产品或架构专家在卡上说话。
+  const roleOf = new Map((state.config?.experts ?? []).map(expert => [String(expert.name ?? ''), String(expert.role ?? '')]))
+  const spokenRoles = new Set()
+  for (const task of tasks) {
+    for (const comment of task.comments ?? []) {
+      const role = roleOf.get(String(comment.author ?? ''))
+      if (role !== undefined && role !== '') spokenRoles.add(role)
+    }
+  }
+  if (tasks.length > 0 && !spokenRoles.has('product') && !spokenRoles.has('architect')) {
+    warnings.push('这条需求没有经过澄清与方案：卡上没有产品/架构专家的讨论（只有自动跑用例的汇总）')
+  }
+  // 协作：完成的卡上一条评论都没有，说明它多半是被脚本直接推过来的，没过专家。
+  const silent = tasks.filter(task => task.status === 'done' && (task.comments ?? []).length === 0)
+  if (silent.length > 0) {
+    warnings.push(silent.length + ' 张卡完成的卡上没有任何讨论：' + silent.slice(0, 3).map(task => task.code || task.id).join('、') + (silent.length > 3 ? ' 等' : '') + '（真实需求要派专家做，不是直接改状态）')
+  }
   const overridden = tasks.filter(task => task.status === 'done' && task.override !== null && task.override !== undefined)
   if (overridden.length > 0) {
     warnings.push(overridden.length + ' 张卡是绕过准出完成的：' + overridden.slice(0, 3).map(task => (task.code || task.id) + (task.override?.reason ? '（' + String(task.override.reason).slice(0, 40) + '）' : '')).join('、'))
