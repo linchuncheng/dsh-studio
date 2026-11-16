@@ -24,9 +24,12 @@ export function configureInsightsRoutes(services) {
 export async function handleInsightsRoute({ method, route, req, res, store, url }) {
 if (method === 'POST' && route === '/contexts') {
     // 每个专家会话的上下文洞察：窗口峰值、回合、工具调用、重试
+    const body = await host.readJsonBody(req).catch(() => ({}))
     const sessions = await collectSessionUsage()
-    const aggregated = aggregateContext(sessions)
-    host.sendJson(res, 200, { ok: true, ...aggregated, at: Date.now() })
+    // threshold 可传：默认 60%，调小可以在真实数据上验证告警链路
+    const threshold = Number(body?.threshold)
+    const aggregated = aggregateContext(sessions, Number.isFinite(threshold) && threshold > 0 ? threshold : undefined)
+    host.sendJson(res, 200, { ok: true, ...aggregated, threshold: Number.isFinite(threshold) && threshold > 0 ? threshold : 60, at: Date.now() })
     return true
   }
   if (method === 'POST' && route === '/contexts/session') {

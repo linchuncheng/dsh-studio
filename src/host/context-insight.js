@@ -63,21 +63,45 @@ export function breakdownContext(session, promptChars) {
   }
 }
 
+/** 工具结果占上下文的比例上限：超过就提示「这次会话是工具喂胖的」。 */
+export const TOOL_HEAVY_THRESHOLD = 60
+
+/**
+ * 工具结果是否吃掉了上下文：按最近一次会话的构成算，超阈值返回一句人话，否则 null。
+ * 只提示不改任何数据——精简工具输出是人的决定。
+ */
+export function toolHeavyWarning(breakdown, threshold = TOOL_HEAVY_THRESHOLD) {
+  const parts = Array.isArray(breakdown?.parts) ? breakdown.parts : []
+  const tool = parts.find(part => part.key === 'tool')
+  if (tool === undefined) return null
+  if (tool.percent < threshold) return null
+  return '最近一次会话里工具结果占了 ' + tool.percent + '%（' + Math.round(tool.chars / 1000) + 'k 字），上下文主要是被工具输出撑满的'
+}
+
 /** 按专家汇总；sessions 每项 { expert, taskId, at, usage, counts }。 */
-export function aggregateContext(sessions) {
+export function aggregateContext(sessions, threshold = TOOL_HEAVY_THRESHOLD) {
   const byExpert = new Map()
   for (const session of Array.isArray(sessions) ? sessions : []) {
     const key = String(session.expert ?? '').trim() || '(未知)'
     const stats = contextOfUsage(session.usage)
     const counts = session.counts ?? {}
-    const row = byExpert.get(key) ?? { expert: key, sessions: 0, peak: 0, calls: 0, turns: 0, toolCalls: 0, retries: 0, lastAt: 0, model: '' }
+    const row = byExpert.get(key) ?? { expert: key, sessions: 0, peak: 0, calls: 0, turns: 0, toolCalls: 0, retries: 0, lastAt: 0, model: '', toolShare: 0, latestTaskId: '', alert: '' }
     row.sessions += 1
     row.peak = Math.max(row.peak, stats.peak)
     row.calls += stats.calls
     row.turns += Number(counts.turns ?? 0)
     row.toolCalls += Number(counts.toolCalls ?? 0)
     row.retries += Number(counts.retries ?? 0)
-    row.lastAt = Math.max(row.lastAt, Number(session.at ?? 0))
+    const at = Number(session.at ?? 0)
+    // 最近一次会话的构成决定「是不是工具喂胖的」；只留最新那条
+    if (at >= row.lastAt) {
+      const breakdown = breakdownContext(session, 0)
+      const tool = (breakdown.parts ?? []).find(part => part.key === 'tool')
+      row.toolShare = tool === undefined ? 0 : tool.percent
+      row.latestTaskId = String(session.taskId ?? '')
+      row.alert = toolHeavyWarning(breakdown, threshold) ?? ''
+    }
+    row.lastAt = Math.max(row.lastAt, at)
     if (stats.model !== '') row.model = stats.model
     byExpert.set(key, row)
   }
@@ -88,6 +112,7 @@ export function aggregateContext(sessions) {
     peak: rows.reduce((max, row) => Math.max(max, row.peak), 0),
     toolCalls: rows.reduce((sum, row) => sum + row.toolCalls, 0),
     retries: rows.reduce((sum, row) => sum + row.retries, 0),
+    alerts: rows.filter(row => row.alert !== '').length,
   }
   return { rows, totals }
 }

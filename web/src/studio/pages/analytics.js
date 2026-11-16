@@ -287,7 +287,7 @@ export function AnalyticsPage({ state, onOpenTask }) {
       h('div', { className: 'ds-panel-head' },
         '上下文洞察（每个专家）',
         h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } },
-          contexts === null ? '正在读会话日志…' : `${contexts.totals.experts} 位专家 · ${contexts.totals.sessions} 个会话 · 最高窗口 ${Math.round((contexts.totals.peak ?? 0) / 1000)}k token`),
+          contexts === null ? '正在读会话日志…' : `${contexts.totals.experts} 位专家 · ${contexts.totals.sessions} 个会话 · 最高窗口 ${Math.round((contexts.totals.peak ?? 0) / 1000)}k token` + ((contexts.totals.alerts ?? 0) === 0 ? '' : ` · ${contexts.totals.alerts} 个是工具喂胖的`)),
       ),
       h('div', { className: 'ds-panel-body' },
         contexts === null
@@ -302,7 +302,9 @@ export function AnalyticsPage({ state, onOpenTask }) {
                     `${row.sessions} 个会话 · 窗口峰值 ${Math.round(row.peak / 1000)}k · 回合 ${row.turns} · 工具 ${row.toolCalls} · 重试 ${row.retries} · 最近 ${fmtTime(Math.round(row.lastAt))}`),
                 ),
                 h('div', { className: 'ds-listrow-actions' },
-                  h('span', { className: 'ds-hint', 'data-warn': row.peak > 180000 ? '1' : undefined }, row.peak > 180000 ? '接近上限（>180k）' : ''),
+                  row.alert === ''
+                  ? h('span', { className: 'ds-hint', 'data-warn': row.peak > 180000 ? '1' : undefined }, row.peak > 180000 ? '接近上限（>180k）' : '')
+                  : h('span', { className: 'ds-hint', 'data-warn': '1', title: row.alert }, `工具占 ${row.toolShare}%`),
                   h('span', { className: 'ds-hint' }, ctxOpen === row.expert ? '▲' : '▼'),
                 ),
               ),

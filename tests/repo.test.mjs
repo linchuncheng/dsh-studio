@@ -658,6 +658,16 @@ test('host: injected helpers are only called through host.', async () => {
   }
 })
 
+test('host: a tool-heavy session gets a plain-language warning', async () => {
+  const { breakdownContext, toolHeavyWarning, TOOL_HEAVY_THRESHOLD } = await import('../src/host/context-insight.js')
+  const heavy = breakdownContext({ usage: [{ input: 100, cacheRead: 900 }], counts: { turns: 2 }, volume: { tool: 8000, assistant: 1000, user: 500, other: 500 } }, 300)
+  assert.ok(heavy.parts.find(part => part.key === 'tool').percent >= TOOL_HEAVY_THRESHOLD)
+  assert.match(toolHeavyWarning(heavy) ?? '', /工具结果占了/)
+  const light = breakdownContext({ usage: [{ input: 100, cacheRead: 900 }], counts: {}, volume: { tool: 500, assistant: 8000, user: 500, other: 500 } }, 300)
+  assert.equal(toolHeavyWarning(light), null, '工具占比不高就不提示')
+  assert.equal(toolHeavyWarning(null), null)
+})
+
 test('host: a failing case files a bug at the severity of the case', async () => {
   const { bugSeverityFor } = await import('../src/host/bugs.js')
   assert.deepEqual(bugSeverityFor('p0', 'dev'), { severity: 'p0', priority: 'urgent', regression: false })
