@@ -31,6 +31,8 @@
 | `ctx.on('agent/status', …)` | `idle` 时结算槽位 | 并发闸门卡死 |
 | `node:sqlite`（`DatabaseSync`） | 状态库 `~/.dsh/dsh-studio.db`（WAL、`meta.state`、10 份快照） | 启动即崩；数据不落盘 |
 | `llm.listModels(provider.id)`（模型下拉） | `/models` 端点 | 模型列表为空 |
+| `llm.listModels(provider.id)`（模型下拉） | `/models` 端点 | 模型列表为空 |
+| `ctx.inject(['sessionProjections'])` → `stateOf(session, 'tokenMeasurement')` | 派单收尾（`dispatcher.settle`）趁会话还活着取引擎自己的 token 计量，落到卡的 `insight` | 取不到就只是少一行「引擎计量」，不影响派单；宿主改名/改签名时报 `session.snapshotEvents is not a function` |
 
 已知会直接暴露的宿主错误文案（排障关键词）：
 
@@ -38,6 +40,18 @@
 - `No available channel for model <model> under group arch (distributor)` + `status 503` —— provider 对该模型无通道，重试 5 次后整轮失败且**不写评论**
 - `<agentId> has no provider/model` —— 起会话时漏传 `agentOptions`
 - `no route POST /task/move` —— 前端调了后端不存在的路由（只在浏览器 console 可见）
+- `session.snapshotEvents is not a function` —— `sessionProjections.stateOf()` 第一个参数传了字符串；它要的是**活会话对象**（`ctx.agents.get(sessionId)?.session`）
+
+### sessionProjections 的实测契约（2026-11-16 探针结论）
+
+- 服务名：`sessionProjections`；`registrations` 是 Map，8 个注册项：
+  `turnBoundary / sandboxMode / approvalState / tokenMeasurement / subagentModelSelectionPolicy / sessionStats / turnOutline / userQuestions`，
+  每项值形如 `{ def, cells, refs }`。
+- `stateOf(session, key)` 两个参数，第一个必须是活会话对象；传 id 会抛错。
+- `tokenMeasurement` 的内容（实测）：
+  `{ headerSeq, stepStart, anchor: { assistantTokens, usage: { inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens, totalTokens } }, invalidSeq }`。
+  它给的是**token 总量**，**没有**「工具 vs 助手 vs 输入」的构成拆分。
+- `register` 是 native 实现（`function () { [native code] }`），传任何形状都返回 Promise、不报错——**猜契约要靠试错，别在生产上试**。
 
 ## 3. 宿主接口依赖（浏览器半边）
 
