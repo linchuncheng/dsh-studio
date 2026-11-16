@@ -4,6 +4,23 @@
 ## 全模块体检（2026-11-08）
 
 `tools/audit-modules.mjs` 在服务器上跑 19 项断言，覆盖：状态接口、配置结构、需求新建/编号、需求文件夹、需求文档与基线、任务新建（模板清单 + 编号）、推进与评论 @、阻塞/解除、验收清单、交付物登记与归档、测试用例执行、AI Coding 记录/评审/合并、项目与迭代指标、专家/专家团/列负责人/技能、仓库与机器人 CRUD、内部市场、派单状态、技能库磁盘、清理。当前 **19/19 PASS**。
+## 上下文真实构成：探针结论（2026-11-16）
+
+目标是想把「构成占比（估算）」换成引擎的真实数字。探针（临时加在插件里、摸完已删）结论：
+
+- 宿主**确实**把 `sessionProjections` 暴露给插件；`service.registrations` 是 Map，8 个注册项：
+  `turnBoundary / sandboxMode / approvalState / tokenMeasurement / subagentModelSelectionPolicy / sessionStats / turnOutline / userQuestions`，
+  每项值形如 `{ def, cells, refs }`（`def` 是定义，`cells` 是按会话的状态格）。
+  其中 **`tokenMeasurement` 就是引擎自己的 token 计量**——dsh-context 的构成分析走的就是这条路。
+- `stateOf(session, key)` 两个参数，第一个要的是**活会话对象**，不是字符串 id：
+  传 `'studio-t-xxx'` 会抛 `session.snapshotEvents is not a function`。
+- 所以真实构成**只能对我们派单时持有的会话**取：`dispatcher` 里创建会话后拿得到 `agent.session`，
+  在会话结束（turn/end）时调 `stateOf(agent.session, 'tokenMeasurement')` 并落库，就能给每张卡记一份真实构成。
+- 这一步需要**一次真实派单**才能验证（没有活会话就没有状态可读）。
+- 另：`request/context` 事件里有引擎真实的 `contextWindow`（`deepseek-v4-pro` = 1,000,000），占用率已经用它算，
+  这也是 0.1.36 修掉「180k 算接近上限」那个错标的数据来源。
+
+待办：把 `stateOf(agent.session, 'tokenMeasurement')` 接进 dispatcher 的收尾，替换掉估算口径。
 
 这一轮发现并修掉的缺陷：
 
