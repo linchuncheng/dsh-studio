@@ -14,17 +14,17 @@ const CHROME = process.env.CHROME_PATH ?? 'C:\\Program Files (x86)\\Google\\Chro
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const COUNT = `(() => {
-  const scope = document.querySelector('[data-dsh-studio]')
+  const scopes = [...document.querySelectorAll('[data-dsh-studio], [data-dsh-studio-portal]')]
   if (!scope) return null
-  const q = (sel) => scope.querySelectorAll(sel).length
+  const q = (sel) => scopes.reduce((sum, node) => sum + node.querySelectorAll(sel).length, 0)
   return {
     boardInput: q('[data-field="input"]'),
     boardSelect: q('[data-field="select"]'),
     boardBtn: q('button[data-variant]'),
     chip: q('[class*="bg-badge"], .ds-chip'),
-    legacyInput: q('input.ds-input, textarea.ds-input, select.ds-input'),
+    legacyInput: q('input.ds-input, textarea.ds-input, select.ds-input, .ds-palette-input, input[type=file]'),
     rawSelect: q('select:not(.ds-input)'),
-    legacyBtn: q('button.ds-btn'),
+    legacyBtn: q('button.ds-btn, label.ds-btn, a.ds-btn'),
     listrow: q('.ds-listrow'),
     empty: q('.ds-empty'),
     rawCheckbox: q('input[type="checkbox"]:not([data-field])'),
@@ -93,3 +93,7 @@ for (const r of rows) {
 console.log('')
 console.log('pageerror: ' + (errors.length === 0 ? '无' : errors.join(' | ')))
 await browser.close()
+
+const legacyTotal = rows.reduce((sum, r) => sum + (r.legacyInput || 0) + (r.legacyBtn || 0) + (r.listrow || 0) + (r.empty || 0), 0)
+console.log(`老控件合计：${legacyTotal}`)
+process.exit(legacyTotal === 0 ? 0 : 1)

@@ -271,7 +271,7 @@ try {
 
   // ---- 4) 日期输入：react-aria 对 type=date 有专门处理，单独看一眼
   const planTab = await page.evaluate(() => {
-    const tab = [...document.querySelectorAll('[data-dsh-studio] .ds-drawer [role="group"] button')].find(node => (node.textContent || '').trim() === '计划')
+    const tab = [...document.querySelectorAll('[data-dsh-studio] .ds-drawer [role="tab"]')].find(node => (node.textContent || '').trim() === '计划')
     if (!tab) return false
     tab.click()
     return true

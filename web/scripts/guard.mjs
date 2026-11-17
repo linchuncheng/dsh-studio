@@ -47,7 +47,7 @@ const sourceFiles = [
   join(root, 'index.js'),
   join(root, 'client.src.js'),
   ...walk(join(root, 'src', 'host'), ['.js']),
-  ...walk(join(web, 'src'), ['.js', '.jsx', '.css']),
+  ...walk(join(web, 'src'), ['.js', '.jsx', '.css', '.ts', '.tsx']),
 ]
 
 for (const file of sourceFiles) {
