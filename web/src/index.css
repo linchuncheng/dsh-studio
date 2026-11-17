@@ -2141,3 +2141,20 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
   will-change: background-position;
 }
 
+
+/* ------------------------------------------------------ 字号下限（11px） --- */
+/* review:layout 量出来一批 9~10.5px 的字：燃尽图轴、卡片计数、需求版本号、
+   设置左栏分组、列负责人、hint……都低于可读性下限，而且是零散写在 legacy 里的。
+   与其挨个改 20 多处声明（还容易被后续注入的 legacy 覆盖掉），这里用一条
+   作用域更窄、特异性更高的规则把下限钉死在 11.5px（BoardUI 的 caption-1）。
+   图表轴单独给 11px —— 刻度再大就会挤在一起。 */
+[data-dsh-studio] :is(
+  .ds-hint, .ds-card-foot, .ds-meta, .ds-meta .ds-chip, .ds-col-owner, .ds-nav-count,
+  .ds-settings-nav-group, .ds-burn-axis, .ds-card-warn, .ds-skillusers,
+  .ds-gate-item, .ds-case-lib-meta, .ds-pt-meta, .ds-req-meta, .ds-count, .ds-chip-code
+) {
+  font-size: 11.5px;
+}
+[data-dsh-studio] :is(.ds-spark-day, .ds-col-count) {
+  font-size: 11px;
+}
