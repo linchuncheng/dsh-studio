@@ -10,6 +10,7 @@ import { createBridge } from './bridge.jsx'
 import { ShadcnLoginGate } from './components/login-gate.jsx'
 import { SheetDrawer, SegGroup, TabsBar, SelectBox, SwitchBox, Tip, ProgressBar, DialogBox } from './components/studio-ui.jsx'
 import { Badge, Input, Textarea, Label, Tabs, TabsList, TabsTrigger } from './components/ui.jsx'
+import { Button as BoarduiButton } from './boardui/index'
 
 const STYLE_ID = 'dsh-studio-tw'
 
@@ -34,7 +35,20 @@ window.__ModuleLoader__.load({
     // The legacy panel keeps using the React copy it was written against; that
     // copy ships inside this bundle, so hooks have a dispatcher even though the
     // host renders the bridge with its own React.
-    const studio = createStudio(React, React.createElement)
+    // 把 legacy 的 `h('button', { className: 'ds-btn…' })` 就地翻译成 BoardUI 的 Button 组件。
+    // 这样 16 个设置分区 + 各页面里上百个按钮不用逐个改调用点，就直接变成真组件了：
+    //   ds-btn-primary → primary，ds-btn-ghost → ghost，其余 → secondary（统一 small 号）。
+    // 非 button 标签、没有 ds-btn 类的元素一律原样返回，行为不变。
+    const h = (type, props, ...children) => {
+      if (type === 'button' && typeof props?.className === 'string' && props.className.includes('ds-btn')) {
+        const into = props.className
+        const variant = /\bds-btn-primary\b/.test(into) ? 'primary' : /\bds-btn-ghost\b/.test(into) ? 'ghost' : 'secondary'
+        const { className, ...rest } = props
+        return React.createElement(BoarduiButton, { ...rest, variant, size: 'small' }, ...children)
+      }
+      return React.createElement(type, props, ...children)
+    }
+    const studio = createStudio(React, h)
     // Hand the shadcn-based primitives to the legacy panel. It keeps its own
     // markup but swaps the high-traffic controls for the real components.
     const uiKit = { SegGroup, Tabs, TabsList, TabsTrigger, SheetDrawer, TabsBar, SelectBox, SwitchBox, Tip, ProgressBar, DialogBox, Badge, Input, Textarea, Label }
