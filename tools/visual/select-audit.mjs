@@ -98,11 +98,17 @@ const auditPopover = () => page.evaluate(() => {
 const fails = []
 const box = (label, ok, detail) => { if (!ok) fails.push(`${label}: ${detail}`) }
 
+/* 每个模块「至少该有几个下拉」——不然断言会在空集合上白过一遍。
+   这是这轮最该吸取的教训：先前的探针在 fields=0 时也算通过。 */
+const MIN_SELECTS = { 看板: 4, 需求: 1 }
+
 for (const tab of ['看板', '需求', '用例', '版本', '项目', '效能', '设置', '工作台']) {
   await clickTab(tab)
   const t = await auditTriggers()
   box(`${tab} 原生 select`, t.native === 0, `${t.native} 个原生下拉仍在`)
   box(`${tab} 触发器`, t.bad.length === 0, JSON.stringify(t.bad.slice(0, 3)))
+  const need = MIN_SELECTS[tab] ?? 0
+  box(`${tab} 下拉数量`, t.fields >= need, `只有 ${t.fields} 个，至少应有 ${need} 个（断言没有真的跑）`)
   if (tab === '看板' || tab === '需求') {
     await openFirst()
     await sleep(900)
@@ -121,6 +127,24 @@ for (const tab of ['看板', '需求', '用例', '版本', '项目', '效能', '
     await sleep(500)
   }
 }
+
+/* 设置里的 16 个面板：下拉总量必须 ≥ 9（自动派单/部署环境/权限与审计各 3 个），
+   并且每一个都要过触发器尺寸的断言 —— 面板是逐个点开的，不是靠「默认页签」抽样。 */
+await clickTab('设置')
+const panels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')].map((n) => (n.querySelector('span')?.textContent || '').trim()))
+let panelSelects = 0
+for (const label of panels) {
+  await page.evaluate((want) => {
+    [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')]
+      .find((n) => (n.querySelector('span')?.textContent || '').trim() === want)?.click()
+  }, label)
+  await sleep(750)
+  const t = await auditTriggers()
+  panelSelects += t.fields
+  box(`设置/${label} 原生 select`, t.native === 0, `${t.native} 个原生下拉`)
+  box(`设置/${label} 触发器`, t.bad.length === 0, JSON.stringify(t.bad.slice(0, 2)))
+}
+box('设置 下拉总量', panelSelects >= 9, `16 个面板合计只有 ${panelSelects} 个下拉（应为 9）`)
 
 await browser.close()
 
