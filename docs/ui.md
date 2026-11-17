@@ -312,3 +312,18 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
 - **[5] tabs ✔ / table 无事可做 / drawer+modal → 归到 [8]**：仓库里没有表格组件
   （`grep ds-table` 为空），BoardUI 的 `base/table` 没有调用点；drawer/modal 是 Pro，
   自研等价物已落地（本轮）。
+
+### 第五批：确认弹窗 + 状态标签
+
+- **弹窗**（`DialogBox` → `web/src/boardui/dialog.tsx`）：同样是 Pro 组件，同样自己写。
+  用 react-aria 的 `ModalOverlay + Modal + Dialog`，遮罩 `bg-black/55`、居中卡片
+  `min(440px,92vw)`、标题用 `text-body-semibold`、按钮复用他们 MIT 的 `Button`
+  （secondary + primary/danger）。确定性动作走 `danger` 变体（截图里「删除」是红的）。
+  原来手写的 Radix Dialog 版整段删掉；构建后守卫从 5 个 Radix portal 降到 **4 个**。
+- **状态标签**（`ChipField` → `base/badges/chip.tsx` + 适配层 `Chip`）：
+  老代码用 `ds-chip-blocked` / `ds-chip-bug` / `ds-chip-code` 这类 **class 表达语义**，
+  适配层把语义翻成他们的 `color`：阻塞/缺陷/危险 → `rose`，代码/缺服务 → `soft`，其余 → `gray`；
+  变体统一用 `caption`（12/16/500），因为他们的 `bold` 是 14/20，会把密集列表的行高撑起来。
+- `base/badges/badge.tsx` 也拉下来了，但它是「导航计数小球」，跟我们的状态标签不是一类，没硬套。
+- 验证：`verify:drawer` 扩到 13 项（多了：点「删除」弹确认框、在 portal 里、用 BoardUI 背景、
+  有取消 + 确认两个按钮、点取消能关掉），截图 `tmp/dialog-probe.png`；pages 22/22 仍全绿。

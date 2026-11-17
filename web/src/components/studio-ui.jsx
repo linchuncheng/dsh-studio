@@ -17,6 +17,7 @@ import { portalRoot } from '../lib/portal.js'
 import { Button, Input, Label, Textarea, Badge, Tabs, TabsList, TabsTrigger } from './ui.jsx'
 import { PillTabList, PillTab } from '../components/base/tabs/pill-tab'
 import { Drawer as BoarduiDrawer } from '../boardui/drawer'
+import { ConfirmDialog as BoarduiConfirmDialog } from '../boardui/dialog'
 
 const TooltipProvider = TooltipPrimitive.Provider
 
@@ -230,33 +231,22 @@ export function DialogBox({
   onOk,
   onCancel,
 }) {
+  // 弹窗换成自己用 react-aria Modal 写的等价物（见 boardui/dialog.tsx）：
+  // 焦点锁定 / Esc / 焦点归还都交给 react-aria，样式用 BoardUI 的 token。
   return (
-    <DialogPrimitive.Root open={open === true} onOpenChange={(next) => { if (!next) onCancel() }}>
-      <DialogPrimitive.Portal container={portalRoot()}>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-[95] bg-black/55 backdrop-blur-[2px]" />
-        <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-[96] w-[min(440px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-xl">
-          <DialogPrimitive.Title className="text-[13px] font-semibold leading-snug">{title}</DialogPrimitive.Title>
-          {message ? (
-            <DialogPrimitive.Description className="mt-1.5 whitespace-pre-wrap text-[12px] leading-relaxed text-muted-foreground">
-              {message}
-            </DialogPrimitive.Description>
-          ) : null}
-          {input ? (
-            <textarea
-              autoFocus
-              rows={3}
-              value={value}
-              placeholder={placeholder}
-              onChange={(event) => onChange(event.target.value)}
-              className="mt-3 box-border w-full min-w-0 resize-y rounded-md border border-input bg-card px-2.5 py-2 text-[12.5px] leading-relaxed focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/35"
-            />
-          ) : null}
-          <div className="mt-4 flex items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={onCancel}>{cancelText}</Button>
-            <Button variant={danger ? 'destructive' : 'default'} size="sm" onClick={onOk}>{okText}</Button>
-          </div>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+    <BoarduiConfirmDialog
+      open={open === true}
+      title={title}
+      message={message}
+      danger={danger}
+      okText={okText}
+      cancelText={cancelText}
+      input={input}
+      value={value}
+      placeholder={placeholder}
+      onChange={onChange}
+      onOk={onOk}
+      onCancel={onCancel}
+    />
   )
 }

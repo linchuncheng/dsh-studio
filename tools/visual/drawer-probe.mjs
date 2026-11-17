@@ -42,7 +42,7 @@ const state = {
   tasks: [],
   requirements: [],
   releases: [],
-  experts: [],
+  experts: [{ id: 'e1', name: '产品经理', emoji: '📋', role: 'product', domain: '', description: '', prompt: '', skills: [], model: '', preset: '', sandbox: '', enabled: true }],
   agents: [],
   locked: false,
 }
@@ -132,6 +132,26 @@ try {
   await sleep(600)
   const closed = await page.evaluate(() => document.querySelector('[role="dialog"]') === null)
   check('Esc 能把抽屉关掉', closed === true)
+
+  // ---- 确认弹窗：板子上「删除」走的也是我们自己写的 Modal（boardui/dialog.tsx）
+  check('点「删除」弹出确认框', await click('[data-dsh-studio] button', '删除'))
+  await page.waitForSelector('[role="dialog"]', { timeout: 10000 })
+  const confirmShape = await page.evaluate(() => {
+    const dialog = document.querySelector('[role="dialog"]')
+    const buttons = [...(dialog?.querySelectorAll('button') ?? [])].map(node => (node.textContent || '').trim())
+    return {
+      inPortal: dialog?.closest('[data-dsh-studio-portal]') !== null,
+      bg: /bg-background-primary-default/.test(dialog?.parentElement?.className ?? dialog?.className ?? ''),
+      buttons,
+      text: (dialog?.textContent ?? '').slice(0, 40),
+    }
+  })
+  check('确认框在 portal 容器里且用 BoardUI 的背景 token', confirmShape.inPortal === true && confirmShape.bg === true, confirmShape.text)
+  check('确认框有「取消 + 确认」两个按钮', confirmShape.buttons.length === 2 && confirmShape.buttons.includes('取消'), confirmShape.buttons.join(','))
+  await page.screenshot({ path: join(REPO, 'tmp', 'dialog-probe.png') })
+  check('点「取消」能关掉', await click('[data-dsh-studio] [role="dialog"] button', '取消'))
+  await sleep(500)
+  check('取消之后弹窗消失', (await page.evaluate(() => document.querySelector('[role="dialog"]') === null)) === true)
 
   check('页面没有 pageerror', errors.length === 0, errors.join(' | '))
 } catch (error) {

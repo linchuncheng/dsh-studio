@@ -5,7 +5,7 @@
 
 // 表单控件换成 BoardUI 的源码实现（TextField + InputBase / TextareaBase / Checkbox）。
 // 适配层负责把 legacy 的 value / onChange(e) 语义翻译成 react-aria 的 value / onChange(string)。
-import { Input as BoarduiInput, Textarea as BoarduiTextarea, Checkbox as BoarduiCheckbox, Select as BoarduiSelect } from '../boardui/index'
+import { Input as BoarduiInput, Textarea as BoarduiTextarea, Checkbox as BoarduiCheckbox, Select as BoarduiSelect, Chip as BoarduiChip } from '../boardui/index'
 
 export function createFields({ h, kit, React }) {
     function TextField(props) {
@@ -14,16 +14,10 @@ export function createFields({ h, kit, React }) {
     function TextAreaField(props) {
       return h(BoarduiTextarea, props)
     }
+    /* 状态标签。legacy 写法 h(ChipField, { className: 'ds-chip ds-chip-blocked' }, 文本)，
+       语义（阻塞 / 缺陷 / 代码 / 普通）由适配层翻成 BoardUI Chip 的颜色。 */
     function ChipField({ className, variant, ...rest }) {
-      const Badge = kit('Badge')
-      if (Badge === null) return h('span', { className, ...rest })
-      const into = String(className ?? '')
-      const next = variant ?? (into.indexOf('ds-chip-blocked') >= 0 || into.indexOf('ds-chip-bug') >= 0 || rest['data-blocked'] === '1' || rest['data-danger'] === '1'
-        ? 'destructive'
-        : into.indexOf('ds-chip-code') >= 0 || rest['data-svc-missing'] === '1'
-          ? 'outline'
-          : 'secondary')
-      return h(Badge, { ...rest, variant: next, className })
+      return h(BoarduiChip, { className, variant, ...rest })
     }
     /* 布尔开关。legacy 写法是 h(CheckField, { checked, onChange(e) })， */
     /* BoardUI 的 Checkbox 用 isSelected + onChange(boolean)，适配层已翻译。 */

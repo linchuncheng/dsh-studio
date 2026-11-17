@@ -6,6 +6,7 @@ import { TextField as BoarduiField, InputBase as BoarduiInputBase } from "../com
 import { TextareaBase as BoarduiTextareaBase } from "../components/base/textarea/textarea";
 import { Checkbox as BoarduiCheckboxBase } from "../components/base/checkbox/checkbox";
 import { Select as BoarduiSelect, SelectItem as BoarduiSelectItem } from "../components/base/select/select";
+import { Chip as BoarduiChip } from "../components/base/badges/chip";
 
 const VARIANT = {
   default: "primary",
@@ -174,4 +175,22 @@ export function Select({
       ))}
     </BoarduiSelect>
   );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  状态标签：legacy 用 ds-chip / ds-chip-blocked / ds-chip-bug / ds-chip-code   */
+/*  这类 class 表达语义，这里翻译成 BoardUI Chip 的 color + variant。            */
+/* -------------------------------------------------------------------------- */
+
+export function Chip({ className, variant, ...rest }: any) {
+  const into = String(className ?? "");
+  const color =
+    variant ??
+    (into.includes("ds-chip-blocked") || into.includes("ds-chip-bug") || rest["data-blocked"] === "1" || rest["data-danger"] === "1"
+      ? "rose"
+      : into.includes("ds-chip-code") || rest["data-svc-missing"] === "1"
+        ? "soft"
+        : "gray");
+  // caption 是 12/16/500 —— 与原来 11px 的小标签最接近，换 bold(14) 会把行高撑起来
+  return <BoarduiChip variant="caption" color={color} {...rest} />;
 }
