@@ -184,3 +184,50 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
 - 复核：看板（列底 `--muted`、列头 `--card`、卡片描边与文字 `rgb(230,232,238)`）、版本（面板/操作区/发布按钮）、效能（KPI 卡、柱状与日期轴、燃尽折线）、项目（整行卡片、统计框、服务行 chip）、市场（专家卡与角色 chip、空态虚线框）、需求（评审、矩阵、文档、变更影响）六页在暗色下均无白底突兀、无不可读文字。
 - 已知边界：无头 Chrome 未装 emoji 字体，截图里 📎 ✅ 之类的图标会显示成空心方块，这不是页面问题。
 
+
+## 换骨：把 BoardUI 的组件源码真接进来（2026-11-17）
+
+不是照着图重画，是把 [BoardUI](https://www.boardui.com/zh-hans/installation) 的**源码文件原样复制**进仓库，再让我们的调用点去用它。
+免费组件 MIT（保留头注释），Pro 组件不买，需要的话自己实现等价物。
+
+### 通道
+- 源码落在 `web/src/components/base/**`（`buttons/`、`input/`、`textarea/`、`checkbox/`），一行没改；
+  `web/src/utils/{cx,directional-icon}.ts` 是它们的工具依赖，同样原样。
+- `web/vite.config.mjs` 加了 `@ -> web/src` 别名，esbuild/vite 直接吃 `.tsx`，不需要 tsconfig。
+- Tailwind v4（`@tailwindcss/postcss`）+ `web/src/boardui/theme.css` 的 315 个 token 提供它们的视觉变量；
+  preflight 保持关闭，`web/scripts/scope-css.mjs` 把所有选择器改写进 `[data-dsh-studio]`。
+
+### 适配层（`web/src/boardui/index.tsx`）
+调用点一行不改，语义翻译都在这层：
+- `Button`：`default→primary`、`secondary→secondary`、`outline→secondary`、`ghost→ghost`、`destructive→danger`、`link→ghost`；
+  尺寸 `default/lg→medium`、`sm→small`、`xs→xs`、`icon→medium`。
+- `Input` / `Textarea`：`value` / `onChange(e.target.value)` 的 DOM 语义 → react-aria 的 `value` / `onChange(string)`；
+  `disabled / readOnly / required` → `isDisabled / isReadOnly / isRequired`；
+  调用方传的 `ds-input` / `ds-textarea` 这类 legacy 类名被过滤掉（视觉由 BoardUI 的壳子负责），`style` 挂到字段根节点。
+- `Checkbox`：`checked` + `onChange(e.target.checked)` → `isSelected` + `onChange(boolean)`。
+- 没给 `aria-label` 时用 `placeholder` 兜底，避免 react-aria 报「字段没有可访问名」。
+
+### 已换到源码组件的
+| 调用点 | 用的源码 |
+| --- | --- |
+| `components/ui.jsx` 的 `Button`（全站按钮） | `base/buttons/button.tsx` |
+| `studio/fields.js` 的 `TextField`（看板搜索、抽屉表单、设置页） | `base/input/input.tsx`（`TextField` + `InputBase`） |
+| `studio/fields.js` 的 `TextAreaField`（评论、需求正文、角色提示词） | `base/textarea/textarea.tsx` |
+| `studio/fields.js` 的 `CheckField`（看板筛选、自动派单、权限开关） | `base/checkbox/checkbox.tsx` |
+
+**还没换**：`SelectField`（仍是 Radix `SelectBox`）、Tabs、Drawer、Modal、Table —— 下一批。
+
+### 验证
+- `npm run verify:fields`（新）：真 Chrome 打字 / 勾选 / 清空 / 读回值，15 项全过 —— 关键是「受控回写没断」：
+  输入「超时」后卡片只剩 1 张且 `input.value` 还是「超时」，勾上「隐藏空列」后列数 8→2 且 glyph 变色。
+- `verify:facts` 5/5、`verify:costs` 7/7、`verify:scale` 9/9、`npm test` 108/108，`pageerror` 全程为空。
+- 体积：857.71 kB → **914.85 kB**（gzip 242.33 → 261.05）。涨的部分是 react-aria 的 textfield / checkbox
+  真正进包了（之前只是裸 import，被 tree-shake 掉了）。
+
+### 踩过的坑
+- 组件之间有同目录兄弟依赖（`input` 要 `label` / `hint-text`，`checkbox` 要 `checkbox-glyph`，`textarea` 还要
+  `@/components/base/input/*`），少一个就红构建 —— 扫 `@/` 与相对 import 补齐，别手写。
+- react-aria 的 `Checkbox` 根节点是 `<label>`，`role=checkbox` 在那个视觉隐藏的 `input` 上；
+  自绘的 16px 方块是 `span[aria-hidden]`，选中态靠 `shadow-checkbox-selected` 这个类。
+- `type=date` 仍然是原生 input（react-aria 的 `useTextField` 不做日期格式化，那是 `useDateField`），
+  包进 BoardUI 的壳子后行为与以前一致。

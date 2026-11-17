@@ -3,32 +3,16 @@
    They only need `h` and `kit`, so they are created by a factory instead of
    importing the panel runtime. */
 
+// 表单控件换成 BoardUI 的源码实现（TextField + InputBase / TextareaBase / Checkbox）。
+// 适配层负责把 legacy 的 value / onChange(e) 语义翻译成 react-aria 的 value / onChange(string)。
+import { Input as BoarduiInput, Textarea as BoarduiTextarea, Checkbox as BoarduiCheckbox } from '../boardui/index'
+
 export function createFields({ h, kit, React }) {
-    function TextField({ className, ...rest }) {
-      const Input = kit('Input')
-      if (Input === null) return h('input', { className, ...rest })
-      const { style, ...props } = rest
-      const extra = String(className ?? '')
-        .split(/\s+/)
-        .filter(name => name !== '' && name !== 'ds-input')
-        .join(' ')
-      return h(Input, {
-        ...props,
-        style,
-        className: `h-9 w-full min-w-0 text-sm${extra === '' ? '' : ' ' + extra}`,
-      })
+    function TextField(props) {
+      return h(BoarduiInput, props)
     }
-    function TextAreaField({ className, ...rest }) {
-      const Textarea = kit('Textarea')
-      if (Textarea === null) return h('textarea', { className, ...rest })
-      const { style, ...props } = rest
-      const rows = Number(props.rows) > 0 ? Number(props.rows) : 4
-      const extra = String(className ?? '').split(/\s+/).filter(name => name !== '' && name !== 'ds-input' && name !== 'ds-textarea').join(' ')
-      return h(Textarea, {
-        ...props,
-        style: { minHeight: `${Math.max(96, rows * 22 + 28)}px`, ...(style ?? {}) },
-        className: `flex min-h-16 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm leading-relaxed shadow-sm outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50${extra === '' ? '' : ' ' + extra}`,
-      })
+    function TextAreaField(props) {
+      return h(BoarduiTextarea, props)
     }
     function ChipField({ className, variant, ...rest }) {
       const Badge = kit('Badge')
@@ -41,17 +25,10 @@ export function createFields({ h, kit, React }) {
           : 'secondary')
       return h(Badge, { ...rest, variant: next, className })
     }
-    function CheckField({ className, checked, onChange, disabled, ...rest }) {
-      const Switch = kit('SwitchBox')
-      if (Switch === null) {
-        return h('input', { className, type: 'checkbox', checked: checked === true, disabled, onChange, ...rest })
-      }
-      return h(Switch, {
-        bare: true,
-        checked: checked === true,
-        disabled: disabled === true,
-        onChange: next => { if (typeof onChange === 'function') onChange({ target: { checked: next === true } }) },
-      })
+    /* 布尔开关。legacy 写法是 h(CheckField, { checked, onChange(e) })， */
+    /* BoardUI 的 Checkbox 用 isSelected + onChange(boolean)，适配层已翻译。 */
+    function CheckField(props) {
+      return h(BoarduiCheckbox, props)
     }
     function optionListOf(children) {
     const out = []
