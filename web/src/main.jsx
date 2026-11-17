@@ -46,7 +46,10 @@ window.__ModuleLoader__.load({
     const h = (type, props, ...children) => {
       if (type === 'button' && typeof props?.className === 'string' && props.className.includes('ds-btn')) {
         const into = props.className
-        const variant = /\bds-btn-primary\b/.test(into) ? 'primary' : /\bds-btn-ghost\b/.test(into) ? 'ghost' : 'secondary'
+        // 危险操作（删除/打回）原来被映射成 secondary，红色语义丢了 —— data-danger=1 优先判 danger
+        const variant = props['data-danger'] === '1'
+          ? 'danger'
+          : /\bds-btn-primary\b/.test(into) ? 'primary' : /\bds-btn-ghost\b/.test(into) ? 'ghost' : 'secondary'
         const { className, ...rest } = props
         return React.createElement(BoarduiButton, { ...rest, variant, size: 'small' }, ...children)
       }
