@@ -214,23 +214,29 @@ export function createStudio(React, h) {
       TOAST_ITEMS = next
       toastEmit()
     }
-    const TOAST_ICON = { success: '✓', error: '!', info: 'i' }
-    /* 轻提示宿主：挂在 StudioPage 根部，跟 DialogHost 一样只订阅不持有业务状态。 */
+    const TOAST_STATUS = { success: 'success', error: 'error', info: 'info', warn: 'warning' }
+    /* 轻提示宿主：用官方 Notification 渲染（原来是自己写的 .ds-toast div）。 */
     function ToastHost() {
+      const Notification = kit('Notification')
       const [items, setItems] = React.useState(() => TOAST_ITEMS.slice())
       React.useEffect(() => {
         TOAST_LISTENERS.push(setItems)
         return () => { TOAST_LISTENERS = TOAST_LISTENERS.filter(entry => entry !== setItems) }
       }, [])
       if (items.length === 0) return null
+      if (Notification === null) {
+        return h('div', { className: 'ds-toasts', role: 'status', 'aria-live': 'polite' },
+          items.map(item => h('div', { key: item.id, className: 'ds-toast', 'data-tone': item.tone }, h('span', { className: 'ds-toast-text' }, item.text))))
+      }
       return h('div', { className: 'ds-toasts', role: 'status', 'aria-live': 'polite' },
-        items.map(item => h('div', { key: item.id, className: 'ds-toast', 'data-tone': item.tone },
-          h('span', { className: 'ds-toast-icon', 'aria-hidden': 'true' }, TOAST_ICON[item.tone] ?? 'i'),
-          h('span', { className: 'ds-toast-text' }, item.text),
-          h('button', {
-            type: 'button', className: 'ds-toast-close', 'aria-label': '关闭提示',
-            onClick: () => dismissToast(item.id),
-          }, '×'),
+        items.map(item => h('div', { key: item.id, className: 'ds-toast-slot' },
+          h(Notification, {
+            title: item.text,
+            status: TOAST_STATUS[item.tone] ?? 'info',
+            dismissible: true,
+            closeLabel: '关闭提示',
+            onDismiss: () => dismissToast(item.id),
+          }),
         )),
       )
     }

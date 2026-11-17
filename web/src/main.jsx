@@ -13,6 +13,7 @@ import { Badge, Input, Textarea, Label, Tabs, TabsList, TabsTrigger } from './co
 import { Button as BoarduiButton } from './boardui/index'
 import { TaskRow as BoarduiTaskRow } from './boardui/task-list'
 import { EmptyState as BoarduiEmptyState } from './boardui/empty-state'
+import { Notification as BoarduiNotification } from './components/base/notification/notification'
 import { Chip as BoarduiChip, Select as BoarduiSelect } from './boardui/index'
 
 const STYLE_ID = 'dsh-studio-tw'
@@ -98,7 +99,7 @@ window.__ModuleLoader__.load({
     const studio = createStudio(React, h)
     // Hand the shadcn-based primitives to the legacy panel. It keeps its own
     // markup but swaps the high-traffic controls for the real components.
-    const uiKit = { SegGroup, Tabs, TabsList, TabsTrigger, SheetDrawer, TabsBar, SelectBox, SwitchBox, Tip, ProgressBar, DialogBox, Badge, Input, Textarea, Label }
+    const uiKit = { SegGroup, Tabs, TabsList, TabsTrigger, SheetDrawer, TabsBar, SelectBox, SwitchBox, Tip, ProgressBar, DialogBox, Badge, Input, Textarea, Label, Notification: BoarduiNotification }
     if (typeof studio.useUIKit === 'function') studio.useUIKit(uiKit)
     const StudioBridge = createBridge(studio, hostReact, { pageProps: { loginGate: ShadcnLoginGate, ui: uiKit } })
 

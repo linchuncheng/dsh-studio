@@ -811,3 +811,15 @@ from ".../components/base/date-picker/date-picker.tsx"
 - **体积 1156 → 1416 kB**（motion + react-aria Calendar/DateField + date 库），
   观察线相应抬到 1.4 MB（守卫已同步）
 - 验证：fields 19/19（含日期控件那条）、pages 22/22、真机 sweep 5/5
+
+### 第四项：轻提示（toast）改用官方 Notification
+
+`ToastHost` 原来渲染自己写的 `.ds-toast` dv，现在渲染官方 `components/base/notification/notification.tsx`：
+
+- 面板侧通过 `kit('Notification')` 取（宿主没给就退回旧的极简样式，保证单文件产物不崩）
+- 映射：`title = 文案`、`status = success|error|info|warning`、`dismissible` + `onDismiss`
+- 原来那套 `.ds-toast` 的图标/关闭按钮/重复文案 600ms 去重逻辑都保留（去重在 `toast()` 里，与渲染无关）
+
+顺带把 `avatar` / `close-button`（notification 的依赖）也拉进仓库。
+体积 1391 kB，观察线 1.4 MB 内。
+验证：pages 22/22、drawer 15/15、真机 sweep 5/5。
