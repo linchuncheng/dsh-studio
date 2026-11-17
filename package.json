@@ -27,6 +27,7 @@
     "verify:audit": "node tools/visual/audit.mjs",
     "verify:selects": "node tools/visual/select-audit.mjs",
     "verify:drawertabs": "node tools/visual/drawer-tabs.mjs",
+    "review:layout": "node tools/visual/layout-audit.mjs",
     "verify:login": "node tools/visual/login-probe.mjs",
     "verify:facts": "node tools/visual/facts-probe.mjs"
   },
