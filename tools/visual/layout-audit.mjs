@@ -29,7 +29,13 @@ const MEASURE = () => {
   const vis = (el) => { const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2 && getComputedStyle(el).visibility !== 'hidden' }
   const shown = all.filter(vis)
 
-  const overflow = shown.filter((el) => el.scrollWidth > el.clientWidth + 2 && getComputedStyle(el).overflowX === 'visible' && el.children.length > 0)
+  // 只有「静态流转的子元素撑破容器」才算溢出；position:absolute/fixed 的装饰层
+  // （焦点环、光晕、动画蒙层）故意超出父级，不算问题 —— 上一版就是在这里误报的。
+  const decorated = (el) => [...el.children].some((child) => {
+    const cs = getComputedStyle(child)
+    return cs.position === 'absolute' || cs.position === 'fixed'
+  })
+  const overflow = shown.filter((el) => el.scrollWidth > el.clientWidth + 2 && getComputedStyle(el).overflowX === 'visible' && el.children.length > 0 && !decorated(el) && !['absolute', 'fixed'].includes(getComputedStyle(el).position))
     .slice(0, 4)
     .map((el) => `${el.tagName.toLowerCase()}.${(el.className || '').toString().trim().split(/\s+/).slice(0, 2).join('.')} ${el.scrollWidth}>${el.clientWidth}`)
 
