@@ -744,3 +744,16 @@ BoardUI 没有空态组件（它家是每个页面自带插画），所以照 dr
 `SwitchToggle is not defined`（第一版就漏了 createFields 那行，设置页整片崩）。
 
 体积：接官方 SegmentedControl + Switch 后 1128 kB，观察线从 1.1 MB 抬到 1.2 MB（守卫同步）。
+
+### Progress / Pagination：查过之后**不该硬换**
+
+- **进度条**：`components/base/` 里**没有 progress**（github 目录清单实证：announcement/avatar/badges/
+  breadcrumb/buttons/carousel/checkbox/date-picker/divider/dropdown/file-upload/input-otp/input/kbd/
+  notification/pagination/radio/segmented-control/select/slider/social-button/switch/table/tabs/
+  textarea/tooltip/tree-view）。所以进度条只能自研 —— 这不是"没换"，是**没有可换的免费源码**。
+- **分页**：官方 `Pagination` 是**页码分页器**（page / totalPages / onChange），
+  而看板列用的是「显示更多」的**增量加载**（每列 40 张，`verify:scale` 就是按这个断言的）。
+  换成页码器会改交互、并让性能断言失效 —— 不是组件用错，是模式不同。
+
+真正还该换、并且公共仓库里确实有的：`tooltip` / `date-picker` / `table` / `dropdown` /
+`notification` / `kbd` / `avatar` / `divider` / `file-upload` / `tree-view`。
