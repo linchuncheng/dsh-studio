@@ -1438,3 +1438,58 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] .ds-palette-key { flex: 0 0 auto; font-size: 11px; line-height: 16px; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--ds-line, #e4e4e7); background: var(--ds-surface-2, #f4f4f5); color: var(--ds-muted, #71717a); white-space: nowrap }
 [data-dsh-studio][data-theme="dark"] .ds-palette-key { border-color: #3f3f46; background: #27272a; color: #a1a1aa }
 [data-dsh-studio][data-theme="dark"] .ds-palette-veil { background: rgba(0, 0, 0, .6) }
+
+/* ========================================================================
+ * BoardUI 外观覆盖（W2-2：抽屉 + 表单层）
+ * 追加在文件末尾：同特异性下后者生效，方便整体回退（删掉这一段即可）。
+ * 每个变量都带旧值兜底，token 缺失时行为与替换前一致。
+ * ======================================================================== */
+
+[data-dsh-studio] .ds-input,
+[data-dsh-studio] .ds-textarea,
+[data-dsh-studio] .ds-select {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-2lg, 10px);
+  border: 1px solid var(--color-border-button-default, var(--input));
+  background: var(--color-background-primary-default, var(--card));
+  color: var(--color-text-primary, var(--foreground));
+  font-size: 13px;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+[data-dsh-studio] .ds-input:hover,
+[data-dsh-studio] .ds-textarea:hover,
+[data-dsh-studio] .ds-select:hover {
+  border-color: var(--color-border-button-hover, var(--input));
+}
+
+[data-dsh-studio] .ds-input:focus-visible,
+[data-dsh-studio] .ds-textarea:focus-visible,
+[data-dsh-studio] .ds-select:focus-visible {
+  outline: none;
+  border-color: var(--color-border-focus-ring, var(--ring));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-border-focus-ring, var(--ring)) 30%, transparent);
+}
+
+[data-dsh-studio] .ds-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-text-secondary, var(--muted-foreground));
+}
+
+[data-dsh-studio] .ds-hint {
+  color: var(--color-text-tertiary, var(--muted-foreground));
+}
+
+[data-dsh-studio] .ds-drawer {
+  background: var(--color-background-primary-default, var(--card));
+  border-left: 1px solid var(--color-border-button-default, var(--border));
+  box-shadow: -16px 0 40px -24px color-mix(in srgb, #000 55%, transparent);
+}
+
+[data-dsh-studio] .ds-drawer-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border-button-default, var(--border));
+}
