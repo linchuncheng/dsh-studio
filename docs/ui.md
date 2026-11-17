@@ -478,3 +478,34 @@ BoardUI 自己的规矩是：**输入框灰底填充**、**下拉触发器白底
 `--color-*` 的 BoardUI 样式都会静默失效**。这是下一轮该查的头号问题：确认是
 `@config tailwind.config.js` 的兼容层还是 scope-css 的 `:root` 改写导致的，然后决定
 「全部走 `@theme`」还是「全部走 theme.css 的 `:root`」，别再两套混着。
+
+## 真机功能巡检（2026-11-17 下午）：揪出两处「整页 ReferenceError」
+
+新增 `npm run verify:sweep`（真机 + token）：需求页逐条点开、卡片抽屉 7 个页签逐个切、
+设置页 16 个分区逐个切。**页面级探针看不出分区炸没炸**，这一层必须单独跑。
+
+跑出来两个真 bug（都属于 AGENTS.md §11 说的那类，`node --check` 查不到）：
+
+1. **权限与审计**整页 `ReferenceError: ACCESS_ROLE_OPTIONS is not defined`
+2. 修完立刻暴出第二个：**`ROUTE_LABEL is not defined`**（同一个病因，被前一个挡着）
+
+病因：面板从 `client.src.js` 抽成模块时，常量留在了原文件里，模块那边**裸用没 import**。
+而那两个常量在 `client.src.js` 里其实已经没人用了 —— 纯死代码 + 悬空引用。
+
+修法：`STRATEGIES` / `ROUTE_LABEL` / `ACCESS_ROLE_OPTIONS` 三个表搬进 `web/src/studio/labels.js`
+当唯一真源，`governance.js` 从那里 import，`client.src.js` 里的死定义删掉。
+顺手写了个一次性扫描（`tmp/find-leaks.mjs`）把同类问题全找了一遍，剩下的都是
+`client()` 解构出来的名字，不是真泄漏。
+
+### 需求页布局错乱（用户报的那个）
+
+真机复现：点开一条需求后，右侧详情被挤到列表下面，整页像上下堆了两块。
+根因：宽屏用的是 flex + `flex-wrap: wrap`（为了顶部提示条独占一行），而详情
+`flex: 1 1 auto` 的基准是**内容理想宽度** —— 它里面的矩阵/表格很宽，算下来超过剩余空间就换行。
+修法：`flex: 1 1 0%` + `min-width: 0` + `overflow-x: auto`；选择器要写成 `div.ds-req-detail`，
+因为原来那条 `> div:not(.ds-req-list)` 的类型选择器多一个，同权重下会赢。
+
+### 灰字
+
+`.ds-hint` 原来是 10.5px + **0.5 透明**（白底上基本看不清），改成 11.5px、不透明、用 muted-foreground；
+`--color-text-secondary/tertiary` 各提一档（neutral-600/500）；面板头、列表头不再靠 opacity 压灰。

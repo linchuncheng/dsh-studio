@@ -1,6 +1,6 @@
 /* Settings panels lifted out of client.src.js; shared handles come from the studio context. */
 
-import { ROLE_LABEL } from '../labels.js'
+import { ROLE_LABEL, ACCESS_ROLE_OPTIONS, STRATEGIES, ROUTE_LABEL } from '../labels.js'
 import { buildRoster, filterRoster } from '../roster.js'
 import { fmtTime } from '../format.js'
 import { client } from '../context.js'

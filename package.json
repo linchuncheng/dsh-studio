@@ -23,6 +23,7 @@
     "verify:fields": "node tools/visual/fields-probe.mjs",
     "verify:pages": "node tools/visual/pages-probe.mjs",
     "verify:drawer": "node tools/visual/drawer-probe.mjs",
+    "verify:sweep": "node tools/visual/sweep.mjs",
     "verify:facts": "node tools/visual/facts-probe.mjs"
   },
   "exports": {

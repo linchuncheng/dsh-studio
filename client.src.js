@@ -1324,58 +1324,6 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
      */
 
 
-    const STRATEGIES = [
-      { id: 'round_robin', label: '轮询：谁手上活少给谁' },
-      { id: 'best_match', label: '按专长匹配：领域 / 角色位 / 技能' },
-      { id: 'lead', label: '交给专家团团长分派' },
-    ]
-
-    const ACCESS_ROLE_OPTIONS = [
-      { id: 'admin', label: '管理员', hint: '能改配置、删数据、发布版本' },
-      { id: 'member', label: '成员', hint: '能建卡、推卡、评论、跑用例' },
-      { id: 'viewer', label: '只读', hint: '只能看，不能动' },
-    ]
-
-    const ROUTE_LABEL = {
-      '/config': '改配置',
-      '/task/create': '新建卡',
-      '/task/update': '改卡',
-      '/task/delete': '删卡',
-      '/task/block': '标记阻塞',
-      '/task/unblock': '解除阻塞',
-      '/task/comment': '评论',
-      '/task/artifact': '登记交付物',
-      '/task/artifact/sync': '归档交付物',
-      '/task/checklist': '勾验收清单',
-      '/task/case': '登记用例',
-      '/task/case/run': '跑接口用例',
-      '/task/coding': '登记 AI Coding',
-      '/task/worktree': 'worktree 操作',
-      '/mention': '点名派活',
-      '/agents/run': '手动派单',
-      '/agents/stop': '停止派单',
-      '/experts/save': '存专家',
-      '/experts/delete': '删专家',
-      '/teams/save': '存专家团',
-      '/teams/delete': '删专家团',
-      '/skills/save': '存技能',
-      '/skills/delete': '删技能',
-      '/projects/save': '存项目',
-      '/projects/delete': '删项目',
-      '/release/save': '存版本',
-      '/release/publish': '发布版本',
-      '/release/rollback': '回滚版本',
-      '/release/approve': '审批版本',
-      '/requirement/save': '存需求',
-      '/requirement/delete': '删需求',
-      '/access/save': '改成员权限',
-      '/access/delete': '删成员',
-      '/audit/clear': '清空审计日志',
-      '/market/install': '装插件',
-      '/market/uninstall': '卸插件',
-    }
-
-
     function Settings({ state, onChanged, initialSection, onSection, suggestCosts }) {
       const config = state.config
       const [form, setForm] = React.useState({
