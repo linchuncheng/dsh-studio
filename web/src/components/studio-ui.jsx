@@ -60,32 +60,7 @@ function Hint({ label, children }) {
   )
 }
 
-export function TabsBar({ items, value, onChange, className }) {
-  // BoardUI 的 PillTabList + PillTab：一层带滑动背景的胶囊页签。
-  // 契约没变（items/value/onChange），页面顶栏和卡片抽屉都走这里。
-  // hint 用原生 title：PillTab 不接受 title，套 Radix Tooltip 又要求 forwardRef。
-  return (
-    <PillTabList className={cn('min-w-0 flex-wrap', className)}>
-      {items.map((item) => (
-        <span key={item.id} title={item.hint || undefined} className="shrink-0">
-          <PillTab
-            variant="gray"
-            isSelected={item.id === value}
-            onSelect={() => onChange(item.id)}
-            className="ds-pill"
-          >
-            {item.label}
-            {item.count === undefined || item.count === null || item.count === '' ? null : (
-              <span className="ml-0.5 rounded-[4px] bg-black/8 px-1 text-[10.5px] font-medium tabular-nums opacity-70">
-                {String(item.count)}
-              </span>
-            )}
-          </PillTab>
-        </span>
-      ))}
-    </PillTabList>
-  )
-}
+export { TabsBar } from './tabs-bar.jsx'
 
 export function SegGroup({ value, onChange, options, className }) {
   // 换成 BoardUI 的胶囊（和顶栏页签同一套），原来那套 Radix ToggleGroup 与现在的视觉不搭：

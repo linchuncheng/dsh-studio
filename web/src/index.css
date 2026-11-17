@@ -1973,3 +1973,54 @@ html body [data-dsh-studio] .ds-login-label {
   font-weight: 500;
   color: var(--muted-foreground);
 }
+
+/* 选项卡：自己按 BoardUI Tabs 的视觉实现。不能用 .ds-tab / .ds-tabs 这类 legacy 类名，
+   那些规则后注入，会把 padding 与选中底色一起盖掉（实测页签挤成一坨）。 */
+html body [data-dsh-studio] .studio-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  border-bottom: 1px solid var(--color-separator-border, var(--ds-line));
+  padding-bottom: 1px;
+}
+
+html body [data-dsh-studio] .studio-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.2;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+html body [data-dsh-studio] .studio-tab:hover {
+  color: var(--color-text-primary, inherit);
+  background: var(--color-background-primary-hover, var(--ds-soft));
+}
+
+html body [data-dsh-studio] .studio-tab[aria-selected="true"] {
+  color: var(--color-text-primary, inherit);
+  font-weight: 600;
+}
+
+html body [data-dsh-studio] .studio-tab:focus-visible {
+  outline: 2px solid var(--color-border-focus-ring, var(--ds-accent));
+  outline-offset: -2px;
+}
+
+html body [data-dsh-studio] .studio-tabs-thumb {
+  position: absolute;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--color-accent-600, var(--ds-accent));
+}

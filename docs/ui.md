@@ -680,3 +680,24 @@ BoardUI 没有空态组件（它家是每个页面自带插画），所以照 dr
 
 新增 `npm run verify:login`（假宿主 + locked 状态）：登录卡出现、两个输入框是 BoardUI 壳子、
 密码框仍是 password、有标签、点得到「登录」、登录后进面板 —— 7/7。
+
+### 选项卡：从「胶囊」改成真正的 tab（这处我之前用错了组件）
+
+截图里那两条（顶栏 工作台/看板/…、抽屉 概览/内容/…）**本来就是选项卡**，我先前用的是
+`PillTabList + PillTab` —— 那是 BoardUI 给「视图切换」用的胶囊：没有 `role="tab"`、
+没有 `aria-selected`、没有方向键导航。语义上放错了位置。
+
+试过直接用他们的 `components/base/tabs/tabs.tsx`（Tabs + TabList + Tab，带下划线指示器），
+**在宿主页里一挂载就抛 `TypeError: Cannot read properties of undefined (reading 'title')`**：
+精简 props（只留 id/children）、包一层 `I18nProvider` 都试过，仍然崩。
+（排查时还误以为是自己的 fixture 缺字段，实际是 fake host 的 config 不含 board —— 两个坑叠在一起。）
+
+所以按他们那份的**视觉与语义**自己实现了一个（`web/src/components/tabs-bar.jsx`）：
+- `role="tablist"` / `role="tab"` / `aria-selected` / roving tabindex
+- ← → Home End 键盘导航
+- 底部下划线指示器（跟随选中项，带 200ms 过渡）
+- `count` 角标（抽屉「测试 0/3」这类）
+- 类名用 `studio-tab*` 而不是 `.ds-tab*`：legacy 的 `.ds-tab` 规则后注入，会把 padding
+  和选中底色一起盖掉（第一次改完页签挤成了一坨，就是这个原因）
+
+`verify:pages` 22/22、真机 sweep 5/5、audit 老控件 0、`npm test` 108/108。

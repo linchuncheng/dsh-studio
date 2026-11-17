@@ -32,11 +32,11 @@ await page.evaluate(() => {
   const node = [...document.querySelectorAll('*')].find((el) => el.children.length === 0 && (el.textContent || '').trim() === '需求&任务工作空间')
   node?.closest('button,a,li,[role="button"],[tabindex]')?.click?.()
 })
-await page.waitForSelector('[data-dsh-studio] .ds-head-tabs button', { timeout: 45000 })
+await page.waitForSelector('[data-dsh-studio] .ds-head-tabs [role="tab"]', { timeout: 45000 })
 await sleep(1200)
 const goTab = async (label) => {
   await page.evaluate((want) => {
-    const b = [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs button')].find((n) => (n.textContent || '').trim() === want)
+    const b = [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs [role="tab"]')].find((n) => (n.textContent || '').trim() === want)
     b?.click()
   }, label)
   await sleep(1400)
@@ -75,11 +75,11 @@ await page.waitForSelector('[data-dsh-studio] .ds-card', { timeout: 20000 })
 await page.evaluate(() => document.querySelector('[data-dsh-studio] .ds-card')?.click())
 await page.waitForSelector('[data-dsh-studio] .ds-drawer', { timeout: 20000 })
 await sleep(900)
-const paneLabels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] .ds-drawer [role="group"] button')].map((n) => (n.textContent || '').trim()))
+const paneLabels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] .ds-drawer [role="tab"]')].map((n) => (n.textContent || '').trim()))
 let paneOk = true
 for (const label of paneLabels) {
   const clicked = await page.evaluate((want) => {
-    const b = [...document.querySelectorAll('[data-dsh-studio] .ds-drawer [role="group"] button')].find((n) => (n.textContent || '').trim() === want)
+    const b = [...document.querySelectorAll('[data-dsh-studio] .ds-drawer [role="tab"]')].find((n) => (n.textContent || '').trim() === want)
     if (!b) return false
     b.click()
     return true

@@ -131,11 +131,11 @@ try {
   const errors = []
   page.on('pageerror', error => errors.push(String(error).slice(0, 200)))
   await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 })
-  await page.waitForSelector('[data-dsh-studio] .ds-head-tabs button', { timeout: 45000 })
+  await page.waitForSelector('[data-dsh-studio] .ds-head-tabs [role="tab"]', { timeout: 45000 })
 
   for (const [label, marker, mustHave] of PAGES) {
     const clicked = await page.evaluate(sel => {
-      const button = [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs button')]
+      const button = [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs [role="tab"]')]
         .find(node => (node.textContent || '').trim() === sel)
       if (!button) return false
       button.click()
@@ -150,8 +150,8 @@ try {
         marker: document.querySelector('[data-dsh-studio] ' + sel) !== null,
         required: required === '' ? true : document.querySelector('[data-dsh-studio] ' + required) !== null,
         length: text.length,
-        selected: [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs button')]
-          .filter(node => node.getAttribute('aria-pressed') === 'true')
+        selected: [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs [role="tab"]')]
+          .filter(node => (node.getAttribute('aria-selected') || node.getAttribute('aria-pressed')) === 'true')
           .map(node => (node.textContent || '').trim()),
       }
     }, marker, mustHave)
