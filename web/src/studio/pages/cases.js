@@ -4,6 +4,7 @@
 
 import { client } from '../context.js'
 import { CASE_RESULTS, CASE_RESULT_LABEL } from '../labels.js'
+import { Button as BoarduiButton } from '../../boardui/index'
 import { fmtTime } from '../format.js'
 
 export function CasesPage({ state, onOpenTask }) {
@@ -193,10 +194,10 @@ export function CasesPage({ state, onOpenTask }) {
           ),
         ),
         h('div', { className: 'ds-row', style: { marginTop: 8 } },
-          h('button', { className: 'ds-btn ds-btn-ghost', disabled: running || runnable.length === 0, onClick: selectAllRunnable }, `全选可跑的 ${runnable.length} 条`),
-          h('button', { className: 'ds-btn ds-btn-ghost', disabled: running || selected.size === 0, onClick: clearSelection }, '清空选择'),
-          h('button', { className: 'ds-btn ds-btn-primary', disabled: running || picked.length === 0, onClick: () => void runSelected() }, running ? '跑着…' : `▶ 跑选中的 ${picked.length} 条`),
-          h('button', { className: 'ds-btn', disabled: running || failedRunnable.length === 0, title: '只补跑上次不通过、且有接口定义的用例', onClick: () => void runFailed() }, `↻ 只跑上次失败的 ${failedRunnable.length} 条`),
+          h(BoarduiButton, { variant: 'secondary', size: 'small', disabled: running || runnable.length === 0, onClick: selectAllRunnable }, `全选可跑的 ${runnable.length} 条`),
+          h(BoarduiButton, { variant: 'secondary', size: 'small', disabled: running || selected.size === 0, onClick: clearSelection }, '清空选择'),
+          h(BoarduiButton, { variant: 'primary', size: 'small', disabled: running || picked.length === 0, onClick: () => void runSelected() }, running ? '跑着…' : `▶ 跑选中的 ${picked.length} 条`),
+          h(BoarduiButton, { variant: 'secondary', size: 'small', disabled: running || failedRunnable.length === 0, title: '只补跑上次不通过、且有接口定义的用例', onClick: () => void runFailed() }, `↻ 只跑上次失败的 ${failedRunnable.length} 条`),
           h('span', { className: 'ds-hint' }, '按卡串行跑，每张卡一轮；失败的照旧自动开缺陷（最多一次 60 条）'),
         ),
         h('div', { className: 'ds-row', style: { marginTop: 8, flexWrap: 'wrap', gap: 8 } },

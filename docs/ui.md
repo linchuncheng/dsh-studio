@@ -435,3 +435,16 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
 - **看板工具栏**：搜索框是灰底（BoardUI Input），下拉是白底（BoardUI Select），两者并排时底色不统一 —— 这是他们
   自己的设计语言（输入框灰、触发器白），要么统一给工具栏加底色，要么忍。
 - **空态与表格**：`ds-empty` 的虚线框和老式斜体提示，是唯一还在用「换皮前」语言的元素。
+
+### 第二轮巡检：把「分组」和「工具行」也收拾了
+
+1. **「列的负责人」分组变卡片**：原来 `.ds-colrow` 只有一条 `border-bottom`，八个分组连成一片。
+   改成描边 + 圆角 + 白底 + 一点阴影的小卡，组名 13.5/600。现在一眼能看出「这一组是待澄清、它挂产品」。
+2. **用例页工具行换 BoardUI 按钮**：`全选可跑的 / 清空选择 / ▶ 跑选中的 / ↻ 只跑上次失败的` 从
+   `.ds-btn`（灰底圆角）换成 `secondary / secondary / primary / secondary`，高度统一 32px，
+   和旁边的 BoardUI 下拉、勾选框站在一起不再像两个系统。
+3. **勾选框复核后无需改**：用例行里的勾选框本来就是 `CheckField`（BoardUI Checkbox），
+   之前看着「像原生」是因为整行 `disabled`（未跑的用例不可选）导致 50% 透明。属于状态，不是样式问题。
+
+真机复核截图：`tmp/zoom/列的负责人.png`、`tmp/zoom/用例工具栏.png`。
+本地探针 pages 22/22、fields 20/20、drawer 15/15、scale 9/9，`npm test` 108/108。

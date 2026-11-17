@@ -1591,3 +1591,24 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   color: inherit;
   text-align: inherit;
 }
+
+/* 「列的负责人」：原来每个分组只有一条细分隔线，八个分组连成一片，扫读容易串行。
+   改成一张张小卡片（描边 + 圆角 + 白底 + 一点点阴影），分组边界一眼看得见。 */
+[data-dsh-studio] .ds-colrow {
+  border: 1px solid var(--color-separator-border, var(--ds-line));
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  background: var(--color-background-primary-default, var(--ds-card));
+  box-shadow: 0 1px 2px color-mix(in srgb, #101828 6%, transparent);
+}
+
+[data-dsh-studio] .ds-colrow:last-of-type {
+  border-bottom: 1px solid var(--color-separator-border, var(--ds-line));
+  margin-bottom: 0;
+}
+
+[data-dsh-studio] .ds-colrow-name {
+  font-size: 13.5px;
+  font-weight: 600;
+}
