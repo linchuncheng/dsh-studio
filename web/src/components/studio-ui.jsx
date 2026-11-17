@@ -72,6 +72,7 @@ export function TabsBar({ items, value, onChange, className }) {
             variant="gray"
             isSelected={item.id === value}
             onSelect={() => onChange(item.id)}
+            className="ds-pill"
           >
             {item.label}
             {item.count === undefined || item.count === null || item.count === '' ? null : (
@@ -87,24 +88,22 @@ export function TabsBar({ items, value, onChange, className }) {
 }
 
 export function SegGroup({ value, onChange, options, className }) {
+  // 换成 BoardUI 的胶囊（和顶栏页签同一套），原来那套 Radix ToggleGroup 与现在的视觉不搭：
+  // 一个灰底小方框里塞三个 11px 的按钮，跟旁边的胶囊页签站在一起像两个年代的控件。
   return (
-    <ToggleGroupPrimitive.Root
-      type="single"
-      value={value}
-      onValueChange={(next) => next && onChange(next)}
-      className={cn('inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted p-0.5', className)}
-    >
+    <PillTabList className={cn('min-w-0', className)}>
       {options.map((opt) => (
-        <ToggleGroupPrimitive.Item
+        <PillTab
           key={opt.id}
-          value={opt.id}
-          aria-label={opt.label}
-          className="inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11.5px] text-muted-foreground transition hover:text-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm"
+          variant="gray"
+          isSelected={opt.id === value}
+          onSelect={() => onChange(opt.id)}
+          className="ds-pill ds-pill-sm"
         >
           {opt.label}
-        </ToggleGroupPrimitive.Item>
+        </PillTab>
       ))}
-    </ToggleGroupPrimitive.Root>
+    </PillTabList>
   )
 }
 

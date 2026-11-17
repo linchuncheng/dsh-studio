@@ -1543,3 +1543,51 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   background: var(--color-background-primary-default, var(--card));
   box-shadow: 0 24px 64px -24px color-mix(in srgb, #000 45%, transparent);
 }
+
+/* ------------------------------------------------------- BoardUI 胶囊按钮 --- */
+/* 我们刻意关掉 Tailwind 的 preflight（CSS 会注进宿主页面），代价是**裸 `<button>`
+   会带着浏览器默认样式**：`border: 2px outset` + `#f0f0f0` 底色。BoardUI 的 PillTab
+   自己不写 border/background（选中块由内层 span 画），被这层默认样式一盖，八个页签
+   长得一模一样、选中的那个完全看不出来。
+   只针对胶囊清掉这些 UA 默认值，别动别的控件（全局 reset 会把状态栏那组按钮搞坏）。 */
+[data-dsh-studio] .ds-pill {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 5px 8px;
+  font: inherit;
+  color: inherit;
+}
+
+/* 顶栏「明亮 / 黑暗 / 跟随系统」用小一号的胶囊 */
+[data-dsh-studio] .ds-pill-sm {
+  padding: 3px 9px;
+  font-size: 11.5px;
+  line-height: 17px;
+}
+
+/* 「流程与产出」那组数字：原来跟标签一个字号，看着像没写完 */
+[data-dsh-studio] .ds-flow-num {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary, var(--foreground));
+}
+
+/* BoardUI 的 ghost 按钮不写 border/bg 类（它靠 token 给底色），于是裸 `<button>` 的
+   UA 默认样式（`border: 2px outset`）又冒出来 —— 真机上「打开 / 去看板」全带着一圈 3D 灰边。
+   用**特异性为 0** 的选择器清掉 UA 默认值：任何 class（.ds-btn、.border、bg-*）都能覆盖，
+   只把「没人指定的部分」拉回 0。 */
+:where([data-dsh-studio], [data-dsh-studio-portal]) :where(button) {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0 solid;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+}

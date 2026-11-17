@@ -408,3 +408,30 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
   2. `useEscapeFallback`：在 `window` 上补 Esc 监听，**只关最上层那个浮层**
      （按 `data-boardui-overlay` 的出现顺序判断），免得关弹窗把底下的抽屉一起关了。
 - 修完重新部署，真机复跑：抽屉 10/10、逐页 17/17、smoke `ok: true`。
+
+## 整体样式与排版巡检（2026-11-17，真机 .218 + 2 倍高清局部截图）
+
+巡检方式：`tmp/zoom-probe.mjs` 按元素 bounding box 裁 2x 高清图（头部/看板工具栏/看板列/设置面板/需求面板），
+再配合七页整图看。结论：**大部分是「换骨」后的连带问题，不是新设计**。
+
+### 修掉的
+
+1. **页签八个长得一模一样**（最严重）：`<button>` 带了浏览器默认的 `border: 2px outset` + `#f0f0f0` 底色 ——
+   BoardUI 的 PillTab 自己不写 border/bg（选中块由内层 span 画），被这层 UA 样式一盖，选中态完全看不见。
+   我们刻意关掉 preflight，所以这类默认值必须自己清。做法：`[data-dsh-studio] .ds-pill` 精确清掉胶囊的 UA 样式。
+2. **ghost 按钮带 3D 灰边**：BoardUI 的 ghost 变体不写 border 类，同样吃 UA 默认边框（真机上「打开 / 去看板」都带一圈灰边）。
+   做法：一条**特异性为 0** 的 `:where()` 兜底，只清「没人指定」的部分，任何 class（`.ds-btn`、`.border`、`bg-*`）照常覆盖。
+3. **顶栏「明亮 / 黑暗 / 跟随系统」与胶囊页签像两个年代**：原来是 Radix ToggleGroup 的灰底小方框，
+   换成同一套 `PillTabList + PillTab`（`.ds-pill-sm` 收小一号），现在顶栏只有一种按钮语言。
+4. **工作台 KPI 与效能页两套卡**：工作台还是 `.ds-kpi`（左侧一条彩色竖条），效能页已经是 StatCard。
+   统一成 `StatCard`；任务行也从 `.ds-listrow` 换成 `TaskRow` + BoardUI 按钮。
+5. **「流程与产出」那组数字和标签一个字号**，看着像没写完：加 `.ds-flow-num`（18/600）。
+
+### 还没做（按优先级，留给下一轮）
+
+- **设置页的分组框**：8 个「列与角色」分组之间没有分隔，纯靠留白，扫读时容易串行 —— 建议每组包成一张卡。
+- **用例页的选择框**：仍是原生 `input[type=checkbox]` 的样子，和抽屉里的 BoardUI Checkbox 不一致。
+- **用例页工具行**：`全选可跑的 59 条 / 清空选择 / ▶ 跑选中的` 还是 `.ds-btn` 灰按钮，和 BoardUI 按钮并存。
+- **看板工具栏**：搜索框是灰底（BoardUI Input），下拉是白底（BoardUI Select），两者并排时底色不统一 —— 这是他们
+  自己的设计语言（输入框灰、触发器白），要么统一给工具栏加底色，要么忍。
+- **空态与表格**：`ds-empty` 的虚线框和老式斜体提示，是唯一还在用「换皮前」语言的元素。
