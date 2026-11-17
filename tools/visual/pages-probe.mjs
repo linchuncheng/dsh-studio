@@ -115,9 +115,9 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 const PAGES = [
   ['工作台', '.ds-body, [data-stat-card], .ds-reg-banner', ''],
   ['看板', '.ds-col .ds-card, .ds-col', ''],
-  ['需求', '.ds-panel, .ds-empty, .ds-req-desc', ''],
-  ['用例', '.ds-panel, .ds-empty, .ds-listrow', ''],
-  ['版本', '.ds-panel, .ds-empty, .ds-listrow', ''],
+  ['需求', '.ds-req-grid, [data-empty-state], .ds-req-desc', ''],
+  ['用例', '.ds-panel, [data-empty-state], [data-task-row]', ''],
+  ['版本', '.ds-panel, [data-empty-state], [data-task-row]', ''],
   ['效能', '[data-stat-card], [data-chart-card]', '[data-task-row]'],
   ['设置', '.ds-panel', ''],
 ]

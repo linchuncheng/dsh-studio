@@ -12,6 +12,7 @@ import { SheetDrawer, SegGroup, TabsBar, SelectBox, SwitchBox, Tip, ProgressBar,
 import { Badge, Input, Textarea, Label, Tabs, TabsList, TabsTrigger } from './components/ui.jsx'
 import { Button as BoarduiButton } from './boardui/index'
 import { TaskRow as BoarduiTaskRow } from './boardui/task-list'
+import { EmptyState as BoarduiEmptyState } from './boardui/empty-state'
 
 const STYLE_ID = 'dsh-studio-tw'
 
@@ -63,6 +64,11 @@ window.__ModuleLoader__.load({
             { ...restProps, title, hint: restContent.length > 0 ? restContent : undefined, action: actions?.props?.children },
           )
         }
+      }
+      // 第三条：legacy 的空态 `div.ds-empty` → 自研的 EmptyState（BoardUI 没有空态组件）
+      if (type === 'div' && typeof props?.className === 'string' && /(^|\s)ds-empty(\s|$)/.test(props.className)) {
+        const { className, ...restProps } = props
+        return React.createElement(BoarduiEmptyState, { ...restProps, title: children.flat().filter(Boolean) })
       }
       return React.createElement(type, props, ...children)
     }

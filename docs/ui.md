@@ -612,3 +612,28 @@ BoardUI 自己的规矩是：**输入框灰底填充**、**下拉触发器白底
 结果（`verify:audit`）：工作台/需求/版本/设置 的 `.ds-listrow` **全部降到 0**。
 至此面板里剩下的「非 BoardUI」元素只有 `.ds-empty`（已重绘样式，BoardUI 无空态组件）
 和登录页那两个原生 input（独立登录门）。
+
+### 空态也换成了自研 EmptyState（第三条 h 翻译）
+
+BoardUI 没有空态组件（它家是每个页面自带插画），所以照 drawer/dialog/chart-card 的老办法自研：
+`web/src/boardui/empty-state.tsx` —— 浅底 + 描边 + 圆角 + 居中说明，可选图标与行动按钮。
+
+`main.jsx` 的 `h` 里加第三条翻译：`div.ds-empty` → `EmptyState`。
+
+**至此 `verify:audit` 的老控件列全为 0**（老 input / 老 .ds-btn / .ds-listrow / .ds-empty 全站 0）：
+
+| 位置 | B输入 | B下拉 | B按钮 | 老控件 |
+| --- | --- | --- | --- | --- |
+| 工作台 | 0 | 0 | 16 | 0 |
+| 看板 | 1 | 4 | 4 | 0 |
+| 需求 | 2 | 1 | 30 | 0 |
+| 用例 | 1 | 2 | 112 | 0 |
+| 版本 | 11 | 4 | 23 | 0 |
+| 效能 | 0 | 2 | 12 | 0 |
+| 设置 | 13 | 0 | 23 | 0 |
+| 卡片抽屉 | 18 | 12 | 31 | 0 |
+
+> pages-probe 里 需求/版本/用例 的判据也同步改成 `[data-empty-state]` / `[data-task-row]`，
+> 否则换了组件之后探针会因为找不到 `.ds-empty` 而误报。
+
+**唯一还没换的**：登录门（`.ds-login`）里两个原生 `<input>` —— 独立页面，token 登录走不到。
