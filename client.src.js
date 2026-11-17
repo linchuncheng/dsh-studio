@@ -2017,9 +2017,9 @@ function installKeyboardActivation() {
             h('div', { className: 'ds-login-brand' }, '◈ ', config?.board?.title ?? '工作空间'),
             tabs,
             hint,
-            h('label', { className: 'ds-field' },
-              h('span', null, mode === 'local' ? '超管账号' : '域账号'),
-              h('input', {
+            h('div', { className: 'ds-login-field' },
+              h('span', { className: 'ds-login-label' }, mode === 'local' ? '超管账号' : '域账号'),
+              h(TextField, {
                 value: username,
                 autoFocus: mode === 'ldap',
                 name: 'studio-account',
@@ -2030,9 +2030,9 @@ function installKeyboardActivation() {
                 onKeyDown: event => { if (event.key === 'Enter') void submit() },
               }),
             ),
-            h('label', { className: 'ds-field' },
-              h('span', null, '密码'),
-              h('input', {
+            h('div', { className: 'ds-login-field' },
+              h('span', { className: 'ds-login-label' }, '密码'),
+              h(TextField, {
                 type: 'password',
                 value: password,
                 autoFocus: mode === 'local',

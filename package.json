@@ -25,6 +25,7 @@
     "verify:drawer": "node tools/visual/drawer-probe.mjs",
     "verify:sweep": "node tools/visual/sweep.mjs",
     "verify:audit": "node tools/visual/audit.mjs",
+    "verify:login": "node tools/visual/login-probe.mjs",
     "verify:facts": "node tools/visual/facts-probe.mjs"
   },
   "exports": {

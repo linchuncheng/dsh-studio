@@ -665,3 +665,18 @@ BoardUI 没有空态组件（它家是每个页面自带插画），所以照 dr
 4. **「只看阻塞 / 只看缺正文」**：暗色下深红 `#c0392b` 糊在深底上，补一条暗色专用浅红。
 
 暗色巡检（`tmp/dark-check.mjs`，逐页找「深底上的深字」）现在 **五页全部 0 可疑元素**。
+
+### 登录门（`ShadcnLoginGate`）换 BoardUI + 揪出一个真 bug
+
+查的时候发现两件事：
+
+1. **用户在真机上看到的登录卡不是 legacy 的 `.ds-login`**，而是 `components/login-gate.jsx` 的
+   `ShadcnLoginGate`（main.jsx 通过 `pageProps.loginGate` 注入的）。我先前改的 legacy 版是**兜底路径**，
+   真机上根本走不到 —— 已把真正那份的两个 `<Input>` 换成 BoardUI 适配层的 `Input`
+   （它不收 ref，所以切 tab 时的聚焦改成按 id 聚焦）。
+2. **`components/ui.jsx` 里 `BoarduiButton` 只用了没 import** —— 只要走「非 asChild 的 Button」分支
+   就 `ReferenceError: BoarduiButton is not defined`（登录卡的「登录」按钮正好走这条，于是整张卡崩）。
+   这是当初接 Button 时漏的，一直被别处用 h 翻译的按钮挡着没暴露。补上 import。
+
+新增 `npm run verify:login`（假宿主 + locked 状态）：登录卡出现、两个输入框是 BoardUI 壳子、
+密码框仍是 password、有标签、点得到「登录」、登录后进面板 —— 7/7。

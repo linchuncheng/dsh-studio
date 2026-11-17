@@ -12,6 +12,8 @@ import { cva } from 'class-variance-authority'
 import { X, Check } from 'lucide-react'
 import { cn } from '../lib/utils.js'
 import { portalRoot } from '../lib/portal.js'
+// 非 asChild 分支直接渲染 BoardUI 的 Button（原来只用了、没 import，登录卡一渲染就 ReferenceError）
+import { Button as BoarduiButton } from '../boardui/index'
 
 const buttonVariants = cva(
   // BoardUI 的 Button 变体矩阵（Figma: Type × Size × OnlyIcon），移植到我们这层：

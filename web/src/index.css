@@ -1960,3 +1960,16 @@ html body [data-dsh-studio] .ds-card-warn {
 [data-dsh-studio][data-theme="dark"] .ds-board-bar label[title] {
   color: #f87171 !important;
 }
+
+/* 登录门的字段：不再用 .ds-field（它会连带把内部 input 一起重绘，和 BoardUI 的壳子打架） */
+html body [data-dsh-studio] .ds-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+html body [data-dsh-studio] .ds-login-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}

@@ -8,7 +8,8 @@
 // gauge larger than the rest of the page reads as "misaligned".
 import * as React from 'react'
 import { Eye, EyeOff } from 'lucide-react'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, Input, Label, Button, Tabs, TabsList, TabsTrigger } from './ui.jsx'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, Label, Button, Tabs, TabsList, TabsTrigger } from './ui.jsx'
+import { Input as BoarduiInput } from '../boardui/index'
 
 const SESSION_KEY = 'dsh-studio:session'
 const AUTH_USER_KEY = 'dsh-studio:auth-user'
@@ -51,8 +52,9 @@ export function ShadcnLoginGate({ config, theme, message, onDone, onClose, overl
     // Radix Tabs moves focus to the trigger after a switch; focus the field on the
     // next frame so the user can just start typing.
     const id = window.setTimeout(() => {
-      if (mode === 'local') passwordRef.current?.focus()
-      else accountRef.current?.focus()
+      // BoardUI 的 Input 不收 ref，直接按 id 聚焦（同一屏只有一个登录卡）
+      if (mode === 'local') document.getElementById('studio-pass')?.focus()
+      else document.getElementById('studio-account')?.focus()
     }, 30)
     return () => window.clearTimeout(id)
   }, [mode])
@@ -132,13 +134,11 @@ export function ShadcnLoginGate({ config, theme, message, onDone, onClose, overl
             <Label htmlFor="studio-account" className="text-[12px] text-muted-foreground">
               {mode === 'local' ? '超管账号' : '域账号'}
             </Label>
-            <Input
+            <BoarduiInput
               id="studio-account"
-              ref={accountRef}
               name="studio-account"
               autoComplete="off"
               spellCheck={false}
-              className="box-border h-9 w-full min-w-0 text-[13px]"
               value={username}
               placeholder={mode === 'local' ? localName : '域账号'}
               onChange={(event) => setUsername(event.target.value)}
@@ -150,14 +150,11 @@ export function ShadcnLoginGate({ config, theme, message, onDone, onClose, overl
               密码
             </Label>
             <div className="relative min-w-0">
-              <Input
+              <BoarduiInput
                 id="studio-pass"
-                ref={passwordRef}
                 type={showPass ? 'text' : 'password'}
                 name="studio-pass"
-                // new-password 让浏览器不再把这里当成可保存的登录表单（也就不会去拉起账户同步窗）
                 autoComplete="new-password"
-                className="box-border h-9 w-full min-w-0 pr-9 text-[13px]"
                 value={password}
                 placeholder={mode === 'local' ? '默认口令 admin' : '域密码'}
                 onChange={(event) => setPassword(event.target.value)}
