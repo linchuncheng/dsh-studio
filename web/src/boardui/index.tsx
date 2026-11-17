@@ -5,6 +5,7 @@ import { Button as BoarduiButton, ButtonLink as BoarduiButtonLink } from "../com
 import { TextField as BoarduiField, InputBase as BoarduiInputBase } from "../components/base/input/input";
 import { TextareaBase as BoarduiTextareaBase } from "../components/base/textarea/textarea";
 import { Checkbox as BoarduiCheckboxBase } from "../components/base/checkbox/checkbox";
+import { Select as BoarduiSelect, SelectItem as BoarduiSelectItem } from "../components/base/select/select";
 
 const VARIANT = {
   default: "primary",
@@ -127,5 +128,50 @@ export function Checkbox({ className, checked, onChange, disabled, bare, ...rest
         if (typeof onChange === "function") onChange({ target: { checked: next } });
       }}
     />
+  );
+}
+
+/** react-aria 的 key 不接受空字符串当可选项，空值统一走这个哨兵再映射回 ''。 */
+const EMPTY_KEY = "__empty__";
+
+export function Select({
+  className,
+  style,
+  value,
+  onChange,
+  disabled,
+  options,
+  ...rest
+}: any) {
+  const list: Array<{ value: string; label: string }> =
+    Array.isArray(options) && options.length > 0 ? options : [{ value: "", label: "—" }];
+  const hasEmpty = list.some((option) => option.value === "");
+  const toKey = (raw: string) => (hasEmpty && raw === "" ? EMPTY_KEY : raw);
+  const current = value === undefined || value === null ? "" : String(value);
+  const selected = list.find((option) => option.value === current);
+  return (
+    <BoarduiSelect
+      {...rest}
+      className={extraClasses(className)}
+      style={style}
+      isDisabled={disabled === true}
+      aria-label={
+        (typeof rest["aria-label"] === "string" && rest["aria-label"]) ||
+        (typeof rest.title === "string" && rest.title) ||
+        selected?.label ||
+        "下拉选择"
+      }
+      selectedKey={toKey(current)}
+      onSelectionChange={(key: any) => {
+        if (typeof onChange !== "function") return;
+        onChange({ target: { value: key === EMPTY_KEY ? "" : String(key) } });
+      }}
+    >
+      {list.map((option) => (
+        <BoarduiSelectItem key={option.value} id={toKey(option.value)} textValue={option.label}>
+          {option.label}
+        </BoarduiSelectItem>
+      ))}
+    </BoarduiSelect>
   );
 }

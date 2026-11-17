@@ -5,7 +5,7 @@
 
 // 表单控件换成 BoardUI 的源码实现（TextField + InputBase / TextareaBase / Checkbox）。
 // 适配层负责把 legacy 的 value / onChange(e) 语义翻译成 react-aria 的 value / onChange(string)。
-import { Input as BoarduiInput, Textarea as BoarduiTextarea, Checkbox as BoarduiCheckbox } from '../boardui/index'
+import { Input as BoarduiInput, Textarea as BoarduiTextarea, Checkbox as BoarduiCheckbox, Select as BoarduiSelect } from '../boardui/index'
 
 export function createFields({ h, kit, React }) {
     function TextField(props) {
@@ -42,27 +42,12 @@ export function createFields({ h, kit, React }) {
     })
     return out
   }
+  /* 下拉：调用点写的是原生 <option> 子节点，这里先拍平成 {value,label}，
+     再交给 BoardUI 的 Select（react-aria 的 Select 要 id + textValue）。
+     空字符串选项的哨兵映射在适配层里做。 */
   function SelectField({ className, children, value, onChange, disabled, ...rest }) {
-      const Select = kit('SelectBox')
-      if (Select === null) {
-        return h('select', { className, value, onChange, disabled, ...rest }, children)
-      }
-      const raw = optionListOf(children)
-      // Radix Select 不接受空字符串作为可展示项：有空值选项时用哨兵值代替，对外仍映射成 ''。
-      const hasEmpty = raw.some(option => option.value === '')
-      const options = raw.map(option => (hasEmpty && option.value === '' ? { ...option, value: '__empty__' } : option))
-      if (options.length === 0) options.push({ value: hasEmpty ? '__empty__' : '', label: '—' })
-      const current = value === undefined || value === null ? '' : String(value)
-      return h(Select, {
-        ...rest,
-        value: hasEmpty && current === '' ? '__empty__' : current,
-        options,
-        disabled,
-        onChange: next => {
-          if (typeof onChange !== 'function') return
-          onChange({ target: { value: next === '__empty__' ? '' : next } })
-        },
-      })
+      const options = optionListOf(children)
+      return h(BoarduiSelect, { ...rest, className, options, value, onChange, disabled })
     }
 
   return { TextField, TextAreaField, ChipField, CheckField, SelectField }

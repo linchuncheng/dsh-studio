@@ -231,3 +231,30 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
   自绘的 16px 方块是 `span[aria-hidden]`，选中态靠 `shadow-checkbox-selected` 这个类。
 - `type=date` 仍然是原生 input（react-aria 的 `useTextField` 不做日期格式化，那是 `useDateField`），
   包进 BoardUI 的壳子后行为与以前一致。
+
+### 第二批：Select（下拉）
+
+- 源码来源改成**直接从 GitHub 原样拉**：`web/scripts/fetch-boardui.mjs components/base/select/select.tsx`
+  会按 `@/` 与相对 import 递归补齐依赖（这次带进来 `dropdown/menu-styles.ts`、
+  `foundations/icons/chevrons.tsx`、`utils/use-dismiss-on-outside-press.ts`）。
+  已存在的文件默认不覆盖，`--force` 才重拉；文件头统一一行
+  `// copied verbatim from BoardUI (MIT) — https://github.com/BoardUI/boardui/blob/main/<path>`。
+  （文档站 `boardui.com` 的 RSC payload 里也有同一份源码，但 GitHub 更干净，别再扒页面。）
+- 适配：`studio/fields.js` 的 `SelectField` 把调用点的原生 `<option>` 子节点拍平成
+  `{value,label}`，适配层再渲染 `Select` + `SelectItem`；`selectedKey`/`onSelectionChange`
+  与我们 `value`/`onChange(e.target.value)` 互译，空串仍走 `__empty__` 哨兵。
+- **坑（这轮最大的一个）**：react-aria 的 Popover 默认 portal 到 `document.body`，落在
+  `[data-dsh-studio]` 外面，作用域化的 Tailwind 全失效 —— 下拉会变成没有样式的裸列表。
+  官方解法是 `react-aria/PortalProvider` 的 `UNSAFE_PortalProvider`：在 `web/src/bridge.jsx`
+  用它包住整个面板，`getContainer` 指向 Radix 那个 `data-dsh-studio-portal` 容器，
+  react-aria 的浮层和 Radix 的浮层从此共用一个容器、一套样式。为此把 `react-aria`
+  提成直接依赖（版本与 react-aria-components 一致，3.53.1，不会打第二份）。
+- 验证：`verify:fields` 20/20（新增 5 项：点开下拉、弹层在 portal 容器里、面板有壳子、
+  选「缺陷」后按钮跟着变且卡片被筛成 0、清回「全部类型」卡片回来）。
+
+### 体积：914.85 kB → 1058.88 kB（gzip 261.05 → 305.89）
+
+涨的 144 kB 全在 react-aria 的 Select / ListBox / Popover / Overlays / Collections 这一串上，
+不是我们的代码。原来定的 900 kB 红线在这条路上守不住 —— 要真组件就只能接受；
+真要压回去，唯一办法是退回 Radix Select（等于不换骨）。取舍记在这里：
+**保留真组件，体积红线改为 1.1 MB**，后续 tabs/drawer/modal 还会再涨，涨到离谱时再谈按页拆包。

@@ -197,7 +197,52 @@ try {
     afterBox.glyphSelected === true && afterBox.nativeChecked === true,
     `glyph=${afterBox.glyphSelected} checked=${afterBox.nativeChecked}`)
 
-  // ---- 3) 多行输入：抽屉里的 textarea
+  // ---- 3) 下拉：BoardUI 的 Select（触发按钮 + portal 里的 listbox）
+  const triggerOf = label => page.evaluate(sel => {
+    const bar = document.querySelector('[data-dsh-studio] .ds-board-bar')
+    const button = [...(bar?.querySelectorAll('button') ?? [])].find(node => (node.textContent || '').trim() === sel)
+    if (!button) return false
+    button.click()
+    return true
+  }, label)
+  check('点了「全部类型」下拉', await triggerOf('全部类型'))
+  await page.waitForSelector('[role="listbox"] [role="option"]', { timeout: 10000 })
+  const popShape = await page.evaluate(() => {
+    const list = document.querySelector('[role="listbox"]')
+    const host = list?.closest('[data-dsh-studio-portal]')
+    const panel = list?.closest('[role="dialog"], .shadow-dropdown, [class*="rounded-2xl"]')
+    return {
+      options: document.querySelectorAll('[role="listbox"] [role="option"]').length,
+      inPortal: host !== null && host !== undefined,
+      styled: panel !== null && panel !== undefined,
+      labels: [...document.querySelectorAll('[role="listbox"] [role="option"]')].map(node => (node.textContent || '').trim()).slice(0, 4),
+    }
+  })
+  check('下拉弹层挂在 data-dsh-studio-portal 容器里（样式不丢）', popShape.inPortal === true, `${popShape.options} 项`)
+  check('下拉有 BoardUI 的面板壳子', popShape.styled === true, popShape.labels.join(' / '))
+  await sleep(600)
+  await page.screenshot({ path: join(REPO, 'tmp', 'fields-select.png') })
+  await page.evaluate(() => {
+    const option = [...document.querySelectorAll('[role="listbox"] [role="option"]')].find(node => (node.textContent || '').trim() === '缺陷')
+    option?.click()
+  })
+  await sleep(700)
+  const afterSelect = await page.evaluate(() => {
+    const bar = document.querySelector('[data-dsh-studio] .ds-board-bar')
+    const button = [...(bar?.querySelectorAll('button') ?? [])].find(node => /缺陷/.test(node.textContent || ''))
+    return { trigger: button !== undefined, cards: document.querySelectorAll('[data-dsh-studio] .ds-card').length }
+  })
+  check('选「缺陷」之后触发按钮跟着变、结果也筛掉了', afterSelect.trigger === true && afterSelect.cards === 0, `${afterSelect.cards} 张卡`)
+  await triggerOf('缺陷')
+  await page.waitForSelector('[role="listbox"] [role="option"]', { timeout: 10000 })
+  await page.evaluate(() => {
+    const option = [...document.querySelectorAll('[role="listbox"] [role="option"]')].find(node => (node.textContent || '').trim() === '全部类型')
+    option?.click()
+  })
+  await sleep(700)
+  check('清回「全部类型」卡片回来', (await cardTitles()).length === 2)
+
+  // ---- 4) 多行输入：抽屉里的 textarea
   await page.evaluate(() => document.querySelector('[data-dsh-studio] .ds-card')?.click())
   await page.waitForSelector('[data-dsh-studio] .ds-drawer textarea', { timeout: 30000 })
   const areaShape = await page.evaluate(() => {
