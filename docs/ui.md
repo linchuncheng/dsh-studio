@@ -823,3 +823,45 @@ from ".../components/base/date-picker/date-picker.tsx"
 顺带把 `avatar` / `close-button`（notification 的依赖）也拉进仓库。
 体积 1391 kB，观察线 1.4 MB 内。
 验证：pages 22/22、drawer 15/15、真机 sweep 5/5。
+
+### 下拉「明明用了官方组件却不像官方」——两个真因（2026-11-17）
+
+用户连着两次指出「看板里的选择框没用 BoardUI 的 Select」。排查下来**组件确实是官方的**
+（`[data-field=select]` → react-aria `Select` + `SelectItem`），但看起来完全不像，
+原因在样式链，不在调用点：
+
+**真因一：`@layer base` 排在了 `utilities` 后面。**
+CSS 层叠层按「名字第一次出现的位置」定优先级，后出现的压前面的，与特异性无关。
+我们没引 preflight，所以 `base` 这个层名直到 index.css 自己写 `@layer base{}` 才第一次出现，
+被追加到最末 —— 成了最强的一层。于是 base 里那条清 UA 默认值的
+`:where(button){padding:0;font:inherit;border:0}` 反过来压住了所有工具类：
+
+| | 修前 | 修后（官方值） |
+| --- | --- | --- |
+| 触发器内边距 | `0px` | `8px 10px` |
+| 触发器高度 | 21px | 38px |
+| 字号 | 12px（继承） | 14px（body-medium） |
+
+修法：index.css **第一行**声明层序 `@layer properties, theme, base, components, utilities;`
+（Tailwind 只在启用预检时才输出这行，关了就没了）。守卫已加两条断言，防止有人把它挪走。
+
+**真因二：门户容器是 `position: fixed` 却没给 z-index。**
+`fixed` 自身就新建层叠上下文（z-index:auto → 0），弹层里那句 `z-index:100000` 只在门户内部
+有效，整层门户仍排在页面内容之下 —— 看板列头的 `.ds-col-head{position:sticky;z-index:2}`
+直接盖在展开的菜单上，菜单像透明的。修法：给 `[data-dsh-studio-portal]` 加 `z-index: 900`。
+守卫同样加了断言。
+
+**顺手清掉的第二套实现**（体积 1353.80 → 1298.53 kB，−55 kB）：
+
+- `studio-ui.jsx` 的 `SelectBox`（Radix Select）—— 0 个调用点，删
+- `studio-ui.jsx` 的 `SwitchBox` + `ui.jsx` 的 `Switch`（Radix Switch）—— 同上，删
+- `main.jsx` 的 uiKit 不再暴露 `Tabs/TabsList/TabsTrigger/SelectBox/SwitchBox`
+- `client.src.js` 顶栏页签的 Radix Tabs 退路（TabsBar 一定存在，那条分支永远走不到）
+
+守卫新增：`@radix-ui/react-select` / `@radix-ui/react-switch` 禁止 import（全站只允许一套实现）。
+
+**验收方式换了**：`verify:selects` 不再只数「有没有原生 select」，而是逐个页签断言
+触发器尺寸 = 官方 md（内边距/高度/字号），并把弹层真的点开，断言白底/16px 圆角/8px 内边距/
+宽 266px/**elementFromPoint 落在弹层里**（防的正是上面那个层级 bug）/菜单项行高 ≥30px。
+`verify:audit` 从 7 个页面扩到 **27 个模块**（8 页签 + 16 设置面板 + 3 抽屉），
+作用域补上 `[data-dsh-studio-portal]`，违规非零直接退出码 1。

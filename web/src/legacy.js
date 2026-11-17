@@ -2310,9 +2310,6 @@ function installKeyboardActivation() {
           h('div', { className: 'ds-head-tabs' },
             (() => {
               const Tabs = kit('TabsBar')
-              const TRoot = kit('Tabs')
-              const TList = kit('TabsList')
-              const TItem = kit('TabsTrigger')
               const items = [
                 { id: 'dashboard', label: '工作台', hint: '今天该看什么：在办、逾期、阻塞、缺陷超时、准出被拦' },
                 { id: 'board', label: '看板', hint: '按列推进卡片；点开卡片能看计划、交付物、测试、讨论' },
@@ -2327,16 +2324,6 @@ function installKeyboardActivation() {
               // 没有再退回 Radix 的那套，最后才是自绘的 .ds-tab。
               if (Tabs !== null) {
                 return h(Tabs, { items, value: tab, onChange: next => setTab(next) })
-              }
-              if (TRoot !== null && TList !== null && TItem !== null) {
-                return h(TRoot, { value: tab, onValueChange: next => setTab(next) },
-                  h(TList, { className: '' },
-                    items.map(item => h(TItem, {
-                      key: item.id,
-                      value: item.id,
-                      title: item.hint,
-                      className: '',
-                    }, item.label))))
               }
               return h('div', { className: 'ds-tabs' },
                 items.map(item => h('button', {

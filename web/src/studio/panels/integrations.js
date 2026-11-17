@@ -266,6 +266,7 @@ export function SkillsPanel({ config, onChanged }) {
   const [data, setData] = React.useState(null)
   const [draft, setDraft] = React.useState(null)
   const [error, setError] = React.useState(null)
+  const fileRef = React.useRef(null)
   const [note, setNote] = React.useState(null)
   const [busy, setBusy] = React.useState(false)
   const [uploading, setUploading] = React.useState(false)
@@ -369,13 +370,25 @@ export function SkillsPanel({ config, onChanged }) {
       ? h('div', { className: 'ds-hint' }, `磁盘上还有 ${stray.length} 个不归这里管的技能目录：${stray.join('、')}`)
       : null,
     h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', padding: '6px 0 10px', flexWrap: 'wrap' } },
-      h('label', { className: 'ds-btn', style: { cursor: uploading ? 'progress' : 'pointer', opacity: uploading ? 0.6 : 1 } },
-        uploading ? '上传中…' : '上传技能',
-        h('input', {
-          type: 'file', accept: '.md,.markdown,.txt,.zip', style: { display: 'none' }, disabled: uploading,
-          onChange: event => { const file = event.target.files === null ? undefined : event.target.files[0]; event.target.value = ''; void upload(file) },
-        }),
-      ),
+      // 以前把 <input type=file> 藏在 <label class="ds-btn"> 里：长得像按钮，但
+      // **键盘根本到不了**（label 不可聚焦，Tab 跳过它），屏幕阅读器也只报一个标签。
+      // 改成正常按钮 + 隐藏的文件输入框：按钮能被 Tab 聚焦、Enter/Space 触发，
+      // 真正去点的是那个 1px 的 input。
+      h('button', {
+        className: 'ds-btn',
+        disabled: uploading,
+        title: '上传 SKILL.md 或包含 SKILL.md 的 .zip 技能包',
+        onClick: () => fileRef.current?.click(),
+      }, uploading ? '上传中…' : '上传技能'),
+      h('input', {
+        type: 'file',
+        accept: '.md,.markdown,.txt,.zip',
+        ref: fileRef,
+        tabIndex: -1,
+        'aria-hidden': 'true',
+        style: { position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' },
+        onChange: event => { const file = event.target.files === null ? undefined : event.target.files[0]; event.target.value = ''; void upload(file) },
+      }),
       h('label', { className: 'ds-hint', style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' } },
         h(CheckField, { checked: overwrite, onChange: event => setOverwrite(event.target.checked) }),
         '覆盖同名技能',

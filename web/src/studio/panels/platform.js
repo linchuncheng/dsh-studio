@@ -331,7 +331,7 @@ export function CostsPanel({ config, onChanged, suggestModels }) {
 }
 
 export function BusinessPanel({ config, onChanged }) {
-  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, CheckField, SwitchToggle, SelectField , React } = client()
+  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, CheckField, SwitchToggle, SelectField, DateField , React } = client()
   const projects = config.projects ?? []
   const repos = config.gitlab?.projects ?? []
   const [draft, setDraft] = React.useState(null)

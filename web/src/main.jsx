@@ -8,9 +8,9 @@ import tailwindCss from './index.css?inline'
 import { createStudio } from './legacy.js'
 import { createBridge } from './bridge.jsx'
 import { ShadcnLoginGate } from './components/login-gate.jsx'
-import { SheetDrawer, SegGroup, TabsBar, SelectBox, SwitchBox, Tip, ProgressBar, DialogBox } from './components/studio-ui.jsx'
-import { Badge, Input, Textarea, Label, Tabs, TabsList, TabsTrigger } from './components/ui.jsx'
-import { Button as BoarduiButton } from './boardui/index'
+import { SheetDrawer, SegGroup, TabsBar, Tip, ProgressBar, DialogBox } from './components/studio-ui.jsx'
+import { Badge, Input, Textarea, Label } from './components/ui.jsx'
+import { Button as BoarduiButton, ButtonLink as BoarduiButtonLink } from './boardui/index'
 import { TaskRow as BoarduiTaskRow } from './boardui/task-list'
 import { EmptyState as BoarduiEmptyState } from './boardui/empty-state'
 import { Notification as BoarduiNotification } from './components/base/notification/notification'
@@ -43,15 +43,23 @@ window.__ModuleLoader__.load({
     // 这样 16 个设置分区 + 各页面里上百个按钮不用逐个改调用点，就直接变成真组件了：
     //   ds-btn-primary → primary，ds-btn-ghost → ghost，其余 → secondary（统一 small 号）。
     // 非 button 标签、没有 ds-btn 类的元素一律原样返回，行为不变。
+    const buttonVariant = (props) => props['data-danger'] === '1'
+      ? 'danger'
+      : /\bds-btn-primary\b/.test(props.className) ? 'primary' : /\bds-btn-ghost\b/.test(props.className) ? 'ghost' : 'secondary'
     const h = (type, props, ...children) => {
       if (type === 'button' && typeof props?.className === 'string' && props.className.includes('ds-btn')) {
-        const into = props.className
-        // 危险操作（删除/打回）原来被映射成 secondary，红色语义丢了 —— data-danger=1 优先判 danger
-        const variant = props['data-danger'] === '1'
-          ? 'danger'
-          : /\bds-btn-primary\b/.test(into) ? 'primary' : /\bds-btn-ghost\b/.test(into) ? 'ghost' : 'secondary'
+        const variant = buttonVariant(props)
         const { className, ...rest } = props
         return React.createElement(BoarduiButton, { ...rest, variant, size: 'small' }, ...children)
+      }
+      // 同一招用在「长得像按钮的链接」上：顶栏的「导出卡 / 导出需求」原本是
+      // `h('a', { className: 'ds-btn ds-btn-ghost', href })`，第一条规则只认 button，
+      // 于是它们一直是老式灰按钮 —— 同一个工具栏里并列着两套按钮皮。官方有 ButtonLink，
+      // href 原样透传，渲染出来还是 <a>，新标签页打开/右键复制链接都不受影响。
+      if (type === 'a' && typeof props?.className === 'string' && props.className.includes('ds-btn') && typeof props.href === 'string') {
+        const variant = buttonVariant(props)
+        const { className, ...rest } = props
+        return React.createElement(BoarduiButtonLink, { ...rest, variant, size: 'small' }, ...children)
       }
       // 同一招再用于列表行：legacy 的 `div.ds-listrow > (main[标题,说明], actions[按钮…])`
       // 结构非常固定，就地渲染成 TaskRow。只在**结构完全对得上**时才换，其余原样透传，
@@ -102,7 +110,7 @@ window.__ModuleLoader__.load({
     const studio = createStudio(React, h)
     // Hand the shadcn-based primitives to the legacy panel. It keeps its own
     // markup but swaps the high-traffic controls for the real components.
-    const uiKit = { SegGroup, Tabs, TabsList, TabsTrigger, SheetDrawer, TabsBar, SelectBox, SwitchBox, Tip, ProgressBar, DialogBox, Badge, Input, Textarea, Label, Notification: BoarduiNotification }
+    const uiKit = { SegGroup, SheetDrawer, TabsBar, Tip, ProgressBar, DialogBox, Badge, Input, Textarea, Label, Notification: BoarduiNotification }
     if (typeof studio.useUIKit === 'function') studio.useUIKit(uiKit)
     const StudioBridge = createBridge(studio, hostReact, { pageProps: { loginGate: ShadcnLoginGate, ui: uiKit } })
 

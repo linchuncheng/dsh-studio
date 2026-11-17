@@ -1,8 +1,19 @@
-/* 全站组件盘点（真机 + token）：每个页面与抽屉里还剩多少「老控件」。
+/* 全站控件盘点（真机 + token）：**逐个功能模块**检查它用的是不是 BoardUI 组件。
+ *
  *   STUDIO_TOKEN=xxx node tools/visual/audit.mjs
- * 判据：BoardUI = [data-field] / button[data-variant]；老 = .ds-input / button.ds-btn。
- * 注意：RAC 的 Select 会渲染一个隐藏原生 select，所以「原生select」与「B下拉」通常是 1:1。 */
-// 全站盘点：每个页面 + 两个抽屉，数一数还剩多少「老控件」。
+ *   STUDIO_TOKEN=xxx AUDIT_SHOTS=1 node tools/visual/audit.mjs     # 顺带截图留档
+ *
+ * 盘点的模块：8 个顶部页签 + 设置里 16 个面板 + 5 个抽屉。
+ * 判据（全部为 0 才算通过，非 0 退出码 1）：
+ *   · nativeSelect  可见的原生 <select>（react-aria 的隐藏 select 不算：它在 [data-rac] 里）
+ *   · rawField      input / textarea 不在任何 react-aria 组件里（= 还是原生控件）
+ *   · legacyBtn     button/a/label 上的 .ds-btn（老按钮）
+ *   · radixSelect   手写的 radix 下拉触发器（button[aria-haspopup=listbox] 但没 data-rac）
+ *   · foreignTab    不在 .studio-tabs / BoardUI Tabs 里的 [role=tab]（第三种页签实现）
+ *
+ * 为什么以前漏了：老版本只数 <select>，而且作用域只有 [data-dsh-studio]、没有 portal，
+ * 抽屉与弹层里的控件从来没被统计过；`scopes` 改了以后 `if (!scope)` 还会直接抛错。
+ */
 import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
 
@@ -11,89 +22,137 @@ const puppeteer = requireFromRoot('puppeteer-core')
 const BASE = process.env.STUDIO_BASE ?? 'http://192.168.120.218:18080'
 const TOKEN = process.env.STUDIO_TOKEN ?? ''
 const CHROME = process.env.CHROME_PATH ?? 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+const SHOTS = process.env.AUDIT_SHOTS === '1'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-const COUNT = `(() => {
-  const scopes = [...document.querySelectorAll('[data-dsh-studio], [data-dsh-studio-portal]')]
-  if (!scope) return null
-  const q = (sel) => scopes.reduce((sum, node) => sum + node.querySelectorAll(sel).length, 0)
-  return {
-    boardInput: q('[data-field="input"]'),
-    boardSelect: q('[data-field="select"]'),
-    boardBtn: q('button[data-variant]'),
-    chip: q('[class*="bg-badge"], .ds-chip'),
-    legacyInput: q('input.ds-input, textarea.ds-input, select.ds-input, .ds-palette-input, input[type=file]'),
-    rawSelect: q('select:not(.ds-input)'),
-    legacyBtn: q('button.ds-btn, label.ds-btn, a.ds-btn'),
-    listrow: q('.ds-listrow'),
-    empty: q('.ds-empty'),
-    rawCheckbox: q('input[type="checkbox"]:not([data-field])'),
-  }
-})()`
+const PAGES = ['工作台', '看板', '需求', '用例', '版本', '项目', '效能', '设置']
+const PANELS = ['项目与迭代', '专家', '专家团', '技能库', '列的负责人', '代码仓库', '飞书机器人', '集成健康',
+  '自动派单', '测试执行', '成本与预算', '部署环境', '看板外观', '统一登录（LDAP）', '权限与审计', '数据与备份']
 
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'], defaultViewport: { width: 1600, height: 1000 } })
+const COUNT = () => {
+  const roots = [...document.querySelectorAll('[data-dsh-studio], [data-dsh-studio-portal]')]
+  const seen = new Set()
+  const all = []
+  for (const root of roots) for (const node of root.querySelectorAll('*')) if (!seen.has(node)) { seen.add(node); all.push(node) }
+  const vis = (el) => {
+    const r = el.getBoundingClientRect()
+    if (r.width < 4 || r.height < 4) return false
+    const cs = getComputedStyle(el)
+    return cs.visibility !== 'hidden' && cs.display !== 'none' && cs.opacity !== '0'
+  }
+  const outside = (el) => el.closest('[data-rac]') === null && el.closest('[data-testid="hidden-select-container"]') === null
+  const hits = (pred) => all.filter((el) => vis(el) && pred(el))
+  const describe = (el) => {
+    const text = (el.textContent || '').trim().slice(0, 24)
+    const cls = (el.className || '').toString().trim().split(/\s+/).slice(0, 3).join('.')
+    return `${el.tagName.toLowerCase()}${cls ? '.' + cls : ''}${text ? ' "' + text + '"' : ''}`
+  }
+  const nativeSelect = hits((el) => el.tagName === 'SELECT' && outside(el))
+  const rawField = hits((el) => (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.type !== 'hidden' && outside(el))
+  const legacyBtn = hits((el) => ['BUTTON', 'A', 'LABEL'].includes(el.tagName) && el.classList.contains('ds-btn'))
+  const radixSelect = hits((el) => el.tagName === 'BUTTON' && el.getAttribute('aria-haspopup') === 'listbox' && el.closest('[data-rac]') === null)
+  const foreignTab = hits((el) => el.getAttribute('role') === 'tab' && el.closest('.studio-tabs') === null && el.closest('[data-boardui-tabs]') === null)
+  const out = {
+    nativeSelect: nativeSelect.length,
+    rawField: rawField.length,
+    legacyBtn: legacyBtn.length,
+    radixSelect: radixSelect.length,
+    foreignTab: foreignTab.length,
+    samples: [...nativeSelect, ...rawField, ...legacyBtn, ...radixSelect, ...foreignTab].slice(0, 5).map(describe),
+  }
+  return out
+}
+
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'], defaultViewport: { width: 1680, height: 1000 } })
 const page = await browser.newPage()
 const errors = []
-page.on('pageerror', (e) => errors.push(String(e).slice(0, 140)))
+page.on('pageerror', (e) => errors.push(String(e).slice(0, 160)))
 await page.goto(`${BASE}/?token=${TOKEN}`, { waitUntil: 'networkidle2', timeout: 60000 })
-await sleep(3500)
+await sleep(3200)
 await page.evaluate(() => {
   const node = [...document.querySelectorAll('*')].find((el) => el.children.length === 0 && (el.textContent || '').trim() === '需求&任务工作空间')
   node?.closest('button,a,li,[role="button"],[tabindex]')?.click?.()
 })
-await page.waitForSelector('[data-dsh-studio] .ds-head-tabs button', { timeout: 45000 })
+await page.waitForSelector('[data-dsh-studio] [role="tablist"]', { timeout: 45000 })
 await sleep(1200)
 
 const rows = []
-const record = async (name) => {
-  await sleep(900)
+const snap = async (name) => {
+  await sleep(850)
+  // 面板崩掉时 React 会把异常吞在自己树里，pageerror 是空的 —— 只能看 innerText
+  const crashed = await page.evaluate(() => document.body.innerText.includes('渲染失败'))
   const counts = await page.evaluate(COUNT)
-  rows.push({ name, ...counts })
+  rows.push({ name, crashed, ...counts })
+  if (SHOTS) await page.screenshot({ path: `tmp/audit-${name.replace(/[^\w\u4e00-\u9fa5]+/g, '_')}.png` })
 }
 
-for (const label of ['工作台', '看板', '需求', '用例', '版本', '效能', '设置']) {
+const clickTab = async (want) => {
+  await page.evaluate((label) => {
+    const tab = [...document.querySelectorAll('[data-dsh-studio] [role="tab"]')].find((n) => (n.textContent || '').trim() === label)
+    tab?.click()
+  }, want)
+  await sleep(900)
+}
+
+for (const label of PAGES) {
+  await clickTab(label)
+  await snap(label)
+}
+
+// 设置里的每个面板：左栏是 button.ds-nav-item
+await clickTab('设置')
+await sleep(900)
+const panels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')].map((n) => (n.querySelector('span')?.textContent || '').trim()))
+for (const label of panels) {
   await page.evaluate((want) => {
-    const b = [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs button')].find((n) => (n.textContent || '').trim() === want)
-    b?.click()
+    const btn = [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')]
+      .find((n) => (n.querySelector('span')?.textContent || '').trim() === want)
+    btn?.click()
   }, label)
-  await record(label)
+  await snap(`设置/${label}`)
 }
 
-// 卡片抽屉
-await page.evaluate(() => {
-  const b = [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs button')].find((n) => (n.textContent || '').trim() === '看板')
-  b?.click()
-})
-await sleep(1200)
-await page.evaluate(() => document.querySelector('[data-dsh-studio] .ds-card')?.click())
-await sleep(1500)
-await record('卡片抽屉')
-await page.keyboard.press('Escape')
-await sleep(600)
-
-// 设置抽屉
-await page.evaluate(() => {
-  const b = [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs button')].find((n) => (n.textContent || '').trim() === '设置')
-  b?.click()
-})
-await sleep(1200)
-const opened = await page.evaluate(() => {
-  const b = [...document.querySelectorAll('[data-dsh-studio] button')].find((n) => (n.textContent || '').trim() === '新增专家')
-  if (!b) return false
-  b.click()
-  return true
-})
-if (opened) { await sleep(1400); await record('设置抽屉') }
-
-const pad = (t, w) => String(t ?? '').padEnd(w, ' ')
-console.log(pad('位置', 12) + pad('B输入', 7) + pad('B下拉', 7) + pad('B按钮', 7) + pad('B勾选', 7) + pad('老input', 9) + pad('原生select', 11) + pad('老按钮', 8) + pad('listrow', 9) + 'empty')
-for (const r of rows) {
-  console.log(pad(r.name, 12) + pad(r.boardInput, 7) + pad(r.boardSelect, 7) + pad(r.boardBtn, 7) + pad(r.rawCheckbox, 7) + pad(r.legacyInput, 9) + pad(r.rawSelect, 11) + pad(r.legacyBtn, 8) + pad(r.listrow, 9) + r.empty)
+// 抽屉：新建需求 / 卡片详情 / 新增专家 / 项目设置
+const openDrawer = async (name, run) => {
+  await page.keyboard.press('Escape')
+  await sleep(500)
+  await run()
+  await sleep(1500)
+  await snap(name)
+  await page.keyboard.press('Escape')
+  await sleep(600)
 }
-console.log('')
-console.log('pageerror: ' + (errors.length === 0 ? '无' : errors.join(' | ')))
+
+await openDrawer('抽屉/新建需求', async () => {
+  await clickTab('需求')
+  await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] button')].find((n) => /新建/.test((n.textContent || '').trim()))?.click())
+})
+await openDrawer('抽屉/卡片详情', async () => {
+  await clickTab('看板')
+  await page.evaluate(() => document.querySelector('[data-dsh-studio] .ds-card')?.click())
+})
+await openDrawer('抽屉/新增专家', async () => {
+  await clickTab('设置')
+  await sleep(700)
+  await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] button')].find((n) => (n.textContent || '').trim() === '新增专家')?.click())
+})
+
 await browser.close()
 
-const legacyTotal = rows.reduce((sum, r) => sum + (r.legacyInput || 0) + (r.legacyBtn || 0) + (r.listrow || 0) + (r.empty || 0), 0)
-console.log(`老控件合计：${legacyTotal}`)
-process.exit(legacyTotal === 0 ? 0 : 1)
+const KEYS = ['nativeSelect', 'rawField', 'legacyBtn', 'radixSelect', 'foreignTab']
+const HEAD = ['模块'.padEnd(20), ...KEYS.map((k) => k.padStart(13))]
+console.log(HEAD.join(''))
+let bad = 0
+for (const row of rows) {
+  const cells = KEYS.map((k) => (row[k] ? String(row[k]) : '·').padStart(13))
+  const flag = row.crashed ? '  ⚠ 渲染失败' : ''
+  if (row.crashed) bad += 1
+  if (KEYS.some((k) => row[k] > 0)) bad += 1
+  console.log([row.name.padEnd(20), ...cells].join('') + flag)
+  for (const s of row.samples) console.log('     ↳ ' + s)
+}
+const total = KEYS.reduce((sum, k) => sum + rows.reduce((s, r) => s + (r[k] || 0), 0), 0)
+console.log(`\n盘点 ${rows.length} 个模块：违规 ${total} 处，异常模块 ${rows.filter((r) => r.crashed).length} 个，pageerror ${errors.length} 条`)
+if (errors.length) console.log('pageerror: ' + errors.slice(0, 4).join(' | '))
+if (SHOTS) console.log('截图在 tmp/audit-*.png')
+process.exit(total > 0 || bad > 0 || errors.length > 0 ? 1 : 0)

@@ -1,5 +1,23 @@
 /* Tailwind v4：只引 theme + utilities，**不引 preflight**——CSS 会注入宿主页面，
    全局重置会把宿主 UI 一起改掉（v3 时靠 corePlugins.preflight=false 达到同样效果）。 */
+
+/* ------------------------------------------------------------------ 分层顺序 ---
+   **这行必须在所有 @import 之前**，它是整条样式链的地基。
+
+   CSS 的层叠层按「名字第一次出现的顺序」定优先级：后出现的层压前面的层，**与特异性无关**。
+   我们没引 preflight，所以直到 index.css 自己写 `@layer base{}` 之前，`base` 这个层名
+   从未出现过 —— 于是它被追加到 `utilities` **之后**，成了最强的一层。
+
+   后果（真机实测，2026-11-17）：`@layer base` 里那条清 UA 默认值的
+   `:where(button){padding:0;font:inherit;border:0}` 反过来压住了所有工具类 ——
+   BoardUI 的下拉触发器 `.px-2.5 .py-2 .text-body-medium` 全部失效，高度塌成 21px、
+   字变成继承的 12px、四周没有内边距。组件是官方的，长得却完全不像官方。
+   （Tailwind 的 `@layer properties, theme, base, components, utilities` 只在使用
+   预检时才输出；关掉预检就没有这行，必须自己补。）
+
+   补上这行之后，层序恢复成规范顺序：base 只清 UA 默认值，utilities 随时能盖它。 */
+@layer properties, theme, base, components, utilities;
+
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 
@@ -1204,7 +1222,12 @@ html body [data-dsh-studio]:not([data-dsh-studio-portal]) {
 html body [data-dsh-studio][data-dsh-studio-portal] {
   position: fixed !important; inset: 0 !important;
   width: 0 !important; height: 0 !important; min-height: 0 !important;
-  overflow: visible !important; margin: 0 !important; padding: 0 !important
+  overflow: visible !important; margin: 0 !important; padding: 0 !important;
+  /* 必须给个 z-index：`position: fixed` 本身就会新建层叠上下文（z-index:auto → 0），
+     于是下拉菜单里那句 `z-index:100000` 只在门户内部生效，整层门户还是排在
+     页面内容下面。真机表现：看板筛选下拉展开后，列头的 sticky 元素（z-index:2）
+     直接盖在菜单上，菜单像透明的一样。给门户本层抬上去，菜单才真的在最上面。 */
+  z-index: 900 !important
 }
 
 /* 禁用态输入框：改成浅灰底 + 去掉浏览器默认淡化，看起来像只读字段而不是丢失了边框 */

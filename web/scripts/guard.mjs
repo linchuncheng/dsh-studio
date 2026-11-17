@@ -75,6 +75,47 @@ for (const file of sourceFiles.filter((item) => item.endsWith('.jsx') || item.en
   }
 }
 
+/* --- 只允许一套实现 -----------------------------------------------------
+   2026-11-17 的真机事故：仓库里同时躺着 Radix 的 SelectBox（shadcn 下拉）
+   和 BoardUI 的 Select，谁也说不清某个页面用的是哪套；按钮上的工具类又被
+   自己的 `@layer base` 重置吃掉，官方组件长成了 21px 的裸文字框。
+   这类问题靠看一眼代码发现不了，只能在这里拦。 */
+
+const SINGLE_IMPL = [
+  ['@radix-ui/react-select', 'BoardUI 的 Select（web/src/components/base/select）'],
+  ['@radix-ui/react-switch', 'BoardUI 的 Switch（web/src/components/base/switch）'],
+]
+for (const file of sourceFiles) {
+  if (!/\.(js|jsx|ts|tsx)$/.test(rel(file))) continue
+  const text = read(file)
+  for (const [pkg, instead] of SINGLE_IMPL) {
+    if (text.includes(`from '${pkg}'`) || text.includes(`from "${pkg}"`)) {
+      failures.push(`${rel(file)} imports ${pkg}; 全站只允许一套实现，改用 ${instead}`)
+    }
+  }
+}
+
+/* 层叠层顺序：index.css 必须在所有 @import 之前声明层序。
+   少了这行，`@layer base` 会排在 `utilities` 后面（层序按名字第一次出现的位置定），
+   base 里的 UA 重置就会反过来压住全部工具类 —— 官方组件的 padding / 字号集体失效。 */
+const indexCss = join(web, 'src', 'index.css')
+if (existsSync(indexCss)) {
+  const raw = read(indexCss)
+  // 去掉注释再判断：文件头的说明里就写着 `@import "tailwindcss/theme.css"`
+  // 这几个字，直接 indexOf 会误判成「声明在 import 之后」。
+  const css = raw.replace(/\/\*[\s\S]*?\*\//g, '')
+  const order = css.match(/@layer\s+properties\s*,\s*theme\s*,\s*base\s*,\s*components\s*,\s*utilities\s*;/)
+  const firstImport = css.indexOf('@import')
+  if (!order) {
+    failures.push('web/src/index.css 缺少层序声明 `@layer properties, theme, base, components, utilities;`')
+  } else if (firstImport >= 0 && order.index > firstImport) {
+    failures.push('web/src/index.css 的层序声明必须在第一条 @import 之前（否则 base 会压过 utilities）')
+  }
+  if (!/\[data-dsh-studio\]\[data-dsh-studio-portal\][\s\S]{0,400}?z-index:\s*\d+/.test(css)) {
+    failures.push('[data-dsh-studio-portal] 缺少 z-index：门户容器是 position:fixed（自建层叠上下文），没有 z-index 时下拉/弹窗会排在页面内容下面')
+  }
+}
+
 const portalHelper = join(web, 'src', 'lib', 'portal.js')
 if (!existsSync(portalHelper)) {
   failures.push('web/src/lib/portal.js is missing (portalRoot() must live there)')
