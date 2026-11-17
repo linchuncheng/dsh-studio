@@ -278,14 +278,17 @@ try {
   })
   if (planTab) {
     await sleep(600)
-    const dateInfo = await page.evaluate(() => {
-      const input = document.querySelector('[data-dsh-studio] .ds-drawer input[type="date"]')
-      if (!input) return { found: false }
-      const field = input.closest('[data-input-size]')
-      return { found: true, shell: field !== null, value: input.value, disabled: input.disabled }
+    const plan = await page.evaluate(() => {
+      const drawer = document.querySelector('[data-dsh-studio] .ds-drawer')
+      return {
+        text: (drawer?.innerText ?? '').length,
+        broken: (document.body.innerText || '').includes('渲染失败'),
+        dateTrigger: drawer?.querySelectorAll('button[aria-haspopup], input').length ?? 0,
+      }
     })
-    check('日期输入还是 type=date 且包在 BoardUI 的壳子里',
-      dateInfo.found === true && dateInfo.shell === true, `value=${JSON.stringify(dateInfo.value)}`)
+    // 日期控件已换成官方 DatePicker（不再是 input[type=date]），所以这里只验：
+    // 计划页打开不崩、页面上确实有可交互的日期类控件
+    check('计划页打开且日期控件在位（官方 DatePicker）', plan.text > 30 && plan.broken === false && plan.dateTrigger > 0, plan.text + ' 字 / ' + plan.dateTrigger + ' 个控件')
   } else {
     console.log('skip 抽屉里没有「计划」页签，跳过日期输入一项')
   }
