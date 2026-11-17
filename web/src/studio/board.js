@@ -137,7 +137,7 @@ function Board({ state, onOpen, onMove, onWip }) {
       ),
       blockedCount > 0
         ? h('label', {
-          className: 'ds-row', style: { gap: 5, fontSize: 12, cursor: 'pointer', color: '#c0392b' },
+          className: 'ds-row', style: { gap: 5, fontSize: 12, cursor: 'pointer', color: 'var(--color-notification-error-foreground)' },
           title: '只看被标记为阻塞的卡（它们停在原列，等人决定怎么继续）',
         },
           h(CheckField, { checked: onlyBlocked, onChange: event => setOnlyBlocked(event.target.checked) }),
@@ -146,7 +146,7 @@ function Board({ state, onOpen, onMove, onWip }) {
         : null,
       noBodyCount > 0
         ? h('label', {
-          className: 'ds-row', style: { gap: 5, fontSize: 12, cursor: 'pointer', color: '#e5484d' },
+          className: 'ds-row', style: { gap: 5, fontSize: 12, cursor: 'pointer', color: 'var(--color-notification-error-foreground)' },
           title: '只看有交付物但没写正文的卡（云盘文档里只有标题，等于没交付）',
         },
           h(CheckField, { checked: onlyNoBody, onChange: event => setOnlyNoBody(event.target.checked) }),

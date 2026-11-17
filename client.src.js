@@ -540,7 +540,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 @media (max-width:900px) { .ds-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:560px) { .ds-kpi-grid { grid-template-columns:minmax(0,1fr); } }
 .ds-kpi { position:relative; overflow:hidden; border:1px solid var(--ds-line); border-radius:10px; padding:11px 13px 12px; background:var(--ds-card); box-shadow:var(--ds-shadow), inset 3px 0 0 color-mix(in srgb, var(--ds-accent) 55%, transparent); }
-.ds-kpi[data-warn="1"] { border-color: color-mix(in srgb, #e5484d 40%, var(--ds-line)); box-shadow:inset 3px 0 0 color-mix(in srgb, #e5484d 70%, transparent); }
+.ds-kpi[data-warn="1"] { border-color: color-mix(in srgb, var(--color-notification-error-foreground) 40%, var(--ds-line)); box-shadow:inset 3px 0 0 color-mix(in srgb, #e5484d 70%, transparent); }
 .ds-kpi-value { font-size:23px; font-weight:650; letter-spacing:-.02em; line-height:1.15; }
 .ds-kpi[data-warn="1"] .ds-kpi-value { color:#e5484d; }
 .ds-kpi-label { font-size:12px; font-weight:600; margin-top:1px; }
@@ -2245,7 +2245,7 @@ function installKeyboardActivation() {
               (state.integrations?.broken ?? 0) > 0
                 ? h('button', {
                     className: 'ds-btn ds-btn-ghost',
-                    style: { color: '#e5484d', borderColor: 'color-mix(in srgb, #e5484d 40%, var(--ds-line))' },
+                    style: { color: 'var(--color-notification-error-foreground)', borderColor: 'color-mix(in srgb, var(--color-notification-error-foreground) 40%, var(--ds-line))' },
                     title: (state.integrations.channels ?? []).filter(item => item.state === 'error').map(item => `${item.label}：${item.lastError}`).join('\n'),
                     onClick: () => { setTab('settings'); setSettingsSection('health') },
                   }, `⚠ 集成异常 ${state.integrations.broken}`)

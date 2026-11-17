@@ -44,7 +44,11 @@ const MEASURE = () => {
     .map((el) => `${getComputedStyle(el).fontSize} "${(el.textContent || '').trim().slice(0, 14)}"`)
 
   // 内联写死的颜色（#rrggbb / rgb() / 具名色）
-  const inlineColor = shown.filter((el) => /#[0-9a-fA-F]{3,8}|rgb\(|hsl\(/.test(el.getAttribute('style') || '')).length
+  // mask-image / conic-gradient 里的 rgb() 是遮罩用的不透明色，不是主题色，不算
+  const inlineColor = shown.filter((el) => {
+    const style = (el.getAttribute('style') || '').replace(/mask-image:[^;]*;?/gi, '')
+    return /#[0-9a-fA-F]{3,8}|rgb\(|hsl\(/.test(style)
+  }).length
 
   const legacy = shown.filter((el) => /(^|\s)(ds-btn|ds-chip|ds-input|ds-select|ds-textarea|ds-listrow|ds-empty|ds-case-lib-row|ds-pt-row)(\s|$)/.test((el.className || '').toString())).length
 
