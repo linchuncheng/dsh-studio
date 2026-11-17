@@ -273,3 +273,16 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
   `.ds-drawer [role="group"] button`），`capture.mjs` / `smoke.mjs` / `probe-unpriced.mjs` 也一起换了。
 - 验证：`verify:fields` 20/20、`verify:facts` 5/5、`verify:costs` 7/7、`verify:scale` 9/9、
   `npm test` 108/108，七页逐个走一遍无 pageerror。体积 1058.88 → 1065.17 kB（胶囊几乎不要钱）。
+
+### 六页回归固化成 `npm run verify:pages`
+
+`tools/visual/pages-probe.mjs`：假宿主 + 真 Chrome，把七个页签逐个点一遍，每页三项断言
+（点得动 / 渲染出了该有的标记 / 页签是高亮态），最后统一断言 `pageerror` 为空，
+截图落到 `tmp/pages/<页签>.png`。共 22 项。
+
+- 判据里专门查了 `innerText` 有没有「渲染失败」——React 的错误边界会吞异常，
+  `pageerror` 是空的，只看它就等于没查（AGENTS.md §11 记过两次误判）。
+- 页签选择器用 `.ds-head-tabs button`（胶囊是 `button[aria-pressed]`，没有 `role=tab`）。
+- 每页的「该有的标记」：工作台 `.ds-body`；看板 `.ds-col`；需求/用例/版本/效能 `.ds-panel` 一族；设置 `.ds-panel`。
+- 顺手确认：**仓库里没有 table/表格组件**（`grep ds-table` 空），所以 BoardUI 的 `base/table` 暂时没有调用点，
+  清单里「table 接线」这一项其实无事可做，等真有表格页再说。
