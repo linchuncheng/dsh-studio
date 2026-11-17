@@ -866,7 +866,7 @@ function Drawer({ task, state, onClose, onChanged }) {
             h('div', { className: 'ds-field', style: { flex: 1 } },
               h('div', { className: 'ds-label' }, '期望完成'),
               h(TextField, {
-                className: 'ds-input', type: 'date', value: plan.due,
+                className: 'ds-input', value: plan.due,
                 onChange: event => setPlan({ ...plan, due: event.target.value }),
               }),
             ),

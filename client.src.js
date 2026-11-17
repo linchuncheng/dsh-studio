@@ -32,7 +32,7 @@ window.__ModuleLoader__.load({
     }
 
     /* 表单适配层与共享抽屉已经搬到 web/src/studio，这边只负责把 h / kit 递进去。 */
-    const { TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle } = createFields({ h, kit, React })
+    const { TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, DateField } = createFields({ h, kit, React })
     const SideDrawer = createSideDrawer({ h, kit })
     const Editor = createEditor({ h, React })
     const Card = createCard({ h, ChipField })
@@ -1192,7 +1192,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
     const MentionPicker = createMentionPicker({ h, TextField })
     const Drawer = createDrawer({ h, React, api, kit, currentUser, renderMarkdown, tipOf, tipLabel, confirmDialog, promptDialog, TextField, TextAreaField, ChipField, CheckField, SelectField, MdField, MentionPicker })
     const Palette = createPalette({ h, React })
-    provideClient({ h, React, Editor, api, kit, toast, sessionToken, currentUser, confirmDialog, promptDialog, tipOf, tipLabel, renderMarkdown, SideDrawer, MentionPicker, Card, TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, MdField })
+    provideClient({ h, React, Editor, api, kit, toast, sessionToken, currentUser, confirmDialog, promptDialog, tipOf, tipLabel, renderMarkdown, SideDrawer, MentionPicker, Card, TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, DateField, MdField })
 
 
     // -------------------------------------------------------------- market
@@ -1731,7 +1731,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
             ),
             h('div', { className: 'ds-field' },
               h('div', { className: 'ds-label' }, '期望完成（选填）'),
-              h(TextField, { className: 'ds-input', type: 'date', value: due, onChange: e => setDue(e.target.value) }),
+              h(DateField, { className: 'ds-input', value: due, onChange: e => setDue(e.target.value) }),
             ),
           ),
           isBug

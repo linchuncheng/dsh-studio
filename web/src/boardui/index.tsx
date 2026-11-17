@@ -8,6 +8,8 @@ import { Checkbox as BoarduiCheckboxBase } from "../components/base/checkbox/che
 import { Select as BoarduiSelect, SelectItem as BoarduiSelectItem } from "../components/base/select/select";
 import { Chip as BoarduiChip } from "../components/base/badges/chip";
 import { Switch as BoarduiSwitch } from "../components/base/switch/switch";
+import { DatePicker as BoarduiDatePicker } from "../components/base/date-picker/date-picker";
+import { CalendarDate, parseDate } from "@internationalized/date";
 
 const VARIANT = {
   default: "primary",
@@ -229,5 +231,24 @@ export function SwitchField({ className, checked, onChange, disabled, bare, labe
     >
       {label === undefined || label === null || label === '' ? null : label}
     </BoarduiSwitch>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  日期：官方 DatePicker 用 CalendarDate，我们调用点传 YYYY-MM-DD 字符串，这里互转。 */
+/* -------------------------------------------------------------------------- */
+
+export function DateField({ value, onChange, disabled, ...rest }: any) {
+  const text = typeof value === "string" ? value.trim() : "";
+  const date = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(text) ? parseDate(text) : null;
+  return (
+    <BoarduiDatePicker
+      {...rest}
+      value={date}
+      isDisabled={disabled === true}
+      onChange={(next: CalendarDate | null) => {
+        if (typeof onChange === "function") onChange({ target: { value: next === null ? "" : next.toString() } });
+      }}
+    />
   );
 }

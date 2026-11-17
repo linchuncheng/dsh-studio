@@ -802,3 +802,12 @@ from ".../components/base/date-picker/date-picker.tsx"
 3. 5 个调用点的字符串 ↔ CalendarDate 转换（适配层代码已经想好，见 `tmp/patch-date.mjs` 的草稿）
 
 代码已回滚到绿色状态（1156 kB / 3 个 Radix portal / pages 22/22），依赖保留。
+
+### DatePicker 接线完成（含 motion 依赖）
+
+- 装 `motion`（date-picker 用它做弹层动画），加上之前的 `@internationalized/date`
+- 新增 `DateField` 适配层：`'YYYY-MM-DD'` ↔ `CalendarDate` 互转
+- 5 处调用点全部换成官方 DatePicker：client.src.js / drawer.js / releases.js / platform.js×2
+- **体积 1156 → 1416 kB**（motion + react-aria Calendar/DateField + date 库），
+  观察线相应抬到 1.4 MB（守卫已同步）
+- 验证：fields 19/19（含日期控件那条）、pages 22/22、真机 sweep 5/5

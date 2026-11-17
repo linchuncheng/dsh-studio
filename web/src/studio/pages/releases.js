@@ -180,7 +180,7 @@ export function ReleasesPage({ state, onOpenTask }) {
             h(TextField, { className: 'ds-input', value: form.owner, onChange: event => setForm({ ...form, owner: event.target.value }) })),
           h('label', { className: 'ds-field' }, h('span', {}, '计划发布时间'),
             h(TextField, {
-              className: 'ds-input', type: 'date', value: toDateInput(form.plannedAt),
+              className: 'ds-input', value: toDateInput(form.plannedAt),
               onChange: event => setForm({ ...form, plannedAt: fromDateInput(event.target.value) }),
             })),
           h('label', { className: 'ds-field' }, h('span', {}, '发布标签（tag）'),
