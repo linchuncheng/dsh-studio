@@ -79,6 +79,8 @@ icon: https://raw.githubusercontent.com/…/icon-180.png      # 可选，GitHub 
 
 每个 PR 最多 3 条；我们只投 1 条。评审周期以天计（维护者要读代码核对描述），`held: author` 标签表示「等你改」，改完推同一分支并留一条评论即可。
 
+**投稿进度**：2026-11-17 已提 PR —— [awesome-dsh-plugin#16102](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/16102)（分支 `marsken88:add-dsh-studio`，只加 `data/plugins/marsken88__dsh-studio.yml` 一个文件）。合并后 dsh-m 社区目录同步即可搜到 `dsh-studio`，届时再跑 `dshm_install` 从市场装一次 + `tools/visual/smoke.mjs` 收尾。
+
 ## 3. 自查清单（收录前逐条过）
 
 - [ ] `npm run check` 全绿；干净 clone 上能构建出**逐字节一致**的产物

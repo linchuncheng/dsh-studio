@@ -1,6 +1,7 @@
 # 投稿到 awesome-dsh-plugin（dsh-m 的社区目录从这里来）。
 # 用法：把这个文件原样放到 fork 的 data/plugins/marsken88__dsh-studio.yml，开 PR。
 # 文件名必须是 <owner>__<repo>.yml；一个文件就是全部投稿。
+# 已提 PR：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/16102（2026-11-17）
 url: https://github.com/marsken88/dsh-studio
 name: marsken88/dsh-studio
 category: workflow
