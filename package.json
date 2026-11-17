@@ -22,6 +22,7 @@
     "verify:costs": "node tools/visual/cost-price-probe.mjs",
     "verify:fields": "node tools/visual/fields-probe.mjs",
     "verify:pages": "node tools/visual/pages-probe.mjs",
+    "verify:drawer": "node tools/visual/drawer-probe.mjs",
     "verify:facts": "node tools/visual/facts-probe.mjs"
   },
   "exports": {

@@ -286,3 +286,29 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
 - 每页的「该有的标记」：工作台 `.ds-body`；看板 `.ds-col`；需求/用例/版本/效能 `.ds-panel` 一族；设置 `.ds-panel`。
 - 顺手确认：**仓库里没有 table/表格组件**（`grep ds-table` 空），所以 BoardUI 的 `base/table` 暂时没有调用点，
   清单里「table 接线」这一项其实无事可做，等真有表格页再说。
+
+### 第四批：抽屉（Drawer）—— 自己实现，因为它是 Pro
+
+- **BoardUI 的 Drawer / Modal 是 Pro**：公共仓库 `components/base/drawer|modal` 都 404，按既定约束
+  「不买、不复制付费源码」，所以**没有源码可抄**。这一批是**我们自己写的等价物**：
+  `web/src/boardui/drawer.tsx`，照公开文档的视觉与行为，用 react-aria 的
+  `ModalOverlay + Modal + Dialog`（免费、和 Select/Input 同一套无障碍实现）拼出来。
+- 行为交给 react-aria：Esc 关闭、焦点锁在抽屉内、关掉后焦点归还触发元素、portal 到
+  `data-dsh-studio-portal` 容器（上一步的 `UNSAFE_PortalProvider` 直接复用）。
+  原来手挂的 `window.addEventListener('keydown')` 整段删掉。
+- 视觉用他们的 token：面板 `bg-background-primary-default`、左边 `border-separator-border`、
+  标题 `text-title-3-semibold`、说明 `text-caption-1-medium text-text-secondary`、
+  关闭按钮直接复用他们 MIT 的 `Button`（`iconOnly` + `leadingIcon={RiCloseLine}`）。
+- 接线只改一处：`components/studio-ui.jsx` 的 `SheetDrawer`（`shell.js` 的 `SideDrawer`
+  本来就把活交给它），所以设置页/集成页所有抽屉一起换掉。构建后的守卫从「6 个 Radix portal」
+  降到 5 个 —— Radix Dialog 少了一个。
+- 验证：新增 `npm run verify:drawer`（8 项）：能打开、开在 portal 容器里、面板用 BoardUI token、
+  标题字号对、有关闭按钮、Esc 能关、无 pageerror。截图 `tmp/drawer-probe.png`。
+- 已知小瑕疵：打开时焦点落在右上角关闭按钮上（react-aria 默认聚焦第一个可聚焦元素），
+  所以截图里 X 带着一圈焦点环。可接受，但如果以后嫌吵，就把 autoFocus 指到第一个输入框。
+
+### 清单口径（写清楚，别自己骗自己）
+
+- **[5] tabs ✔ / table 无事可做 / drawer+modal → 归到 [8]**：仓库里没有表格组件
+  （`grep ds-table` 为空），BoardUI 的 `base/table` 没有调用点；drawer/modal 是 Pro，
+  自研等价物已落地（本轮）。

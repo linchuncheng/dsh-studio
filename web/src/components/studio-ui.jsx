@@ -16,6 +16,7 @@ import { cn } from '../lib/utils.js'
 import { portalRoot } from '../lib/portal.js'
 import { Button, Input, Label, Textarea, Badge, Tabs, TabsList, TabsTrigger } from './ui.jsx'
 import { PillTabList, PillTab } from '../components/base/tabs/pill-tab'
+import { Drawer as BoarduiDrawer } from '../boardui/drawer'
 
 const TooltipProvider = TooltipPrimitive.Provider
 
@@ -25,44 +26,12 @@ const TooltipProvider = TooltipPrimitive.Provider
    ({ title, hint, onClose, footer, children }) but backed by Radix Dialog, so
    it gets focus trapping, Esc handling, scroll lock and aria wiring for free. */
 export function SheetDrawer({ title, hint, onClose, footer, children }) {
-  React.useEffect(() => {
-    const onKey = (event) => {
-      if (event.key === 'Escape') {
-        event.stopPropagation()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-
+  // 抽屉本身换成我们自己用 react-aria Modal 写的等价物（见 boardui/drawer.tsx）：
+  // Esc 关闭、焦点锁定与归还、portal 都由 react-aria 负责，不用再手挂 keydown。
   return (
-    <DialogPrimitive.Root open onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogPrimitive.Portal container={portalRoot()}>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-[95] bg-black/45 backdrop-blur-[1px] data-[state=open]:animate-in data-[state=open]:fade-in-0" />
-        <DialogPrimitive.Content
-          aria-describedby={undefined}
-          className="fixed right-0 top-0 z-[96] flex h-full w-[min(760px,96vw)] flex-col border-l border-border bg-card text-card-foreground shadow-[0_0_60px_rgba(0,0,0,.35)] outline-none"
-        >
-          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-5 py-3.5">
-            <div className="min-w-0">
-              <DialogPrimitive.Title className="truncate text-[15px] font-semibold leading-tight">{title}</DialogPrimitive.Title>
-              {hint ? <div className="mt-1 text-[11.5px] leading-relaxed text-muted-foreground">{hint}</div> : null}
-            </div>
-            <DialogPrimitive.Close asChild>
-              <Button variant="ghost" size="sm" className="h-7 shrink-0 px-2 text-[12px]">
-                <X className="mr-1 h-3.5 w-3.5" />
-                关闭
-              </Button>
-            </DialogPrimitive.Close>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
-
-          {footer ? <div className="shrink-0 border-t border-border px-5 py-3">{footer}</div> : null}
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+    <BoarduiDrawer title={title} hint={hint} onClose={onClose} footer={footer}>
+      {children}
+    </BoarduiDrawer>
   )
 }
 
