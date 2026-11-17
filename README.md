@@ -83,26 +83,51 @@ flowchart LR
 
 截图不是手截的：`npm run shots`（`tools/visual/capture.mjs`）会登录面板、逐个页签截一遍，顺手断言没有「渲染失败」。
 
-## 部署
+## 安装
 
-仓库：https://github.com/marsken88/dsh-studio（`main` 分支，含可直接安装的构建产物 `client.js`，clone 下来就能装，不用先构建）。
+两种装法，任选一种。**装的是 npm 上的发布版**（带构建好的 `client.js`，不需要本地构建）。
+
+### 方式一：从 npm 装（推荐）
 
 ```bash
-# 1) 拉到宿主机
-# 1) 拉到本机任意目录
-git clone https://github.com/marsken88/dsh-studio.git ~/dsh-studio
+# 全局级安装进当前 DSH profile 的插件目录
+dsh plugin --profile web install @marsken/dsh-studio
 
-# 2) 装进目标 profile（会写 profile 的 package.json + bundles，走 pnpm link）
-dsh plugin --profile web add link:~/dsh-studio
+# 或者用 npm 直接装进 profile
+npm install --prefix ~/.dsh/profiles/web @marsken/dsh-studio
 
-# 3) 确认挂载
+# 确认挂载 + 重启
 dsh --profile web --dump-config | grep -A2 'dsh-studio'
-
-# 4) 重启服务
 sudo systemctl restart dsh-web
 ```
 
-页面入口：DSH Web 左侧栏第 4 项「需求&任务工作空间」。三个页签：**看板 / 市场 / 设置**。
+升级到新版本：
+
+```bash
+dsh plugin --profile web install @marsken/dsh-studio@latest
+sudo systemctl restart dsh-web
+```
+
+### 方式二：从源码装（要改代码时）
+
+```bash
+git clone https://github.com/marsken88/dsh-studio.git ~/dsh-studio
+cd ~/dsh-studio && pnpm install && pnpm --dir web run build   # 改过 web/src 才需要构建
+
+# 装进目标 profile（写 profile 的 package.json + bundles，走 pnpm link）
+dsh plugin --profile web add link:~/dsh-studio
+
+dsh --profile web --dump-config | grep -A2 'dsh-studio'
+sudo systemctl restart dsh-web
+```
+
+### 验证装好了
+
+浏览器打开 DSH Web，左侧栏出现「需求&任务工作空间」；或直接打接口：
+
+```bash
+curl -s http://<host>:<port>/studio-api/state | head -c 80   # 应返回 {"ok":true,"revision":...}
+```
 
 ## 质量闸门
 
