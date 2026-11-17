@@ -122,9 +122,9 @@ try {
   const errors = []
   page.on('pageerror', error => errors.push(String(error).slice(0, 200)))
   await page.goto(base_ + '/', { waitUntil: 'domcontentloaded', timeout: 60000 })
-  await page.waitForSelector('[data-dsh-studio] [role="tab"]', { timeout: 45000 })
+  await page.waitForSelector('[data-dsh-studio] .ds-head-tabs button', { timeout: 45000 })
   const clickTab = async label => {
-    for (const tab of await page.$$('[data-dsh-studio] [role="tab"]')) {
+    for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
       if ((((await tab.evaluate(node => node.textContent)) ?? '').trim()) === label) { await tab.click(); return true }
     }
     return false
@@ -271,7 +271,7 @@ try {
 
   // ---- 4) 日期输入：react-aria 对 type=date 有专门处理，单独看一眼
   const planTab = await page.evaluate(() => {
-    const tab = [...document.querySelectorAll('[data-dsh-studio] .ds-drawer [role="tab"]')].find(node => (node.textContent || '').trim() === '计划')
+    const tab = [...document.querySelectorAll('[data-dsh-studio] .ds-drawer [role="group"] button')].find(node => (node.textContent || '').trim() === '计划')
     if (!tab) return false
     tab.click()
     return true

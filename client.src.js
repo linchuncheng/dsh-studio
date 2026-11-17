@@ -2341,6 +2341,11 @@ function installKeyboardActivation() {
                 { id: 'analytics', label: '效能', hint: '周期分布、每列停留、团队负载、返工与 AI 成本' },
                 { id: 'settings', label: '设置', hint: '列、模型、自动派单、集成、权限、备份' },
               ]
+              // 先走 TabsBar（现在是 BoardUI 的 PillTabList + PillTab），
+              // 没有再退回 Radix 的那套，最后才是自绘的 .ds-tab。
+              if (Tabs !== null) {
+                return h(Tabs, { items, value: tab, onChange: next => setTab(next) })
+              }
               if (TRoot !== null && TList !== null && TItem !== null) {
                 return h(TRoot, { value: tab, onValueChange: next => setTab(next) },
                   h(TList, { className: '' },
@@ -2350,9 +2355,6 @@ function installKeyboardActivation() {
                       title: item.hint,
                       className: '',
                     }, item.label))))
-              }
-              if (Tabs !== null) {
-                return h(Tabs, { items, value: tab, onChange: next => setTab(next) })
               }
               return h('div', { className: 'ds-tabs' },
                 items.map(item => h('button', {

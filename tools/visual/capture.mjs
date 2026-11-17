@@ -36,7 +36,7 @@ const tabs = [
 const shots = []
 for (const [label, file] of tabs) {
   let clicked = false
-  for (const tab of await page.$$('[data-dsh-studio] [role="tab"]')) {
+  for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
     if ((((await tab.evaluate(n => n.textContent)) || '').trim()) === label) { await tab.click(); clicked = true; break }
   }
   await sleep(3000)
@@ -47,7 +47,7 @@ for (const [label, file] of tabs) {
 
 // 设置页：测试执行面板（执行开关 / 上限 / webhook）+ 成本价目表
 let settingsClicked = false
-for (const tab of await page.$$('[data-dsh-studio] [role="tab"]')) {
+for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
   if ((((await tab.evaluate(n => n.textContent)) || '').trim()) === '设置') { await tab.click(); settingsClicked = true; break }
 }
 await sleep(2500)
@@ -55,7 +55,7 @@ await sleep(2500)
 // 否则 README 里只能看到默认打开的「专家」面板。
 for (const [label, file] of [['测试执行', 'settings-execution'], ['成本与预算', 'settings-cost'], ['专家', 'settings-experts']]) {
   let hit = false
-  for (const node of await page.$$('[data-dsh-studio] [role="tab"], [data-dsh-studio] button, [data-dsh-studio] li')) {
+  for (const node of await page.$$('[data-dsh-studio] .ds-head-tabs button, [data-dsh-studio] button, [data-dsh-studio] li')) {
     const text = ((await node.evaluate(n => n.textContent)) || '').trim()
     if (text.startsWith(label)) { await node.click(); hit = true; break }
   }
@@ -65,7 +65,7 @@ for (const [label, file] of [['测试执行', 'settings-execution'], ['成本与
 }
 
 // 卡片抽屉：回看板点第一张卡
-for (const tab of await page.$$('[data-dsh-studio] [role="tab"]')) {
+for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
   if ((((await tab.evaluate(n => n.textContent)) || '').trim()) === '看板') { await tab.click(); break }
 }
 await page.waitForSelector('[data-dsh-studio] .ds-card', { timeout: 20000 }).catch(() => {})

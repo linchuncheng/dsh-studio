@@ -173,9 +173,9 @@ try {
   page.on('pageerror', error => errors.push(String(error).slice(0, 160)))
   const started = Date.now()
   await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 })
-  await page.waitForSelector('[data-dsh-studio] [role="tab"]', { timeout: 45000 })
+  await page.waitForSelector('[data-dsh-studio] .ds-head-tabs button', { timeout: 45000 })
   // 面板默认停在「工作台」，要看板得点页签（Radix Tabs 不认 DOM .click()，用 elementHandle）
-  for (const tab of await page.$$('[data-dsh-studio] [role="tab"]')) {
+  for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
     const label = ((await tab.evaluate(node => node.textContent)) ?? '').trim()
     if (label === '看板') { await tab.click(); break }
   }

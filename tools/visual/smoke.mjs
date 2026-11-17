@@ -72,18 +72,18 @@ try {
   await sleep(1500)
   check('面板挂载（[data-dsh-studio]）', true)
 
-  const tabs = await page.$$eval('[data-dsh-studio] [role="tab"]', nodes => nodes.map(n => n.textContent.trim()))
+  const tabs = await page.$$eval('[data-dsh-studio] .ds-head-tabs button', nodes => nodes.map(n => n.textContent.trim()))
   check('六个页签都在', ['工作台', '看板', '需求', '用例', '版本', '项目'].every(name => tabs.includes(name)), tabs.join('/'))
 
   // Radix Tabs 不认 DOM .click()，必须用 elementHandle.click()
-  for (const tab of await page.$$('[data-dsh-studio] [role="tab"]')) {
+  for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
     if ((((await tab.evaluate(n => n.textContent)) || '').trim()) === '看板') { await tab.click(); break }
   }
   await sleep(1500)
   const cards = await page.$$eval('[data-dsh-studio] .ds-card', nodes => nodes.length)
   check('看板有卡', cards > 0, `${cards} 张`)
 
-  for (const tab of await page.$$('[data-dsh-studio] [role="tab"]')) {
+  for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
     if ((((await tab.evaluate(n => n.textContent)) || '').trim()) === '用例') { await tab.click(); break }
   }
   await sleep(2000)

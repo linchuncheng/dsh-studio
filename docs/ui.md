@@ -258,3 +258,18 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
 不是我们的代码。原来定的 900 kB 红线在这条路上守不住 —— 要真组件就只能接受；
 真要压回去，唯一办法是退回 Radix Select（等于不换骨）。取舍记在这里：
 **保留真组件，体积红线改为 1.1 MB**，后续 tabs/drawer/modal 还会再涨，涨到离谱时再谈按页拆包。
+
+### 第三批：Tabs（页面顶栏 + 卡片抽屉的页签）
+
+- 用的是 `components/base/tabs/pill-tab.tsx` 的 `PillTabList` + `PillTab`（带滑动选中背景的胶囊页签，
+  不是 `tabs.tsx` 那个下划线版本 —— 我们的场景是「切视图」而不是「切面板」，胶囊更贴）。
+- 只改了一处实现：`components/studio-ui.jsx` 的 `TabsBar`，契约 `{items, value, onChange}` 一字未动，
+  所以页面顶栏（8 个页签）和卡片抽屉（7 个页签）同时换掉。
+- 顶栏原来是优先走 Radix 的 `Tabs/TabsList/TabsTrigger` 三件套，`TabsBar` 只在抽屉里用；
+  这次把 `client.src.js` 的判断顺序改成**先 TabsBar**，Radix 那套降为兜底。
+- `hint` 用原生 `title`：`PillTab` 不收 `title`，套 Radix Tooltip 又要求 forwardRef（会报 ref 警告）。
+- 代价：DOM 里不再有 `role="tab"`，胶囊是 `button[aria-pressed]`。**所有探针**里
+  `[data-dsh-studio] [role="tab"]` 都换成了 `.ds-head-tabs button`（抽屉里是
+  `.ds-drawer [role="group"] button`），`capture.mjs` / `smoke.mjs` / `probe-unpriced.mjs` 也一起换了。
+- 验证：`verify:fields` 20/20、`verify:facts` 5/5、`verify:costs` 7/7、`verify:scale` 9/9、
+  `npm test` 108/108，七页逐个走一遍无 pageerror。体积 1058.88 → 1065.17 kB（胶囊几乎不要钱）。

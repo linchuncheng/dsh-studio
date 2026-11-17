@@ -13,7 +13,7 @@ await p.evaluate(() => {
 })
 await p.waitForSelector('[data-dsh-studio]', { timeout: 30000 })
 await sleep(1500)
-for (const tab of await p.$$('[data-dsh-studio] [role="tab"]')) {
+for (const tab of await p.$$('[data-dsh-studio] .ds-head-tabs button')) {
   if ((((await tab.evaluate(n => n.textContent)) || '').trim()) === '效能') { await tab.click(); break }
 }
 await sleep(5000)
