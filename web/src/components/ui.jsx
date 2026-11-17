@@ -14,18 +14,29 @@ import { cn } from '../lib/utils.js'
 import { portalRoot } from '../lib/portal.js'
 
 const buttonVariants = cva(
-  'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium outline-none transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*=\'size-\'])]:size-4 [&_svg]:shrink-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
+  // BoardUI 的 Button 变体矩阵（Figma: Type × Size × OnlyIcon），移植到我们这层：
+  // 高度 36/32/24、圆角 radius-2lg/8/4、focus 用 border-focus-ring + 3px 柔光环。
+  // 保留我们的 variant 名字（default/secondary/ghost/destructive/outline/link）与 asChild，
+  // 调用方一行都不用改。
+  'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap outline-none transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*=\'size-\'])]:size-4 [&_svg]:shrink-0 focus-visible:ring-[3px]',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
+        default: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:ring-ring/50',
         destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 focus-visible:ring-destructive/20',
-        outline: 'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',
-        secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
+        outline: 'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50',
+        secondary: 'border border-input bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 focus-visible:ring-ring/50',
+        ghost: 'hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring/50',
         link: 'text-primary underline-offset-4 hover:underline',
       },
-      size: { default: 'h-9 px-4 py-2 has-[>svg]:px-3', sm: 'h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5', lg: 'h-10 rounded-md px-6 has-[>svg]:px-4', icon: 'size-9' },
+      // medium=36 / small=32 / xs=24，圆角 medium→10、small→8、xs→4
+      size: {
+        default: 'h-9 px-3 rounded-[10px] has-[>svg]:px-2.5',
+        sm: 'h-8 gap-1.5 px-2.5 rounded-lg has-[>svg]:px-2',
+        xs: 'h-6 gap-1 px-2 rounded has-[>svg]:px-1.5',
+        lg: 'h-10 px-4 rounded-[10px] has-[>svg]:px-3',
+        icon: 'size-9 rounded-[10px]',
+      },
     },
     defaultVariants: { variant: 'default', size: 'default' },
   },
