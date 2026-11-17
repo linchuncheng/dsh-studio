@@ -68,3 +68,7 @@ import "./components/base/buttons/button";
 import "./boardui/index";
 
 // 原样引入的 BoardUI 组件（验证编译通道）
+
+import "./components/base/input/input";
+import "./components/base/textarea/textarea";
+import "./components/base/checkbox/checkbox";
