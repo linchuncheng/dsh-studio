@@ -117,7 +117,7 @@ const PAGES = [
   ['需求', '.ds-panel, .ds-empty, .ds-req-desc'],
   ['用例', '.ds-panel, .ds-empty, .ds-listrow'],
   ['版本', '.ds-panel, .ds-empty, .ds-listrow'],
-  ['效能', '.ds-kpi, .ds-panel, .ds-an-row, .ds-empty'],
+  ['效能', '[data-stat-card], [data-chart-card]'],
   ['设置', '.ds-panel'],
 ]
 

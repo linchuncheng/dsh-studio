@@ -3,6 +3,7 @@
 import { client } from '../context.js'
 import { BurnChart, ProgressField } from '../charts.js'
 import { fmtTime } from '../format.js'
+import { StatCard, ChartCard, BarRow } from '../../boardui/chart-card'
 
 const CTX_COLORS = ['#4A5699', '#C45FA0', '#6277BA', '#F39A2B', '#94a3b8']
 const CTX_NUM = { width: 56, textAlign: 'right', fontSize: 12, flexShrink: 0 }
@@ -80,11 +81,8 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
     if (days < 1) return `${(days * 24).toFixed(1)} 小时`
     return `${days.toFixed(1)} 天`
   }
-  const kpi = (label, value, hint, warn) => h('div', { className: 'ds-kpi', 'data-warn': warn === true ? '1' : '0' },
-    h('div', { className: 'ds-kpi-value' }, value),
-    h('div', { className: 'ds-kpi-label' }, label),
-    h('div', { className: 'ds-kpi-hint' }, hint),
-  )
+  // KPI 方块换成我们自己写的 StatCard（BoardUI 的 stats 卡是 Pro，按公开行为自研）
+  const kpi = (label, value, hint, warn) => h(StatCard, { label, value, hint, warn: warn === true })
 
   const cycleTotal = (data.cycle.buckets ?? []).reduce((sum, bucket) => sum + bucket.count, 0)
   const peak = Math.max(1, ...(data.throughput ?? []).map(point => point.count), ...(data.cycle.buckets ?? []).map(bucket => bucket.count))
@@ -206,17 +204,19 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
     ),
     h('div', { className: 'ds-an-grid' },
       h('div', { className: 'ds-span-4', style: { display: 'grid', gap: 12, gridTemplateRows: 'auto 1fr', alignContent: 'stretch' } },
-        h('div', { className: 'ds-panel' },
-          h('div', { className: 'ds-panel-head' }, '周期分布', h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } }, `${cycleTotal} 张已完成`)),
-          h('div', { className: 'ds-panel-body' },
-            (data.cycle.buckets ?? []).map(bucket => h('div', { key: bucket.id, className: 'ds-an-row' },
-              h('span', { className: 'ds-an-name' }, bucket.label),
-              h('div', { className: 'ds-an-track', 'data-empty': (bucket.count === 0 ? '1' : '0') }, h('div', { className: 'ds-an-fill', style: { width: `${Math.round((bucket.count / peak) * 100)}%` } })),
-              h('span', { className: 'ds-an-num' }, `${bucket.count}`),
-            )),
-            cycleTotal === 0 ? h('div', { className: 'ds-hint' }, '这个区间里还没有完成的卡。') : null,
-            h('div', { className: 'ds-an-foot' }, `平均 ${fmtSpan(data.cycle.avgDays)} · 中位 ${fmtSpan(data.cycle.medianDays)} · P90 ${fmtSpan(data.cycle.p90Days)}`),
-          ),
+        h(ChartCard, {
+          title: '周期分布',
+          aside: `${cycleTotal} 张已完成`,
+          hint: cycleTotal === 0 ? '这个区间里还没有完成的卡。' : '',
+          footer: `平均 ${fmtSpan(data.cycle.avgDays)} · 中位 ${fmtSpan(data.cycle.medianDays)} · P90 ${fmtSpan(data.cycle.p90Days)}`,
+        },
+          (data.cycle.buckets ?? []).map(bucket => h(BarRow, {
+            key: bucket.id,
+            label: bucket.label,
+            ratio: bucket.count / peak,
+            display: `${bucket.count}`,
+            title: `${bucket.label}：${bucket.count} 张`,
+          })),
         ),
         h('div', { className: 'ds-panel' },
           h('div', { className: 'ds-panel-head' }, '近 14 天完成'),
@@ -231,16 +231,20 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
           ),
         ),
       ),
-      h('div', { className: 'ds-panel ds-span-8' },
-        h('div', { className: 'ds-panel-head' }, '每列停留（平均）'),
-        h('div', { className: 'ds-panel-body' },
-          (data.columns ?? []).map(column => h('div', { key: column.status, className: 'ds-an-row' },
-            h('span', { className: 'ds-an-name' }, column.label),
-            h('div', { className: 'ds-an-track', 'data-empty': (column.avgDays === 0 ? '1' : '0') }, h('div', { className: 'ds-an-fill ds-an-fill-warn', style: { width: `${Math.round((column.avgDays / maxDwell) * 100)}%` } })),
-            h('span', { className: 'ds-an-num' }, fmtSpan(column.avgDays)),
-          )),
-          h('div', { className: 'ds-an-foot' },
-            slowestColumn === null ? '还没有数据。' : `最慢的是「${slowestColumn.label}」：平均 ${fmtSpan(slowestColumn.avgDays)}，时间主要压在这一列。`),
+      h('div', { className: 'ds-span-8' },
+        h(ChartCard, {
+          title: '每列停留（平均）',
+          aside: slowestColumn === null ? '' : `最慢：${slowestColumn.label} ${fmtSpan(slowestColumn.avgDays)}`,
+          footer: slowestColumn === null ? '还没有数据。' : `最慢的是「${slowestColumn.label}」：平均 ${fmtSpan(slowestColumn.avgDays)}，时间主要压在这一列。`,
+        },
+          (data.columns ?? []).map(column => h(BarRow, {
+            key: column.status,
+            label: column.label,
+            ratio: column.avgDays / maxDwell,
+            display: fmtSpan(column.avgDays),
+            tone: 'warn',
+            title: `${column.label}：平均停留 ${fmtSpan(column.avgDays)} · 当前 ${column.cards} 张`,
+          })),
         ),
       ),
     ),

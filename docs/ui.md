@@ -336,3 +336,21 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
 - 37 个定义 ≈ 2–3 kB，而产物已经 1081 kB —— 裁了也回不到 900 kB，收益和「改错一个 token 就悄悄变色」的风险不成比例，
   所以**没有裁**。真想再瘦，只能退组件（退回 Radix Select 一类），那等于不换骨。
 - 结论：**900 kB 这条红线取消，改成 1.1 MB 的观察线**；超过 1.1 MB 再来谈按页拆包。
+
+### 第六批：统计卡 / 图表卡（[8] Pro 等价物，自研）
+
+- **同样是 Pro，同样自己写**：`web/src/boardui/chart-card.tsx` 里三个小组件，
+  照 BoardUI 图表卡公开文档的结构（标题 + 右侧附注 + 一句「所以呢」+ 主数字 + 图 + 脚注）拼的：
+  - `StatCard`：KPI 方块（标签 / 主数字 / 解释），`warn` 时主数字走 `text-text-error-primary`
+  - `ChartCard`：图表外壳（标题 + aside + hint + children + footer）
+  - `BarRow`：卡片里的一行横条（名字 / 轨道 / 数值），比例 0–1，`tone` 控制配色
+- 接线：效能页的 `kpi()` 改成渲染 `StatCard`（质量区 4 个 + 后面几块一起生效）；
+  「周期分布」「每列停留（平均）」两块换成 `ChartCard + BarRow`。
+- 没有引入任何图表库 —— 图仍然是 div 画出来的横条，体积只涨 3 kB。
+- `verify:pages` 里「效能」页的判据从 `.ds-kpi` 改成 `[data-stat-card], [data-chart-card]`，
+  这样组件没了会直接红，而不是被 `.ds-panel` 蒙混过去。
+- **[8] 另外两项按现状搁置**，理由写在下面，不是「没做」而是「没有对象/风险不对等」：
+  - 数据网格：仓库里没有表格组件（`grep ds-table` 为空），全是 `.ds-listrow` 行卡片；
+    要做网格得先有一个真的表格场景，否则就是为组件而组件。
+  - 任务列表：看板列本身就是「任务列表」，但它绑着拖拽、WIP 上限、分页（每列 40 张 + 显示更多）；
+    抽壳会直接碰到 `verify:scale` 那条 1000 张卡的性能断言，收益不抵风险。
