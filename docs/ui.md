@@ -766,3 +766,19 @@ BoardUI 没有空态组件（它家是每个页面自带插画），所以照 dr
 
 Radix 的 portal 计数从 4 降到 **3**（少了一个 Tooltip 门户）。
 真机 sweep 5/5、页面 22/22、pageerror 空。
+
+### 下一棒：DatePicker（源码已就位，尚未接线）
+
+`components/base/date-picker/{date-picker,shared}.tsx` 已经原样拉进仓库（含
+`foundations/template-copy`），API 是：
+
+```tsx
+<DatePicker value={CalendarDate|null} onChange={(d) => ...} />
+```
+
+**卡点**：它用的是 `@internationalized/date` 的 `CalendarDate`，而我们所有调用点传的都是
+`'YYYY-MM-DD'` 字符串（`toDateInput/fromDateInput` 已经在用这套）。接线需要一层转换
+（`parseDate` / `CalendarDate.toString()`），并且会引入 react-aria 的 Calendar/DateField，
+体积预计再涨 60–100 kB（当前 1153 kB，观察线 1.2 MB —— 需要同时决定是抬线还是按需加载）。
+
+调用点共 5 处：`client.src.js` 1、`drawer.js` 1、`releases.js` 1、`platform.js` 2。
