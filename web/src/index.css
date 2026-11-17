@@ -2081,3 +2081,62 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
   color: var(--color-text-primary, inherit);
   font-weight: 600;
 }
+
+/* ------------------------------------------------------- 表格（官方） --- */
+/* 摘自考 registry 的 styles/globals.css，只摘 .bui-table 这一段（整份 globals 带
+   preflight，会把宿主页面一起改掉）。选择器由 scope-css.mjs 自动包进
+   [data-dsh-studio]，所以表格样式只作用于面板内。 */
+.bui-table {
+  @apply w-full border-collapse text-start;
+}
+/* Header background + border-y live on the cells: with border-collapse the
+ * browser doesn't paint backgrounds/borders set on the <thead> row group.
+ * Backgrounds/borders are set with explicit CSS (theme vars) rather than
+ * @apply, which drops border-width/bg on these row-group cells. */
+.bui-table th {
+  @apply px-3 py-2.5 text-start align-middle text-body-medium text-text-tertiary whitespace-nowrap outline-none;
+  background-color: var(--color-background-secondary-default);
+  border-top: 1px solid var(--color-separator-border);
+  border-bottom: 1px solid var(--color-separator-border);
+  transition: padding 200ms ease, font-size 200ms ease;
+}
+.bui-table td {
+  @apply px-3 py-2.5 align-middle text-body-medium text-text-primary outline-none;
+  transition: padding 200ms ease, font-size 200ms ease;
+}
+/* Separators sit *between* rows only: the trailing row's boundary is drawn by
+ * whatever follows the table (the container's bottom edge, or the pagination
+ * footer's own border-top), so a filtered-down table never doubles up lines. */
+.bui-table tbody tr:not(:last-child) {
+  border-bottom: 1px solid var(--color-separator-border);
+}
+.bui-table tbody tr {
+  @apply transition-colors duration-150;
+}
+.bui-table tbody tr[data-focus-visible] {
+  @apply ring-2 ring-inset ring-border-focus-ring;
+}
+.bui-table.bui-table-sm th,
+.bui-table.bui-table-sm td {
+  @apply px-2.5 py-1.5 text-body-2-medium;
+}
+
+/* Agent Thinking (components/application/agent-thinking): the agent thinking state
+ * above a chat composer. The label reuses the ai-chat-text-shimmer travel;
+ * its base/highlight both derive from the tone the component sets via
+ * --bui-agent-thinking-tone, so every tone shimmers consistently. */
+.bui-agent-thinking-label {
+  color: transparent;
+  background-image: linear-gradient(
+    100deg,
+    color-mix(in oklab, var(--bui-agent-thinking-tone) 55%, transparent) 30%,
+    var(--bui-agent-thinking-tone) 50%,
+    color-mix(in oklab, var(--bui-agent-thinking-tone) 55%, transparent) 70%
+  );
+  background-position: 200% center;
+  background-size: 300% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: ai-chat-text-shimmer 2.6s linear infinite;
+  will-change: background-position;
+}
