@@ -63,7 +63,7 @@ const analyticsBody = {
   analytics: {
     days: 30, project: '', generatedAt: now, scope: { tasks: 2, moved: 0, done: 0 },
     cycle: { count: 0, avgDays: 0, medianDays: 0, p90Days: 0, buckets: [{ id: 'fast', label: '≤1 天', count: 0 }, { id: 'normal', label: '1–3 天', count: 0 }, { id: 'slow', label: '3–7 天', count: 0 }, { id: 'verySlow', label: '>7 天', count: 0 }] },
-    rework: { moved: 0, reworked: 0, rate: 0, reviewRework: 0, testRework: 0, firstPassRate: 0, worst: [] },
+    rework: { moved: 0, reworked: 0, rate: 0, reviewRework: 0, testRework: 0, firstPassRate: 0, worst: [{ id: 't-1', code: 'DEV-1', title: '库存预占与超时释放', backward: 2, status: 'dev' }] },
     columns: STATUSES.map(item => ({ status: item.id, label: item.label, avgDays: 0, cards: 0 })),
     throughput: [],
     ai: { artifactsTotal: 0, artifactsAi: 0, artifactsEmpty: 0, aiShare: 0, accepted: 0, acceptedRate: 0, emptyBody: 0, aiEmptyBody: 0, codingTasks: 0, codingApproved: 0, codingChanges: 0, codingApprovedRate: 0, unitTests: 0, unitPassed: 0, unitPassRate: 0, merged: 0 },
@@ -110,15 +110,16 @@ const checks = []
 const check = (name, ok, detail = '') => { checks.push({ name, ok: ok === true }); console.log((ok ? 'ok   ' : 'FAIL ') + name + (detail === '' ? '' : ' — ' + detail)) }
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-// 每页「该有的东西」：至少一个能证明它不是空白页的标记
+// 每页「该有的东西」：至少一个能证明它不是空白页的标记；
+// 第三项是「必须真的存在」的组件标记（用来盯住新换的 BoardUI 组件，别被别的选择器蒙混）
 const PAGES = [
-  ['工作台', '.ds-body, .ds-kpi, .ds-reg-banner'],
-  ['看板', '.ds-col .ds-card, .ds-col'],
-  ['需求', '.ds-panel, .ds-empty, .ds-req-desc'],
-  ['用例', '.ds-panel, .ds-empty, .ds-listrow'],
-  ['版本', '.ds-panel, .ds-empty, .ds-listrow'],
-  ['效能', '[data-stat-card], [data-chart-card]'],
-  ['设置', '.ds-panel'],
+  ['工作台', '.ds-body, .ds-kpi, .ds-reg-banner', ''],
+  ['看板', '.ds-col .ds-card, .ds-col', ''],
+  ['需求', '.ds-panel, .ds-empty, .ds-req-desc', ''],
+  ['用例', '.ds-panel, .ds-empty, .ds-listrow', ''],
+  ['版本', '.ds-panel, .ds-empty, .ds-listrow', ''],
+  ['效能', '[data-stat-card], [data-chart-card]', '[data-task-row]'],
+  ['设置', '.ds-panel', ''],
 ]
 
 let browser
@@ -132,7 +133,7 @@ try {
   await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 })
   await page.waitForSelector('[data-dsh-studio] .ds-head-tabs button', { timeout: 45000 })
 
-  for (const [label, marker] of PAGES) {
+  for (const [label, marker, mustHave] of PAGES) {
     const clicked = await page.evaluate(sel => {
       const button = [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs button')]
         .find(node => (node.textContent || '').trim() === sel)
@@ -141,20 +142,21 @@ try {
       return true
     }, label)
     await sleep(900)
-    const info = await page.evaluate(sel => {
+    const info = await page.evaluate((sel, required) => {
       const text = document.body.innerText || ''
       return {
         failed: text.includes('渲染失败'),
-        failText: (text.match(/渲染失败[\s\S]{0,120}/) || [''])[0].replace(/\s+/g, ' '),
+        failText: (text.match(/渲染失败[\s\S]{0,160}/) || [''])[0].replace(/\s+/g, ' '),
         marker: document.querySelector('[data-dsh-studio] ' + sel) !== null,
+        required: required === '' ? true : document.querySelector('[data-dsh-studio] ' + required) !== null,
         length: text.length,
         selected: [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs button')]
           .filter(node => node.getAttribute('aria-pressed') === 'true')
           .map(node => (node.textContent || '').trim()),
       }
-    }, marker)
+    }, marker, mustHave)
     check(`切到「${label}」`, clicked === true)
-    check(`「${label}」渲染出了内容（${marker}）`, info.marker === true && info.failed === false, `${info.length} 字${info.failed ? ' / ' + info.failText : ''}`)
+    check(`「${label}」渲染出了内容（${marker}）`, info.marker === true && info.required === true && info.failed === false, `${info.length} 字${info.failed ? ' / ' + info.failText : ''}${info.required ? '' : ' / 缺 ' + mustHave}`)
     check(`「${label}」的页签是高亮状态`, info.selected.includes(label), info.selected.join(','))
     await page.screenshot({ path: join(outDir, `${label}.png`) })
   }

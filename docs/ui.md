@@ -354,3 +354,23 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
     要做网格得先有一个真的表格场景，否则就是为组件而组件。
   - 任务列表：看板列本身就是「任务列表」，但它绑着拖拽、WIP 上限、分页（每列 40 张 + 显示更多）；
     抽壳会直接碰到 `verify:scale` 那条 1000 张卡的性能断言，收益不抵风险。
+
+### 第七批：任务列表（[8] Pro 等价物的第三块）
+
+- `web/src/boardui/task-list.tsx`：`TaskList`（复用 ChartCard 的外壳 + 空态）+ `TaskRow`
+  （左标题 / 一行说明 / 右侧动作）。进效能页「返工最多的卡」，那一块原来是 `.ds-panel` +
+  `.ds-listrow` + `.ds-btn` 三套 legacy 标记。
+- 看板列**没有**动：那里绑着拖拽、WIP 上限和分页（每列 40 张 + 显示更多），
+  抽壳会直接撞 `verify:scale` 的 1000 张卡断言，收益不抵风险。
+- `verify:pages` 的页签判据加了第三段「必须存在」的选择器：效能页除了
+  `[data-stat-card]/[data-chart-card]` 还要求 `[data-task-row]` 真的在，
+  以免以后组件被换掉却因为别的选择器仍然匹配而蒙混过关。
+
+### [8] 三块的最终口径
+
+| 要的 | 结果 |
+| --- | --- |
+| 图表卡 | ✅ 自研 `StatCard` / `ChartCard` / `BarRow`，效能页已用 |
+| 任务列表 | ✅ 自研 `TaskList` / `TaskRow`，效能页已用（看板列不动，理由见上） |
+| 数据网格 | ⛔ **没有对象**：全仓库没有表格组件（`grep ds-table` 为空），也没有表格页面；
+没有调用点就写一个没人用的网格，等于为组件而组件。真要做得先有表格场景。 |

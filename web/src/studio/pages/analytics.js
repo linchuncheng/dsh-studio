@@ -4,6 +4,8 @@ import { client } from '../context.js'
 import { BurnChart, ProgressField } from '../charts.js'
 import { fmtTime } from '../format.js'
 import { StatCard, ChartCard, BarRow } from '../../boardui/chart-card'
+import { TaskList, TaskRow } from '../../boardui/task-list'
+import { Button as BoarduiButton } from '../../boardui/index'
 
 const CTX_COLORS = ['#4A5699', '#C45FA0', '#6277BA', '#F39A2B', '#94a3b8']
 const CTX_NUM = { width: 56, textAlign: 'right', fontSize: 12, flexShrink: 0 }
@@ -364,23 +366,18 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
             ),
         ),
       ),
-      h('div', { className: 'ds-panel ds-span-8' },
-      h('div', { className: 'ds-panel-head' },
-        '返工最多的卡',
-        h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } }, `评审打回 ${data.rework.reviewRework} 次 · 测试打回 ${data.rework.testRework} 次`),
-      ),
-      h('div', { className: 'ds-panel-body' },
-        (data.rework.worst ?? []).length === 0
-          ? h('div', { className: 'ds-hint' }, '没有卡倒退过，挺好。')
-          : data.rework.worst.map(item => h('div', { key: item.id, className: 'ds-listrow' },
-            h('div', { className: 'ds-listrow-main' },
-              h('div', null, `${item.code === '' ? '' : `${item.code} `}${item.title}`),
-              h('div', { className: 'ds-hint' }, `倒退 ${item.backward} 次 · 现在在「${(state.statuses.find(entry => entry.id === item.status) ?? {}).label ?? item.status}」`),
-            ),
-            h('div', { className: 'ds-listrow-actions' },
-              h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => onOpenTask(item.id) }, '打开'),
-            ),
-          )),
+      h('div', { className: 'ds-span-8' },
+        h(TaskList, {
+          title: '返工最多的卡',
+          aside: `评审打回 ${data.rework.reviewRework} 次 · 测试打回 ${data.rework.testRework} 次`,
+          empty: '没有卡倒退过，挺好。',
+        },
+          (data.rework.worst ?? []).map(item => h(TaskRow, {
+            key: item.id,
+            title: `${item.code === '' ? '' : `${item.code} `}${item.title}`,
+            hint: `倒退 ${item.backward} 次 · 现在在「${(state.statuses.find(entry => entry.id === item.status) ?? {}).label ?? item.status}」`,
+            action: h(BoarduiButton, { variant: 'ghost', size: 'small', onClick: () => onOpenTask(item.id) }, '打开'),
+          })),
         ),
       ),
     ),
