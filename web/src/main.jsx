@@ -66,3 +66,5 @@ import "./components/base/buttons/button";
 
 // BoardUI 适配层（Button 等组件原样引入后在这里接线）
 import "./boardui/index";
+
+// 原样引入的 BoardUI 组件（验证编译通道）
