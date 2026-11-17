@@ -757,3 +757,12 @@ BoardUI 没有空态组件（它家是每个页面自带插画），所以照 dr
 
 真正还该换、并且公共仓库里确实有的：`tooltip` / `date-picker` / `table` / `dropdown` /
 `notification` / `kbd` / `avatar` / `divider` / `file-upload` / `tree-view`。
+
+### 第三项：提示框改用官方 Tooltip
+
+`Tip({label, children})` 原来挂 Radix Tooltip，现在换成官方
+`components/base/tooltip/tooltip.tsx`：`TooltipTrigger`（delay 260ms）+ `Tooltip`。
+子元素是单个可交互节点时 react-aria 会克隆它挂事件；`label` 为空直接返回 children（保持原行为）。
+
+Radix 的 portal 计数从 4 降到 **3**（少了一个 Tooltip 门户）。
+真机 sweep 5/5、页面 22/22、pageerror 空。

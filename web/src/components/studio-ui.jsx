@@ -16,6 +16,7 @@ import { cn } from '../lib/utils.js'
 import { portalRoot } from '../lib/portal.js'
 import { Button, Input, Label, Textarea, Badge, Tabs, TabsList, TabsTrigger } from './ui.jsx'
 import { SegmentedControl as BoarduiSegmented, SegmentedControlItem as BoarduiSegmentedItem } from '../components/base/segmented-control/segmented-control'
+import { Tooltip as BoarduiTooltip, TooltipTrigger as BoarduiTooltipTrigger } from '../components/base/tooltip/tooltip'
 import { Drawer as BoarduiDrawer } from '../boardui/drawer'
 import { ConfirmDialog as BoarduiConfirmDialog } from '../boardui/dialog'
 
@@ -154,22 +155,14 @@ export function SwitchBox({ checked, onChange, label, hint, disabled, bare = fal
 
 /* ------------------------------------------------------ tooltip wrapper --- */
 export function Tip({ label, children }) {
+  // 官方 Tooltip（TooltipTrigger + Tooltip）：原来挂在 Radix Tooltip 上。
+  // react-aria 的 trigger 会克隆子元素挂事件，所以子元素必须是单个可交互节点。
   if (!label) return children
   return (
-    <TooltipProvider delayDuration={250}>
-      <TooltipPrimitive.Root>
-        <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
-        <TooltipPrimitive.Portal container={portalRoot()}>
-          <TooltipPrimitive.Content
-            sideOffset={6}
-            className="z-[130] max-w-[280px] rounded-md bg-primary px-2 py-1 text-[11.5px] leading-snug text-primary-foreground shadow"
-          >
-            {label}
-            <TooltipPrimitive.Arrow className="fill-primary" />
-          </TooltipPrimitive.Content>
-        </TooltipPrimitive.Portal>
-      </TooltipPrimitive.Root>
-    </TooltipProvider>
+    <BoarduiTooltipTrigger delay={260}>
+      {children}
+      <BoarduiTooltip>{label}</BoarduiTooltip>
+    </BoarduiTooltipTrigger>
   )
 }
 
