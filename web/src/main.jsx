@@ -63,3 +63,6 @@ window.__ModuleLoader__.load({
 
 // 原样引入的 BoardUI 组件（验证编译通道；后续按需替换 UI 时直接从这里 import）
 import "./components/base/buttons/button";
+
+// BoardUI 适配层（Button 等组件原样引入后在这里接线）
+import "./boardui/index";
