@@ -782,3 +782,23 @@ Radix 的 portal 计数从 4 降到 **3**（少了一个 Tooltip 门户）。
 体积预计再涨 60–100 kB（当前 1153 kB，观察线 1.2 MB —— 需要同时决定是抬线还是按需加载）。
 
 调用点共 5 处：`client.src.js` 1、`drawer.js` 1、`releases.js` 1、`platform.js` 2。
+
+### DatePicker：实际接线时撞到的第二个依赖（结论：暂时不接）
+
+按计划接线时，构建直接报：
+
+```
+[vite]: Rollup failed to resolve import "motion/react"
+from ".../components/base/date-picker/date-picker.tsx"
+```
+
+也就是说官方 DatePicker 除了 `@internationalized/date`（已装）**还依赖 `motion`（framer-motion）**。
+两个依赖 + react-aria 的 Calendar/DateField 一起进包，体积会明显越过现在 1.2 MB 的观察线。
+
+所以这一步的结论是：**接 DatePicker 不是「换个组件」，而是引入一条新依赖链**。
+真要接，先决定三件事：
+1. 是否接受 `motion` 这个动画库进包（约 +50 kB，且是运行时动画依赖）
+2. 观察线放宽到 1.3–1.4 MB，还是对它做**按需加载**（日期选择器只在抽屉里用，可以懒加载）
+3. 5 个调用点的字符串 ↔ CalendarDate 转换（适配层代码已经想好，见 `tmp/patch-date.mjs` 的草稿）
+
+代码已回滚到绿色状态（1156 kB / 3 个 Radix portal / pages 22/22），依赖保留。
