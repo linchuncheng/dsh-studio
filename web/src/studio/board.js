@@ -7,7 +7,7 @@ import { artifactsWithoutBody, buildRoster, filterRoster, ownerLabel } from './r
 /** 每列先渲染这么多张；上千张卡时 DOM 会先炸，而不是服务端。 */
 const COLUMN_PAGE = 40
 
-export function createBoard({ h, React, Card, TextField, SelectField, CheckField, toast }) {
+export function createBoard({ h, React, Card, TextField, SearchField, SelectField, CheckField, toast }) {
 function Board({ state, onOpen, onMove, onWip }) {
   const config = state.config ?? {}
   const experts = config.experts ?? []
@@ -71,8 +71,9 @@ function Board({ state, onOpen, onMove, onWip }) {
   return h('div', { style: { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } },
     h('div', { className: 'ds-board-bar' },
       h('span', { className: 'ds-search' },
-        h(TextField, {
-          className: 'ds-input', style: { width: 200, fontSize: 12 }, value: query, placeholder: '搜标题 / 需求 / 领域 / 编号',
+        /* 搜索用官方 SearchField：放大镜与清除键都是组件自带的，以前是给普通 Input 用 ::before 画了个假放大镜。 */
+        h(SearchField, {
+          className: 'ds-input', style: { width: 200 }, value: query, placeholder: '搜标题 / 需求 / 领域 / 编号',
           onChange: event => setQuery(event.target.value),
         }),
       ),

@@ -144,16 +144,20 @@ try {
   const shape = await page.evaluate(sel => {
     const input = document.querySelector(sel)
     if (input === null) return { found: false }
-    const field = input.closest('[data-input-size]')
+    // 现在是官方 SearchField（[data-field="search"] + role=searchbox），
+    // 以前断言的是 data-input-size —— 那时候还是普通 Input。断言跟着组件走，
+    // 但保留同样的意图：必须是官方的、必须带 react-aria 的壳。
+    const field = input.closest('[data-field="search"], [data-field="input"]')
     return {
       found: true,
-      reactAria: field !== null,
-      size: field?.getAttribute('data-input-size') ?? '',
-      shell: field !== null && /rounded-2lg|bg-background-tertiary-default/.test(field.className),
-      inputClass: input.className.slice(0, 60),
+      reactAria: input.closest('[data-rac]') !== null,
+      kind: field?.getAttribute('data-field') ?? '',
+      searchbox: input.getAttribute('type') === 'search' || input.getAttribute('role') === 'searchbox' || input.closest('[role="search"]') !== null,
+      size: field?.closest('[data-input-size]')?.getAttribute('data-input-size') ?? '',
     }
   }, searchSel)
-  check('搜索框是 BoardUI 的 TextField + InputBase', shape.found === true && shape.reactAria === true, `size=${shape.size}`)
+  check('搜索框是 BoardUI 的 SearchField', shape.found === true && shape.reactAria === true && shape.kind === 'search', `field=${shape.kind} searchbox=${shape.searchbox}`)
+  check('搜索框带官方放大镜与清除键', shape.searchbox === true, 'type/role 不是 searchbox')
 
   await page.click(searchSel)
   await page.type(searchSel, '超时', { delay: 30 })

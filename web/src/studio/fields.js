@@ -5,7 +5,7 @@
 
 // 表单控件换成 BoardUI 的源码实现（TextField + InputBase / TextareaBase / Checkbox）。
 // 适配层负责把 legacy 的 value / onChange(e) 语义翻译成 react-aria 的 value / onChange(string)。
-import { Input as BoarduiInput, Textarea as BoarduiTextarea, Checkbox as BoarduiCheckbox, Select as BoarduiSelect, Chip as BoarduiChip, SwitchField as BoarduiSwitchField, DateField as BoarduiDateField } from '../boardui/index'
+import { Input as BoarduiInput, Textarea as BoarduiTextarea, Checkbox as BoarduiCheckbox, Select as BoarduiSelect, Chip as BoarduiChip, SwitchField as BoarduiSwitchField, DateField as BoarduiDateField, SearchInput as BoarduiSearchInput } from '../boardui/index'
 
 export function createFields({ h, kit, React }) {
     function TextField(props) {
@@ -54,5 +54,11 @@ export function createFields({ h, kit, React }) {
     return h(BoarduiDateField, props)
   }
 
-  return { TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, DateField }
+  /* 搜索框：官方 SearchField（放大镜 + 清除键 + role=searchbox），
+     看板工具栏那一个输入框用它，其余文本输入仍是 Input。 */
+  function SearchField(props) {
+    return h(BoarduiSearchInput, props)
+  }
+
+  return { TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, DateField, SearchField }
 }

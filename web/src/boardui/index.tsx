@@ -6,6 +6,7 @@ import { TextField as BoarduiField, InputBase as BoarduiInputBase } from "../com
 import { TextareaBase as BoarduiTextareaBase } from "../components/base/textarea/textarea";
 import { Checkbox as BoarduiCheckboxBase } from "../components/base/checkbox/checkbox";
 import { Select as BoarduiSelect, SelectItem as BoarduiSelectItem } from "../components/base/select/select";
+import { SearchField as BoarduiSearchField } from "../components/base/search-field/search-field";
 import { Chip as BoarduiChip } from "../components/base/badges/chip";
 import { Switch as BoarduiSwitch } from "../components/base/switch/switch";
 import { DatePicker as BoarduiDatePicker } from "../components/base/date-picker/date-picker";
@@ -129,6 +130,23 @@ export function Textarea({
     >
       <BoarduiTextareaBase rows={rowCount} {...rest} />
     </BoarduiField>
+  );
+}
+
+/** 搜索框：语义组件（自带放大镜与清除键）。size="sm" 是 32px，看板工具栏的高度。 */
+export function SearchInput({ className, style, value, onChange, placeholder, ...rest }: any) {
+  return (
+    <BoarduiSearchField
+      {...rest}
+      data-field="search"
+      className={extraClasses(className)}
+      style={style}
+      size="sm"
+      placeholder={placeholder}
+      aria-label={fieldLabel(rest, "placeholder")}
+      value={value === undefined || value === null ? "" : String(value)}
+      onChange={valueHandler(onChange)}
+    />
   );
 }
 

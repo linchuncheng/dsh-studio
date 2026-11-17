@@ -32,11 +32,11 @@ window.__ModuleLoader__.load({
     }
 
     /* 表单适配层与共享抽屉已经搬到 web/src/studio，这边只负责把 h / kit 递进去。 */
-    const { TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, DateField } = createFields({ h, kit, React })
+    const { TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, DateField, SearchField } = createFields({ h, kit, React })
     const SideDrawer = createSideDrawer({ h, kit })
     const Editor = createEditor({ h, React })
     const Card = createCard({ h, ChipField })
-    const Board = createBoard({ h, React, Card, TextField, SelectField, CheckField, toast })
+    const Board = createBoard({ h, React, Card, TextField, SearchField, SelectField, CheckField, toast })
     /* 字段标签的悬停说明：只给「不看说明容易填错」的字段加，鼠标移上去出气泡。 */
     /* Markdown 内容字段：左编辑右预览（切换式），底部写清支持哪些语法。
        需求正文 / 文档正文 / 交付物正文 / 技能正文 / 任务需求 / 功能点说明 统一走这里。 */
@@ -435,8 +435,6 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-board-bar .ds-input, .ds-board-bar .ds-select { height:28px; padding:0 8px; }
 .ds-search { position:relative; display:inline-flex; }
 .ds-search .ds-input { padding-left:24px; }
-.ds-search::before { content:'⌕'; position:absolute; left:7px; top:50%; transform:translateY(-50%);
-  opacity:.4; font-size:13px; pointer-events:none; }
 .ds-stat { font-size:11.5px; opacity:.55; }
 .ds-market-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; }
 .ds-market-card { display:flex; flex-direction:column; gap:8px; border:1px solid var(--ds-line); border-radius:12px;
