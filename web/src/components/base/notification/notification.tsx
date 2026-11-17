@@ -320,6 +320,9 @@ export function Notification({
  * as notifications enter and leave.
  */
 export function NotificationViewport({
+  /** 本地补丁：portal 容器（默认 document.body）。面板把浮层挂进 [data-dsh-studio-portal]，
+      否则作用域化的 Tailwind 全部失效。 */
+  container: containerProp,
   children,
   position,
   placement,
@@ -369,6 +372,6 @@ export function NotificationViewport({
         ))}
       </AnimatePresence>
     </motion.div>,
-    document.body,
+    containerProp ?? document.body,
   );
 }

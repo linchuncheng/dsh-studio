@@ -893,3 +893,14 @@ CSS 层叠层按「名字第一次出现的位置」定优先级，后出现的�
 **这轮抓到的第二个探针缺陷**：`verify:audit` 每屏只等 850ms，「效能」页要等接口回来才画图，
 于是 9 个官方计量条一个都没被统计到，`meter == 0` 的断言反而「通过」了。
 等待改成 1800ms，并加了「全站必须至少有一个 role=meter」的断言 —— 现在是 9 个。
+
+### 本地补丁清单（改过 BoardUI 源码的地方）
+
+原则仍是「原样复制」，但有两处**必须**改，否则组件在宿主里不可用。每次 `--force` 重拉后要复核。
+
+| 文件 | 补丁 | 为什么 |
+| --- | --- | --- |
+| `components/base/notification/notification.tsx` | `NotificationViewport` 增加 `container` 参数，`createPortal(node, containerProp ?? document.body)` | 官方写死 `document.body`，浮层落到 `[data-dsh-studio]` 外，作用域 CSS 全失效 |
+| `components/base/toast/toast.tsx` | `ToasterProps` 增加 `container`，透传给 `NotificationViewport` | 同上；面板要把 toast 挂进 `[data-dsh-studio-portal]` |
+
+补丁都带 `本地补丁：` 注释。守护脚本暂未断言这两处，重拉时要人工核（`grep -n "containerProp ?? document.body"`）。
