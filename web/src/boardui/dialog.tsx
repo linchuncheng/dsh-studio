@@ -8,9 +8,11 @@
 //   · 底部「取消 / 确定」，danger 时确定键走 danger 变体
 // 无障碍（焦点锁定、Esc、焦点归还）交给 react-aria。
 import type { ReactNode } from "react";
+import { useRef } from "react";
 import { Dialog, Heading, Modal, ModalOverlay } from "react-aria-components";
 import { Button } from "../components/base/buttons/button";
 import { cx } from "../utils/cx";
+import { useEscapeFallback, useFocusOnMount, OVERLAY_ATTR } from "./overlay-escape";
 
 export interface ConfirmDialogProps {
   open?: boolean;
@@ -42,6 +44,9 @@ export function ConfirmDialog({
   onOk,
   onCancel,
 }: ConfirmDialogProps) {
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  useFocusOnMount(dialogRef);
+  useEscapeFallback(dialogRef, onCancel, open === true);
   return (
     <ModalOverlay
       isOpen={open === true}
@@ -67,7 +72,7 @@ export function ConfirmDialog({
           )
         }
       >
-        <Dialog className="outline-none">
+        <Dialog ref={dialogRef} tabIndex={-1} {...{ [OVERLAY_ATTR]: "" }} className="outline-none">
           <Heading slot="title" className="text-body-semibold text-text-primary">
             {title}
           </Heading>

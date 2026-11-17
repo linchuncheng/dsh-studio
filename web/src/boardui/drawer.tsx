@@ -10,10 +10,12 @@
 // 无障碍实现）：Esc 关闭、焦点锁定在抽屉内、关闭后焦点归还触发元素。
 // 浮层走 bridge.jsx 里 UNSAFE_PortalProvider 指定的容器，所以作用域化的 Tailwind 照样生效。
 import type { ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import { Dialog, Heading, Modal, ModalOverlay } from "react-aria-components";
 import { RiCloseLine } from "@remixicon/react";
 import { Button } from "../components/base/buttons/button";
 import { cx } from "../utils/cx";
+import { useEscapeFallback, useFocusOnMount, OVERLAY_ATTR } from "./overlay-escape";
 
 export interface DrawerProps {
   title: ReactNode;
@@ -26,6 +28,9 @@ export interface DrawerProps {
 }
 
 export function Drawer({ title, hint, onClose, footer, width = 760, children }: DrawerProps) {
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  useFocusOnMount(dialogRef);
+  useEscapeFallback(dialogRef, onClose);
   return (
     <ModalOverlay
       isOpen
@@ -53,7 +58,7 @@ export function Drawer({ title, hint, onClose, footer, width = 760, children }: 
         }
         style={{ width: `min(${width}px, 96vw)` }}
       >
-        <Dialog className="flex h-full min-h-0 w-full flex-col outline-none">
+        <Dialog ref={dialogRef} tabIndex={-1} {...{ [OVERLAY_ATTR]: "" }} className="flex h-full min-h-0 w-full flex-col outline-none">
           <div className="flex shrink-0 items-start justify-between gap-4 border-b border-separator-border px-5 py-3.5">
             <div className="min-w-0">
               <Heading slot="title" className="truncate text-title-3-semibold text-text-primary">

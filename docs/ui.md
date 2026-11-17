@@ -382,3 +382,29 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
 - 现在把口径写进**构建守卫**（`web/scripts/guard.mjs` 的 `--post`）：`dist/client.js` 超过
   **1126 kB**（1.1 MB）直接构建失败，并提示「查查又引了什么」。观察线要能拦人，光写在文档里没用。
 - 当前 1085.68 kB / gzip 311.92 kB，离观察线还有 40 kB 余量。
+
+## 真机验证（.218，2026-11-17）：逮到一个只有在真机才复现的 bug
+
+部署：`DSH_DEPLOY_HOST=192.168.120.218 DSH_DEPLOY_USER=lyf node tools/deploy.mjs` → `active=active files=41`。
+（脚本报的 `state=502` 是**假警报**：它 curl 的是 `127.0.0.1:18080`，而这台机器上 dsh 只绑在
+`192.168.120.218:18080`，用局域网地址请求是 200、rev 16887。）
+
+真机上跑出来的结果：
+- `tools/visual/smoke.mjs`：`ok: true`（30 张卡 / 100 行用例 / 面板没崩 / pageerror 空）。
+- 逐页：7 个页签全过，效能页的 `[data-stat-card]`、`[data-chart-card]` 在真数据下正常
+  （一次通过率 60%、返工率 48% 标红、每列停留的横条有真实占比）。
+- 抽屉与弹窗：**第一次跑挂了 3 项**。
+
+### 抓到的 bug：抽屉打开后焦点留在 `<body>`，Esc 关不掉
+
+- 现象：设置页抽屉能打开、也能点关闭，但**按 Esc 没反应**；`document.activeElement` 是 `BODY`。
+- 原因：react-aria 的 Esc 处理要求事件发生在浮层内部，焦点在 body 上时它直接忽略。
+  我们删掉了原来手挂的 `window.addEventListener('keydown')`，就没人兜底了。
+- 为什么假宿主测不出来：那边没有宿主的全局焦点处理，焦点正好落在浮层里，Esc 一直好使。
+  **`verify:drawer` 在这条上是假绿** —— 现在补了两条断言（打开后焦点在抽屉内 + 根节点带
+  `data-boardui-overlay`），本地就能盯住。
+- 修法（`web/src/boardui/overlay-escape.ts`）：
+  1. `useFocusOnMount`：打开后如果焦点不在浮层里，把浮层容器（`tabIndex=-1`）聚焦；
+  2. `useEscapeFallback`：在 `window` 上补 Esc 监听，**只关最上层那个浮层**
+     （按 `data-boardui-overlay` 的出现顺序判断），免得关弹窗把底下的抽屉一起关了。
+- 修完重新部署，真机复跑：抽屉 10/10、逐页 17/17、smoke `ok: true`。

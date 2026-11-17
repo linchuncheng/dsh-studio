@@ -126,6 +126,17 @@ try {
   check('面板用了 BoardUI 的背景/描边 token', shape.panelBg === true, `宽 ${shape.width}px`)
   check('标题是 BoardUI 的标题字号', shape.titleType === true, shape.titleText.slice(0, 20))
   check('右上角有关闭按钮', shape.closeLabel === true)
+  const focused = await page.evaluate(() => {
+    const dialog = document.querySelector('[role="dialog"]')
+    const active = document.activeElement
+    return {
+      inside: dialog !== null && active !== null && dialog.contains(active),
+      tag: active?.tagName ?? '',
+      overlayAttr: dialog?.hasAttribute('data-boardui-overlay') === true,
+    }
+  })
+  check('打开后焦点在抽屉里面（真机踩过：焦点留在 body 就按 Esc 关不掉）', focused.inside === true, `active=${focused.tag}`)
+  check('抽屉根节点带 data-boardui-overlay（Esc 只关最上层靠它）', focused.overlayAttr === true)
   await page.screenshot({ path: join(REPO, 'tmp', 'drawer-probe.png') })
 
   await page.keyboard.press('Escape')
