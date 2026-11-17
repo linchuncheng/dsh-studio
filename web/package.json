@@ -9,6 +9,7 @@
     "guard": "node scripts/guard.mjs"
   },
   "dependencies": {
+    "@internationalized/date": "^3.12.4",
     "@radix-ui/react-checkbox": "^1.1.4",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-label": "^2.1.2",
