@@ -11,6 +11,7 @@ import { ShadcnLoginGate } from './components/login-gate.jsx'
 import { SheetDrawer, SegGroup, TabsBar, SelectBox, SwitchBox, Tip, ProgressBar, DialogBox } from './components/studio-ui.jsx'
 import { Badge, Input, Textarea, Label, Tabs, TabsList, TabsTrigger } from './components/ui.jsx'
 import { Button as BoarduiButton } from './boardui/index'
+import { TaskRow as BoarduiTaskRow } from './boardui/task-list'
 
 const STYLE_ID = 'dsh-studio-tw'
 
@@ -45,6 +46,23 @@ window.__ModuleLoader__.load({
         const variant = /\bds-btn-primary\b/.test(into) ? 'primary' : /\bds-btn-ghost\b/.test(into) ? 'ghost' : 'secondary'
         const { className, ...rest } = props
         return React.createElement(BoarduiButton, { ...rest, variant, size: 'small' }, ...children)
+      }
+      // 同一招再用于列表行：legacy 的 `div.ds-listrow > (main[标题,说明], actions[按钮…])`
+      // 结构非常固定，就地渲染成 TaskRow。只在**结构完全对得上**时才换，其余原样透传，
+      // 免得把某个自定义行改坏。
+      if (type === 'div' && typeof props?.className === 'string' && /(^|\s)ds-listrow(\s|$)/.test(props.className)) {
+        const flat = children.flat().filter((child) => child !== null && child !== undefined && child !== false)
+        const main = flat.find((child) => typeof child?.props?.className === 'string' && child.props.className.includes('ds-listrow-main'))
+        const actions = flat.find((child) => typeof child?.props?.className === 'string' && child.props.className.includes('ds-listrow-actions'))
+        if (main !== undefined) {
+          const content = React.Children.toArray(main.props.children).filter(Boolean)
+          const [title, ...restContent] = content
+          const { className, ...restProps } = props
+          return React.createElement(
+            BoarduiTaskRow,
+            { ...restProps, title, hint: restContent.length > 0 ? restContent : undefined, action: actions?.props?.children },
+          )
+        }
       }
       return React.createElement(type, props, ...children)
     }

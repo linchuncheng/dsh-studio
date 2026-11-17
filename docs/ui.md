@@ -601,3 +601,14 @@ BoardUI 自己的规矩是：**输入框灰底填充**、**下拉触发器白底
    换它要动这几个调用点的结构 —— 属于「等价物替换」，不是「控件没换」。
 2. 登录门（`.ds-login`）里两个原生 `<input>`：独立于面板的登录页，token 登录不会走到，
    优先级最低，记在这里。
+
+### 列表行也换成 TaskRow（同一个 h 层翻译）
+
+`.ds-listrow` 的 DOM 形状非常固定：
+`div.ds-listrow > (div.ds-listrow-main[标题, 说明], div.ds-listrow-actions[按钮…])`。
+所以在 `main.jsx` 的 `h` 里再加一条翻译：**结构完全对得上**时渲染 `TaskRow`，否则原样透传
+（避免把自定义行改坏）。
+
+结果（`verify:audit`）：工作台/需求/版本/设置 的 `.ds-listrow` **全部降到 0**。
+至此面板里剩下的「非 BoardUI」元素只有 `.ds-empty`（已重绘样式，BoardUI 无空态组件）
+和登录页那两个原生 input（独立登录门）。
