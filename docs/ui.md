@@ -374,3 +374,11 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
 | 任务列表 | ✅ 自研 `TaskList` / `TaskRow`，效能页已用（看板列不动，理由见上） |
 | 数据网格 | ⛔ **没有对象**：全仓库没有表格组件（`grep ds-table` 为空），也没有表格页面；
 没有调用点就写一个没人用的网格，等于为组件而组件。真要做得先有表格场景。 |
+
+### 体积观察线：1.1 MB（用户 2026-11-17 确认）
+
+- 900 kB 那条作废 —— 真组件的成本摆在那里（react-aria 的 Select / ListBox / Popover / Modal
+  一串占了 150 kB 上下），压回去只能退回 Radix，等于不换骨。
+- 现在把口径写进**构建守卫**（`web/scripts/guard.mjs` 的 `--post`）：`dist/client.js` 超过
+  **1126 kB**（1.1 MB）直接构建失败，并提示「查查又引了什么」。观察线要能拦人，光写在文档里没用。
+- 当前 1085.68 kB / gzip 311.92 kB，离观察线还有 40 kB 余量。
