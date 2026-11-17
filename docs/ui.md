@@ -701,3 +701,14 @@ BoardUI 没有空态组件（它家是每个页面自带插画），所以照 dr
   和选中底色一起盖掉（第一次改完页签挤成了一坨，就是这个原因）
 
 `verify:pages` 22/22、真机 sweep 5/5、audit 老控件 0、`npm test` 108/108。
+
+### 下拉框专项盘点（`npm run verify:selects`）
+
+用户反馈「下拉选择框没用组件」，于是写了个专项探针：逐页面 + 抽屉，找**真实可见的原生 `<select>`**
+（react-aria 的 Select 内部也有一个隐藏 select，必须排除掉，否则会误判）。
+
+结果：工作台/看板/需求/用例/版本/效能/设置/卡片抽屉/设置抽屉/业务提单 —— **可见原生 select 全部 0 个**。
+展开后的面板也验了：白底 + 1px 描边 + 圆角 + 阴影，选中项带对勾，挂在 `data-dsh-studio-portal` 里。
+
+同时补了**第五条 h 翻译**：`h('select', {...}, option…)` → BoardUI `Select`
+（legacy 里还剩业务提单表单这两处原生 select），以后再有裸 select 也会自动变成组件。

@@ -13,7 +13,7 @@ import { Badge, Input, Textarea, Label, Tabs, TabsList, TabsTrigger } from './co
 import { Button as BoarduiButton } from './boardui/index'
 import { TaskRow as BoarduiTaskRow } from './boardui/task-list'
 import { EmptyState as BoarduiEmptyState } from './boardui/empty-state'
-import { Chip as BoarduiChip } from './boardui/index'
+import { Chip as BoarduiChip, Select as BoarduiSelect } from './boardui/index'
 
 const STYLE_ID = 'dsh-studio-tw'
 
@@ -70,6 +70,24 @@ window.__ModuleLoader__.load({
       if (type === 'div' && typeof props?.className === 'string' && /(^|\s)ds-empty(\s|$)/.test(props.className)) {
         const { className, ...restProps } = props
         return React.createElement(BoarduiEmptyState, { ...restProps, title: children.flat().filter(Boolean) })
+      }
+      // 第五条：原生 <select> → BoardUI Select。legacy 里还有 h('select', {...}, option…)
+      // 这种写法（业务提单表单），补上之后全站就没有原生下拉了。
+      if (type === 'select') {
+        const options = []
+        const collect = (nodes) => {
+          React.Children.forEach(nodes, (child) => {
+            if (!React.isValidElement(child)) return
+            if (child.type === 'option') {
+              options.push({ value: child.props.value ?? '', label: React.Children.toArray(child.props.children).join('') })
+            } else if (child.type === 'optgroup') {
+              collect(child.props.children)
+            }
+          })
+        }
+        collect(children)
+        const { className, value, onChange, children: _children, ...restProps } = props ?? {}
+        return React.createElement(BoarduiSelect, { ...restProps, className, options, value, onChange })
       }
       // 第四条：裸的 span.ds-chip（ChipField 之外直接写的标签）→ BoardUI Chip
       if (type === 'span' && typeof props?.className === 'string' && /(^|\s)ds-chip(\s|$)/.test(props.className)) {
