@@ -1550,14 +1550,20 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
    自己不写 border/background（选中块由内层 span 画），被这层默认样式一盖，八个页签
    长得一模一样、选中的那个完全看不出来。
    只针对胶囊清掉这些 UA 默认值，别动别的控件（全局 reset 会把状态栏那组按钮搞坏）。 */
-[data-dsh-studio] .ds-pill {
-  appearance: none;
-  -webkit-appearance: none;
-  border: 0;
-  background: transparent;
-  padding: 5px 8px;
-  font: inherit;
-  color: inherit;
+/* 注意：这条必须待在 @layer base 里。Tailwind v4 的 utilities 在 @layer utilities，
+   **未分层的规则永远压过分层规则**（跟特异性无关）—— 上一版把它写在最外层，
+   结果连 `.border`、`.bg-background-primary-default` 这类工具类都被它盖掉，
+   看板工具栏的下拉变成了没框没底色的裸文字。放进 base 就只清 UA 默认值。 */
+@layer base {
+  [data-dsh-studio] .ds-pill {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 5px 8px;
+    font: inherit;
+    color: inherit;
+  }
 }
 
 /* 顶栏「明亮 / 黑暗 / 跟随系统」用小一号的胶囊 */
@@ -1580,16 +1586,19 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
    UA 默认样式（`border: 2px outset`）又冒出来 —— 真机上「打开 / 去看板」全带着一圈 3D 灰边。
    用**特异性为 0** 的选择器清掉 UA 默认值：任何 class（.ds-btn、.border、bg-*）都能覆盖，
    只把「没人指定的部分」拉回 0。 */
-:where([data-dsh-studio], [data-dsh-studio-portal]) :where(button) {
-  appearance: none;
-  -webkit-appearance: none;
-  border: 0 solid;
-  background: transparent;
-  padding: 0;
-  margin: 0;
-  font: inherit;
-  color: inherit;
-  text-align: inherit;
+/* 同上：必须待在 @layer base，否则未分层规则会盖掉所有工具类。 */
+@layer base {
+  :where([data-dsh-studio], [data-dsh-studio-portal]) :where(button) {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0 solid;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    text-align: inherit;
+  }
 }
 
 /* 「列的负责人」：原来每个分组只有一条细分隔线，八个分组连成一片，扫读容易串行。
@@ -1611,4 +1620,51 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] .ds-colrow-name {
   font-size: 13.5px;
   font-weight: 600;
+}
+
+/* ------------------------------------------- 同一行里只用一种控件语言 --- */
+/* BoardUI 自己的规矩是：**输入框灰底填充**（bg-background-tertiary-default），
+   **下拉触发器白底描边**（bg-background-primary-default + border）。单看都好看，
+   但塞进同一行时那个灰底输入框就像挖了个洞（看板工具栏最明显）。
+   所以按「一个容器一种语言」来统一，而不是把整个体系改成非黑即白：
+
+   1) 工具栏 / 筛选行 → 全部白底描边（跟着下拉走，行看起来是「一条控制带」）
+   2) 表单（抽屉里）→ 全部灰底填充（跟着输入框走，行看起来是「一块填写区」） */
+
+/* 1) 工具栏：输入框改成白底 + 内描边（用 outline 而不是 border，不改变 36px 的高度） */
+[data-dsh-studio] .ds-board-bar [data-field="input"] > div:first-child {
+  background-color: var(--color-background-primary-default, #fff);
+  outline: 1px solid var(--color-border-button-default, var(--ds-line));
+  outline-offset: -1px;
+}
+
+/* 2) 抽屉表单：下拉触发器改成灰底填充，和同一列的输入框一致 */
+[data-dsh-studio] .ds-drawer [data-field="select"] button {
+  background-color: var(--color-background-tertiary-default, var(--ds-soft));
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* 下拉触发器 & 输入框的外观兜底。
+   为什么不用 `bg-background-primary-default` 这类工具类：Tailwind v4 把 `@theme` 变量
+   输出成 `--color-x: var(--color-x)`（自引用），和 theme.css 里 `:root` 的真值打架，
+   真机上算出来的 background 是 transparent、border-width 是 0（`border-style:
+   var(--tw-border-style)` 在没 preflight 时也会塌）。所以这两处直接写死实际颜色，
+   用 legacy 的 `--ds-*`（那些一定存在），不再赌 token 解析。 */
+[data-dsh-studio] [data-field="select"] button {
+  border: 1px solid var(--ds-line);
+  border-radius: 10px;
+  background: var(--ds-card);
+  box-shadow: 0 1px 1px color-mix(in srgb, #101828 5%, transparent);
+}
+
+[data-dsh-studio] [data-field="select"] button:hover {
+  background: var(--ds-soft);
+}
+
+/* 抽屉里的下拉跟输入框一样：灰底、无边框 */
+[data-dsh-studio] .ds-drawer [data-field="select"] button {
+  background: var(--ds-soft);
+  border-color: transparent;
+  box-shadow: none;
 }

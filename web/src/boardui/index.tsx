@@ -73,6 +73,7 @@ export function Input({
   return (
     <BoarduiField
       className={["w-full", extraClasses(className)].filter(Boolean).join(" ")}
+      data-field="input"
       style={style}
       value={value === undefined || value === null ? undefined : String(value)}
       defaultValue={defaultValue === undefined || defaultValue === null ? undefined : String(defaultValue)}
@@ -103,6 +104,7 @@ export function Textarea({
   return (
     <BoarduiField
       className={["w-full", extraClasses(className)].filter(Boolean).join(" ")}
+      data-field="input"
       style={style}
       value={value === undefined || value === null ? undefined : String(value)}
       defaultValue={defaultValue === undefined || defaultValue === null ? undefined : String(defaultValue)}
@@ -153,6 +155,7 @@ export function Select({
   return (
     <BoarduiSelect
       {...rest}
+      data-field="select"
       className={extraClasses(className)}
       style={style}
       isDisabled={disabled === true}

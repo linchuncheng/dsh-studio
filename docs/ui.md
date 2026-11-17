@@ -448,3 +448,33 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
 
 真机复核截图：`tmp/zoom/列的负责人.png`、`tmp/zoom/用例工具栏.png`。
 本地探针 pages 22/22、fields 20/20、drawer 15/15、scale 9/9，`npm test` 108/108。
+
+### 关于「同一行里控件底色不统一」：定了，一个容器一种语言
+
+BoardUI 自己的规矩是：**输入框灰底填充**、**下拉触发器白底描边**。单看都对，塞进同一行就露馅
+（看板工具栏那个灰底搜索框像挖了个洞）。规则改成：
+
+1. **工具栏 / 筛选行 → 全部白底描边**（跟下拉走）：`[data-dsh-studio] .ds-board-bar [data-field="input"] > div:first-child`
+   改白底 + 1px 内描边（用 `outline` 不用 `border`，不改变 36px 高度）。
+2. **表单（抽屉里）→ 全部灰底填充**（跟输入框走）：`.ds-drawer [data-field="select"] button` 去边框、改灰底。
+
+为此在适配层给两个控件加了稳定钩子：`data-field="input"` / `data-field="select"`，
+以后调样式不用靠 PI 工具类的类名。
+
+### ⚠️ 顺手挖出来的隐患：Tailwind v4 把 theme 变量输出成自引用
+
+排查上面这个问题时发现产物里有这种东西：
+
+```
+--color-background-primary-default: var(--color-background-primary-default);
+--color-border-button-default:      var(--color-border-button-default);
+```
+
+即 `@theme` 的变量被输出成**指向自己**，解析结果为空 —— 于是 `.bg-background-primary-default`
+算出来的 `background-color` 是 `transparent`、`.border` 的 `border-width` 是 0
+（`border-style: var(--tw-border-style)` 在没有 preflight 时也会塌）。
+
+目前只有下拉触发器踩到（已用 legacy 的 `--ds-*` 写死兜底，见上），但**凡是依赖这些
+`--color-*` 的 BoardUI 样式都会静默失效**。这是下一轮该查的头号问题：确认是
+`@config tailwind.config.js` 的兼容层还是 scope-css 的 `:root` 改写导致的，然后决定
+「全部走 `@theme`」还是「全部走 theme.css 的 `:root`」，别再两套混着。
