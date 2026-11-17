@@ -1493,3 +1493,53 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   padding: 14px 18px;
   border-bottom: 1px solid var(--color-border-button-default, var(--border));
 }
+
+/* ========================================================================
+ * BoardUI 外观覆盖（W2-3：设置面板 / 页签 / 弹窗）
+ * 同样追加在末尾，整段可回退；变量都带旧值兜底。
+ * ======================================================================== */
+
+[data-dsh-studio] .ds-panel {
+  border: 1px solid var(--color-border-button-default, var(--border));
+  border-radius: var(--radius-2lg, 12px);
+  background: var(--color-background-primary-default, var(--card));
+  box-shadow: 0 1px 2px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+
+[data-dsh-studio] .ds-panel-head {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-text-primary, var(--foreground));
+  border-bottom: 1px solid var(--color-border-button-default, var(--border));
+}
+
+[data-dsh-studio] [role="tablist"] {
+  gap: 2px;
+  border-bottom: 1px solid var(--color-border-button-default, var(--border));
+}
+
+[data-dsh-studio] [role="tab"] {
+  border-radius: var(--radius-2lg, 10px) var(--radius-2lg, 10px) 0 0;
+  color: var(--color-text-secondary, var(--muted-foreground));
+  font-weight: 500;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+[data-dsh-studio] [role="tab"]:hover {
+  color: var(--color-text-primary, var(--foreground));
+  background: var(--color-background-secondary-hover, var(--muted));
+}
+
+[data-dsh-studio] [role="tab"][data-state="active"] {
+  color: var(--color-text-primary, var(--foreground));
+  background: var(--color-background-primary-hover, var(--muted));
+}
+
+[data-dsh-studio-portal] [role="dialog"],
+[data-dsh-studio] .ds-modal {
+  border: 1px solid var(--color-border-button-default, var(--border));
+  border-radius: var(--radius-2lg, 14px);
+  background: var(--color-background-primary-default, var(--card));
+  box-shadow: 0 24px 64px -24px color-mix(in srgb, #000 45%, transparent);
+}
