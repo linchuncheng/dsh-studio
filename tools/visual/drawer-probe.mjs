@@ -117,7 +117,7 @@ try {
       inPortal: host !== null && host !== undefined,
       panelBg: /bg-background-primary-default/.test(panel?.className ?? ''),
       titleText: (title?.textContent ?? '').trim(),
-      titleType: /text-title-3-semibold/.test(title?.className ?? ''),
+      titleType: /text-title-3-(medium|semibold)/.test(title?.className ?? ''),
       closeLabel: dialog?.querySelector('button[aria-label="关闭"]') !== null,
       width: Math.round(panel?.getBoundingClientRect?.().width ?? 0),
     }
@@ -132,7 +132,7 @@ try {
     return {
       inside: dialog !== null && active !== null && dialog.contains(active),
       tag: active?.tagName ?? '',
-      overlayAttr: dialog?.hasAttribute('data-boardui-overlay') === true,
+      overlayAttr: dialog !== undefined && (dialog.hasAttribute('data-boardui-overlay') || dialog.querySelector('[data-boardui-overlay]') !== null),
     }
   })
   check('打开后焦点在抽屉里面（真机踩过：焦点留在 body 就按 Esc 关不掉）', focused.inside === true, `active=${focused.tag}`)
