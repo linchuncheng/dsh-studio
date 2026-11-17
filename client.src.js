@@ -32,7 +32,7 @@ window.__ModuleLoader__.load({
     }
 
     /* 表单适配层与共享抽屉已经搬到 web/src/studio，这边只负责把 h / kit 递进去。 */
-    const { TextField, TextAreaField, ChipField, CheckField, SelectField } = createFields({ h, kit, React })
+    const { TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle } = createFields({ h, kit, React })
     const SideDrawer = createSideDrawer({ h, kit })
     const Editor = createEditor({ h, React })
     const Card = createCard({ h, ChipField })
@@ -1192,7 +1192,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
     const MentionPicker = createMentionPicker({ h, TextField })
     const Drawer = createDrawer({ h, React, api, kit, currentUser, renderMarkdown, tipOf, tipLabel, confirmDialog, promptDialog, TextField, TextAreaField, ChipField, CheckField, SelectField, MdField, MentionPicker })
     const Palette = createPalette({ h, React })
-    provideClient({ h, React, Editor, api, kit, toast, sessionToken, currentUser, confirmDialog, promptDialog, tipOf, tipLabel, renderMarkdown, SideDrawer, MentionPicker, Card, TextField, TextAreaField, ChipField, CheckField, SelectField, MdField })
+    provideClient({ h, React, Editor, api, kit, toast, sessionToken, currentUser, confirmDialog, promptDialog, tipOf, tipLabel, renderMarkdown, SideDrawer, MentionPicker, Card, TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, MdField })
 
 
     // -------------------------------------------------------------- market

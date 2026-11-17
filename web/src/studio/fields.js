@@ -5,7 +5,7 @@
 
 // 表单控件换成 BoardUI 的源码实现（TextField + InputBase / TextareaBase / Checkbox）。
 // 适配层负责把 legacy 的 value / onChange(e) 语义翻译成 react-aria 的 value / onChange(string)。
-import { Input as BoarduiInput, Textarea as BoarduiTextarea, Checkbox as BoarduiCheckbox, Select as BoarduiSelect, Chip as BoarduiChip } from '../boardui/index'
+import { Input as BoarduiInput, Textarea as BoarduiTextarea, Checkbox as BoarduiCheckbox, Select as BoarduiSelect, Chip as BoarduiChip, SwitchField as BoarduiSwitchField } from '../boardui/index'
 
 export function createFields({ h, kit, React }) {
     function TextField(props) {
@@ -44,5 +44,10 @@ export function createFields({ h, kit, React }) {
       return h(BoarduiSelect, { ...rest, className, options, value, onChange, disabled })
     }
 
-  return { TextField, TextAreaField, ChipField, CheckField, SelectField }
+  /* 开关：启用/停用这类即时生效的布尔状态，用官方 Switch（不是勾选框） */
+  function SwitchToggle(props) {
+    return h(BoarduiSwitchField, props)
+  }
+
+  return { TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle }
 }

@@ -7,6 +7,7 @@ import { TextareaBase as BoarduiTextareaBase } from "../components/base/textarea
 import { Checkbox as BoarduiCheckboxBase } from "../components/base/checkbox/checkbox";
 import { Select as BoarduiSelect, SelectItem as BoarduiSelectItem } from "../components/base/select/select";
 import { Chip as BoarduiChip } from "../components/base/badges/chip";
+import { Switch as BoarduiSwitch } from "../components/base/switch/switch";
 
 const VARIANT = {
   default: "primary",
@@ -206,4 +207,27 @@ export function Chip({ className, variant, ...rest }: any) {
         : "gray");
   // caption 是 12/16/500 —— 与原来 11px 的小标签最接近，换 bold(14) 会把行高撑起来
   return <BoarduiChip variant="caption" color={color} {...rest} />;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  开关：启用/停用这类「即时生效的布尔状态」用官方 Switch（语义与勾选框不同）。   */
+/*  legacy 写法 h(CheckField, { checked, onChange(e) }) 与勾选框一致，所以适配层   */
+/*  也保持同一套入参，只是换成带滑块的 Switch。                                   */
+/* -------------------------------------------------------------------------- */
+
+export function SwitchField({ className, checked, onChange, disabled, bare, label, ...rest }: any) {
+  void className;
+  void bare;
+  return (
+    <BoarduiSwitch
+      isSelected={checked === true}
+      isDisabled={disabled === true}
+      aria-label={typeof rest['aria-label'] === 'string' ? rest['aria-label'] : (typeof label === 'string' ? label : rest.title)}
+      onChange={(next: boolean) => {
+        if (typeof onChange === 'function') onChange({ target: { checked: next } });
+      }}
+    >
+      {label === undefined || label === null || label === '' ? null : label}
+    </BoarduiSwitch>
+  );
 }

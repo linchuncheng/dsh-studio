@@ -729,3 +729,18 @@ BoardUI 没有空态组件（它家是每个页面自带插画），所以照 dr
 容器与滑块的底色用 token 写死（`.ds-seg-control`），因为 Tailwind 的 bg-* 工具类在宿主页里不生效。
 
 真机截图：`tmp/zoom/头部与页签.png`（右侧三件套现在是标准分段控件）。
+
+### 第二项：开关改用官方 Switch
+
+「启用/停用」这类**即时生效的布尔状态**原来用 Checkbox 渲染，语义不对（勾选框是"选中某一项"）。
+现在改成官方 `components/base/switch/switch.tsx`：
+
+- `fields.js` 新增 `SwitchToggle`（与 `CheckField` 同样的 checked/onChange(e) 入参，内部渲染官方 Switch）
+- 通过 `provideClient` 注入，面板里 `h(CheckField → h(SwitchToggle` 的有 9 处：
+  权限与审计 2、集成与仓库 4、专家 2、项目与迭代 1
+- **勾选框语义的地方保持 Checkbox**：看板筛选（隐藏空列/只看阻塞）、自动派单的列多选、用例勾选
+
+坑：`provideClient` 与 `createFields` 两处解构都要加 `SwitchToggle`，少一处就是
+`SwitchToggle is not defined`（第一版就漏了 createFields 那行，设置页整片崩）。
+
+体积：接官方 SegmentedControl + Switch 后 1128 kB，观察线从 1.1 MB 抬到 1.2 MB（守卫同步）。
