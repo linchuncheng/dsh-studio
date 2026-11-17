@@ -117,6 +117,27 @@ if (existsSync(indexCss)) {
   }
 }
 
+/* 内联硬编码颜色上限（确定性检查）。
+   运行时统计会随数据渲染浮动（同一套代码量出过 65/43/12/27 四个数），
+   不能当门槛；这里扫源码里的字面量，超线就 fail。
+   允许保留的 4 处：drawer.js 图片查看器的白底（暗色主题下白底看图片才是对的）
+   与 releases.js 一个带 alpha 的成功色描边。 */
+{
+  const scan = [...walk(join(web, 'src', 'studio'), ['.js']), join(root, 'client.src.js')]
+  let hits = []
+  for (const file of scan) {
+    if (!existsSync(file)) continue
+    const text = read(file)
+    for (const m of text.matchAll(/(?:color|background|backgroundColor|borderColor)\s*:\s*'#[0-9a-fA-F]{3,8}'/g)) {
+      const line = text.slice(0, m.index).split(/\r?\n/).length
+      hits.push(rel(file) + ':' + line + ' ' + m[0].trim())
+    }
+  }
+  if (hits.length > 4) {
+    failures.push('内联硬编码颜色 ' + hits.length + ' 处（上限 4）：' + hits.slice(0, 3).join(' | '))
+  }
+}
+
 const portalHelper = join(web, 'src', 'lib', 'portal.js')
 if (!existsSync(portalHelper)) {
   failures.push('web/src/lib/portal.js is missing (portalRoot() must live there)')
