@@ -29,6 +29,7 @@
     "verify:drawertabs": "node tools/visual/drawer-tabs.mjs",
     "review:layout": "node tools/visual/layout-audit.mjs",
     "diag:toast": "node tools/visual/toast-diag.mjs",
+    "verify:toast": "node tools/visual/toast-probe.mjs",
     "verify:login": "node tools/visual/login-probe.mjs",
     "verify:facts": "node tools/visual/facts-probe.mjs"
   },
