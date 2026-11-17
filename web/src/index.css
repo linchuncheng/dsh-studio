@@ -1668,3 +1668,56 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   border-color: transparent;
   box-shadow: none;
 }
+
+/* ---------------------------------------------------- 需求页左右分栏（修复） --- */
+/* 真机上的 bug：点开一条需求后，右侧详情被挤到下一行，整页像上下堆了两个列表。
+   原因：宽屏用的是 flex + `flex-wrap: wrap`（为了让顶部那条提示独占一行），
+   而详情 `flex: 1 1 auto` 的基准尺寸是「内容理想宽度」——它里面的矩阵/表格很宽，
+   算下来超过剩余空间就直接换行了。
+   修法：基准改成 0（`flex-basis: 0`），宽度只由剩余空间决定；再兜一层 overflow，
+   内容再宽也只在自身内部横向滚动，不会把邻居顶走。 */
+@media (min-width: 1100px) {
+  [data-dsh-studio] .ds-body > div:has(> .ds-req-list) > div.ds-req-detail {
+    flex: 1 1 0%;
+    min-width: 0;
+    max-width: none;
+    overflow-x: auto;
+  }
+
+  /* 左栏给一点呼吸，别贴着边框 */
+  [data-dsh-studio] .ds-req-list {
+    padding-right: 4px;
+  }
+}
+
+/* ------------------------------------------------------------ 灰字统一调深 --- */
+/* 之前的问题：`.ds-hint` 是 10.5px + **0.5 透明**，在白底上基本看不清；
+   BoardUI 的 text/tertiary 用的是 neutral-400（≈2.8:1，也不够）。灰色是层级信息，
+   不是「可以看不见的信息」，统一提一档：
+     · hint：11.5px、不透明、用 muted-foreground（浅色 #52525b / 深色自动跟随）
+     · text/secondary → neutral-600，text/tertiary → neutral-500
+   只动浅色主题的 muted-foreground；深色主题本来对比度就够，不碰。 */
+:where([data-dsh-studio]) {
+  --muted-foreground: #52525b;
+  --color-text-secondary: var(--color-neutral-600);
+  --color-text-tertiary: var(--color-neutral-500);
+}
+
+[data-dsh-studio] .ds-hint {
+  font-size: 11.5px;
+  line-height: 1.5;
+  opacity: 1;
+  color: var(--muted-foreground);
+}
+
+/* 面板头里那句说明、以及各处的次要说明，别再靠 opacity 压灰 */
+[data-dsh-studio] .ds-panel-head > .ds-hint,
+[data-dsh-studio] .ds-an-sec .ds-hint,
+[data-dsh-studio] .ds-req-list-head {
+  opacity: 1;
+  color: var(--muted-foreground);
+}
+
+[data-dsh-studio] .ds-req-list-head {
+  font-size: 12px;
+}
