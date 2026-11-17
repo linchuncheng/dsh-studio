@@ -1838,20 +1838,33 @@ html body [data-dsh-studio] .ds-listrow + .ds-listrow {
 [data-dsh-studio] button[data-variant][data-size="small"] { height: 32px; padding: 0 10px; }
 [data-dsh-studio] button[data-variant][data-size="xs"] { height: 26px; padding: 0 8px; font-size: 11.5px; }
 
+/* BoardUI 的 primary 是**蓝色渐变**（accent-500→600），不是黑底 —— 之前写死黑色，
+   暗色主题下黑底卡在黑面板上几乎看不见。改用他们的渐变 token，两个主题都对。 */
 [data-dsh-studio] button[data-variant="primary"] {
   border: 1px solid transparent;
-  background: #18181b;
+  background-color: #2563eb;
+  background-image: var(--gradient-button-primary-default);
   color: #fff;
 }
-[data-dsh-studio] button[data-variant="primary"]:hover { background: #27272a; }
+[data-dsh-studio] button[data-variant="primary"]:hover {
+  background-image: var(--gradient-button-primary-hover);
+}
+[data-dsh-studio] button[data-variant="primary"]:disabled,
+[data-dsh-studio] button[data-variant="primary"][disabled] {
+  background-image: var(--gradient-button-primary-disabled);
+}
 
+/* secondary 用 token 而不是写死白色：暗色主题下 BoardUI 的
+   background/primary/default 是深色、text/primary 是浅色，写死白底会让按钮在暗色里发亮。 */
 [data-dsh-studio] button[data-variant="secondary"] {
   border: 1px solid var(--color-border-button-default, #e4e4e7);
-  background: #fff;
-  color: #18181b;
+  background: var(--color-background-primary-default, #fff);
+  color: var(--color-text-primary, #18181b);
   box-shadow: 0 1px 1px color-mix(in srgb, #101828 4%, transparent);
 }
-[data-dsh-studio] button[data-variant="secondary"]:hover { background: #fafafa; }
+[data-dsh-studio] button[data-variant="secondary"]:hover {
+  background: var(--color-background-primary-hover, #fafafa);
+}
 
 [data-dsh-studio] button[data-variant="ghost"] {
   border: 1px solid transparent;
@@ -1862,10 +1875,13 @@ html body [data-dsh-studio] .ds-listrow + .ds-listrow {
 
 [data-dsh-studio] button[data-variant="danger"] {
   border: 1px solid transparent;
-  background: #dc2626;
+  background-color: #dc2626;
+  background-image: var(--gradient-button-danger-default);
   color: #fff;
 }
-[data-dsh-studio] button[data-variant="danger"]:hover { background: #b91c1c; }
+[data-dsh-studio] button[data-variant="danger"]:hover {
+  background-image: var(--gradient-button-danger-hover);
+}
 
 [data-dsh-studio] button[data-variant][disabled],
 [data-dsh-studio] button[data-variant][aria-disabled="true"] {
@@ -1937,4 +1953,10 @@ html body [data-dsh-studio] .ds-card-foot {
 
 html body [data-dsh-studio] .ds-card-warn {
   font-size: 11px;
+}
+
+/* 暗色主题下「只看阻塞 / 只看缺正文」这类红色筛选标签：浅色主题那套深红 #c0392b
+   在深色底上几乎看不见，换成浅一档的红。 */
+[data-dsh-studio][data-theme="dark"] .ds-board-bar label[title] {
+  color: #f87171 !important;
 }

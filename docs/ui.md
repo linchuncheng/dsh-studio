@@ -650,3 +650,18 @@ BoardUI 没有空态组件（它家是每个页面自带插画），所以照 dr
 - `.ds-card-foot`：原来 `opacity:.5` → 不透明 muted-foreground。
 
 `verify:scale` 9/9（含首屏出卡时间、每列 40 张、304 命中）、逐页 17/17、sweep 5/5 全绿。
+
+### 暗色主题收尾：按钮改用 BoardUI 的渐变，两处硬编码颜色补上暗色版
+
+追到根因了，而且**不是样式优先级问题，是我们自己写死颜色**：
+
+1. **primary 按钮**：我原先写死 `#18181b`（黑）。BoardUI 的 primary 是**蓝色渐变**
+   （`--gradient-button-primary-default` = accent-500→600）。黑底卡在暗色面板上几乎看不见 ——
+   改用他们的渐变 token，浅色/暗色都对，而且这才是他们本来的设计。
+2. **secondary 按钮**：原先写死白底 + 深字。改成
+   `background/primary/default` + `text/primary` 两个 token，暗色自动变深底浅字。
+3. **裸 `span.ds-chip`**（需求页「得分 54」这类）：`ChipField` 之外直接写的标签没走适配层，
+   在 `h` 里加了第四条翻译（`span.ds-chip` → BoardUI `Chip`）。
+4. **「只看阻塞 / 只看缺正文」**：暗色下深红 `#c0392b` 糊在深底上，补一条暗色专用浅红。
+
+暗色巡检（`tmp/dark-check.mjs`，逐页找「深底上的深字」）现在 **五页全部 0 可疑元素**。

@@ -13,6 +13,7 @@ import { Badge, Input, Textarea, Label, Tabs, TabsList, TabsTrigger } from './co
 import { Button as BoarduiButton } from './boardui/index'
 import { TaskRow as BoarduiTaskRow } from './boardui/task-list'
 import { EmptyState as BoarduiEmptyState } from './boardui/empty-state'
+import { Chip as BoarduiChip } from './boardui/index'
 
 const STYLE_ID = 'dsh-studio-tw'
 
@@ -69,6 +70,10 @@ window.__ModuleLoader__.load({
       if (type === 'div' && typeof props?.className === 'string' && /(^|\s)ds-empty(\s|$)/.test(props.className)) {
         const { className, ...restProps } = props
         return React.createElement(BoarduiEmptyState, { ...restProps, title: children.flat().filter(Boolean) })
+      }
+      // 第四条：裸的 span.ds-chip（ChipField 之外直接写的标签）→ BoardUI Chip
+      if (type === 'span' && typeof props?.className === 'string' && /(^|\s)ds-chip(\s|$)/.test(props.className)) {
+        return React.createElement(BoarduiChip, { ...props }, ...children)
       }
       return React.createElement(type, props, ...children)
     }
