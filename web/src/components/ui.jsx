@@ -43,7 +43,9 @@ const buttonVariants = cva(
 )
 
 const Button = React.forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : 'button'
+  // 非 asChild 时直接走 BoardUI 原样引入的 Button（适配层做 default→primary 这类命名映射）
+  if (!asChild) return <BoarduiButton ref={ref} variant={variant} size={size} className={className} {...props} />
+  const Comp = Slot
   return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
 })
 Button.displayName = 'Button'
