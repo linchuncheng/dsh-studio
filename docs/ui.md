@@ -327,3 +327,12 @@ Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fix
 - `base/badges/badge.tsx` 也拉下来了，但它是「导航计数小球」，跟我们的状态标签不是一类，没硬套。
 - 验证：`verify:drawer` 扩到 13 项（多了：点「删除」弹确认框、在 portal 里、用 BoardUI 背景、
   有取消 + 确认两个按钮、点取消能关掉），截图 `tmp/dialog-probe.png`；pages 22/22 仍全绿。
+
+### 体积与 token 裁剪：算过了，不值当
+
+- `theme.css` 定义行 575 行、**唯一 token 232 个**；用 postcss 跑一遍真实构建产物（`@tailwindcss/postcss`
+  + 作用域插件），对每个 token 找 `var(--x)` 引用，再沿「token 引用 token」做一次可达性传播，
+  结果是 **37 个 token 没人引用**（`--color-slate-200`、`--shadow-sm/md/lg/xl`、`--radius-2-5xl` 这类）。
+- 37 个定义 ≈ 2–3 kB，而产物已经 1081 kB —— 裁了也回不到 900 kB，收益和「改错一个 token 就悄悄变色」的风险不成比例，
+  所以**没有裁**。真想再瘦，只能退组件（退回 Radix Select 一类），那等于不换骨。
+- 结论：**900 kB 这条红线取消，改成 1.1 MB 的观察线**；超过 1.1 MB 再来谈按页拆包。
