@@ -1728,7 +1728,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
      · .ds-btn    灰底小按钮 → 白底描边 32px（与 BoardUI secondary 对齐），primary/ghost 各自跟随
      · .ds-listrow 带分隔线的表格行 → 无边框、悬停变色的行卡片，和 TaskRow 一致 */
 
-[data-dsh-studio] .ds-empty {
+html body [data-dsh-studio] .ds-empty {
   border: 1px solid var(--color-separator-border, var(--ds-line));
   border-radius: 12px;
   background: var(--color-background-secondary-default, #fafafa);
@@ -1739,7 +1739,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   color: var(--muted-foreground);
 }
 
-[data-dsh-studio] .ds-btn {
+html body [data-dsh-studio] .ds-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1757,37 +1757,37 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
-[data-dsh-studio] .ds-btn:hover {
+html body [data-dsh-studio] .ds-btn:hover {
   background: var(--color-background-primary-hover, var(--ds-soft));
 }
 
-[data-dsh-studio] .ds-btn[disabled] {
+html body [data-dsh-studio] .ds-btn[disabled] {
   opacity: 0.45;
   cursor: default;
 }
 
-[data-dsh-studio] .ds-btn-primary {
+html body [data-dsh-studio] .ds-btn-primary {
   border-color: transparent;
   background: var(--color-button-primary-background, #18181b);
   color: #fff;
 }
 
-[data-dsh-studio] .ds-btn-primary:hover {
+html body [data-dsh-studio] .ds-btn-primary:hover {
   background: var(--color-button-primary-hover, #27272a);
 }
 
-[data-dsh-studio] .ds-btn-ghost {
+html body [data-dsh-studio] .ds-btn-ghost {
   border-color: transparent;
   background: transparent;
   color: var(--muted-foreground);
 }
 
-[data-dsh-studio] .ds-btn-ghost:hover {
+html body [data-dsh-studio] .ds-btn-ghost:hover {
   background: var(--color-background-primary-hover, var(--ds-soft));
   color: var(--color-text-primary, inherit);
 }
 
-[data-dsh-studio] .ds-listrow {
+html body [data-dsh-studio] .ds-listrow {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1797,11 +1797,11 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   transition: background-color 120ms ease;
 }
 
-[data-dsh-studio] .ds-listrow:hover {
+html body [data-dsh-studio] .ds-listrow:hover {
   background: var(--color-background-primary-hover, var(--ds-soft));
 }
 
-[data-dsh-studio] .ds-listrow + .ds-listrow {
+html body [data-dsh-studio] .ds-listrow + .ds-listrow {
   border-top: 1px solid var(--color-separator-border, var(--ds-line));
 }
 
