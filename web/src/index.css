@@ -1,6 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4：只引 theme + utilities，**不引 preflight**——CSS 会注入宿主页面，
+   全局重置会把宿主 UI 一起改掉（v3 时靠 corePlugins.preflight=false 达到同样效果）。 */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* BoardUI 的设计 token 与排版（MIT，见文件头）。暗色钩子 .dark 由 scope-css.mjs
+   映射到 [data-dsh-studio][data-theme="dark"]，与宿主面板的主题开关一致。 */
+@import "./boardui/theme.css";
+@import "./boardui/typography.css";
+
+/* 仍用 JS 配置：content / darkMode / theme.extend 都在 tailwind.config.js 里，
+   迁移期先不改写成 CSS-first @theme，等组件真搬过来再收。 */
+@config "../tailwind.config.js";
 
 /* shadcn/ui design tokens, scoped to the Studio subtree so the host UI is untouched. */
 :where([data-dsh-studio]) {
