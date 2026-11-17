@@ -385,13 +385,15 @@ function newTaskId() {
 function sendCsv(res, rows, filename) {
   const escape = value => {
     const text = String(value ?? '')
-    return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+    const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text
+    return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
   }
   const payload = Buffer.from(`\uFEFF${rows.map(row => row.map(escape).join(',')).join('\r\n')}\r\n`, 'utf8')
   res.writeHead(200, {
     'content-type': 'text/csv; charset=utf-8',
     'content-disposition': `attachment; filename="${filename}"`,
     'cache-control': 'no-store',
+    'referrer-policy': 'no-referrer',
     'content-length': payload.length,
   })
   res.end(payload)
@@ -2068,16 +2070,15 @@ function accessLevelFor(route, method) {
 }
 
 /** 权限判定，返回 null 表示放行，否则返回给人看的原因。 */
-function checkAccess(config, operator, level) {
+function checkAccess(config, operator, level, trusted = false) {
   const access = config?.access ?? { enabled: false, members: [] }
   if (access.enabled !== true) return null
-  // 本地超管永远放行：开权限时最怕的是管理员把自己关在门外。
-  const raw = String(operator).trim()
-  if (raw.includes('超级管理员')) return null
+  const raw = String(operator ?? '').trim()
+  if (trusted === true && raw.includes('超级管理员')) return null
   const name = raw.toLowerCase()
   const member = access.members.find(item => {
     const ids = [item.id, item.name].map(value => String(value ?? '').trim().toLowerCase()).filter(Boolean)
-    return ids.includes(name) || ids.some(value => name.endsWith(value) || name.includes(` ${value}`))
+    return ids.includes(name)
   })
   if (member === undefined) {
     // 名单外的人还能看（否则名字对不上就直接进不去），但一个写操作都不许做。
@@ -2161,7 +2162,7 @@ function checkToolAccess(config, operator, toolName) {
   const name = typeof operator === 'string' ? operator : String(operator?.name ?? operator?.id ?? '')
   if (config?.access?.enabled !== true) return { level, denial: null }
   if (config.access.agents === 'bypass') return { level, denial: null }
-  return { level, denial: checkAccess(config, name, level) }
+  return { level, denial: checkAccess(config, name, level, true) } // 派单身份是服务端认定的
 }
 
 /** 记一条审计：只留摘要，不记正文、不记密钥。写失败不影响主流程。 */async function recordAudit(store, entry) {
@@ -2393,7 +2394,7 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
           return
         }
         if (locked && (route === '/state' || route === '/') && session === null) {
-          sendJson(res, 200, { ok: true, locked: true, state: { revision: Number(store.snapshot().revision) || 1, config: publicConfig(configNow), tasks: [], requirements: [], releases: [] } })
+          sendJson(res, 200, { ok: true, locked: true, state: { revision: Number(store.snapshot().revision) || 1, config: { board: publicConfig(configNow).board }, tasks: [], requirements: [], releases: [] } })
           return
         }
       }
@@ -2468,7 +2469,8 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
         /* 坏 JSON 交给下面的 core 去报 400 */
       }
     }
-    const denied = checkAccess(store.snapshot().config, operator, level)
+    const trusted = typeof req.studioActor === 'string' && req.studioActor.trim() !== ''
+    const denied = checkAccess(store.snapshot().config, operator, level, trusted)
     if (denied !== null) {
       await recordAudit(store, { by: operator, route, level, status: 403, ok: false, summary: `${denied}${summary === '' ? '' : ` | ${summary}`}` })
       sendJson(res, 403, { ok: false, error: denied })

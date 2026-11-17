@@ -18,7 +18,16 @@ export function createMarkdown(h) {
         while ((match = pattern.exec(piece)) !== null) {
           if (match.index > cursor) nodes.push(piece.slice(cursor, match.index))
           const k = `${prefix}i${pieceIndex}-${match.index}`
-          if (match[1] !== undefined) nodes.push(h('a', { key: k, href: match[2], target: '_blank', rel: 'noreferrer' }, match[1]))
+          if (match[1] !== undefined) {
+            /* 链接协议白名单。评论 / 卡描述都是用户可控文本，[点我](javascript:…)
+               以前会被原样写进 href —— 点一下就在宿主页面里执行脚本。
+               只放行 http/https/mailto 与相对路径，其余降级成纯文本。 */
+            const target = match[2]
+            const safe = /^(https?:|mailto:|\/|#|\.\.?\/)/i.test(target)
+            nodes.push(safe
+              ? h('a', { key: k, href: target, target: '_blank', rel: 'noreferrer noopener' }, match[1])
+              : h('span', { key: k, title: target }, match[1]))
+          }
           else if (match[3] !== undefined || match[4] !== undefined) nodes.push(h('strong', { key: k }, match[3] ?? match[4]))
           else nodes.push(h('em', { key: k }, match[5] ?? match[6]))
           cursor = match.index + match[0].length
