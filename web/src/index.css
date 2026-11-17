@@ -1721,3 +1721,154 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] .ds-req-list-head {
   font-size: 12px;
 }
+
+/* --------------------------------------------------- 空态 / 按钮 / 列表行 --- */
+/* 这三样是最后还在说「换皮前语言」的地方，统一往 BoardUI 靠：
+     · .ds-empty  虚线框 → 实线浅框 + 圆角 + 居中文案（虚线框是 2010 年代的空态语言）
+     · .ds-btn    灰底小按钮 → 白底描边 32px（与 BoardUI secondary 对齐），primary/ghost 各自跟随
+     · .ds-listrow 带分隔线的表格行 → 无边框、悬停变色的行卡片，和 TaskRow 一致 */
+
+[data-dsh-studio] .ds-empty {
+  border: 1px solid var(--color-separator-border, var(--ds-line));
+  border-radius: 12px;
+  background: var(--color-background-secondary-default, #fafafa);
+  padding: 18px 16px;
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+
+[data-dsh-studio] .ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-button-default, var(--ds-line));
+  border-radius: 8px;
+  background: var(--color-background-primary-default, #fff);
+  color: var(--color-text-primary, inherit);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+[data-dsh-studio] .ds-btn:hover {
+  background: var(--color-background-primary-hover, var(--ds-soft));
+}
+
+[data-dsh-studio] .ds-btn[disabled] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+[data-dsh-studio] .ds-btn-primary {
+  border-color: transparent;
+  background: var(--color-button-primary-background, #18181b);
+  color: #fff;
+}
+
+[data-dsh-studio] .ds-btn-primary:hover {
+  background: var(--color-button-primary-hover, #27272a);
+}
+
+[data-dsh-studio] .ds-btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted-foreground);
+}
+
+[data-dsh-studio] .ds-btn-ghost:hover {
+  background: var(--color-background-primary-hover, var(--ds-soft));
+  color: var(--color-text-primary, inherit);
+}
+
+[data-dsh-studio] .ds-listrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 10px;
+  transition: background-color 120ms ease;
+}
+
+[data-dsh-studio] .ds-listrow:hover {
+  background: var(--color-background-primary-hover, var(--ds-soft));
+}
+
+[data-dsh-studio] .ds-listrow + .ds-listrow {
+  border-top: 1px solid var(--color-separator-border, var(--ds-line));
+}
+
+/* --------------------------------------------------- 把 Tailwind 的边框开关补上 --- */
+/* Tailwind v4 的 `.border` 长这样：`border-style: var(--tw-border-style); border-width: 1px`。
+   `--tw-border-style` 平时由 preflight 里那条 `*, ::before, ::after { --tw-border-style: solid }`
+   兜底 —— 而我们刻意没引 preflight，于是这个变量没人给值，`border-style` 变成无效值 →
+   计算值 `none` → **所有带 `.border` 的组件都没有边框**（BoardUI 的 secondary 按钮最明显：
+   只剩文字，看着像 disabled）。
+   在面板根上补一个默认值就够，子元素会继承。 */
+:where([data-dsh-studio], [data-dsh-studio-portal]) {
+  --tw-border-style: solid;
+}
+
+/* ------------------------------------------------------- 按钮外观兜底 --- */
+/* 实测：BoardUI 按钮上的 `bg-*` / `border-*` 这类**颜色工具类在宿主页里不生效**
+   （布局类 inline-flex / gap 是好的，颜色类的计算值永远是 transparent / 0px）。
+   与其继续跟 Tailwind 的分层与变量打架，不如按变体把外观写死 —— 反正变体矩阵是固定的。
+   钩子由适配层给：`data-variant` / `data-size`。 */
+[data-dsh-studio] button[data-variant] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1;
+  transition: background-color 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+
+[data-dsh-studio] button[data-variant][data-size="medium"] { height: 36px; padding: 0 12px; }
+[data-dsh-studio] button[data-variant][data-size="small"] { height: 32px; padding: 0 10px; }
+[data-dsh-studio] button[data-variant][data-size="xs"] { height: 26px; padding: 0 8px; font-size: 11.5px; }
+
+[data-dsh-studio] button[data-variant="primary"] {
+  border: 1px solid transparent;
+  background: #18181b;
+  color: #fff;
+}
+[data-dsh-studio] button[data-variant="primary"]:hover { background: #27272a; }
+
+[data-dsh-studio] button[data-variant="secondary"] {
+  border: 1px solid var(--color-border-button-default, #e4e4e7);
+  background: #fff;
+  color: #18181b;
+  box-shadow: 0 1px 1px color-mix(in srgb, #101828 4%, transparent);
+}
+[data-dsh-studio] button[data-variant="secondary"]:hover { background: #fafafa; }
+
+[data-dsh-studio] button[data-variant="ghost"] {
+  border: 1px solid transparent;
+  background: var(--color-button-ghost-background, #eef2ff);
+  color: var(--color-button-ghost-foreground, #1d4ed8);
+}
+[data-dsh-studio] button[data-variant="ghost"]:hover { background: var(--color-button-ghost-hover, #e0e7ff); }
+
+[data-dsh-studio] button[data-variant="danger"] {
+  border: 1px solid transparent;
+  background: #dc2626;
+  color: #fff;
+}
+[data-dsh-studio] button[data-variant="danger"]:hover { background: #b91c1c; }
+
+[data-dsh-studio] button[data-variant][disabled],
+[data-dsh-studio] button[data-variant][aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+}

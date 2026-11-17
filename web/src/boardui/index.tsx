@@ -22,7 +22,17 @@ const SIZE = { default: "medium", sm: "small", xs: "xs", lg: "medium", icon: "me
 
 /** 与原来 shadcn Button 同名的薄适配：传进来的 variant/size 自动翻译成 BoardUI 的取值。 */
 export function Button({ variant = "default", size = "default", ...rest }: any) {
-  return <BoarduiButton variant={VARIANT[variant] ?? "primary"} size={SIZE[size] ?? "medium"} {...rest} />;
+  // data-variant 是给 CSS 用的稳定钩子：BoardUI 的颜色工具类在这个宿主页里不一定生效
+  // （见 index.css 里那段说明），所以按钮底色/描边由我们自己按变体写死。
+  return (
+    <BoarduiButton
+      variant={VARIANT[variant] ?? "primary"}
+      size={SIZE[size] ?? "medium"}
+      data-variant={VARIANT[variant] ?? "primary"}
+      data-size={SIZE[size] ?? "medium"}
+      {...rest}
+    />
+  );
 }
 
 /** 原样导出，想直接用他们 API（leadingIcon / iconOnly）时走这个。 */

@@ -509,3 +509,19 @@ BoardUI 自己的规矩是：**输入框灰底填充**、**下拉触发器白底
 
 `.ds-hint` 原来是 10.5px + **0.5 透明**（白底上基本看不清），改成 11.5px、不透明、用 muted-foreground；
 `--color-text-secondary/tertiary` 各提一档（neutral-600/500）；面板头、列表头不再靠 opacity 压灰。
+
+### 收尾：空态 / 按钮 / 列表行，以及「Tailwind 边框开关」那笔账
+
+1. **空态 `.ds-empty`**：虚线框 → 实线浅框 + 圆角 + 浅灰底 + 居中（虚线框是上个时代的空态语言）。
+2. **`.ds-btn`**：灰底小按钮 → 白底描边 32px，hover 变浅；`primary` 黑底、`ghost` 透明描边跟随。
+3. **`.ds-listrow`**：表格行 → 无外框、悬停变色的行卡片，和 TaskRow 一致。
+4. **BoardUI 按钮的外观改由 CSS 兜底**（关键）：实测 `bg-*` / `border-*` 这类**颜色工具类在宿主页里
+   不生效**（布局类没问题，颜色类算出来永远 transparent / 0px）。所以在适配层给按钮加了
+   `data-variant` / `data-size` 钩子，四个变体的底色/描边/高度全部写死。现在 secondary 是白底描边、
+   primary 黑底、ghost 浅蓝、danger 红，禁用态统一 45% 透明。
+5. **`--tw-border-style` 补齐**：Tailwind v4 的 `.border` 依赖这个变量（平时由 preflight 给），
+   我们没引 preflight → `border-style` 是无效值 → 所有 `.border` 都没边框。在面板根上补
+   `--tw-border-style: solid`，子元素继承。
+
+> 这几条说明一件事：**把 Tailwind 当「类名 DSL」，但别指望它的颜色/边框工具类在宿主页里生效**。
+> 颜色一律用 token 变量 + 自己的规则，类名只用来表达布局。
