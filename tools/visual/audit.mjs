@@ -58,6 +58,7 @@ const COUNT = () => {
     legacyBtn: legacyBtn.length,
     radixSelect: radixSelect.length,
     foreignTab: foreignTab.length,
+    meter: hits((el) => el.getAttribute('role') === 'meter' || el.getAttribute('role') === 'progressbar' && el.closest('[data-rac]') !== null).length,
     samples: [...nativeSelect, ...rawField, ...legacyBtn, ...radixSelect, ...foreignTab].slice(0, 5).map(describe),
   }
   return out
@@ -78,7 +79,9 @@ await sleep(1200)
 
 const rows = []
 const snap = async (name) => {
-  await sleep(850)
+  // 800ms 对「效能」这类要等接口回来才画图的页面太短 —— 之前就是因此把 9 个
+  // 官方计量条全漏掉了（meter 统计恒为 0）。1200ms 起步，页面自己再补。
+  await sleep(1800)
   // 面板崩掉时 React 会把异常吞在自己树里，pageerror 是空的 —— 只能看 innerText
   const crashed = await page.evaluate(() => document.body.innerText.includes('渲染失败'))
   const counts = await page.evaluate(COUNT)
@@ -151,6 +154,8 @@ for (const row of rows) {
   console.log([row.name.padEnd(20), ...cells].join('') + flag)
   for (const s of row.samples) console.log('     ↳ ' + s)
 }
+const meterTotal = rows.reduce((sum, r) => sum + (r.meter || 0), 0)
+if (meterTotal === 0) { console.log('⚠ 全站没有渲染出任何官方计量条（role=meter）——进度条可能退回自绘了'); bad += 1 }
 const total = KEYS.reduce((sum, k) => sum + rows.reduce((s, r) => s + (r[k] || 0), 0), 0)
 console.log(`\n盘点 ${rows.length} 个模块：违规 ${total} 处，异常模块 ${rows.filter((r) => r.crashed).length} 个，pageerror ${errors.length} 条`)
 if (errors.length) console.log('pageerror: ' + errors.slice(0, 4).join(' | '))

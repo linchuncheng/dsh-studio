@@ -293,11 +293,11 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
             ? h('div', { className: 'ds-empty' }, '还没有启用的专家。')
             : (load?.experts ?? []).filter(item => item.enabled).map(item => h('div', { key: item.id, className: 'ds-an-row' },
               h('span', { className: 'ds-an-name' }, `${item.emoji} ${item.name}`),
-              h('div', { className: 'ds-an-track' },
-                h('div', {
-                  className: 'ds-an-fill',
-                  style: { width: `${Math.round((item.open / Math.max(1, ...(load.experts ?? []).map(entry => entry.open))) * 100)}%` },
-                })),
+              // 这里原来是自己画的 .ds-an-track/.ds-an-fill —— 同一页里出现了两条进度条实现
+              // （另一条走 kit('ProgressBar')）。统一交给 ProgressField，它渲染官方 Meter。
+              h(ProgressField, {
+                value: Math.round((item.open / Math.max(1, ...(load.experts ?? []).map(entry => entry.open))) * 100),
+              }),
               h('span', { className: 'ds-an-num' }, `在办 ${item.open}${item.running > 0 ? ` · 跑 ${item.running}` : ''}${item.overdue > 0 ? ` · 逾期 ${item.overdue}` : ''}`),
             )),
           h('div', { className: 'ds-an-foot' },

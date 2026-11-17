@@ -84,6 +84,7 @@ for (const file of sourceFiles.filter((item) => item.endsWith('.jsx') || item.en
 const SINGLE_IMPL = [
   ['@radix-ui/react-select', 'BoardUI 的 Select（web/src/components/base/select）'],
   ['@radix-ui/react-switch', 'BoardUI 的 Switch（web/src/components/base/switch）'],
+  ['@radix-ui/react-progress', 'BoardUI 的 Meter / ProgressBar（web/src/components/base/{meter,progress}）'],
 ]
 for (const file of sourceFiles) {
   if (!/\.(js|jsx|ts|tsx)$/.test(rel(file))) continue

@@ -1,4 +1,10 @@
-// 从 BoardUI 的 GitHub 仓库原样拉组件源码（不移植、不改一行），依赖递归补齐。
+// 从 BoardUI 原样拉组件源码（不移植、不改一行），依赖递归补齐。
+// 两个源，按顺序试：
+//   ① registry —— https://www.boardui.com/r/<name>.json（官方 CLI `npx boardui add` 用的就是它，
+//      **新组件只在这里**：meter / progress / spinner / drawer / modal … 公开仓库 main 里根本没有）
+//   ② GitHub raw —— 老组件在那边更稳
+// 教训（2026-11-17）：只看 GitHub main 的 components/base 就断言「BoardUI 没有进度条」，
+// 结果官方站点上有 meter 和 progress 两个组件，白让 Radix Progress 躺了一轮。
 //   node web/scripts/fetch-boardui.mjs components/base/select/select.tsx
 // 已存在的文件不覆盖（除非 --force），写法与 web/src/components/base/** 现有的一致：
 // 顶部一行出处注释 + 上游原文。
@@ -14,7 +20,27 @@ const fetched = []
 const skipped = []
 const missing = []
 
+const REGISTRY = 'https://www.boardui.com/r/'
+const registryCache = new Map()
+
+/** 组件名 → [{path, content}]。名字取文件所在目录（components/base/meter/meter.tsx → meter）。 */
+async function registryItem(path) {
+  const name = posix.basename(posix.dirname(path))
+  if (registryCache.has(name)) return registryCache.get(name)
+  let payload = null
+  try {
+    const res = await fetch(REGISTRY + name + '.json')
+    if (res.status === 200) payload = await res.json()
+  } catch { payload = null }
+  const files = new Map()
+  for (const file of payload?.files ?? []) if (file.path && typeof file.content === 'string') files.set(file.path, file.content)
+  registryCache.set(name, files)
+  return files
+}
+
 async function get(path) {
+  const fromRegistry = await registryItem(path)
+  if (fromRegistry.has(path)) return fromRegistry.get(path)
   const res = await fetch(RAW + path)
   if (res.status !== 200) return null
   return await res.text()

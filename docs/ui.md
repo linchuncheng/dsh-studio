@@ -865,3 +865,31 @@ CSS 层叠层按「名字第一次出现的位置」定优先级，后出现的�
 宽 266px/**elementFromPoint 落在弹层里**（防的正是上面那个层级 bug）/菜单项行高 ≥30px。
 `verify:audit` 从 7 个页面扩到 **27 个模块**（8 页签 + 16 设置面板 + 3 抽屉），
 作用域补上 `[data-dsh-studio-portal]`，违规非零直接退出码 1。
+
+### 更正：BoardUI **有**进度条（meter + progress），我之前判断错了（2026-11-18）
+
+我上一轮说「BoardUI 的 components/base 里没有进度条，所以自研 ProgressBar 是合理的」。
+**这是错的**，依据也不成立 —— 我只查了公开仓库 `BoardUI/boardui` 的 `components/base`
+目录，而官方站点上「计量条」和「进度」两个组件都在（标着「全新」）。
+
+真因：**新组件只在官方 registry 里**（`https://www.boardui.com/r/<name>.json`，
+`npx boardui add <name>` 用的就是它），公开仓库 main 是个旧快照。仓库 tree 里
+227 个文件全搜一遍都没有 meter/progress，registry 里两个都在（meter.json 4.9 KB）。
+
+于是把 `fetch-boardui.mjs` 改成 **registry 优先、GitHub 兜底**，拉下来三个文件：
+
+- `components/base/progress/progress.tsx`（ProgressBar / ProgressTrack / ProgressCircle）
+- `components/base/meter/meter.tsx`（Meter：带 `tone`，画在 ProgressBar 同一条轨道上）
+- `components/base/spinner/spinner.tsx`（progress 的依赖）
+
+接线：看板/效能里那些「本列占 X%」是**量**而不是「任务推进」，而且要按 over/warn 变色，
+所以 `ProgressBar` 适配层渲染官方 **Meter**（`tone: accent|success|warning|error`），
+另外导出官方 `Progress` 给真正需要 `role=progressbar` 的场合。Radix Progress 彻底移除
+（守卫已禁 `@radix-ui/react-progress`，portal 数 3 → 2，体积 1298.55 → 1308.47 kB）。
+
+顺带清掉同一页里的第二条实现：效能页的「团队负载」原来是手画的 `.ds-an-track/.ds-an-fill`，
+和隔壁走 `kit('ProgressBar')` 的「预算使用」并存 —— 现在都走 `ProgressField`。
+
+**这轮抓到的第二个探针缺陷**：`verify:audit` 每屏只等 850ms，「效能」页要等接口回来才画图，
+于是 9 个官方计量条一个都没被统计到，`meter == 0` 的断言反而「通过」了。
+等待改成 1800ms，并加了「全站必须至少有一个 role=meter」的断言 —— 现在是 9 个。

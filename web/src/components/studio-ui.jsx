@@ -8,12 +8,13 @@ import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group'
 import * as React from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-import * as ProgressPrimitive from '@radix-ui/react-progress'
 import { cn } from '../lib/utils.js'
 import { portalRoot } from '../lib/portal.js'
 import { Button, Input, Label, Textarea, Badge, Tabs, TabsList, TabsTrigger } from './ui.jsx'
 import { SegmentedControl as BoarduiSegmented, SegmentedControlItem as BoarduiSegmentedItem } from '../components/base/segmented-control/segmented-control'
 import { Tooltip as BoarduiTooltip, TooltipTrigger as BoarduiTooltipTrigger } from '../components/base/tooltip/tooltip'
+import { Meter as BoarduiMeter } from '../components/base/meter/meter'
+import { ProgressBar as BoarduiProgressBar } from '../components/base/progress/progress'
 import { Drawer as BoarduiDrawer } from '../boardui/drawer'
 import { ConfirmDialog as BoarduiConfirmDialog } from '../boardui/dialog'
 
@@ -95,15 +96,30 @@ export function Tip({ label, children }) {
 }
 
 /* ------------------------------------------------------------- progress --- */
-export function ProgressBar({ value, tone, className }) {
+/* 原来是自己用 Radix Progress 拼的 8px 条。BoardUI 有现成的两个组件：
+   Meter（已知区间里的一个量，带 tone）和 ProgressBar（向完成推进的任务）。
+   看板里那些「本列占 X%」是**量**，而且要靠 tone 表达 over/warn，所以走 Meter ——
+   它就是画在 ProgressBar 同一条轨道上的，视觉一致。
+   注：这两个组件只存在于官方 registry（www.boardui.com/r/<name>.json），
+   公开仓库 main 里没有 —— 之前就是因此误判「BoardUI 没有进度条」。 */
+const METER_TONE = { over: 'error', warn: 'warning' }
+
+export function ProgressBar({ value, tone, className, size = 'md', label }) {
   const pct = Math.max(0, Math.min(100, Number(value) || 0))
-  const color = tone === 'over' ? 'bg-destructive' : tone === 'warn' ? 'bg-amber-500' : 'bg-primary'
   return (
-    <ProgressPrimitive.Root className={cn('relative h-2 w-full overflow-hidden rounded-full bg-muted', className)} value={pct}>
-      <ProgressPrimitive.Indicator className={'h-full w-full transition-transform ' + color} style={{ transform: `translateX(-${100 - pct}%)` }} />
-    </ProgressPrimitive.Root>
+    <BoarduiMeter
+      aria-label={typeof label === 'string' && label !== '' ? label : 'progress'}
+      value={pct}
+      maxValue={100}
+      size={size}
+      tone={METER_TONE[tone] ?? 'accent'}
+      className={className}
+    />
   )
 }
+
+/** 需要「任务推进」语义（role=progressbar）时用这个，不要再用 Meter 顶替。 */
+export { BoarduiProgressBar as Progress }
 
 export { Button, Input, Textarea, Label, Badge }
 
