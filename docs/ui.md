@@ -637,3 +637,16 @@ BoardUI 没有空态组件（它家是每个页面自带插画），所以照 dr
 > 否则换了组件之后探针会因为找不到 `.ds-empty` 而误报。
 
 **唯一还没换的**：登录门（`.ds-login`）里两个原生 `<input>` —— 独立页面，token 登录走不到。
+
+### 看板卡片重绘（只动视觉，不动结构）
+
+约束：**不碰 DOM 结构与拖拽**，所以 `verify:scale` 的「1000 张卡 / 每列 40 张 / 首屏 681ms」断言仍然有效。
+
+- `.ds-col`：灰底 → 浅灰底 + 14px 圆角 + 柔和描边；
+- `.ds-col-head`：白色底、12.5px/600、底部一条分隔线；
+- `.ds-col-owner`：原来 `opacity:.55`（灰得看不清）→ 正常不透明 + muted-foreground；
+- `.ds-card`：白卡 + 1px 柔和描边 + 圆角 11 + `shadow-xs`，hover 才抬 1px 并加深阴影；
+- `.ds-card-title`：13px/600；
+- `.ds-card-foot`：原来 `opacity:.5` → 不透明 muted-foreground。
+
+`verify:scale` 9/9（含首屏出卡时间、每列 40 张、304 命中）、逐页 17/17、sweep 5/5 全绿。

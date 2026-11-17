@@ -1872,3 +1872,69 @@ html body [data-dsh-studio] .ds-listrow + .ds-listrow {
   opacity: 0.45;
   cursor: default;
 }
+
+/* ------------------------------------------------------------ 看板卡片重绘 --- */
+/* 只看视觉：**不动 DOM 结构、不动拖拽**，所以 verify:scale 的 1000 张卡断言仍然有效。
+   目标是把卡片/列从「灰底 + 细线」换成 BoardUI 的「白卡 + 柔和描边 + 轻阴影」，
+   顺便把两处 50% 透明的灰字（卡片脚注、列负责人）提到可读。 */
+
+html body [data-dsh-studio] .ds-col {
+  border: 1px solid var(--color-separator-border, var(--ds-line));
+  border-radius: 14px;
+  background: var(--color-background-secondary-default, #fafafa);
+  overflow: hidden;
+}
+
+html body [data-dsh-studio] .ds-col-head {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-separator-border, var(--ds-line));
+  background: var(--color-background-primary-default, #fff);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-primary, inherit);
+}
+
+html body [data-dsh-studio] .ds-col-owner {
+  padding: 6px 12px 8px;
+  font-size: 11px;
+  opacity: 1;
+  color: var(--muted-foreground);
+  background: var(--color-background-primary-default, #fff);
+}
+
+html body [data-dsh-studio] .ds-col-body {
+  padding: 10px;
+  gap: 9px;
+}
+
+html body [data-dsh-studio] .ds-card {
+  border: 1px solid var(--color-separator-border, var(--ds-line));
+  border-radius: 11px;
+  background: var(--color-background-primary-default, #fff);
+  padding: 10px 11px;
+  box-shadow: 0 1px 2px color-mix(in srgb, #101828 5%, transparent);
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+html body [data-dsh-studio] .ds-card:hover {
+  border-color: var(--color-border-button-hover, var(--ds-accent));
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, #101828 22%, transparent);
+  transform: translateY(-1px);
+}
+
+html body [data-dsh-studio] .ds-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--color-text-primary, inherit);
+}
+
+html body [data-dsh-studio] .ds-card-foot {
+  font-size: 11px;
+  opacity: 1;
+  color: var(--muted-foreground);
+}
+
+html body [data-dsh-studio] .ds-card-warn {
+  font-size: 11px;
+}
