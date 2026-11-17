@@ -15,7 +15,7 @@ import { Check, ChevronDown, X } from 'lucide-react'
 import { cn } from '../lib/utils.js'
 import { portalRoot } from '../lib/portal.js'
 import { Button, Input, Label, Textarea, Badge, Tabs, TabsList, TabsTrigger } from './ui.jsx'
-import { PillTabList, PillTab } from '../components/base/tabs/pill-tab'
+import { SegmentedControl as BoarduiSegmented, SegmentedControlItem as BoarduiSegmentedItem } from '../components/base/segmented-control/segmented-control'
 import { Drawer as BoarduiDrawer } from '../boardui/drawer'
 import { ConfirmDialog as BoarduiConfirmDialog } from '../boardui/dialog'
 
@@ -63,22 +63,23 @@ function Hint({ label, children }) {
 export { TabsBar } from './tabs-bar.jsx'
 
 export function SegGroup({ value, onChange, options, className }) {
-  // 换成 BoardUI 的胶囊（和顶栏页签同一套），原来那套 Radix ToggleGroup 与现在的视觉不搭：
-  // 一个灰底小方框里塞三个 11px 的按钮，跟旁边的胶囊页签站在一起像两个年代的控件。
+  // 官方 SegmentedControl（分段控件）：这才是「互斥按钮组」该用的组件，
+  // 之前用胶囊（PillTab）是视图切换的语义，用错了。
   return (
-    <PillTabList className={cn('min-w-0', className)}>
+    <BoarduiSegmented
+      selectedKeys={[value]}
+      onSelectionChange={(keys) => {
+        const next = [...keys][0]
+        if (next !== undefined && next !== null) onChange(String(next))
+      }}
+      className={cn('ds-seg-control', className)}
+    >
       {options.map((opt) => (
-        <PillTab
-          key={opt.id}
-          variant="gray"
-          isSelected={opt.id === value}
-          onSelect={() => onChange(opt.id)}
-          className="ds-pill ds-pill-sm"
-        >
+        <BoarduiSegmentedItem key={opt.id} id={opt.id}>
           {opt.label}
-        </PillTab>
+        </BoarduiSegmentedItem>
       ))}
-    </PillTabList>
+    </BoarduiSegmented>
   )
 }
 

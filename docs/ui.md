@@ -712,3 +712,20 @@ BoardUI 没有空态组件（它家是每个页面自带插画），所以照 dr
 
 同时补了**第五条 h 翻译**：`h('select', {...}, option…)` → BoardUI `Select`
 （legacy 里还剩业务提单表单这两处原生 select），以后再有裸 select 也会自动变成组件。
+
+### 官方安装方式（照 docs 走）
+
+文档写的是：`npx boardui init` 初始化（写 components.json、装依赖、接样式表），
+之后 `npx boardui add <component>` 逐个加；也可以**手动**复制源码。npm 包是 `boardui@0.5.9`。
+
+我们这个插件用的是「手动」那条路（`web/scripts/fetch-boardui.mjs` 从 GitHub 原样拉、保留 MIT 头），
+因为我们的 Tailwind 是**作用域化注入宿主页面**的，套不了他们的 init 模板；文件产物与 `add` 一致。
+
+### 第一项：分段控件（官方 SegmentedControl）
+
+主题切换「明亮/黑暗/跟随系统」原来是胶囊（PillTab）—— 那是视图切换的语义，用错了。
+现在换成官方 `components/base/segmented-control/segmented-control.tsx`：
+`SegmentedControl + SegmentedControlItem`，`selectedKeys` 单选取值，带滑动的高亮块。
+容器与滑块的底色用 token 写死（`.ds-seg-control`），因为 Tailwind 的 bg-* 工具类在宿主页里不生效。
+
+真机截图：`tmp/zoom/头部与页签.png`（右侧三件套现在是标准分段控件）。

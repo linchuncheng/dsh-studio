@@ -2024,3 +2024,37 @@ html body [data-dsh-studio] .studio-tabs-thumb {
   border-radius: 2px 2px 0 0;
   background: var(--color-accent-600, var(--ds-accent));
 }
+
+/* 分段控件（官方 SegmentedControl）：容器与滑动块的底色用 token 写死，
+   因为 Tailwind 的 bg-* 工具类在这个宿主页里不生效（见前面几处说明）。 */
+html body [data-dsh-studio] .ds-seg-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--color-segmented-control-background, var(--ds-soft));
+}
+
+html body [data-dsh-studio] .ds-seg-control > span[aria-hidden] {
+  border-radius: 7px;
+  background: var(--color-segmented-control-selected-background, #fff);
+  box-shadow: 0 1px 2px color-mix(in srgb, #101828 8%, transparent);
+}
+
+html body [data-dsh-studio] .ds-seg-control button {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  font-size: 11.5px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+html body [data-dsh-studio] .ds-seg-control button[data-selected] {
+  color: var(--color-text-primary, inherit);
+  font-weight: 600;
+}
