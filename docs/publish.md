@@ -39,32 +39,45 @@ git tag v0.2.0 && git push origin v0.2.0
 
 > 跟踪 tag 是有意的：`main` 上的中间提交可能不稳定，市场只认你明确打出来的版本。
 
-## 2. 收录条目
+## 2. 收录：投 awesome-dsh-plugin，不是给 dsh-m 提 PR
 
-市场读的是条目清单，一个条目长这样（`registry.json` 里的真实结构）：
+dsh-m 的市场数据来自两处，**入口完全不同**：
 
-```json
-{
-  "id": "dsh-studio",
-  "name": "DSH Studio",
-  "description": "角色化多智能体工作台：产品/架构/研发/测试 + 看板 + 用例回归",
-  "category": "essentials",
-  "tags": ["多智能体", "看板", "研发流程"],
-  "verified": ["0.2.2-rc.1"],
-  "source": "npm",
-  "npm": "@marsken/dsh-studio",
-  "github": "marsken88/dsh-studio",
-  "icon": "https://cdn.jsdelivr.net/npm/@marsken/dsh-studio@0/icon.svg",
-  "homepage": "https://github.com/marsken88/dsh-studio"
-}
+| 分区 | 数据来源 | 我们怎么进 |
+| --- | --- | --- |
+| 社区目录（6,000+ 条） | [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)，经 npm 包 `dsh-plugin-catalog` 分发 | **投稿一个 YAML 文件**——第三方插件的既定入口 |
+| 精选清单（`registry.json`，七个策展桶） | `iasiv5/dsh-m` 仓库，维护者手工策展 | **不收外部投稿**：给 registry 加第三方条目的 PR 会被礼貌关闭 |
+
+所以「发布到 dsh-m」的实际动作是：**向 awesome-dsh-plugin 提一个 PR**。合并后 dsh-m 的社区目录在下一次同步即可搜到，社区分区、dsh-market 等下游读者都会自动跟进——收录一次，处处生效。
+
+投稿文件已备好：`docs/awesome-dsh-plugin/marsken88__dsh-studio.yml`，
+目标路径 `data/plugins/marsken88__dsh-studio.yml`（文件名必须 `<owner>__<repo>.yml`，一个文件就是全部投稿，PR 里只加这一个文件）。
+
+条目形状（字段顺序无所谓，但只有这几个是认的）：
+
+```yaml
+url: https://github.com/marsken88/dsh-studio      # 必须与仓库地址完全一致
+name: marsken88/dsh-studio                        # 列表里的链接文字
+category: workflow                                # 见下方分类表
+description:
+  en: One-line factual description ending with a period.   # 必填
+  zh: 一句话中文描述，以句号结尾。                            # 可选，缺了维护者会补
+icon: https://raw.githubusercontent.com/…/icon-180.png      # 可选，GitHub 托管的位图
 ```
 
 要点：
 
-- **`verified`** 是「在哪些宿主版本上真跑过」。别乱填——这块就是用户判断能不能装的依据；
-- **`icon`** 走 jsDelivr 直链（`@0` 表示取最新大版本），所以图标要一起发进包里；
-- **社区目录 vs 精选**：社区目录 6,000+ 条，随上游目录增长；精选（装机必备 / 崔添翼精选 / 自研 / 腾讯轻量云 / 观察区）是人工策展的。想让自己的插件进精选，需要向 `dsh-m` 仓库提条目；
-- **`decoupled: true`** 表示「版本无关」，升级宿主不用跟着改，收录时可以争取。
+- **`dsh.bundle` 必须有**：`package.json` 里声明 `dsh.bundle.patch` 并在仓库根放 `cordis.patch.yml`——只声明 `dsh.client` 是 CI 最常见的打回原因（无法 `dsh plugin add`）；
+- **仓库要带 `dsh-plugin` topic**（仓库首页 About 齿轮 → Topics），CI 会查；
+- **仓库年龄 ≥ 1 天**（CI 自动查，刚建的仓库等一下再投）；
+- **`icon` 只收 GitHub 托管的位图**（png/jpg/jpeg/webp，96px 见方最清楚）；SVG 与第三方图床会被拒——我们用 `assets/icon-180.png`（180×180 PNG，raw 直链已验证可访问）；
+- **描述必须属实、不带营销词**：条目里的每一句都会被对着代码核，数字与 API 名字更要能对上；
+- **`category` 取最贴的一个**：可选 `agi` `ui` `usage` `theme` `model` `identity` `session` `memory` `tools` `wsl` `browser` `vision` `voice` `docs` `skill` `workflow` `git` `notify` `dev` `security` `remote` `market` `fun`；选得不够准维护者会直接改，不会打回；
+- **截图**：在自己仓库根放 `screenshots.json`（1–8 张、相对路径、不能跳出目录），合并后市场详情页按这个顺序展示；
+- **npm 不是门票**：发不发 npm 都能收录；发了才有下载量数字，且包的 `repository` 必须指回本仓库（`@marsken/dsh-studio` 已指回）；
+- 条目里**不要**手写 `npm:` 字段——市场从 registry 自动采集，手写会被校验拒绝。
+
+每个 PR 最多 3 条；我们只投 1 条。评审周期以天计（维护者要读代码核对描述），`held: author` 标签表示「等你改」，改完推同一分支并留一条评论即可。
 
 ## 3. 自查清单（收录前逐条过）
 
@@ -75,6 +88,10 @@ git tag v0.2.0 && git push origin v0.2.0
 - [ ] `license` 与 `LICENSE` 文件一致
 - [ ] 版本号更新，tag 已推
 - [ ] 在**真实 dsh** 上装一遍（`dsh plugin --profile web add <包名>`），面板能开、`pageerror` 为空
+- [ ] **仓库已加 `dsh-plugin` topic**（不带这个，awesome-dsh-plugin 的 CI 会挡）
+- [ ] `assets/icon-180.png` 是 GitHub 托管的位图（SVG 会被拒）
+- [ ] 根目录 `screenshots.json` 里列的图片都存在（`node -e` 逐条 exists 检查一遍）
+- [ ] 条目文件按 `<owner>__<repo>.yml` 命名，描述以句号结尾、没有营销词、`: ` 已加引号
 
 ## 4. 装回来验一遍
 
