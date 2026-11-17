@@ -2,6 +2,9 @@
 
 import { fmtTime, fmtDate } from '../format.js'
 import { client } from '../context.js'
+import { StatCard } from '../../boardui/chart-card'
+import { TaskRow } from '../../boardui/task-list'
+import { Button as BoarduiButton } from '../../boardui/index'
 
 export function DashboardPage({ state, onOpenTask, onOpenBoard, onOpenCases }) {
   const { h, React, api, toast } = client()
@@ -38,20 +41,18 @@ export function DashboardPage({ state, onOpenTask, onOpenBoard, onOpenCases }) {
   const risks = data.risks ?? {}
   const flow = data.flow ?? {}
   const ai = data.ai ?? {}
-  const kpi = (label, value, hint, warn) => h('div', { className: 'ds-kpi', 'data-warn': warn === true ? '1' : '0' },
-    h('div', { className: 'ds-kpi-value' }, String(value ?? 0)),
-    h('div', { className: 'ds-kpi-label' }, label),
-    h('div', { className: 'ds-kpi-hint' }, hint),
-  )
-  const taskRow = (item) => h('div', { key: item.id, className: 'ds-listrow' },
-    h('div', { className: 'ds-listrow-main' },
-      h('div', null, `${item.code || item.id} · ${item.title}`),
-      h('div', { className: 'ds-hint' }, `${item.statusLabel}${item.dueAt > 0 ? ` · 截止 ${fmtDate(item.dueAt)}` : ''}${item.sla?.state === 'overdue' ? ' · 缺陷超时' : ''}`),
-    ),
-    h('div', { className: 'ds-listrow-actions' },
-      h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => onOpenTask(item.id) }, '打开'),
-    ),
-  )
+  // KPI 与任务行都换成自研的 BoardUI 等价物，跟效能页是同一套（原来 .ds-kpi 带一条左侧色条，
+  // 跟效能页的白卡并排就像两个系统）
+  const kpi = (label, value, hint, warn) => h(StatCard, { label, value: String(value ?? 0), hint, warn: warn === true })
+  const taskRow = (item) => h(TaskRow, {
+    key: item.id,
+    title: `${item.code || item.id} · ${item.title}`,
+    hint: `${item.statusLabel}${item.dueAt > 0 ? ` · 截止 ${fmtDate(item.dueAt)}` : ''}${item.sla?.state === 'overdue' ? ' · 缺陷超时' : ''}`,
+    action: h(BoarduiButton, { variant: 'ghost', size: 'small', onClick: () => onOpenTask(item.id) }, '打开'),
+  })
+  const flowCell = (label, value) => h('div', { className: 'ds-field' },
+    h('div', { className: 'ds-label' }, label),
+    h('div', { className: 'ds-flow-num' }, String(value ?? 0)))
   const block = (title, rows, empty, hint) => h('div', { className: 'ds-panel' },
     h('div', { className: 'ds-panel-head' }, h('span', null, title), h('span', { className: 'ds-hint' }, hint ?? '')),
     h('div', { className: 'ds-panel-body' }, rows.length === 0 ? h('div', { className: 'ds-hint' }, empty) : rows),
@@ -72,17 +73,16 @@ export function DashboardPage({ state, onOpenTask, onOpenBoard, onOpenCases }) {
     h('div', { className: 'ds-panel' },
       h('div', { className: 'ds-panel-head' }, h('span', null, '流程与产出'), h('span', { className: 'ds-hint' }, '需要人动手的地方')),
       h('div', { className: 'ds-panel-body ds-grid4' },
-        h('div', { className: 'ds-field' }, h('div', { className: 'ds-label' }, '待评审'), h('div', null, String(flow.review ?? 0))),
-        h('div', { className: 'ds-field' }, h('div', { className: 'ds-label' }, '待测试'), h('div', null, String(flow.test ?? 0))),
-        h('div', { className: 'ds-field' }, h('div', { className: 'ds-label' }, '待验收'), h('div', null, String(flow.accept ?? 0))),
-        h('div', { className: 'ds-field' }, h('div', { className: 'ds-label' }, '今天完成'), h('div', null, String(flow.doneToday ?? 0))),
-        h('div', { className: 'ds-field' }, h('div', { className: 'ds-label' }, '近 7 天完成'), h('div', null, String(flow.doneWeek ?? 0))),
-        h('div', { className: 'ds-field' }, h('div', { className: 'ds-label' }, '需求卡住'), h('div', null, String(risks.requirementBlocked ?? 0))),
-        h('div', { className: 'ds-field' }, h('div', { className: 'ds-label' }, '版本卡住'), h('div', null, String(risks.releaseBlocked ?? 0))),
+        flowCell('待评审', flow.review),
+        flowCell('待测试', flow.test),
+        flowCell('待验收', flow.accept),
+        flowCell('今天完成', flow.doneToday),
+        flowCell('近 7 天完成', flow.doneWeek),
+        flowCell('需求卡住', risks.requirementBlocked),
+        flowCell('版本卡住', risks.releaseBlocked),
         h('div', { className: 'ds-field' },
           h('div', { className: 'ds-label' }, ''),
-          h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => onOpenBoard() }, '去看板'),
-        ),
+          h('div', null, h(BoarduiButton, { variant: 'ghost', size: 'small', onClick: () => onOpenBoard() }, '去看板'))),
       ),
     ),
     block('逾期', (data.list?.overdue ?? []).map(taskRow), '没有逾期的卡。'),

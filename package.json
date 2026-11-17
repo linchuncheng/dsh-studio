@@ -20,6 +20,17 @@
     "shots": "node tools/visual/capture.mjs",
     "verify:scale": "node tools/visual/board-scale.mjs",
     "verify:costs": "node tools/visual/cost-price-probe.mjs",
+    "verify:fields": "node tools/visual/fields-probe.mjs",
+    "verify:pages": "node tools/visual/pages-probe.mjs",
+    "verify:drawer": "node tools/visual/drawer-probe.mjs",
+    "verify:sweep": "node tools/visual/sweep.mjs",
+    "verify:audit": "node tools/visual/audit.mjs",
+    "verify:selects": "node tools/visual/select-audit.mjs",
+    "verify:drawertabs": "node tools/visual/drawer-tabs.mjs",
+    "review:layout": "node tools/visual/layout-audit.mjs",
+    "diag:toast": "node tools/visual/toast-diag.mjs",
+    "verify:toast": "node tools/visual/toast-probe.mjs",
+    "verify:login": "node tools/visual/login-probe.mjs",
     "verify:facts": "node tools/visual/facts-probe.mjs"
   },
   "exports": {

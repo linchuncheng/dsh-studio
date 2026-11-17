@@ -135,7 +135,7 @@ export function ReleasesPage({ state, onOpenTask }) {
           h(ChipField, { className: 'ds-chip', 'data-kind': item.status }, RELEASE_STATUS_LABEL[item.status] ?? item.status),
           h(ChipField, { className: 'ds-chip' }, `${item.gate.stats.done}/${item.gate.stats.tasks} 卡`),
           item.gate.blockers.length === 0
-            ? h(ChipField, { className: 'ds-chip', style: { color: '#0f9d58', borderColor: '#0f9d5855' } }, '门禁通过')
+            ? h(ChipField, { className: 'ds-chip', style: { color: 'var(--color-notification-success-foreground)', borderColor: '#0f9d5855' } }, '门禁通过')
             : h(ChipField, { className: 'ds-chip ds-chip-blocked' }, `${item.gate.blockers.length} 项拦着`),
         ),
       )),
@@ -180,7 +180,7 @@ export function ReleasesPage({ state, onOpenTask }) {
             h(TextField, { className: 'ds-input', value: form.owner, onChange: event => setForm({ ...form, owner: event.target.value }) })),
           h('label', { className: 'ds-field' }, h('span', {}, '计划发布时间'),
             h(TextField, {
-              className: 'ds-input', type: 'date', value: toDateInput(form.plannedAt),
+              className: 'ds-input', value: toDateInput(form.plannedAt),
               onChange: event => setForm({ ...form, plannedAt: fromDateInput(event.target.value) }),
             })),
           h('label', { className: 'ds-field' }, h('span', {}, '发布标签（tag）'),

@@ -1,6 +1,34 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4：只引 theme + utilities，**不引 preflight**——CSS 会注入宿主页面，
+   全局重置会把宿主 UI 一起改掉（v3 时靠 corePlugins.preflight=false 达到同样效果）。 */
+
+/* ------------------------------------------------------------------ 分层顺序 ---
+   **这行必须在所有 @import 之前**，它是整条样式链的地基。
+
+   CSS 的层叠层按「名字第一次出现的顺序」定优先级：后出现的层压前面的层，**与特异性无关**。
+   我们没引 preflight，所以直到 index.css 自己写 `@layer base{}` 之前，`base` 这个层名
+   从未出现过 —— 于是它被追加到 `utilities` **之后**，成了最强的一层。
+
+   后果（真机实测，2026-11-17）：`@layer base` 里那条清 UA 默认值的
+   `:where(button){padding:0;font:inherit;border:0}` 反过来压住了所有工具类 ——
+   BoardUI 的下拉触发器 `.px-2.5 .py-2 .text-body-medium` 全部失效，高度塌成 21px、
+   字变成继承的 12px、四周没有内边距。组件是官方的，长得却完全不像官方。
+   （Tailwind 的 `@layer properties, theme, base, components, utilities` 只在使用
+   预检时才输出；关掉预检就没有这行，必须自己补。）
+
+   补上这行之后，层序恢复成规范顺序：base 只清 UA 默认值，utilities 随时能盖它。 */
+@layer properties, theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* BoardUI 的设计 token 与排版（MIT，见文件头）。暗色钩子 .dark 由 scope-css.mjs
+   映射到 [data-dsh-studio][data-theme="dark"]，与宿主面板的主题开关一致。 */
+@import "./boardui/theme.css";
+@import "./boardui/typography.css";
+
+/* 仍用 JS 配置：content / darkMode / theme.extend 都在 tailwind.config.js 里，
+   迁移期先不改写成 CSS-first @theme，等组件真搬过来再收。 */
+@config "../tailwind.config.js";
 
 /* shadcn/ui design tokens, scoped to the Studio subtree so the host UI is untouched. */
 :where([data-dsh-studio]) {
@@ -143,11 +171,18 @@
 
 [data-dsh-studio] .ds-panel,
 [data-dsh-studio] .ds-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 1px 2px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
+  background: var(--color-background-primary-default, var(--card));
+  border: 1px solid var(--color-border-button-default, var(--border));
+  border-radius: var(--radius-2lg, 12px);
+  box-shadow: 0 1px 2px 0 color-mix(in srgb, var(--foreground) 5%, transparent);
   overflow: hidden;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+/* BoardUI 的卡片是「静止时几乎无阴影、悬停才浮起来」——照这个来。 */
+[data-dsh-studio] .ds-card:hover {
+  border-color: var(--color-border-button-hover, var(--border));
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--foreground) 16%, transparent);
 }
 
 [data-dsh-studio] .ds-panel-head,
@@ -174,23 +209,24 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: calc(var(--radius) - 2px);
-  border: 1px solid var(--input);
-  background: var(--card);
-  color: var(--foreground);
-  font-size: 14px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-2lg, 10px);
+  border: 1px solid var(--color-border-button-default, var(--input));
+  background: var(--color-background-primary-default, var(--card));
+  color: var(--color-text-primary, var(--foreground));
+  font-size: 13.5px;
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 1px 1px 0 color-mix(in srgb, var(--foreground) 3%, transparent);
-  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  box-shadow: 0 1px 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
 [data-dsh-studio] .ds-btn:hover {
-  background: var(--muted);
+  border-color: var(--color-border-button-hover, var(--input));
+  background: var(--color-background-primary-hover, var(--muted));
 }
 
 [data-dsh-studio] .ds-btn-primary {
@@ -371,11 +407,11 @@
 }
 
 [data-dsh-studio] .ds-card-title {
-  font-size: 12.8px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.45;
   letter-spacing: 0.005em;
-  color: var(--foreground);
+  color: var(--color-text-primary, var(--foreground));
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -407,9 +443,9 @@
 }
 
 [data-dsh-studio] .ds-col {
-  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--muted) 55%, transparent);
+  border: 1px solid var(--color-border-button-default, var(--border));
+  border-radius: var(--radius-2lg, 12px);
+  background: var(--color-background-secondary-default, color-mix(in srgb, var(--muted) 55%, transparent));
   padding: 8px;
   gap: 8px;
 }
@@ -421,7 +457,9 @@
   padding: 2px 2px 6px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--foreground);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, var(--foreground));
 }
 
 [data-dsh-studio] .ds-count {
@@ -1184,7 +1222,12 @@ html body [data-dsh-studio]:not([data-dsh-studio-portal]) {
 html body [data-dsh-studio][data-dsh-studio-portal] {
   position: fixed !important; inset: 0 !important;
   width: 0 !important; height: 0 !important; min-height: 0 !important;
-  overflow: visible !important; margin: 0 !important; padding: 0 !important
+  overflow: visible !important; margin: 0 !important; padding: 0 !important;
+  /* 必须给个 z-index：`position: fixed` 本身就会新建层叠上下文（z-index:auto → 0），
+     于是下拉菜单里那句 `z-index:100000` 只在门户内部生效，整层门户还是排在
+     页面内容下面。真机表现：看板筛选下拉展开后，列头的 sticky 元素（z-index:2）
+     直接盖在菜单上，菜单像透明的一样。给门户本层抬上去，菜单才真的在最上面。 */
+  z-index: 900 !important
 }
 
 /* 禁用态输入框：改成浅灰底 + 去掉浏览器默认淡化，看起来像只读字段而不是丢失了边框 */
@@ -1403,18 +1446,691 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] .ds-reg-item { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--ds-line, #e4e4e7); background: var(--ds-surface-2, #f4f4f5); color: var(--ds-muted, #71717a); white-space: nowrap }
 [data-dsh-studio] .ds-reg-item[data-bad="1"] { border-color: #f3c0c2; background: #fdf2f2; color: #b42318 }
 [data-dsh-studio] .ds-case-lib { display: flex; flex-direction: column }
-[data-dsh-studio] .ds-case-lib-row { display: grid; grid-template-columns: 26px 88px minmax(0, 1fr) 220px 56px 40px 92px 56px; gap: 10px; align-items: center; padding: 7px 10px; border-bottom: 1px solid var(--ds-line, #e4e4e7); cursor: pointer; font-size: 13px }
-[data-dsh-studio] .ds-case-lib-row:hover { background: color-mix(in srgb, var(--ds-accent, #18181b) 6%, transparent) }
-[data-dsh-studio] .ds-case-lib-row[data-result="fail"] { background: color-mix(in srgb, #e5484d 8%, transparent) }
-[data-dsh-studio] .ds-case-lib-wrap { border-bottom: 1px solid var(--ds-line, #e4e4e7) }
-[data-dsh-studio] .ds-case-lib-wrap .ds-case-lib-row { border-bottom: 0 }
 [data-dsh-studio] .ds-case-lib-detail { padding: 8px 12px 10px 36px; background: var(--ds-surface-2, #f4f4f5); font-size: 12px; line-height: 1.6; color: var(--ds-muted, #71717a) }
 [data-dsh-studio] .ds-case-lib-preview { margin: 6px 0 0; padding: 8px 10px; max-height: 180px; overflow: auto; background: var(--ds-surface, #fff); border: 1px solid var(--ds-line, #e4e4e7); border-radius: 8px; font-size: 11px; white-space: pre-wrap; word-break: break-word }
-[data-dsh-studio] .ds-case-lib-pick { display: flex; align-items: center; justify-content: center }
-[data-dsh-studio] .ds-case-lib-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-[data-dsh-studio] .ds-case-lib-meta, [data-dsh-studio] .ds-case-lib-at { color: var(--ds-muted, #71717a); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-[data-dsh-studio] .ds-case-lib-pri { color: var(--ds-muted, #71717a); font-size: 11px; text-transform: uppercase }
 [data-dsh-studio] .ds-palette-hint { flex: 0 0 auto; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ds-muted, #71717a); font-size: 12px }
 [data-dsh-studio] .ds-palette-key { flex: 0 0 auto; font-size: 11px; line-height: 16px; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--ds-line, #e4e4e7); background: var(--ds-surface-2, #f4f4f5); color: var(--ds-muted, #71717a); white-space: nowrap }
 [data-dsh-studio][data-theme="dark"] .ds-palette-key { border-color: #3f3f46; background: #27272a; color: #a1a1aa }
 [data-dsh-studio][data-theme="dark"] .ds-palette-veil { background: rgba(0, 0, 0, .6) }
+
+/* ========================================================================
+ * BoardUI 外观覆盖（W2-2：抽屉 + 表单层）
+ * 追加在文件末尾：同特异性下后者生效，方便整体回退（删掉这一段即可）。
+ * 每个变量都带旧值兜底，token 缺失时行为与替换前一致。
+ * ======================================================================== */
+
+[data-dsh-studio] .ds-input,
+[data-dsh-studio] .ds-textarea,
+[data-dsh-studio] .ds-select {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-2lg, 10px);
+  border: 1px solid var(--color-border-button-default, var(--input));
+  background: var(--color-background-primary-default, var(--card));
+  color: var(--color-text-primary, var(--foreground));
+  font-size: 13px;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+[data-dsh-studio] .ds-input:hover,
+[data-dsh-studio] .ds-textarea:hover,
+[data-dsh-studio] .ds-select:hover {
+  border-color: var(--color-border-button-hover, var(--input));
+}
+
+[data-dsh-studio] .ds-input:focus-visible,
+[data-dsh-studio] .ds-textarea:focus-visible,
+[data-dsh-studio] .ds-select:focus-visible {
+  outline: none;
+  border-color: var(--color-border-focus-ring, var(--ring));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-border-focus-ring, var(--ring)) 30%, transparent);
+}
+
+[data-dsh-studio] .ds-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-text-secondary, var(--muted-foreground));
+}
+
+[data-dsh-studio] .ds-hint {
+  color: var(--color-text-tertiary, var(--muted-foreground));
+}
+
+[data-dsh-studio] .ds-drawer {
+  background: var(--color-background-primary-default, var(--card));
+  border-left: 1px solid var(--color-border-button-default, var(--border));
+  box-shadow: -16px 0 40px -24px color-mix(in srgb, #000 55%, transparent);
+}
+
+[data-dsh-studio] .ds-drawer-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border-button-default, var(--border));
+}
+
+/* ========================================================================
+ * BoardUI 外观覆盖（W2-3：设置面板 / 页签 / 弹窗）
+ * 同样追加在末尾，整段可回退；变量都带旧值兜底。
+ * ======================================================================== */
+
+[data-dsh-studio] .ds-panel {
+  border: 1px solid var(--color-border-button-default, var(--border));
+  border-radius: var(--radius-2lg, 12px);
+  background: var(--color-background-primary-default, var(--card));
+  box-shadow: 0 1px 2px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+
+[data-dsh-studio] .ds-panel-head {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-text-primary, var(--foreground));
+  border-bottom: 1px solid var(--color-border-button-default, var(--border));
+}
+
+[data-dsh-studio] [role="tablist"] {
+  gap: 2px;
+  border-bottom: 1px solid var(--color-border-button-default, var(--border));
+}
+
+[data-dsh-studio] [role="tab"] {
+  border-radius: var(--radius-2lg, 10px) var(--radius-2lg, 10px) 0 0;
+  color: var(--color-text-secondary, var(--muted-foreground));
+  font-weight: 500;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+[data-dsh-studio] [role="tab"]:hover {
+  color: var(--color-text-primary, var(--foreground));
+  background: var(--color-background-secondary-hover, var(--muted));
+}
+
+[data-dsh-studio] [role="tab"][data-state="active"] {
+  color: var(--color-text-primary, var(--foreground));
+  background: var(--color-background-primary-hover, var(--muted));
+}
+
+[data-dsh-studio-portal] [role="dialog"],
+[data-dsh-studio] .ds-modal {
+  border: 1px solid var(--color-border-button-default, var(--border));
+  border-radius: var(--radius-2lg, 14px);
+  background: var(--color-background-primary-default, var(--card));
+  box-shadow: 0 24px 64px -24px color-mix(in srgb, #000 45%, transparent);
+}
+
+/* ------------------------------------------------------- BoardUI 胶囊按钮 --- */
+/* 我们刻意关掉 Tailwind 的 preflight（CSS 会注进宿主页面），代价是**裸 `<button>`
+   会带着浏览器默认样式**：`border: 2px outset` + `#f0f0f0` 底色。BoardUI 的 PillTab
+   自己不写 border/background（选中块由内层 span 画），被这层默认样式一盖，八个页签
+   长得一模一样、选中的那个完全看不出来。
+   只针对胶囊清掉这些 UA 默认值，别动别的控件（全局 reset 会把状态栏那组按钮搞坏）。 */
+/* 注意：这条必须待在 @layer base 里。Tailwind v4 的 utilities 在 @layer utilities，
+   **未分层的规则永远压过分层规则**（跟特异性无关）—— 上一版把它写在最外层，
+   结果连 `.border`、`.bg-background-primary-default` 这类工具类都被它盖掉，
+   看板工具栏的下拉变成了没框没底色的裸文字。放进 base 就只清 UA 默认值。 */
+@layer base {
+  [data-dsh-studio] .ds-pill {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 5px 8px;
+    font: inherit;
+    color: inherit;
+  }
+}
+
+/* 顶栏「明亮 / 黑暗 / 跟随系统」用小一号的胶囊 */
+[data-dsh-studio] .ds-pill-sm {
+  padding: 3px 9px;
+  font-size: 11.5px;
+  line-height: 17px;
+}
+
+/* 「流程与产出」那组数字：原来跟标签一个字号，看着像没写完 */
+[data-dsh-studio] .ds-flow-num {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary, var(--foreground));
+}
+
+/* BoardUI 的 ghost 按钮不写 border/bg 类（它靠 token 给底色），于是裸 `<button>` 的
+   UA 默认样式（`border: 2px outset`）又冒出来 —— 真机上「打开 / 去看板」全带着一圈 3D 灰边。
+   用**特异性为 0** 的选择器清掉 UA 默认值：任何 class（.ds-btn、.border、bg-*）都能覆盖，
+   只把「没人指定的部分」拉回 0。 */
+/* 同上：必须待在 @layer base，否则未分层规则会盖掉所有工具类。 */
+@layer base {
+  :where([data-dsh-studio], [data-dsh-studio-portal]) :where(button) {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0 solid;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    text-align: inherit;
+  }
+}
+
+/* 「列的负责人」：原来每个分组只有一条细分隔线，八个分组连成一片，扫读容易串行。
+   改成一张张小卡片（描边 + 圆角 + 白底 + 一点点阴影），分组边界一眼看得见。 */
+[data-dsh-studio] .ds-colrow {
+  border: 1px solid var(--color-separator-border, var(--ds-line));
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  background: var(--color-background-primary-default, var(--ds-card));
+  box-shadow: 0 1px 2px color-mix(in srgb, #101828 6%, transparent);
+}
+
+[data-dsh-studio] .ds-colrow:last-of-type {
+  border-bottom: 1px solid var(--color-separator-border, var(--ds-line));
+  margin-bottom: 0;
+}
+
+[data-dsh-studio] .ds-colrow-name {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+/* ------------------------------------------- 同一行里只用一种控件语言 --- */
+/* BoardUI 自己的规矩是：**输入框灰底填充**（bg-background-tertiary-default），
+   **下拉触发器白底描边**（bg-background-primary-default + border）。单看都好看，
+   但塞进同一行时那个灰底输入框就像挖了个洞（看板工具栏最明显）。
+   所以按「一个容器一种语言」来统一，而不是把整个体系改成非黑即白：
+
+   1) 工具栏 / 筛选行 → 全部白底描边（跟着下拉走，行看起来是「一条控制带」）
+   2) 表单（抽屉里）→ 全部灰底填充（跟着输入框走，行看起来是「一块填写区」） */
+
+/* 1) 工具栏：输入框改成白底 + 内描边（用 outline 而不是 border，不改变 36px 的高度） */
+[data-dsh-studio] .ds-board-bar [data-field="input"] > div:first-child {
+  background-color: var(--color-background-primary-default, #fff);
+  outline: 1px solid var(--color-border-button-default, var(--ds-line));
+  outline-offset: -1px;
+}
+
+/* 2) 抽屉表单：下拉触发器改成灰底填充，和同一列的输入框一致 */
+[data-dsh-studio] .ds-drawer [data-field="select"] button {
+  background-color: var(--color-background-tertiary-default, var(--ds-soft));
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* 下拉触发器 & 输入框的外观兜底。
+   为什么不用 `bg-background-primary-default` 这类工具类：Tailwind v4 把 `@theme` 变量
+   输出成 `--color-x: var(--color-x)`（自引用），和 theme.css 里 `:root` 的真值打架，
+   真机上算出来的 background 是 transparent、border-width 是 0（`border-style:
+   var(--tw-border-style)` 在没 preflight 时也会塌）。所以这两处直接写死实际颜色，
+   用 legacy 的 `--ds-*`（那些一定存在），不再赌 token 解析。 */
+[data-dsh-studio] [data-field="select"] button {
+  border: 1px solid var(--ds-line);
+  border-radius: 10px;
+  background: var(--ds-card);
+  box-shadow: 0 1px 1px color-mix(in srgb, #101828 5%, transparent);
+}
+
+[data-dsh-studio] [data-field="select"] button:hover {
+  background: var(--ds-soft);
+}
+
+/* 抽屉里的下拉跟输入框一样：灰底、无边框 */
+[data-dsh-studio] .ds-drawer [data-field="select"] button {
+  background: var(--ds-soft);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* ---------------------------------------------------- 需求页左右分栏（修复） --- */
+/* 真机上的 bug：点开一条需求后，右侧详情被挤到下一行，整页像上下堆了两个列表。
+   原因：宽屏用的是 flex + `flex-wrap: wrap`（为了让顶部那条提示独占一行），
+   而详情 `flex: 1 1 auto` 的基准尺寸是「内容理想宽度」——它里面的矩阵/表格很宽，
+   算下来超过剩余空间就直接换行了。
+   修法：基准改成 0（`flex-basis: 0`），宽度只由剩余空间决定；再兜一层 overflow，
+   内容再宽也只在自身内部横向滚动，不会把邻居顶走。 */
+@media (min-width: 1100px) {
+  [data-dsh-studio] .ds-body > div:has(> .ds-req-list) > div.ds-req-detail {
+    flex: 1 1 0%;
+    min-width: 0;
+    max-width: none;
+    overflow-x: auto;
+  }
+
+  /* 左栏给一点呼吸，别贴着边框 */
+  [data-dsh-studio] .ds-req-list {
+    padding-right: 4px;
+  }
+}
+
+/* ------------------------------------------------------------ 灰字统一调深 --- */
+/* 之前的问题：`.ds-hint` 是 10.5px + **0.5 透明**，在白底上基本看不清；
+   BoardUI 的 text/tertiary 用的是 neutral-400（≈2.8:1，也不够）。灰色是层级信息，
+   不是「可以看不见的信息」，统一提一档：
+     · hint：11.5px、不透明、用 muted-foreground（浅色 #52525b / 深色自动跟随）
+     · text/secondary → neutral-600，text/tertiary → neutral-500
+   只动浅色主题的 muted-foreground；深色主题本来对比度就够，不碰。 */
+:where([data-dsh-studio]) {
+  --muted-foreground: #52525b;
+  --color-text-secondary: var(--color-neutral-600);
+  --color-text-tertiary: var(--color-neutral-500);
+}
+
+[data-dsh-studio] .ds-hint {
+  font-size: 11.5px;
+  line-height: 1.5;
+  opacity: 1;
+  color: var(--muted-foreground);
+}
+
+/* 面板头里那句说明、以及各处的次要说明，别再靠 opacity 压灰 */
+[data-dsh-studio] .ds-panel-head > .ds-hint,
+[data-dsh-studio] .ds-an-sec .ds-hint,
+[data-dsh-studio] .ds-req-list-head {
+  opacity: 1;
+  color: var(--muted-foreground);
+}
+
+[data-dsh-studio] .ds-req-list-head {
+  font-size: 12px;
+}
+
+/* --------------------------------------------------- 空态 / 按钮 / 列表行 --- */
+/* 这三样是最后还在说「换皮前语言」的地方，统一往 BoardUI 靠：
+     · .ds-empty  虚线框 → 实线浅框 + 圆角 + 居中文案（虚线框是 2010 年代的空态语言）
+     · .ds-btn    灰底小按钮 → 白底描边 32px（与 BoardUI secondary 对齐），primary/ghost 各自跟随
+     · .ds-listrow 带分隔线的表格行 → 无边框、悬停变色的行卡片，和 TaskRow 一致 */
+
+html body [data-dsh-studio] .ds-empty {
+  border: 1px solid var(--color-separator-border, var(--ds-line));
+  border-radius: 12px;
+  background: var(--color-background-secondary-default, #fafafa);
+  padding: 18px 16px;
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+
+html body [data-dsh-studio] .ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-button-default, var(--ds-line));
+  border-radius: 8px;
+  background: var(--color-background-primary-default, #fff);
+  color: var(--color-text-primary, inherit);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+html body [data-dsh-studio] .ds-btn:hover {
+  background: var(--color-background-primary-hover, var(--ds-soft));
+}
+
+html body [data-dsh-studio] .ds-btn[disabled] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+html body [data-dsh-studio] .ds-btn-primary {
+  border-color: transparent;
+  background: var(--color-button-primary-background, #18181b);
+  color: #fff;
+}
+
+html body [data-dsh-studio] .ds-btn-primary:hover {
+  background: var(--color-button-primary-hover, #27272a);
+}
+
+html body [data-dsh-studio] .ds-btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted-foreground);
+}
+
+html body [data-dsh-studio] .ds-btn-ghost:hover {
+  background: var(--color-background-primary-hover, var(--ds-soft));
+  color: var(--color-text-primary, inherit);
+}
+
+html body [data-dsh-studio] .ds-listrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 10px;
+  transition: background-color 120ms ease;
+}
+
+html body [data-dsh-studio] .ds-listrow:hover {
+  background: var(--color-background-primary-hover, var(--ds-soft));
+}
+
+html body [data-dsh-studio] .ds-listrow + .ds-listrow {
+  border-top: 1px solid var(--color-separator-border, var(--ds-line));
+}
+
+/* --------------------------------------------------- 把 Tailwind 的边框开关补上 --- */
+/* Tailwind v4 的 `.border` 长这样：`border-style: var(--tw-border-style); border-width: 1px`。
+   `--tw-border-style` 平时由 preflight 里那条 `*, ::before, ::after { --tw-border-style: solid }`
+   兜底 —— 而我们刻意没引 preflight，于是这个变量没人给值，`border-style` 变成无效值 →
+   计算值 `none` → **所有带 `.border` 的组件都没有边框**（BoardUI 的 secondary 按钮最明显：
+   只剩文字，看着像 disabled）。
+   在面板根上补一个默认值就够，子元素会继承。 */
+:where([data-dsh-studio], [data-dsh-studio-portal]) {
+  --tw-border-style: solid;
+}
+
+/* ------------------------------------------------------- 按钮外观兜底 --- */
+/* 实测：BoardUI 按钮上的 `bg-*` / `border-*` 这类**颜色工具类在宿主页里不生效**
+   （布局类 inline-flex / gap 是好的，颜色类的计算值永远是 transparent / 0px）。
+   与其继续跟 Tailwind 的分层与变量打架，不如按变体把外观写死 —— 反正变体矩阵是固定的。
+   钩子由适配层给：`data-variant` / `data-size`。 */
+[data-dsh-studio] button[data-variant] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1;
+  transition: background-color 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+
+[data-dsh-studio] button[data-variant][data-size="medium"] { height: 36px; padding: 0 12px; }
+[data-dsh-studio] button[data-variant][data-size="small"] { height: 32px; padding: 0 10px; }
+[data-dsh-studio] button[data-variant][data-size="xs"] { height: 26px; padding: 0 8px; font-size: 11.5px; }
+
+/* BoardUI 的 primary 是**蓝色渐变**（accent-500→600），不是黑底 —— 之前写死黑色，
+   暗色主题下黑底卡在黑面板上几乎看不见。改用他们的渐变 token，两个主题都对。 */
+[data-dsh-studio] button[data-variant="primary"] {
+  border: 1px solid transparent;
+  background-color: #2563eb;
+  background-image: var(--gradient-button-primary-default);
+  color: #fff;
+}
+[data-dsh-studio] button[data-variant="primary"]:hover {
+  background-image: var(--gradient-button-primary-hover);
+}
+[data-dsh-studio] button[data-variant="primary"]:disabled,
+[data-dsh-studio] button[data-variant="primary"][disabled] {
+  background-image: var(--gradient-button-primary-disabled);
+}
+
+/* secondary 用 token 而不是写死白色：暗色主题下 BoardUI 的
+   background/primary/default 是深色、text/primary 是浅色，写死白底会让按钮在暗色里发亮。 */
+[data-dsh-studio] button[data-variant="secondary"] {
+  border: 1px solid var(--color-border-button-default, #e4e4e7);
+  background: var(--color-background-primary-default, #fff);
+  color: var(--color-text-primary, #18181b);
+  box-shadow: 0 1px 1px color-mix(in srgb, #101828 4%, transparent);
+}
+[data-dsh-studio] button[data-variant="secondary"]:hover {
+  background: var(--color-background-primary-hover, #fafafa);
+}
+
+[data-dsh-studio] button[data-variant="ghost"] {
+  border: 1px solid transparent;
+  background: var(--color-button-ghost-background, #eef2ff);
+  color: var(--color-button-ghost-foreground, #1d4ed8);
+}
+[data-dsh-studio] button[data-variant="ghost"]:hover { background: var(--color-button-ghost-hover, #e0e7ff); }
+
+[data-dsh-studio] button[data-variant="danger"] {
+  border: 1px solid transparent;
+  background-color: #dc2626;
+  background-image: var(--gradient-button-danger-default);
+  color: #fff;
+}
+[data-dsh-studio] button[data-variant="danger"]:hover {
+  background-image: var(--gradient-button-danger-hover);
+}
+
+[data-dsh-studio] button[data-variant][disabled],
+[data-dsh-studio] button[data-variant][aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ------------------------------------------------------------ 看板卡片重绘 --- */
+/* 只看视觉：**不动 DOM 结构、不动拖拽**，所以 verify:scale 的 1000 张卡断言仍然有效。
+   目标是把卡片/列从「灰底 + 细线」换成 BoardUI 的「白卡 + 柔和描边 + 轻阴影」，
+   顺便把两处 50% 透明的灰字（卡片脚注、列负责人）提到可读。 */
+
+html body [data-dsh-studio] .ds-col {
+  border: 1px solid var(--color-separator-border, var(--ds-line));
+  border-radius: 14px;
+  background: var(--color-background-secondary-default, #fafafa);
+  overflow: hidden;
+}
+
+html body [data-dsh-studio] .ds-col-head {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-separator-border, var(--ds-line));
+  background: var(--color-background-primary-default, #fff);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-primary, inherit);
+}
+
+html body [data-dsh-studio] .ds-col-owner {
+  padding: 6px 12px 8px;
+  font-size: 11px;
+  opacity: 1;
+  color: var(--muted-foreground);
+  background: var(--color-background-primary-default, #fff);
+}
+
+html body [data-dsh-studio] .ds-col-body {
+  padding: 10px;
+  gap: 9px;
+}
+
+html body [data-dsh-studio] .ds-card {
+  border: 1px solid var(--color-separator-border, var(--ds-line));
+  border-radius: 11px;
+  background: var(--color-background-primary-default, #fff);
+  padding: 10px 11px;
+  box-shadow: 0 1px 2px color-mix(in srgb, #101828 5%, transparent);
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+html body [data-dsh-studio] .ds-card:hover {
+  border-color: var(--color-border-button-hover, var(--ds-accent));
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, #101828 22%, transparent);
+  transform: translateY(-1px);
+}
+
+html body [data-dsh-studio] .ds-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--color-text-primary, inherit);
+}
+
+html body [data-dsh-studio] .ds-card-foot {
+  font-size: 11px;
+  opacity: 1;
+  color: var(--muted-foreground);
+}
+
+html body [data-dsh-studio] .ds-card-warn {
+  font-size: 11px;
+}
+
+/* 暗色主题下「只看阻塞 / 只看缺正文」这类红色筛选标签：浅色主题那套深红 #c0392b
+   在深色底上几乎看不见，换成浅一档的红。 */
+[data-dsh-studio][data-theme="dark"] .ds-board-bar label[title] {
+  color: #f87171 !important;
+}
+
+/* 登录门的字段：不再用 .ds-field（它会连带把内部 input 一起重绘，和 BoardUI 的壳子打架） */
+html body [data-dsh-studio] .ds-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+html body [data-dsh-studio] .ds-login-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+/* 选项卡：自己按 BoardUI Tabs 的视觉实现。不能用 .ds-tab / .ds-tabs 这类 legacy 类名，
+   那些规则后注入，会把 padding 与选中底色一起盖掉（实测页签挤成一坨）。 */
+html body [data-dsh-studio] .studio-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  border-bottom: 1px solid var(--color-separator-border, var(--ds-line));
+  padding-bottom: 1px;
+}
+
+html body [data-dsh-studio] .studio-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.2;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+html body [data-dsh-studio] .studio-tab:hover {
+  color: var(--color-text-primary, inherit);
+  background: var(--color-background-primary-hover, var(--ds-soft));
+}
+
+html body [data-dsh-studio] .studio-tab[aria-selected="true"] {
+  color: var(--color-text-primary, inherit);
+  font-weight: 600;
+}
+
+html body [data-dsh-studio] .studio-tab:focus-visible {
+  outline: 2px solid var(--color-border-focus-ring, var(--ds-accent));
+  outline-offset: -2px;
+}
+
+html body [data-dsh-studio] .studio-tabs-thumb {
+  position: absolute;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--color-accent-600, var(--ds-accent));
+}
+
+/* 分段控件（官方 SegmentedControl）：容器与滑动块的底色用 token 写死，
+   因为 Tailwind 的 bg-* 工具类在这个宿主页里不生效（见前面几处说明）。 */
+html body [data-dsh-studio] .ds-seg-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--color-segmented-control-background, var(--ds-soft));
+}
+
+html body [data-dsh-studio] .ds-seg-control > span[aria-hidden] {
+  border-radius: 7px;
+  background: var(--color-segmented-control-selected-background, #fff);
+  box-shadow: 0 1px 2px color-mix(in srgb, #101828 8%, transparent);
+}
+
+html body [data-dsh-studio] .ds-seg-control button {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  font-size: 11.5px;
+  line-height: 17px;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+html body [data-dsh-studio] .ds-seg-control button[data-selected] {
+  color: var(--color-text-primary, inherit);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------- 表格（官方） --- */
+/* 摘自考 registry 的 styles/globals.css，只摘 .bui-table 这一段（整份 globals 带
+   preflight，会把宿主页面一起改掉）。选择器由 scope-css.mjs 自动包进
+   [data-dsh-studio]，所以表格样式只作用于面板内。 */
+.bui-table {
+  @apply w-full border-collapse text-start;
+}
+/* Header background + border-y live on the cells: with border-collapse the
+ * browser doesn't paint backgrounds/borders set on the <thead> row group.
+ * Backgrounds/borders are set with explicit CSS (theme vars) rather than
+ * @apply, which drops border-width/bg on these row-group cells. */
+.bui-table th {
+  @apply px-3 py-2.5 text-start align-middle text-body-medium text-text-tertiary whitespace-nowrap outline-none;
+  background-color: var(--color-background-secondary-default);
+  border-top: 1px solid var(--color-separator-border);
+  border-bottom: 1px solid var(--color-separator-border);
+  transition: padding 200ms ease, font-size 200ms ease;
+}
+.bui-table td {
+  @apply px-3 py-2.5 align-middle text-body-medium text-text-primary outline-none;
+  transition: padding 200ms ease, font-size 200ms ease;
+}
+/* Separators sit *between* rows only: the trailing row's boundary is drawn by
+ * whatever follows the table (the container's bottom edge, or the pagination
+ * footer's own border-top), so a filtered-down table never doubles up lines. */
+.bui-table tbody tr:not(:last-child) {
+  border-bottom: 1px solid var(--color-separator-border);
+}
+.bui-table tbody tr {
+  @apply transition-colors duration-150;
+}
+.bui-table tbody tr[data-focus-visible] {
+  @apply ring-2 ring-inset ring-border-focus-ring;
+}
+.bui-table.bui-table-sm th,
+.bui-table.bui-table-sm td {
+  @apply px-2.5 py-1.5 text-body-2-medium;
+}
+
+/* Agent Thinking (components/application/agent-thinking): the agent thinking state
+ * above a chat composer. The label reuses the ai-chat-text-shimmer travel;
+ * its base/highlight both derive from the tone the component sets via
+ * --bui-agent-thinking-tone, so every tone shimmers consistently. */
+.bui-agent-thinking-label {
+  color: transparent;
+  background-image: linear-gradient(
+    100deg,
+    color-mix(in oklab, var(--bui-agent-thinking-tone) 55%, transparent) 30%,
+    var(--bui-agent-thinking-tone) 50%,
+    color-mix(in oklab, var(--bui-agent-thinking-tone) 55%, transparent) 70%
+  );
+  background-position: 200% center;
+  background-size: 300% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: ai-chat-text-shimmer 2.6s linear infinite;
+  will-change: background-position;
+}
+[data-dsh-studio] :is(.ds-spark-day, .ds-col-count) {
+  font-size: 11px;
+}

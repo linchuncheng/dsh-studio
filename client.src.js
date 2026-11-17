@@ -32,11 +32,11 @@ window.__ModuleLoader__.load({
     }
 
     /* 表单适配层与共享抽屉已经搬到 web/src/studio，这边只负责把 h / kit 递进去。 */
-    const { TextField, TextAreaField, ChipField, CheckField, SelectField } = createFields({ h, kit, React })
+    const { TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, DateField, SearchField } = createFields({ h, kit, React })
     const SideDrawer = createSideDrawer({ h, kit })
     const Editor = createEditor({ h, React })
     const Card = createCard({ h, ChipField })
-    const Board = createBoard({ h, React, Card, TextField, SelectField, CheckField, toast })
+    const Board = createBoard({ h, React, Card, TextField, SearchField, SelectField, CheckField, toast })
     /* 字段标签的悬停说明：只给「不看说明容易填错」的字段加，鼠标移上去出气泡。 */
     /* Markdown 内容字段：左编辑右预览（切换式），底部写清支持哪些语法。
        需求正文 / 文档正文 / 交付物正文 / 技能正文 / 任务需求 / 功能点说明 统一走这里。 */
@@ -186,23 +186,29 @@ window.__ModuleLoader__.load({
       TOAST_ITEMS = next
       toastEmit()
     }
-    const TOAST_ICON = { success: '✓', error: '!', info: 'i' }
-    /* 轻提示宿主：挂在 StudioPage 根部，跟 DialogHost 一样只订阅不持有业务状态。 */
+    const TOAST_STATUS = { success: 'success', error: 'error', info: 'info', warn: 'warning' }
+    /* 轻提示宿主：用官方 Notification 渲染（原来是自己写的 .ds-toast div）。 */
     function ToastHost() {
+      const Notification = kit('Notification')
       const [items, setItems] = React.useState(() => TOAST_ITEMS.slice())
       React.useEffect(() => {
         TOAST_LISTENERS.push(setItems)
         return () => { TOAST_LISTENERS = TOAST_LISTENERS.filter(entry => entry !== setItems) }
       }, [])
       if (items.length === 0) return null
+      if (Notification === null) {
+        return h('div', { className: 'ds-toasts', role: 'status', 'aria-live': 'polite' },
+          items.map(item => h('div', { key: item.id, className: 'ds-toast', 'data-tone': item.tone }, h('span', { className: 'ds-toast-text' }, item.text))))
+      }
       return h('div', { className: 'ds-toasts', role: 'status', 'aria-live': 'polite' },
-        items.map(item => h('div', { key: item.id, className: 'ds-toast', 'data-tone': item.tone },
-          h('span', { className: 'ds-toast-icon', 'aria-hidden': 'true' }, TOAST_ICON[item.tone] ?? 'i'),
-          h('span', { className: 'ds-toast-text' }, item.text),
-          h('button', {
-            type: 'button', className: 'ds-toast-close', 'aria-label': '关闭提示',
-            onClick: () => dismissToast(item.id),
-          }, '×'),
+        items.map(item => h('div', { key: item.id, className: 'ds-toast-slot' },
+          h(Notification, {
+            title: item.text,
+            status: TOAST_STATUS[item.tone] ?? 'info',
+            dismissible: true,
+            closeLabel: '关闭提示',
+            onDismiss: () => dismissToast(item.id),
+          }),
         )),
       )
     }
@@ -429,8 +435,6 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-board-bar .ds-input, .ds-board-bar .ds-select { height:28px; padding:0 8px; }
 .ds-search { position:relative; display:inline-flex; }
 .ds-search .ds-input { padding-left:24px; }
-.ds-search::before { content:'⌕'; position:absolute; left:7px; top:50%; transform:translateY(-50%);
-  opacity:.4; font-size:13px; pointer-events:none; }
 .ds-stat { font-size:11.5px; opacity:.55; }
 .ds-market-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; }
 .ds-market-card { display:flex; flex-direction:column; gap:8px; border:1px solid var(--ds-line); border-radius:12px;
@@ -536,7 +540,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 @media (max-width:900px) { .ds-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:560px) { .ds-kpi-grid { grid-template-columns:minmax(0,1fr); } }
 .ds-kpi { position:relative; overflow:hidden; border:1px solid var(--ds-line); border-radius:10px; padding:11px 13px 12px; background:var(--ds-card); box-shadow:var(--ds-shadow), inset 3px 0 0 color-mix(in srgb, var(--ds-accent) 55%, transparent); }
-.ds-kpi[data-warn="1"] { border-color: color-mix(in srgb, #e5484d 40%, var(--ds-line)); box-shadow:inset 3px 0 0 color-mix(in srgb, #e5484d 70%, transparent); }
+.ds-kpi[data-warn="1"] { border-color: color-mix(in srgb, var(--color-notification-error-foreground) 40%, var(--ds-line)); box-shadow:inset 3px 0 0 color-mix(in srgb, #e5484d 70%, transparent); }
 .ds-kpi-value { font-size:23px; font-weight:650; letter-spacing:-.02em; line-height:1.15; }
 .ds-kpi[data-warn="1"] .ds-kpi-value { color:#e5484d; }
 .ds-kpi-label { font-size:12px; font-weight:600; margin-top:1px; }
@@ -1192,7 +1196,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
     const MentionPicker = createMentionPicker({ h, TextField })
     const Drawer = createDrawer({ h, React, api, kit, currentUser, renderMarkdown, tipOf, tipLabel, confirmDialog, promptDialog, TextField, TextAreaField, ChipField, CheckField, SelectField, MdField, MentionPicker })
     const Palette = createPalette({ h, React })
-    provideClient({ h, React, Editor, api, kit, toast, sessionToken, currentUser, confirmDialog, promptDialog, tipOf, tipLabel, renderMarkdown, SideDrawer, MentionPicker, Card, TextField, TextAreaField, ChipField, CheckField, SelectField, MdField })
+    provideClient({ h, React, Editor, api, kit, toast, sessionToken, currentUser, confirmDialog, promptDialog, tipOf, tipLabel, renderMarkdown, SideDrawer, MentionPicker, Card, TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, DateField, MdField })
 
 
     // -------------------------------------------------------------- market
@@ -1322,58 +1326,6 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
      * 统一登录（LDAP）：配置连接 + 测试连接 + 开不开「必须登录」。
      * 服务账号密码只往服务端写一次（存进 0600 的密钥文件），这里永远不回显。
      */
-
-
-    const STRATEGIES = [
-      { id: 'round_robin', label: '轮询：谁手上活少给谁' },
-      { id: 'best_match', label: '按专长匹配：领域 / 角色位 / 技能' },
-      { id: 'lead', label: '交给专家团团长分派' },
-    ]
-
-    const ACCESS_ROLE_OPTIONS = [
-      { id: 'admin', label: '管理员', hint: '能改配置、删数据、发布版本' },
-      { id: 'member', label: '成员', hint: '能建卡、推卡、评论、跑用例' },
-      { id: 'viewer', label: '只读', hint: '只能看，不能动' },
-    ]
-
-    const ROUTE_LABEL = {
-      '/config': '改配置',
-      '/task/create': '新建卡',
-      '/task/update': '改卡',
-      '/task/delete': '删卡',
-      '/task/block': '标记阻塞',
-      '/task/unblock': '解除阻塞',
-      '/task/comment': '评论',
-      '/task/artifact': '登记交付物',
-      '/task/artifact/sync': '归档交付物',
-      '/task/checklist': '勾验收清单',
-      '/task/case': '登记用例',
-      '/task/case/run': '跑接口用例',
-      '/task/coding': '登记 AI Coding',
-      '/task/worktree': 'worktree 操作',
-      '/mention': '点名派活',
-      '/agents/run': '手动派单',
-      '/agents/stop': '停止派单',
-      '/experts/save': '存专家',
-      '/experts/delete': '删专家',
-      '/teams/save': '存专家团',
-      '/teams/delete': '删专家团',
-      '/skills/save': '存技能',
-      '/skills/delete': '删技能',
-      '/projects/save': '存项目',
-      '/projects/delete': '删项目',
-      '/release/save': '存版本',
-      '/release/publish': '发布版本',
-      '/release/rollback': '回滚版本',
-      '/release/approve': '审批版本',
-      '/requirement/save': '存需求',
-      '/requirement/delete': '删需求',
-      '/access/save': '改成员权限',
-      '/access/delete': '删成员',
-      '/audit/clear': '清空审计日志',
-      '/market/install': '装插件',
-      '/market/uninstall': '卸插件',
-    }
 
 
     function Settings({ state, onChanged, initialSection, onSection, suggestCosts }) {
@@ -1783,7 +1735,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
             ),
             h('div', { className: 'ds-field' },
               h('div', { className: 'ds-label' }, '期望完成（选填）'),
-              h(TextField, { className: 'ds-input', type: 'date', value: due, onChange: e => setDue(e.target.value) }),
+              h(DateField, { className: 'ds-input', value: due, onChange: e => setDue(e.target.value) }),
             ),
           ),
           isBug
@@ -2069,9 +2021,9 @@ function installKeyboardActivation() {
             h('div', { className: 'ds-login-brand' }, '◈ ', config?.board?.title ?? '工作空间'),
             tabs,
             hint,
-            h('label', { className: 'ds-field' },
-              h('span', null, mode === 'local' ? '超管账号' : '域账号'),
-              h('input', {
+            h('div', { className: 'ds-login-field' },
+              h('span', { className: 'ds-login-label' }, mode === 'local' ? '超管账号' : '域账号'),
+              h(TextField, {
                 value: username,
                 autoFocus: mode === 'ldap',
                 name: 'studio-account',
@@ -2082,9 +2034,9 @@ function installKeyboardActivation() {
                 onKeyDown: event => { if (event.key === 'Enter') void submit() },
               }),
             ),
-            h('label', { className: 'ds-field' },
-              h('span', null, '密码'),
-              h('input', {
+            h('div', { className: 'ds-login-field' },
+              h('span', { className: 'ds-login-label' }, '密码'),
+              h(TextField, {
                 type: 'password',
                 value: password,
                 autoFocus: mode === 'local',
@@ -2293,7 +2245,7 @@ function installKeyboardActivation() {
               (state.integrations?.broken ?? 0) > 0
                 ? h('button', {
                     className: 'ds-btn ds-btn-ghost',
-                    style: { color: '#e5484d', borderColor: 'color-mix(in srgb, #e5484d 40%, var(--ds-line))' },
+                    style: { color: 'var(--color-notification-error-foreground)', borderColor: 'color-mix(in srgb, var(--color-notification-error-foreground) 40%, var(--ds-line))' },
                     title: (state.integrations.channels ?? []).filter(item => item.state === 'error').map(item => `${item.label}：${item.lastError}`).join('\n'),
                     onClick: () => { setTab('settings'); setSettingsSection('health') },
                   }, `⚠ 集成异常 ${state.integrations.broken}`)
@@ -2328,9 +2280,6 @@ function installKeyboardActivation() {
           h('div', { className: 'ds-head-tabs' },
             (() => {
               const Tabs = kit('TabsBar')
-              const TRoot = kit('Tabs')
-              const TList = kit('TabsList')
-              const TItem = kit('TabsTrigger')
               const items = [
                 { id: 'dashboard', label: '工作台', hint: '今天该看什么：在办、逾期、阻塞、缺陷超时、准出被拦' },
                 { id: 'board', label: '看板', hint: '按列推进卡片；点开卡片能看计划、交付物、测试、讨论' },
@@ -2341,16 +2290,8 @@ function installKeyboardActivation() {
                 { id: 'analytics', label: '效能', hint: '周期分布、每列停留、团队负载、返工与 AI 成本' },
                 { id: 'settings', label: '设置', hint: '列、模型、自动派单、集成、权限、备份' },
               ]
-              if (TRoot !== null && TList !== null && TItem !== null) {
-                return h(TRoot, { value: tab, onValueChange: next => setTab(next) },
-                  h(TList, { className: '' },
-                    items.map(item => h(TItem, {
-                      key: item.id,
-                      value: item.id,
-                      title: item.hint,
-                      className: '',
-                    }, item.label))))
-              }
+              // 先走 TabsBar（现在是 BoardUI 的 PillTabList + PillTab），
+              // 没有再退回 Radix 的那套，最后才是自绘的 .ds-tab。
               if (Tabs !== null) {
                 return h(Tabs, { items, value: tab, onChange: next => setTab(next) })
               }

@@ -3,7 +3,7 @@
 import { client } from '../context.js'
 
 export function ReposPanel({ config, onChanged }) {
-  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, ChipField, CheckField, MdField, SideDrawer , React } = client()
+  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, ChipField, CheckField, SwitchToggle, MdField, SideDrawer , React } = client()
   const projects = config.gitlab?.projects ?? []
   const [draft, setDraft] = React.useState(null)
   const [error, setError] = React.useState(null)
@@ -97,7 +97,7 @@ export function ReposPanel({ config, onChanged }) {
         ),
         h('div', { className: 'ds-field' },
           h('label', { className: 'ds-row', style: { alignItems: 'center', gap: 8, cursor: 'pointer' } },
-            h(CheckField, { checked: draft.syncEnabled === true, onChange: e => set('syncEnabled', e.target.checked) }),
+            h(SwitchToggle, { checked: draft.syncEnabled === true, onChange: e => set('syncEnabled', e.target.checked) }),
             h('span', {}, '每分钟自动把这个项目的新 Issue 拉成卡片'),
           ),
         ),
@@ -119,7 +119,7 @@ const botEventNames = bot => {
 }
 
 export function BotsPanel({ config, onChanged }) {
-  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, ChipField, CheckField, MdField, SideDrawer , React } = client()
+  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, ChipField, CheckField, SwitchToggle, MdField, SideDrawer , React } = client()
   const bots = config.feishu?.bots ?? []
   const [draft, setDraft] = React.useState(null)
   const [error, setError] = React.useState(null)
@@ -202,7 +202,7 @@ export function BotsPanel({ config, onChanged }) {
           h('div', { className: 'ds-hint' }, `每条需求会在它下面建一个「编号 + 标题」的同名文件夹，交付物写成文件夹里的一份 .md 文档。飞书授权：${config.feishu?.larkReady ? 'lark-cli 已就绪' : 'lark-cli 未就绪或未授权'}`),
         ),
         h('label', { className: 'ds-row', style: { alignItems: 'center', gap: 8, cursor: 'pointer' } },
-          h(CheckField, { checked: autoSync, onChange: e => setAutoSync(e.target.checked) }),
+          h(SwitchToggle, { checked: autoSync, onChange: e => setAutoSync(e.target.checked) }),
           h('span', {}, '专家登记交付物时自动归档（关掉就只存平台里）'),
         ),
         h('div', { className: 'ds-row', style: { gap: 8 } },
@@ -253,7 +253,7 @@ export function BotsPanel({ config, onChanged }) {
         ),
         h('div', { className: 'ds-row', style: { gap: 16 } },
           h('label', { className: 'ds-row', style: { alignItems: 'center', gap: 8, cursor: 'pointer' } },
-            h(CheckField, { checked: draft.enabled !== false, onChange: e => set('enabled', e.target.checked) }),
+            h(SwitchToggle, { checked: draft.enabled !== false, onChange: e => set('enabled', e.target.checked) }),
             h('span', {}, '启用'),
           ),
         ),
@@ -262,10 +262,11 @@ export function BotsPanel({ config, onChanged }) {
 }
 
 export function SkillsPanel({ config, onChanged }) {
-  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, ChipField, CheckField, MdField, SideDrawer , React } = client()
+  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, ChipField, CheckField, SwitchToggle, MdField, SideDrawer , React } = client()
   const [data, setData] = React.useState(null)
   const [draft, setDraft] = React.useState(null)
   const [error, setError] = React.useState(null)
+  const fileRef = React.useRef(null)
   const [note, setNote] = React.useState(null)
   const [busy, setBusy] = React.useState(false)
   const [uploading, setUploading] = React.useState(false)
@@ -369,13 +370,25 @@ export function SkillsPanel({ config, onChanged }) {
       ? h('div', { className: 'ds-hint' }, `磁盘上还有 ${stray.length} 个不归这里管的技能目录：${stray.join('、')}`)
       : null,
     h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', padding: '6px 0 10px', flexWrap: 'wrap' } },
-      h('label', { className: 'ds-btn', style: { cursor: uploading ? 'progress' : 'pointer', opacity: uploading ? 0.6 : 1 } },
-        uploading ? '上传中…' : '上传技能',
-        h('input', {
-          type: 'file', accept: '.md,.markdown,.txt,.zip', style: { display: 'none' }, disabled: uploading,
-          onChange: event => { const file = event.target.files === null ? undefined : event.target.files[0]; event.target.value = ''; void upload(file) },
-        }),
-      ),
+      // 以前把 <input type=file> 藏在 <label class="ds-btn"> 里：长得像按钮，但
+      // **键盘根本到不了**（label 不可聚焦，Tab 跳过它），屏幕阅读器也只报一个标签。
+      // 改成正常按钮 + 隐藏的文件输入框：按钮能被 Tab 聚焦、Enter/Space 触发，
+      // 真正去点的是那个 1px 的 input。
+      h('button', {
+        className: 'ds-btn',
+        disabled: uploading,
+        title: '上传 SKILL.md 或包含 SKILL.md 的 .zip 技能包',
+        onClick: () => fileRef.current?.click(),
+      }, uploading ? '上传中…' : '上传技能'),
+      h('input', {
+        type: 'file',
+        accept: '.md,.markdown,.txt,.zip',
+        ref: fileRef,
+        tabIndex: -1,
+        'aria-hidden': 'true',
+        style: { position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' },
+        onChange: event => { const file = event.target.files === null ? undefined : event.target.files[0]; event.target.value = ''; void upload(file) },
+      }),
       h('label', { className: 'ds-hint', style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' } },
         h(CheckField, { checked: overwrite, onChange: event => setOverwrite(event.target.checked) }),
         '覆盖同名技能',
@@ -428,7 +441,7 @@ export function SkillsPanel({ config, onChanged }) {
         ),
         h('div', { className: 'ds-field' },
           h('label', { className: 'ds-row', style: { alignItems: 'center', gap: 8, cursor: 'pointer' } },
-            h(CheckField, { checked: draft.enabled !== false, onChange: e => set('enabled', e.target.checked) }),
+            h(SwitchToggle, { checked: draft.enabled !== false, onChange: e => set('enabled', e.target.checked) }),
             h('span', {}, '启用（停用则不写入磁盘）'),
           ),
         ),

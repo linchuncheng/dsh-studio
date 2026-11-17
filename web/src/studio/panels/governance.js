@@ -1,12 +1,12 @@
 /* Settings panels lifted out of client.src.js; shared handles come from the studio context. */
 
-import { ROLE_LABEL } from '../labels.js'
+import { ROLE_LABEL, ACCESS_ROLE_OPTIONS, STRATEGIES, ROUTE_LABEL } from '../labels.js'
 import { buildRoster, filterRoster } from '../roster.js'
 import { fmtTime } from '../format.js'
 import { client } from '../context.js'
 
 export function AccessPanel({ state, config, onChanged }) {
-  const { h, sessionToken, api, toast, currentUser, confirmDialog, TextField, ChipField, CheckField, SelectField , React } = client()
+  const { h, sessionToken, api, toast, currentUser, confirmDialog, TextField, ChipField, CheckField, SwitchToggle, SelectField , React } = client()
   const access = config.access ?? { enabled: false, members: [] }
   const audit = state.audit ?? []
   const [draft, setDraft] = React.useState({ name: '', role: 'member' })
@@ -64,7 +64,7 @@ export function AccessPanel({ state, config, onChanged }) {
       h('div', { className: 'ds-panel-body' },
         h('div', { className: 'ds-row', style: { gap: 10, alignItems: 'center', flexWrap: 'wrap' } },
           h('label', { className: 'ds-check', style: { flex: '0 0 auto' } },
-            h(CheckField, { checked: access.enabled === true, disabled: busy,
+            h(SwitchToggle, { checked: access.enabled === true, disabled: busy,
               onChange: event => void act('/access/save', { enabled: event.target.checked }),
             }),
             h('span', null, '启用成员权限'),
@@ -79,7 +79,7 @@ export function AccessPanel({ state, config, onChanged }) {
           : null,
         access.enabled === true
           ? h('label', { className: 'ds-check' },
-              h(CheckField, { checked: (access.agents ?? 'inherit') === 'inherit',
+              h(SwitchToggle, { checked: (access.agents ?? 'inherit') === 'inherit',
                 disabled: busy,
                 onChange: event => void act('/access/save', { agents: event.target.checked ? 'inherit' : 'bypass' }),
               }),
@@ -167,7 +167,7 @@ export function AccessPanel({ state, config, onChanged }) {
 }
 
 export function ColumnsPanel({ state, onChanged }) {
-  const { h, sessionToken, api, toast, currentUser, confirmDialog, TextField, ChipField, CheckField, SelectField , React } = client()
+  const { h, sessionToken, api, toast, currentUser, confirmDialog, TextField, ChipField, CheckField, SwitchToggle, SelectField , React } = client()
   const config = state.config
   const [error, setError] = React.useState(null)
   const [busy, setBusy] = React.useState(false)
@@ -293,7 +293,7 @@ export function ColumnsPanel({ state, onChanged }) {
 
 /** 数据与备份：看台账存在哪、密钥在哪，以及回滚到某个快照。 */
 export function StoragePanel({ state, onChanged }) {
-  const { h, sessionToken, api, toast, currentUser, confirmDialog, TextField, ChipField, CheckField, SelectField , React } = client()
+  const { h, sessionToken, api, toast, currentUser, confirmDialog, TextField, ChipField, CheckField, SwitchToggle, SelectField , React } = client()
   const [info, setInfo] = React.useState(state.storage ?? null)
   const [snapshots, setSnapshots] = React.useState([])
   const [error, setError] = React.useState(null)
@@ -363,7 +363,7 @@ export function StoragePanel({ state, onChanged }) {
 
 /** 集成健康：哪条通道在掉、什么时候掉的、还能不能补一次。 */
 export function HealthPanel({ state, config, onChanged }) {
-  const { h, sessionToken, api, toast, currentUser, confirmDialog, TextField, ChipField, CheckField, SelectField , React } = client()
+  const { h, sessionToken, api, toast, currentUser, confirmDialog, TextField, ChipField, CheckField, SwitchToggle, SelectField , React } = client()
   const health = state.integrations ?? { channels: [], broken: 0 }
   const [busy, setBusy] = React.useState('')
   const [note, setNote] = React.useState(null)

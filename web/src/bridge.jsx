@@ -7,6 +7,8 @@
 // host can render the sidebar icon we build with the bundled React.
 import * as React from 'react'
 import { createRoot } from 'react-dom/client'
+import { UNSAFE_PortalProvider } from 'react-aria/PortalProvider'
+import { portalRoot } from './lib/portal.js'
 
 // Keeps one broken component from unmounting the whole panel with a blank page.
 class Boundary extends React.Component {
@@ -63,7 +65,15 @@ export function createBridge(studio, hostReact, options = {}) {
         React.createElement(
           Boundary,
           null,
-          React.createElement(studio.StudioPage, options.pageProps ?? {}),
+          // react-aria 的 Popover / Modal 默认 portal 到 document.body，落在
+          // [data-dsh-studio] 之外，作用域化的 Tailwind 类全部失效（下拉菜单
+          // 会变成没有样式的裸列表）。用官方的 UNSAFE_PortalProvider 把它们
+          // 收进 Radix 那个带 data-dsh-studio-portal 的容器，两边共用一套样式。
+          React.createElement(
+            UNSAFE_PortalProvider,
+            { getContainer: portalRoot },
+            React.createElement(studio.StudioPage, options.pageProps ?? {}),
+          ),
         ),
       )
     }

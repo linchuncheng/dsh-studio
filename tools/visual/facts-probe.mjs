@@ -145,9 +145,9 @@ try {
   page.on('pageerror', error => errors.push(String(error).slice(0, 160)))
   page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text().slice(0, 400)) })
   await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 })
-  await page.waitForSelector('[data-dsh-studio] [role="tab"]', { timeout: 45000 })
+  await page.waitForSelector('[data-dsh-studio] .ds-head-tabs button', { timeout: 45000 })
   const clickTab = async label => {
-    for (const tab of await page.$$('[data-dsh-studio] [role="tab"]')) {
+    for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
       if ((((await tab.evaluate(node => node.textContent)) ?? '').trim()) === label) { await tab.click(); return true }
     }
     return false

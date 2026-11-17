@@ -271,7 +271,9 @@ async function runHttpCase(item, env, config, seedVars) {
     }
     const headers = { ...env.headers }
     for (const [key, value] of Object.entries(item.http.headers ?? {})) headers[key] = substituteVars(value, vars)
-    const init = { method: step.method, headers, signal: AbortSignal.timeout(timeout) }
+    /* redirect: 'manual' —— 302 到 169.254.169.254 这类内网地址时不要把请求跟过去，
+       直接把 3xx 当结果返回（用例自己判断）。 */
+    const init = { method: step.method, headers, signal: AbortSignal.timeout(timeout), redirect: 'manual' }
     if (renderedBody !== '' && step.method !== 'GET' && step.method !== 'HEAD') {
       init.body = renderedBody
       if (Object.keys(headers).every(key => key.toLowerCase() !== 'content-type')) headers['content-type'] = 'application/json'

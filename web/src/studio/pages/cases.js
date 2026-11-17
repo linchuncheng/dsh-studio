@@ -3,7 +3,9 @@
    opening twenty drawers. Read-only for now; the regression runner is next. */
 
 import { client } from '../context.js'
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '../../components/base/table/table'
 import { CASE_RESULTS, CASE_RESULT_LABEL } from '../labels.js'
+import { Button as BoarduiButton } from '../../boardui/index'
 import { fmtTime } from '../format.js'
 
 export function CasesPage({ state, onOpenTask }) {
@@ -193,10 +195,10 @@ export function CasesPage({ state, onOpenTask }) {
           ),
         ),
         h('div', { className: 'ds-row', style: { marginTop: 8 } },
-          h('button', { className: 'ds-btn ds-btn-ghost', disabled: running || runnable.length === 0, onClick: selectAllRunnable }, `全选可跑的 ${runnable.length} 条`),
-          h('button', { className: 'ds-btn ds-btn-ghost', disabled: running || selected.size === 0, onClick: clearSelection }, '清空选择'),
-          h('button', { className: 'ds-btn ds-btn-primary', disabled: running || picked.length === 0, onClick: () => void runSelected() }, running ? '跑着…' : `▶ 跑选中的 ${picked.length} 条`),
-          h('button', { className: 'ds-btn', disabled: running || failedRunnable.length === 0, title: '只补跑上次不通过、且有接口定义的用例', onClick: () => void runFailed() }, `↻ 只跑上次失败的 ${failedRunnable.length} 条`),
+          h(BoarduiButton, { variant: 'secondary', size: 'small', disabled: running || runnable.length === 0, onClick: selectAllRunnable }, `全选可跑的 ${runnable.length} 条`),
+          h(BoarduiButton, { variant: 'secondary', size: 'small', disabled: running || selected.size === 0, onClick: clearSelection }, '清空选择'),
+          h(BoarduiButton, { variant: 'primary', size: 'small', disabled: running || picked.length === 0, onClick: () => void runSelected() }, running ? '跑着…' : `▶ 跑选中的 ${picked.length} 条`),
+          h(BoarduiButton, { variant: 'secondary', size: 'small', disabled: running || failedRunnable.length === 0, title: '只补跑上次不通过、且有接口定义的用例', onClick: () => void runFailed() }, `↻ 只跑上次失败的 ${failedRunnable.length} 条`),
           h('span', { className: 'ds-hint' }, '按卡串行跑，每张卡一轮；失败的照旧自动开缺陷（最多一次 60 条）'),
         ),
         h('div', { className: 'ds-row', style: { marginTop: 8, flexWrap: 'wrap', gap: 8 } },
@@ -231,38 +233,62 @@ export function CasesPage({ state, onOpenTask }) {
           : list.length === 0
             ? h('div', { className: 'ds-empty' }, '没有符合条件的用例。用例登记在卡片详情的「测试」里。')
             : h('div', { className: 'ds-case-lib' },
-              list.map(row => h('div', { key: row.key, className: 'ds-case-lib-wrap' },
-                h('div', {
-                  className: 'ds-case-lib-row',
-                  'data-result': row.result,
-                  title: '打开所属卡片',
-                  onClick: () => onOpenTask(row.taskId),
+              /* 官方 Table：react-aria 的 Table + Column/Row/Cell，产出真 <table>/<th>/<td>，
+                 行选择与键盘导航由组件负责。原来是一串 div 拼的 8 列网格。
+                 RAC 的 collection 组件不能被自定义组件包住（官方 table.tsx 注释也写了），
+                 所以这里直接用它的再导出。 */
+              h(Table, {
+                size: 'sm',
+                'aria-label': '用例库',
+                selectionMode: 'multiple',
+                selectedKeys: selected,
+                onSelectionChange: keys => setSelected(new Set(keys)),
+                onRowAction: key => {
+                  const target = list.find(item => item.key === key)
+                  if (target !== undefined) onOpenTask(target.taskId)
                 },
-                  h('span', { className: 'ds-case-lib-pick', onClick: event => event.stopPropagation() },
-                    h(CheckField, { checked: selected.has(row.key), disabled: running || row.runnable !== true, onChange: () => toggle(row.key) }),
-                  ),
-                  h('span', { className: 'ds-case-lib-result' }, CASE_RESULT_LABEL[row.result] ?? row.result),
-                  h('span', { className: 'ds-case-lib-title' }, row.title),
-                  h('span', { className: 'ds-case-lib-meta' }, `${row.taskCode || row.taskId} · ${row.requirementTitle || '未挂需求'}${row.pointId ? ' · ' + row.pointId : ''}`),
-                  h('span', { className: 'ds-case-lib-meta' }, row.http ? '接口' : row.shell ? 'shell' : row.db ? '数据库' : '手工'),
-                  h('span', { className: 'ds-case-lib-pri' }, row.priority),
-                  h('span', { className: 'ds-case-lib-at' }, row.lastRunAt > 0 ? fmtTime(row.lastRunAt) : '没跑过'),
-                  h('button', {
-                    className: 'ds-btn ds-btn-ghost ds-case-lib-more',
-                    title: '看最近一次执行的明细',
-                    onClick: event => { event.stopPropagation(); setOpenDetail(openDetail === row.key ? null : row.key) },
-                  }, openDetail === row.key ? '收起' : '明细'),
+              },
+                h(TableHeader, null,
+                  h(TableColumn, { id: 'result', isRowHeader: true }, '结果'),
+                  h(TableColumn, { id: 'title' }, '用例'),
+                  h(TableColumn, { id: 'meta' }, '所属卡片 / 需求'),
+                  h(TableColumn, { id: 'kind' }, '类型'),
+                  h(TableColumn, { id: 'priority' }, '优先级'),
+                  h(TableColumn, { id: 'at' }, '最近执行'),
+                  h(TableColumn, { id: 'more' }, '明细'),
                 ),
-                openDetail === row.key
-                  ? h('div', { className: 'ds-case-lib-detail' },
+                h(TableBody, null,
+                  list.map(row => h(TableRow, { key: row.key, id: row.key, isDisabled: running || row.runnable !== true },
+                    h(TableCell, null, CASE_RESULT_LABEL[row.result] ?? row.result),
+                    h(TableCell, null, row.title),
+                    h(TableCell, null, `${row.taskCode || row.taskId} · ${row.requirementTitle || '未挂需求'}${row.pointId ? ' · ' + row.pointId : ''}`),
+                    h(TableCell, null, row.http ? '接口' : row.shell ? 'shell' : row.db ? '数据库' : '手工'),
+                    h(TableCell, null, row.priority),
+                    h(TableCell, null, row.lastRunAt > 0 ? fmtTime(row.lastRunAt) : '没跑过'),
+                    h(TableCell, null,
+                      h(BoarduiButton, {
+                        variant: 'ghost',
+                        size: 'small',
+                        onPress: () => setOpenDetail(openDetail === row.key ? null : row.key),
+                      }, openDetail === row.key ? '收起' : '明细'),
+                    ),
+                  )),
+                ),
+              ),
+              // 明细面板放在表格下面：RAC 的行不支持内联展开，展开内容挪到表外，行为与原来一致。
+              openDetail === null
+                ? null
+                : (() => {
+                  const row = list.find(item => item.key === openDetail)
+                  if (row === undefined) return null
+                  return h('div', { className: 'ds-case-lib-detail' },
                     h('div', null, `期望：${row.expected || '—'}`),
                     h('div', null, `最近一次：${row.note || (row.lastRunAt > 0 ? '只有结果，没有记录' : '还没跑过')}`),
                     row.lastError === '' ? null : h('div', { className: 'ds-err' }, `错误：${row.lastError}`),
                     row.lastPreview === '' ? null : h('pre', { className: 'ds-case-lib-preview' }, row.lastPreview),
                     h('div', { className: 'ds-hint' }, `用例编号 ${row.id} · 所属卡片 ${row.taskCode || row.taskId}`),
                   )
-                  : null,
-              )),
+                })(),
             ),
       ),
     ),

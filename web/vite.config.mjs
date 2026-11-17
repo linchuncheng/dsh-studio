@@ -5,6 +5,8 @@ import react from '@vitejs/plugin-react'
 // deployment story stays "copy one file and restart".
 export default defineConfig({
   plugins: [react()],
+  // BoardUI 的源码用 @/ 作路径根，加个别名就能原样 copy 进来
+  resolve: { alias: { '@': new URL('./src', import.meta.url).pathname } },
   define: { 'process.env.NODE_ENV': JSON.stringify('production') },
   build: {
     outDir: '../dist',

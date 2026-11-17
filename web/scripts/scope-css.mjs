@@ -16,6 +16,12 @@ function scopeSelector(selector) {
   if (trimmed === '') return trimmed
   // Token blocks in index.css already pick their own scope.
   if (trimmed.includes('[data-dsh-studio')) return trimmed
+  // BoardUI 的暗色钩子是 `.dark`（挂在自己的根上），我们的是根节点的 data-theme="dark"。
+  // 这里把 `.dark` / `.dark .x` / `.dark:hover` 统一映射到 [data-dsh-studio][data-theme="dark"]。
+  if (trimmed === '.dark') return SCOPES.map(scope => `${scope}[data-theme="dark"]`).join(', ')
+  if (/^\.dark(?=[\s>:[.+~])/.test(trimmed)) {
+    return SCOPES.map(scope => `${scope}[data-theme="dark"]${trimmed.slice('.dark'.length)}`).join(', ')
+  }
   if (trimmed === ':root' || trimmed === 'html') return SCOPES.join(', ')
   if (trimmed.startsWith('body')) return SCOPES.map(scope => trimmed.replace(/^body/, scope)).join(', ')
   return SCOPES.map(scope => `${scope} ${trimmed}`).join(', ')

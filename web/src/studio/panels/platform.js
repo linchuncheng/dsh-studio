@@ -6,7 +6,7 @@ import { fmtTime } from '../format.js'
 import { client } from '../context.js'
 
 export function LdapPanel({ config, onChanged }) {
-  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, CheckField, SelectField , React } = client()
+  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, CheckField, SwitchToggle, SelectField , React } = client()
   const ldap = config.ldap ?? {}
   const [draft, setDraft] = React.useState({
     enabled: ldap.enabled === true,
@@ -106,7 +106,7 @@ export function LdapPanel({ config, onChanged }) {
       h('div', { className: 'ds-hint' },
         '开启后，页头会出现登录框：用域账号登录，平台拿到的用户名会记进 config.users（首次登录建档、之后只更新最近登录），写操作和审计都挂在这个名字下。'),
       h('label', { className: 'ds-check', style: { marginTop: 8 } },
-        h(CheckField, { checked: draft.enabled, onChange: event => patch({ enabled: event.target.checked }) }),
+        h(SwitchToggle, { checked: draft.enabled, onChange: event => patch({ enabled: event.target.checked }) }),
         h('span', { className: 'ds-check-text' }, '启用 LDAP 登录'),
       ),
       h('label', { className: 'ds-check', style: { marginTop: 6 } },
@@ -210,7 +210,7 @@ export function LdapPanel({ config, onChanged }) {
 
 
 export function CostsPanel({ config, onChanged, suggestModels }) {
-  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, CheckField, SelectField , React } = client()
+  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, CheckField, SwitchToggle, SelectField , React } = client()
   const costs = config.costs ?? {}
   const [runs, setRuns] = React.useState(String(costs.budgetRuns ?? 500))
   const [hours, setHours] = React.useState(String(costs.budgetHours ?? 80))
@@ -331,7 +331,7 @@ export function CostsPanel({ config, onChanged, suggestModels }) {
 }
 
 export function BusinessPanel({ config, onChanged }) {
-  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, CheckField, SelectField , React } = client()
+  const { h, Editor, api, toast, confirmDialog, tipOf, TextField, CheckField, SwitchToggle, SelectField, DateField , React } = client()
   const projects = config.projects ?? []
   const repos = config.gitlab?.projects ?? []
   const [draft, setDraft] = React.useState(null)
@@ -547,11 +547,11 @@ export function BusinessPanel({ config, onChanged }) {
           ),
           h('div', { className: 'ds-field', style: { flex: 1 } },
             h('div', { className: 'ds-label' }, '开始'),
-            h(TextField, { className: 'ds-input', type: 'date', value: iter.start, onChange: e => setIter({ ...iter, start: e.target.value }) }),
+            h(DateField, { className: 'ds-input', value: iter.start, onChange: e => setIter({ ...iter, start: e.target.value }) }),
           ),
           h('div', { className: 'ds-field', style: { flex: 1 } },
             h('div', { className: 'ds-label' }, '结束'),
-            h(TextField, { className: 'ds-input', type: 'date', value: iter.due, onChange: e => setIter({ ...iter, due: e.target.value }) }),
+            h(DateField, { className: 'ds-input', value: iter.due, onChange: e => setIter({ ...iter, due: e.target.value }) }),
           ),
           h('div', { className: 'ds-field', style: { flex: 1 } },
             h('div', { className: 'ds-label' }, '状态'),

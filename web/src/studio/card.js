@@ -120,7 +120,7 @@ function Card({ task, onOpen, config, requirements, onPickRequirement, onPickPro
     blocked !== null ? h('div', { className: 'ds-blocked-line' }, blocked.reason || '未填写原因') : null,
     h('div', { className: 'ds-card-foot' },
       h('span', {}, task.id),
-      task.dueAt > 0 ? h('span', { 'data-overdue': overdue ? '1' : '0', style: overdue ? { color: '#e5484d', fontWeight: 600 } : null }, `· ${fmtDate(task.dueAt)}${overdue ? ' 逾期' : ''}`) : null,
+      task.dueAt > 0 ? h('span', { 'data-overdue': overdue ? '1' : '0', style: overdue ? { color: 'var(--color-notification-error-foreground)', fontWeight: 600 } : null }, `· ${fmtDate(task.dueAt)}${overdue ? ' 逾期' : ''}`) : null,
       check.total > 0 ? h('span', { title: '验收清单' }, `· ☑ ${check.done}/${check.total}`) : null,
       artifactCount > 0 ? h('span', { title: '已登记交付物' }, `· 📎 ${artifactCount}`) : null,
       caseRun.total > 0 ? h('span', {

@@ -67,7 +67,9 @@ export function handleExportRoute({ method, route, url, res, store, sendJson }) 
     const snapshot = store.snapshot()
     const cfg = snapshot.config
     if (cfg?.ldap?.enabled === true && cfg?.ldap?.requireLogin === true) {
-      const token = String(url.searchParams.get('token') ?? '')
+      /* 优先认请求头（x-studio-session），URL 里的 token 只作锚点下载的兜底。 */
+      const header = String(req.headers['x-studio-session'] ?? '').trim()
+      const token = header !== '' ? header : String(url.searchParams.get('token') ?? '')
       const session = token === '' ? null : host.sessions.get(token)
       if (session === null || (Number(session.expiresAt) || 0) <= Date.now()) {
         sendJson(res, 401, { ok: false, error: '导出审计日志要先登录' })
@@ -97,7 +99,9 @@ export function handleExportRoute({ method, route, url, res, store, sendJson }) 
     const snapshot = store.snapshot()
     const cfg = snapshot.config
     if (cfg?.ldap?.enabled === true && cfg?.ldap?.requireLogin === true) {
-      const token = String(url.searchParams.get('token') ?? '')
+      /* 优先认请求头（x-studio-session），URL 里的 token 只作锚点下载的兜底。 */
+      const header = String(req.headers['x-studio-session'] ?? '').trim()
+      const token = header !== '' ? header : String(url.searchParams.get('token') ?? '')
       const session = token === '' ? null : host.sessions.get(token)
       if (session === null || (Number(session.expiresAt) || 0) <= Date.now()) {
         sendJson(res, 401, { ok: false, error: '导出派单日志要先登录' })

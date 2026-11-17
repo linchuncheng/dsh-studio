@@ -4,7 +4,7 @@ import { ROLE_LABEL } from '../labels.js'
 import { client } from '../context.js'
 
 export function ExpertsPanel({ config, onChanged }) {
-  const { h, React, Editor, api, toast, confirmDialog, tipOf, tipLabel, TextField, TextAreaField, ChipField, CheckField, SelectField, SideDrawer } = client()
+  const { h, React, Editor, api, toast, confirmDialog, tipOf, tipLabel, TextField, TextAreaField, ChipField, CheckField, SwitchToggle, SelectField, SideDrawer } = client()
   const experts = config.experts ?? []
   const [draft, setDraft] = React.useState(null)
   const [error, setError] = React.useState(null)
@@ -283,7 +283,7 @@ export function ExpertsPanel({ config, onChanged }) {
         ),
         h('div', { className: 'ds-field' },
           h('label', { className: 'ds-row', style: { alignItems: 'center', gap: 8, cursor: 'pointer' } },
-            h(CheckField, { checked: draft.enabled !== false, onChange: e => set('enabled', e.target.checked) }),
+            h(SwitchToggle, { checked: draft.enabled !== false, onChange: e => set('enabled', e.target.checked) }),
             h('span', {}, '启用这个专家'),
           ),
         ),
@@ -292,7 +292,7 @@ export function ExpertsPanel({ config, onChanged }) {
 }
 
 export function TeamsPanel({ config, onChanged }) {
-  const { h, React, Editor, api, toast, confirmDialog, tipOf, tipLabel, TextField, TextAreaField, ChipField, CheckField, SelectField, SideDrawer } = client()
+  const { h, React, Editor, api, toast, confirmDialog, tipOf, tipLabel, TextField, TextAreaField, ChipField, CheckField, SwitchToggle, SelectField, SideDrawer } = client()
   const teams = config.teams ?? []
   const experts = config.experts ?? []
   const [draft, setDraft] = React.useState(null)
@@ -400,7 +400,7 @@ export function TeamsPanel({ config, onChanged }) {
 }
 
 export function TestingPanel({ config, onChanged }) {
-  const { h, React, Editor, api, toast, confirmDialog, tipOf, tipLabel, TextField, TextAreaField, ChipField, CheckField, SelectField, SideDrawer } = client()
+  const { h, React, Editor, api, toast, confirmDialog, tipOf, tipLabel, TextField, TextAreaField, ChipField, CheckField, SwitchToggle, SelectField, SideDrawer } = client()
   const testing = config.testing ?? {}
   const envs = Array.isArray(testing.envs) ? testing.envs : []
   const [draft, setDraft] = React.useState(null)
@@ -549,7 +549,7 @@ export function TestingPanel({ config, onChanged }) {
           : hooks.map((hook, index) => h('div', { key: index, style: { marginBottom: 8 } },
             h('div', { className: 'ds-row', style: { gap: 6, alignItems: 'center' } },
             h(TextField, { className: 'ds-input', style: { flex: 1 }, placeholder: 'https://ci.example/hook', value: hook.url ?? '', onChange: e => setHooks(list => list.map((item, i) => (i === index ? { ...item, url: e.target.value } : item))) }),
-            h(CheckField, { checked: hook.enabled !== false, onChange: e => setHooks(list => list.map((item, i) => (i === index ? { ...item, enabled: e.target.checked } : item))) }),
+            h(SwitchToggle, { checked: hook.enabled !== false, onChange: e => setHooks(list => list.map((item, i) => (i === index ? { ...item, enabled: e.target.checked } : item))) }),
               h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, onClick: () => setHooks(list => list.filter((_, i) => i !== index)) }, '×'),
             ),
             h('div', { className: 'ds-row', style: { gap: 10, flexWrap: 'wrap', marginTop: 2 } },
@@ -602,7 +602,7 @@ export function TestingPanel({ config, onChanged }) {
 
 /** 通知升级：通道连续失败达到阈值时，往另一个群发一条，别和日常通知混在一起。 */
 export function EscalatePanel({ config, onChanged }) {
-  const { h, React, Editor, api, toast, confirmDialog, tipOf, tipLabel, TextField, TextAreaField, ChipField, CheckField, SelectField, SideDrawer } = client()
+  const { h, React, Editor, api, toast, confirmDialog, tipOf, tipLabel, TextField, TextAreaField, ChipField, CheckField, SwitchToggle, SelectField, SideDrawer } = client()
   const feishu = config.feishu ?? {}
   const [hook, setHook] = React.useState('')
   const [after, setAfter] = React.useState(String(feishu.escalateAfter ?? 3))
@@ -648,7 +648,7 @@ export function EscalatePanel({ config, onChanged }) {
 
 /** 部署环境：只用于登记「版本上过哪个环境」，平台不触发任何部署。 */
 export function EnvironmentsPanel({ config, onChanged }) {
-  const { h, React, Editor, api, toast, confirmDialog, tipOf, tipLabel, TextField, TextAreaField, ChipField, CheckField, SelectField, SideDrawer } = client()
+  const { h, React, Editor, api, toast, confirmDialog, tipOf, tipLabel, TextField, TextAreaField, ChipField, CheckField, SwitchToggle, SelectField, SideDrawer } = client()
   const [rows, setRows] = React.useState(() => (config.environments ?? []).map(env => ({ id: env.id, name: env.name, kind: env.kind, note: env.note })))
   const [busy, setBusy] = React.useState(false)
   const [note, setNote] = React.useState(null)
