@@ -175,8 +175,14 @@ window.__ModuleLoader__.load({
       if (TOAST_LAST.text === message && now - TOAST_LAST.at < 600) return null
       TOAST_LAST = { text: message, at: now }
       const id = ++TOAST_SEQ
+      /* 官方 Toaster 可用时由它全权接管：入它自己的 store、自己倒计时、自己上限 3 条。
+         不要再往本地队列塞 —— 否则会出现「两套队列」：屏幕上显示的是官方那条，
+         而 dismissToast() 改的是本地那条，本地关掉了官方还在（静默不一致）。 */
       const push = kit('pushToast')
-      if (typeof push === 'function') push(message, tone)
+      if (typeof push === 'function') {
+        push(message, tone)
+        return id
+      }
       TOAST_ITEMS = TOAST_ITEMS.concat([{ id, text: message, tone }])
       toastEmit()
       window.setTimeout(() => { dismissToast(id) }, ttl)
@@ -197,11 +203,16 @@ window.__ModuleLoader__.load({
         TOAST_LISTENERS.push(setItems)
         return () => { TOAST_LISTENERS = TOAST_LISTENERS.filter(entry => entry !== setItems) }
       }, [])
-      if (items.length === 0) return null
+      /* 官方 Toaster 内部有自己的 store，必须**常驻挂载**（挂在 portal 里等 toast 进来）。
+         所以这段要放在「本地队列为空就 return null」之前 —— 否则本地队列一旦为空
+         （现在官方接管后它总是空），Toaster 就永远不挂载，toast 静默消失。 */
       const Toaster = kit('Toaster')
-      const official = Toaster === null ? null : h(Toaster, { container: typeof kit('portalRoot') === 'function' ? kit('portalRoot')() : undefined, position: 'bottom-end', limit: 3, duration: 3200, closeLabel: '关闭提示' })
-      if (official !== null) return official
-if (Notification === null) {
+      if (Toaster !== null) {
+        const root = typeof kit('portalRoot') === 'function' ? kit('portalRoot')() : undefined
+        return h(Toaster, { container: root, position: 'bottom-end', limit: 3, duration: 3200, closeLabel: '关闭提示' })
+      }
+      if (items.length === 0) return null
+      if (Notification === null) {
         return h('div', { className: 'ds-toasts', role: 'status', 'aria-live': 'polite' },
           items.map(item => h('div', { key: item.id, className: 'ds-toast', 'data-tone': item.tone }, h('span', { className: 'ds-toast-text' }, item.text))))
       }
