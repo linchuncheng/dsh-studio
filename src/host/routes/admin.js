@@ -24,6 +24,12 @@ if (method === 'POST' && route === '/config') {
     host.sendJson(res, 400, { ok: false, error: '权限名单请用 /access/save（enabled / agents / member），/config 不接受 access' })
     return true
   }
+  /* localAuth 同理：/config 的 patch 路径不认这个键（传了会 200 但什么也不做）。
+     口令归 /auth/password，开关目前只能改代码默认值。 */
+  if (body?.localAuth !== undefined || body?.patch?.localAuth !== undefined) {
+    host.sendJson(res, 400, { ok: false, error: '本地账号口令请用 /auth/password，/config 不接受 localAuth' })
+    return true
+  }
   await host.applyConfig(store, body)
   host.sendJson(res, 200, { ok: true, state: host.publicState(store) })
   return true
