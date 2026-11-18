@@ -32,6 +32,11 @@
 
 /* shadcn/ui design tokens, scoped to the Studio subtree so the host UI is untouched. */
 :where([data-dsh-studio]) {
+  /* legacy 别名：80 处内联样式写 var(--ds-line)，但浅色下从未赋值 ——
+     未定义 var 会让整条声明失效（border 退成 currentColor、background 变透明）。 */
+  --ds-line: var(--color-border-button-default, #e4e4e7);
+  --ds-surface: var(--color-background-primary-default, #ffffff);
+  --ds-bg: var(--color-background-secondary-default, #fafafa);
   --background: #fafafa;
   --foreground: #18181b;
   --card: #ffffff;
@@ -1792,14 +1797,18 @@ html body [data-dsh-studio] .ds-btn[disabled] {
   cursor: default;
 }
 
+/* 用 BoardUI 的主按钮渐变 token。之前引用的 --color-button-primary-background
+   全仓库没有定义，回退值让主 CTA 永远是近黑 —— 全站唯一的主行动不跟随品牌色，
+   还和旁边官方 ghost 按钮的蓝不同源。 */
 html body [data-dsh-studio] .ds-btn-primary {
   border-color: transparent;
-  background: var(--color-button-primary-background, #18181b);
+  background-color: transparent;
+  background-image: var(--gradient-button-primary-default, linear-gradient(180deg, #3b82f6 0%, #2563eb 100%));
   color: #fff;
 }
 
 html body [data-dsh-studio] .ds-btn-primary:hover {
-  background: var(--color-button-primary-hover, #27272a);
+  background-image: var(--gradient-button-primary-hover, linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%));
 }
 
 html body [data-dsh-studio] .ds-btn-ghost {
