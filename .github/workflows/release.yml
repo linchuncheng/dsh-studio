@@ -1,24 +1,21 @@
 name: release
 
-# 打 tag（v0.2.1 这种）就发版到 npm，不再手工 npm publish。
+# 打 tag（v0.2.2 这种）自动发版到 npm。凭证走 **Trusted Publishing（OIDC）**，仓库里不放令牌。
 #
-# 为什么值得做：手工 `npm publish` 每次都会卡在 **staged / 待 2FA 确认**（我们这轮
-# 0.2.0 和 0.2.1 都卡了一次，要人去网页点确认）。CI 里用 Automation Token 或
-# Trusted Publishing（OIDC）**不需要 2FA**，能一步发完。
+# 为什么不用令牌：
+#   · 手工 `npm publish` 每次都卡 staged / 待 2FA（0.2.0、0.2.1 各卡一次，要人去网页点确认）
+#   · Automatic/Publish 令牌要管、要轮换、会泄漏（我们这轮就泄漏过一个）
+#   · OIDC 不需要任何长期凭证，npm 还会给包打 provenance 签名（页面显示 Built from …）
 #
-# 两种凭证，任选一种（都不需要在仓库里放密码）：
+# 一次性配置（npmjs.com，只做一次）：
+#   包页面 → Settings → Trusted Publisher → GitHub Actions
+#     Organization or user: marsken88
+#     Repository:            dsh-studio
+#     Workflow filename:     release.yml
+#   配好后这里不需要任何 secret。
 #
-#   A. Automation Token（最省事）
-#      npmjs.com → Access Tokens → Generate → **Automation**
-#      仓库 Settings → Secrets and variables → Actions → New secret: NPM_TOKEN
-#      （注意必须是 Automation 类型；Publish 类型的粒度令牌仍然要 2FA，照样会 staged）
-#
-#   B. Trusted Publishing（OIDC，不用任何令牌，推荐）
-#      npmjs.com → 该包 → Settings → Trusted Publisher → GitHub Actions
-#      填：repo = marsken88/dsh-studio，workflow = release.yml
-#      然后在仓库里删掉 NPM_TOKEN secret 也能发（下面的 NODE_AUTH_TOKEN 为空时走 OIDC）。
-#
-# 首次启用前，记得把 package.json 的 repository 字段指对（provenance 会用）。
+# 注意：Trusted Publishing 要求 **npm CLI ≥ 11.5.1**，而 GitHub 的 Node 22 自带的是 10.x，
+# 所以下面显式把 npm 升到最新版。漏了这步会得到 401/ENEEDAUTH。
 
 on:
   push:
@@ -30,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # Trusted Publishing / provenance 需要这个
+      # OIDC 必需
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -39,6 +36,12 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+
+      # npm 10.x 不认识 trusted publishing，必须升级
+      - name: 升级 npm（Trusted Publishing 需要 ≥ 11.5.1）
+        run: |
+          npm install -g npm@latest
+          npm --version
 
       - uses: pnpm/action-setup@v4
         with:
@@ -71,15 +74,8 @@ jobs:
           cmp dist/client.js client.js
           git diff --exit-code -- dist/client.js client.js
 
-      # 发版前再跑一次仓库自带的核对（tag / origin / registry 四处一致）
-      - name: 发版前自检
-        run: npm run verify:release || true   # 首次发布时 registry 上还没有这个版本，允许它先红
-
-      - name: 发布到 npm
+      - name: 发布到 npm（OIDC，无需令牌）
         run: npm publish --access public --provenance
-        env:
-          # 用 Automation Token 时填这个 secret；用 Trusted Publishing 时留空即可
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: 发布后核对
         run: |
