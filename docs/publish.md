@@ -79,6 +79,28 @@ icon: https://raw.githubusercontent.com/…/icon-180.png      # 可选，GitHub 
 
 每个 PR 最多 3 条；我们只投 1 条。评审周期以天计（维护者要读代码核对描述），`held: author` 标签表示「等你改」，改完推同一分支并留一条评论即可。
 
+### 注意：收录合并 ≠ 市场显示最新
+
+发版后有三环，**每一环都有延迟，别拿市场页面判断发布是否成功**：
+
+```
+npm publish（几分钟生效，以 registry 为准）
+   ↓  awesome-dsh-plugin 的 PR 合并（以天计，维护者要读代码核对描述）
+   ↓  dsh-plugin-catalog 重建（按 npm latest 采集，下一次重建才带上新版本）
+市场里显示的那个版本号
+```
+
+实测（2026-11-18）：PR 已于 11-17 合并，但当天拉下来的 `dsh-plugin-catalog`
+里我们条目的 `versions` 只有 `0.2.1` —— 而 npm 上已经是 `0.2.5`。目录重建之前，
+市场详情页永远显示旧版本，本机 dsh-m 搜索也会因为索引缓存（`状态 stale`）搜不到。
+
+**判断发布成功，只看这两处**：
+
+- `npm view @marsken/dsh-studio version`（或直接读 registry packument）
+- `npm run verify:release` 输出「发版一致」
+
+市场版本只是下游展示，滞后是正常的，不需要为此重发或改仓库。
+
 **投稿进度**：2026-11-17 已提 PR —— [awesome-dsh-plugin#16102](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/16102)（分支 `marsken88:add-dsh-studio`，只加 `data/plugins/marsken88__dsh-studio.yml` 一个文件）。合并后 dsh-m 社区目录同步即可搜到 `dsh-studio`，届时再跑 `dshm_install` 从市场装一次 + `tools/visual/smoke.mjs` 收尾。
 
 ## 3. 自查清单（收录前逐条过）
