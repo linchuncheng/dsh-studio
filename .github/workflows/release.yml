@@ -2,20 +2,15 @@ name: release
 
 # 打 tag（v0.2.2 这种）自动发版到 npm。凭证走 **Trusted Publishing（OIDC）**，仓库里不放令牌。
 #
-# 为什么不用令牌：
-#   · 手工 `npm publish` 每次都卡 staged / 待 2FA（0.2.0、0.2.1 各卡一次，要人去网页点确认）
-#   · Automatic/Publish 令牌要管、要轮换、会泄漏（我们这轮就泄漏过一个）
-#   · OIDC 不需要任何长期凭证，npm 还会给包打 provenance 签名（页面显示 Built from …）
-#
 # 一次性配置（npmjs.com，只做一次）：
 #   包页面 → Settings → Trusted Publisher → GitHub Actions
-#     Organization or user: marsken88
-#     Repository:            dsh-studio
-#     Workflow filename:     release.yml
-#   配好后这里不需要任何 secret。
+#     Organization or user:  marsken88
+#     Repository:             dsh-studio
+#     Workflow filename:      release.yml      ← 必须正好是这个名字
+#     Environment name:       （留空）
 #
-# 注意：Trusted Publishing 要求 **npm CLI ≥ 11.5.1**，而 GitHub 的 Node 22 自带的是 10.x，
-# 所以下面显式把 npm 升到最新版。漏了这步会得到 401/ENEEDAUTH。
+# 注意：Trusted Publishing 要求 **npm CLI ≥ 11.5.1**，GitHub 的 Node 22 自带 10.x，
+# 所以下面显式升级 npm。漏了会得到 ENEEDAUTH，看着像 OIDC 没生效。
 
 on:
   push:
@@ -37,8 +32,7 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
-      # npm 10.x 不认识 trusted publishing，必须升级
-      - name: 升级 npm（Trusted Publishing 需要 ≥ 11.5.1）
+      - name: 升级 npm（Trusted Publishing 需要 >= 11.5.1）
         run: |
           npm install -g npm@latest
           npm --version
@@ -47,7 +41,6 @@ jobs:
         with:
           version: 9
 
-      # tag 必须和 package.json 一致，否则发出去的是错版本
       - name: 校验 tag 与 package.json 版本一致
         run: |
           TAG="${GITHUB_REF_NAME#v}"
@@ -64,7 +57,6 @@ jobs:
       - name: 契约测试
         run: npm test
 
-      # 产物必须可复现：改了前端没重新构建，这里会红
       - name: 构建
         working-directory: web
         run: pnpm install --frozen-lockfile && pnpm build
@@ -74,10 +66,32 @@ jobs:
           cmp dist/client.js client.js
           git diff --exit-code -- dist/client.js client.js
 
+      # 失败原因写成 GitHub annotation：Actions 日志接口对未认证请求是 403，
+      # 而 annotations 是公开可读的，这样不用登录也能看到 npm 的真实报错。
+      - name: 诊断环境
+        run: |
+          echo "npm: $(npm --version)"
+          echo "registry: $(npm config get registry)"
+          if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+            echo "OIDC token endpoint: 可用"
+          else
+            echo "OIDC token endpoint: 不可用（检查 permissions: id-token: write）"
+          fi
+
       - name: 发布到 npm（OIDC，无需令牌）
-        run: npm publish --access public --provenance
+        run: |
+          set +e
+          out=$(npm publish --access public --provenance 2>&1)
+          code=$?
+          echo "$out"
+          if [ $code -ne 0 ]; then
+            msg=$(echo "$out" | grep -iE "npm error|ENEEDAUTH|E[0-9]{3}|403|401|trusted|provenance" | head -4 | tr '\n' ' ')
+            echo "::error::npm publish 失败：$msg"
+          fi
+          exit $code
 
       - name: 发布后核对
+        if: success()
         run: |
           echo "registry latest = $(npm view @marsken/dsh-studio version)"
           npm run verify:release
