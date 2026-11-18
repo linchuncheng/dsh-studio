@@ -107,25 +107,19 @@ jobs:
 
       # npm publish 返回 0 不等于真的发上去了（staged / 竞争 / 中断都可能让它变成空操作）。
       # 这里直接问 registry：最多等 5 分钟（npm 的读缓存有传播延迟，2 分钟不够 —— rc.3 就是因此误判）。
+      # 这里问的是 registry 的 packument（tools/registry-has.mjs），不是 npm view ——
+      # npm view 走边缘缓存，刚发布的版本可能持续 404，会让发布成功后仍然报红（0.2.5 就误判过）。
       - name: 确认版本真的进了 registry
         if: github.event_name == 'push'
         run: |
           VER="$(node -p "require('./package.json').version")"
           for i in $(seq 1 30); do
-            got="$(npm view "@marsken/dsh-studio@$VER" version 2>/dev/null | tail -1)"
-            echo "第 $i 次查询: ${got:-未出现}"
-            if [ "$got" = "$VER" ]; then
-              echo "已发布 $VER"
-              exit 0
-            fi
+            if node tools/registry-has.mjs "$VER"; then exit 0; fi
             sleep 10
           done
           echo "::error::npm publish 返回成功，但 registry 上查不到 $VER"
           exit 1
 
-      # CI 里是 detached HEAD，仓库里没有本地 main 分支，跑 verify:release 的
-      # “没有未推送的提交 / origin/main 与 HEAD 一致” 必然误导。这里只核对 registry。
-      # 完整的一致性检查（本地 tag / origin / registry 四处）留在本地发版前跑。
       - name: 发布后核对（仅正式版）
         if: success() && !contains(github.ref_name, '-')
         run: |
