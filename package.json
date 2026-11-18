@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/marsken88/dsh-studio#readme",
   "scripts": {
-    "test": "node --test tests/repo.test.mjs tests/store-boot.test.mjs tests/client-units.test.mjs tests/notify.test.mjs",
+    "test": "node --test tests/repo.test.mjs tests/dispatch-state.test.mjs tests/store-boot.test.mjs tests/client-units.test.mjs tests/notify.test.mjs",
     "check": "node --check index.js && node --check client.src.js && node --test tests/repo.test.mjs tests/store-boot.test.mjs tests/client-units.test.mjs tests/notify.test.mjs",
     "smoke:store": "node scripts/smoke-store.mjs",
     "mock:gitlab": "node tools/mock-gitlab.mjs",
