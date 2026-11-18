@@ -80,8 +80,17 @@ jobs:
 
       - name: 发布到 npm（OIDC，无需令牌）
         run: |
+          # 预发布版本（0.2.2-rc.1 这类）必须显式给 --tag，否则 npm 直接报
+          # "You must specify a tag using --tag when publishing a prerelease version"。
+          # 正式版不传，交给 npm 默认的 latest。
+          VER="$(node -p "require('./package.json').version")"
+          case "$VER" in
+            *-*) TAG_ARG="--tag next" ;;
+            *)   TAG_ARG="" ;;
+          esac
+          echo "publishing $VER ${TAG_ARG:-(default tag latest)}"
           set +e
-          out=$(npm publish --access public --provenance 2>&1)
+          out=$(npm publish --access public --provenance $TAG_ARG 2>&1)
           code=$?
           echo "$out"
           if [ $code -ne 0 ]; then
