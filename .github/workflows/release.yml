@@ -103,12 +103,12 @@ jobs:
           exit $code
 
       # npm publish 返回 0 不等于真的发上去了（staged / 竞争 / 中断都可能让它变成空操作）。
-      # 这里直接问 registry：等约两分钟，等不到这个版本就让构建红。
+      # 这里直接问 registry：最多等 5 分钟（npm 的读缓存有传播延迟，2 分钟不够 —— rc.3 就是因此误判）。
       - name: 确认版本真的进了 registry
         if: github.event_name == 'push'
         run: |
           VER="$(node -p "require('./package.json').version")"
-          for i in $(seq 1 12); do
+          for i in $(seq 1 30); do
             got="$(npm view "@marsken/dsh-studio@$VER" version 2>/dev/null | tail -1)"
             echo "第 $i 次查询: ${got:-未出现}"
             if [ "$got" = "$VER" ]; then
