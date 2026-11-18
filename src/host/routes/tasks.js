@@ -485,6 +485,9 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
       const list = Array.isArray(task.cases) ? task.cases : []
       if (action === 'add') {
         const raw = Array.isArray(body.cases) ? body.cases : [body.case ?? body]
+        /* testing.allowShell 关着时，即使请求里带了 shell 定义也不落库 ——
+           否则「关了开关」只是不能跑，但用例还是建得出来，安全边界是假的。 */
+        const allowShell = store.snapshot().config?.testing?.allowShell === true
         const added = sanitizeCases(raw.map(item => ({
           ...item,
           http: item.http ?? (item.url !== undefined && String(item.url).trim().length > 0
@@ -492,6 +495,8 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
             : undefined),
           by,
           at: Date.now(),
+          // 开关关着就把 shell 定义丢掉（其它字段照常保存）
+          shell: allowShell ? item.shell : undefined,
         })))
         // 一条都没加进去就别报成功：以前传错 payload（比如漏了 title）会静默返回 200，调用方以为建好了。
         if (added.length === 0) throw new Error('没有用例被加进去：每条用例至少要有标题（title）')

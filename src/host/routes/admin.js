@@ -16,12 +16,26 @@ export function configureAdminRoutes(services) {
 
 export async function handleAdminRoute({ method, route, req, res, store, url }) {
 if (method === 'POST' && route === '/config') {
-  await host.applyConfig(store, await host.readJsonBody(req))
+  const body = await host.readJsonBody(req)
+  /* 只认 { patch: {...} }。其它顶层字段一律拒绝 —— 以前传 {"access":{...}} 会返回 200
+     但什么都不做，调用方以为成功了（这一轮实测踩到）。 */
+  const extra = Object.keys(body ?? {}).filter((key) => key !== 'patch')
+  if (extra.length > 0) {
+    host.sendJson(res, 400, { ok: false, error: `/config 只接受 {"patch": {...}}，不认识：${extra.join('、')}` })
+    return true
+  }
+  await host.applyConfig(store, body)
   host.sendJson(res, 200, { ok: true, state: host.publicState(store) })
   return true
 }
 if (method === 'POST' && route === '/access/save') {
   const body = await host.readJsonBody(req)
+  /* 只认 enabled / agents / member。传 {"access":{"enabled":true}} 会 200 但无效 —— 同样是静默。 */
+  const extra = Object.keys(body ?? {}).filter((key) => !['enabled', 'agents', 'member'].includes(key))
+  if (extra.length > 0) {
+    host.sendJson(res, 400, { ok: false, error: `/access/save 只接受 enabled / agents / member，不认识：${extra.join('、')}` })
+    return true
+  }
   const member = body.member !== null && typeof body.member === 'object' ? body.member : null
   await store.mutate(state => {
     const access = state.config.access ?? { enabled: false, agents: 'inherit', members: [] }
