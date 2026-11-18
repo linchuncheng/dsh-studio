@@ -36,6 +36,8 @@
 自有样式只在 `web/src/index.css` 与 `web/src/boardui/**` 两处补位。
 
 - 组件清单与取舍理由：[docs/ui.md](docs/ui.md)
+- **空态即下一步**：每个"没有数据"的地方都给一个能点的动作（建第一张卡 / 新建需求 / 去看板），
+  而不是只写一句说明
 - 本地打过补丁的 vendored 文件只有两处（`notification.tsx` / `toast.tsx` 的 `container`），清单同样在 `docs/ui.md`
 
 ## 它是怎么跑的
