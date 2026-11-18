@@ -28,7 +28,7 @@ export const inject = ['tools', 'systemPrompt']
 
 
 import { ACCESS_ROLE_LABEL, ACCESS_ROLES, ADMIN_ROUTES, ARTIFACT_KINDS, ARTIFACT_STATUS, CASE_HTTP_METHODS, CASE_PRIORITIES, CASE_RESULTS, CASE_TYPE_LABEL, CASE_TYPES, cleanId, CODE_PREFIX, CODING_FILE_CHANGES, CODING_REVIEW_STATUS, codingSummary, COLUMN_STRATEGIES, DEFAULT_ROLES, defaultColumns, defaultConfig, defaultDeployEnvs, defaultTemplates, DEPLOY_ENV_KINDS, FALLBACK_AGENT_MODEL, hashLocalPassword, INTAKE_HTML, ISOLATION_MODES, LEGACY_BLOCKED_STATUS, LEVEL_RANK, LOCAL_DEFAULT_PASSWORD, mergeCoding, mergeConfig, mergeSection, MINE_HTML, nextRequirementCode, nextTaskCode, normalizePatch, normalizeStrategy, publicArtifact, publicCases, publicChecklist, publicComments, PRIORITIES, ROLE_LABELS, canonicalAuthor, RELEASE_STATUSES, RELEASE_STATUS_LABEL, REQ_DOC_KIND_LABEL, REQ_DOC_KINDS, REQ_DOC_STATUS, REQ_REVIEW_LABEL, REQ_REVIEW_STATUS, REQ_STATUS_LABEL, REQ_STATUSES, ROLE_IDS, ROLE_LEVEL, SANDBOX_MODES, sanitizeAcceptanceItem, sanitizeAccess, sanitizeAllowHosts, sanitizeArtifact, sanitizeArtifacts, sanitizeBaseline, sanitizeBots, sanitizeBugSource, sanitizeCase, sanitizeCaseHttp, sanitizeCaseRun, sanitizeCases, sanitizeChangedFile, sanitizeChangedFiles, sanitizeChecklist, sanitizeChecklistItem, sanitizeCoding, sanitizeColumns, sanitizeCommit, sanitizeCommits, sanitizeCosts, sanitizeDeployEnvs, sanitizeEnvs, sanitizeExperts, sanitizeIterations, sanitizeLdap, sanitizeLocalAuth, sanitizeProjects, sanitizeReqDoc, sanitizeReqDocs, sanitizeRelease, sanitizeRequirement, sanitizeRequirementChange, sanitizeRequirementHistory, sanitizeRequirementPoint, sanitizeRequirementPoints, sanitizeRequirementPool, sanitizeRequirementQuestions, sanitizeRequirementReview, sanitizeRequirements, sanitizeServices, sanitizeSla, sanitizeTeams, sanitizeTemplates, sanitizeTesting, sanitizeTestRun, sanitizeTestRuns, sanitizeUsers, sanitizeWorkProjects, seedExperts, SEVERITIES, STATUS_HTML, STATUS_IDS, STATUS_SET, STATUSES, TASK_TYPES, text, verifyLocalPassword, worktreeRoot } from './src/host/domain.js'
-import { accessLevelFor, checkAccess, READ_ONLY_POST_ROUTES } from './src/host/access.js'
+import { accessLevelFor, checkAccess, isLoopbackRequest, needsLocalSource, READ_ONLY_POST_ROUTES } from './src/host/access.js'
 import { Dispatcher, RUN_LOG, attachRunLog, claimDispatchLock, clearAgentFailure, configureDispatcher, noteAgentFailure, parseMentions, runSummary } from './src/host/dispatcher.js'
 import { mirrorCards } from './src/host/bitable.js'
 import { bugSeverityFor } from './src/host/bugs.js'
@@ -2431,16 +2431,6 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
   const readOnlyPost = READ_ONLY_POST_ROUTES.has(route)
     || (route === '/task/artifact' && String(req.__studioBody?.action ?? '') === 'get')
   const level = route.startsWith('/auth/') ? 'read' : readOnlyPost ? 'read' : accessLevelFor(route, method)
-    /* 审计/派单日志导出虽然是 GET，但内容是操作人姓名与路由，不该对局域网匿名开放。
-       和 admin 级操作同一条规则：未启用登录时只允许本机来源。 */
-    if ((route === '/audit/export.csv' || route === '/export/dispatch.csv') && (store.snapshot().config?.access ?? {}).enabled !== true) {
-      const who = String(req.socket?.remoteAddress ?? '')
-      const local = who === '127.0.0.1' || who === '::1' || who === '::ffff:127.0.0.1'
-      if (!local) {
-        sendJson(res, 403, { ok: false, code: 'local_only', error: '未启用登录时，审计/派单日志导出只允许在服务器本机执行' })
-        return
-      }
-    }
     let summary = ''
     if (method === 'POST') {
       try {
@@ -2458,14 +2448,12 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
        （市场安装、快照恢复、成员权限、配置写入…）以前对任何能连到这个端口的人开放，
        等于匿名超管。这里把 admin 级操作限制在回环来源；普通业务读写不受影响，
        所以现在的使用体验不变。要多人协同时去「设置 → 权限与审计」开启登录。 */
-    if (level === 'admin' && (store.snapshot().config?.access ?? {}).enabled !== true) {
-      const address = String(req.socket?.remoteAddress ?? '')
-      const loopback = address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1'
-      if (!loopback) {
-        await recordAudit(store, { by: operator, route, level, status: 403, ok: false, summary: '管理操作只允许本机来源' })
-        sendJson(res, 403, { ok: false, code: 'local_only', error: '未启用登录时，管理类操作只允许在服务器本机（127.0.0.1）执行。要在局域网里管理，请先到「设置 → 权限与审计」开启登录。' })
-        return
-      }
+    /* 未启用登录时，插件安装/卸载、快照恢复、以及审计类导出只允许本机来源；
+       其余管理操作照旧（详见 src/host/access.js 的 needsLocalSource）。 */
+    if (needsLocalSource(route, level, store.snapshot().config) && !isLoopbackRequest(req)) {
+      await recordAudit(store, { by: operator, route, level, status: 403, ok: false, summary: '敏感操作只允许本机来源' })
+      sendJson(res, 403, { ok: false, code: 'local_only', error: '未启用登录时，插件安装/卸载、快照恢复与审计导出只允许在服务器本机（127.0.0.1）执行。要在局域网里做这些，请先到「设置 → 权限与审计」开启登录。' })
+      return
     }
     const trusted = typeof req.studioActor === 'string' && req.studioActor.trim() !== ''
     const denied = checkAccess(store.snapshot().config, operator, level, trusted)

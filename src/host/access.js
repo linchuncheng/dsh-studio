@@ -38,3 +38,24 @@ export function checkAccess(config, operator, level, trusted = false) {
   }
   return null
 }
+
+/* ------------------------------------------------------------------ 来源限制 ---
+   权限模型默认没开（access.enabled=false）。这种部署下，凡是「真能造成不可逆损害」
+   的操作只允许服务器本机执行，其余管理操作照旧（否则管理员在自己浏览器里什么都改不了，
+   策略就会被绕过）。导出类虽然是 GET，但内容是操作人姓名，同样按敏感处理。 */
+
+export const DANGEROUS_ADMIN_ROUTES = new Set(['/market/install', '/market/uninstall', '/snapshot/restore'])
+export const SENSITIVE_EXPORT_ROUTES = new Set(['/audit/export.csv', '/export/dispatch.csv'])
+
+/** 这个请求是否只允许回环来源（未启用登录时）。 */
+export function needsLocalSource(route, level, config) {
+  if ((config?.access ?? {}).enabled === true) return false
+  if (level === 'admin' && DANGEROUS_ADMIN_ROUTES.has(route)) return true
+  return SENSITIVE_EXPORT_ROUTES.has(route)
+}
+
+/** 请求是否来自本机（IPv4/IPv6/映射形式都算）。 */
+export function isLoopbackRequest(req) {
+  const address = String(req?.socket?.remoteAddress ?? '')
+  return address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1'
+}
