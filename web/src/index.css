@@ -2113,3 +2113,8 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* 两个 KPI 区块之间给一点呼吸：8px 的 gap 只够管区内，区间会贴在一起 */
+[data-dsh-studio] .ds-kpi-section + .ds-kpi-section {
+  margin-top: 6px;
+}
