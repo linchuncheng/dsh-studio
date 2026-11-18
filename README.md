@@ -214,6 +214,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 
 | 想了解 | 看这里 |
 | --- | --- |
+| **产品定义**（目标用户 / 核心场景 / V1 范围 / 可观察验收标准） | [docs/product.md](docs/product.md) |
 | 登录与免登录（LDAP / 本地超管 / 会话落库） | [docs/auth.md](docs/auth.md) |
 | 界面实现（shadcn 对齐 / 构建链 / 布局一致性 / 暗色巡检） | [docs/ui.md](docs/ui.md) |
 | 第一天上手（三条命令，全新 clone 验过） | [docs/quickstart.md](docs/quickstart.md) |
