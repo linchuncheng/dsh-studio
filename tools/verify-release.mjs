@@ -22,8 +22,21 @@ if (head !== '') {
   const branch = git(['status', '-sb']).split('\n')[0]
   add('没有未推送的提交', !branch.includes('ahead'), branch)
   let remote = ''
-  try { remote = git(['ls-remote', 'origin', 'refs/heads/main', 'refs/tags/' + tag]) } catch (e) {
-    add('能连上 origin', false, String(e.message).slice(0, 120))
+  // 这条 SSH 连接很容易被掐（本机到 ssh.github.com:443 这一整轮会话里抖了十几次），
+  // 单独一次失败会把「发版一致性」整个判红。重试 3 次，每次间隔 2 秒。
+  let lastError = null
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      remote = git(['ls-remote', 'origin', 'refs/heads/main', 'refs/tags/' + tag])
+      lastError = null
+      break
+    } catch (error) {
+      lastError = error
+      if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 2000))
+    }
+  }
+  if (remote === '' && lastError !== null) {
+    add('能连上 origin', false, String(lastError.message).slice(0, 120) + '（已重试 3 次）')
   }
   if (remote !== '') {
     add('origin/main 与本机 HEAD 一致', remote.includes(head), head.slice(0, 8))
