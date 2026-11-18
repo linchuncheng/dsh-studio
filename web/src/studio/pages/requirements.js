@@ -151,17 +151,11 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
       const saveDeps = async () => {
         if (currentForDeps === null) return
         try {
+          /* 只发这三个字段。以前是把打开页面时的整份副本（标题/正文/负责人/链接…）
+             一起回写，别人这期间改了标题或加了功能点，就会被这次保存静默覆盖/丢掉。 */
           await api('/requirement/save', {
             requirement: {
               id: currentForDeps.id,
-              title: currentForDeps.title,
-              description: currentForDeps.description ?? '',
-              project: currentForDeps.project ?? '',
-              iteration: currentForDeps.iteration ?? '',
-              owner: currentForDeps.owner ?? '',
-              priority: currentForDeps.priority ?? 'normal',
-              status: currentForDeps.status ?? 'draft',
-              links: currentForDeps.links ?? {},
               order: Number(reqOrder) || 0,
               dependsOn: reqDeps,
             },

@@ -442,10 +442,16 @@ export function createPalette({ h, React, TextField }) {
       setActive(0)
     }
 
+    /* 高亮项始终滚进可视区（列表最多 12 项可见，连按 ↓ 会让高亮跑到屏幕外） */
+    const keepVisible = (index) => {
+      const items = document.querySelectorAll('[data-palette] .ds-palette-list > *')
+      const node = items[index]
+      if (node && typeof node.scrollIntoView === 'function') node.scrollIntoView({ block: 'nearest' })
+    }
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') { event.preventDefault(); back(); return }
-      if (event.key === 'ArrowDown') { event.preventDefault(); setActive((index) => Math.min(list.length - 1, index + 1)); return }
-      if (event.key === 'ArrowUp') { event.preventDefault(); setActive((index) => Math.max(0, index - 1)); return }
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); back(); return }
+      if (event.key === 'ArrowDown') { event.preventDefault(); setActive((index) => { const next = Math.min(list.length - 1, index + 1); keepVisible(next); return next }); return }
+      if (event.key === 'ArrowUp') { event.preventDefault(); setActive((index) => { const next = Math.max(0, index - 1); keepVisible(next); return next }); return }
       if (event.key === 'Enter') { event.preventDefault(); pick(list[active]) }
     }
 
@@ -468,6 +474,9 @@ export function createPalette({ h, React, TextField }) {
         role: 'dialog',
         'aria-label': '全局搜索',
         'data-palette': '1',
+        /* 键盘处理挂在根上：焦点 Tab 到列表项之后，输入框上的 onKeyDown 就不会再触发，
+           那时 Esc 关不掉面板（占位符里承诺的 Esc 只在焦点还在输入框时成立）。 */
+        onKeyDown,
         onClick: (event) => event.stopPropagation(),
       },
         banner,

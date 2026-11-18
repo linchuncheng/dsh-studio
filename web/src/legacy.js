@@ -1919,6 +1919,13 @@ function installBoardWheel() {
     if (board.scrollWidth <= board.clientWidth + 1) return
     if (event.shiftKey) return
     if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return
+    /* 列里的卡片溢出时，滚轮应该滚这一列，而不是把整个看板横向推走 */
+    const columnBody = target.closest('.ds-col-body')
+    if (columnBody !== null && columnBody.scrollHeight > columnBody.clientHeight + 1) return
+    /* 已经推到最左/最右就不要再 preventDefault，否则整页也滚不动 */
+    const atStart = board.scrollLeft <= 0
+    const atEnd = board.scrollLeft + board.clientWidth >= board.scrollWidth - 1
+    if ((atStart && event.deltaY < 0) || (atEnd && event.deltaY > 0)) return
     board.scrollLeft += event.deltaY
     event.preventDefault()
   }
@@ -2373,7 +2380,7 @@ function installKeyboardActivation() {
           ? h('div', { className: 'ds-err', style: { padding: '6px 18px' } }, error)
           : null,
         tab === 'board'
-          ? h(Board, { state, onWip: async (status, current) => { const raw = await promptDialog(`这一列的 WIP 上限（0 = 不限，最多 50）`, { title: 'WIP 上限', defaultValue: String(current) }); if (raw === null) return; const value = Math.min(50, Math.max(0, Math.trunc(Number(String(raw).trim()) || 0))); try { await api('/columns/wip', { status, wip: value }); toast(value === 0 ? '已取消 WIP 上限' : `WIP 上限设为 ${value}`); await reload() } catch (cause) { toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onMove: async (id, status) => { await api('/task/update', { id, status }); await reload() }, onOpen: setOpenId })
+          ? h(Board, { state, onWip: async (status, current) => { const raw = await promptDialog(`这一列的 WIP 上限（0 = 不限，最多 50）`, { title: 'WIP 上限', defaultValue: String(current) }); if (raw === null) return; const value = Math.min(50, Math.max(0, Math.trunc(Number(String(raw).trim()) || 0))); try { await api('/columns/wip', { status, wip: value }); toast(value === 0 ? '已取消 WIP 上限' : `WIP 上限设为 ${value}`); await reload() } catch (cause) { toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onMove: async (id, status) => { try { await api('/task/update', { id, status }); await reload() } catch (cause) { /* 准出/设计闸门会在这里抛错。以前是 void 吞掉，界面只表现为「卡弹回去」，用户以为看板坏了 */ toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onOpen: setOpenId })
           : tab === 'dashboard'
             ? h(DashboardPage, { state, onOpenTask: setOpenId, onOpenBoard: () => setTab('board'), onOpenCases: () => setTab('cases') })
           : tab === 'requirements'
@@ -2416,7 +2423,9 @@ function installKeyboardActivation() {
               },
             })
           : null,
-        openTask !== null ? h(Drawer, { task: openTask, state, onClose: () => setOpenId(null), onChanged: reload }) : null,
+        /* key=id：切换卡片时强制重新挂载，否则 draft/plan/comment 这些本地 state 会沿用上一张卡的值 ——
+           表现是在 B 卡里看到 A 卡的标题，点保存把 A 的标题写到 B 上。 */
+        openTask !== null ? h(Drawer, { key: openTask.id, task: openTask, state, onClose: () => setOpenId(null), onChanged: reload }) : null,
         creating ? h(NewTaskDialog, { state, onClose: () => setCreating(false), onCreated: reload }) : null,
         showLogin && state.locked !== true
           ? h(LoginGateView, {

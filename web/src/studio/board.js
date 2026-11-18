@@ -174,7 +174,8 @@ function Board({ state, onOpen, onMove, onWip }) {
           className: 'ds-col', key: column.id, 'data-col': column.id, 'data-role': column.role,
           onDragOver: event => { event.preventDefault(); if (event.dataTransfer !== null) event.dataTransfer.dropEffect = 'move'; event.currentTarget.setAttribute('data-drag-over', '1') },
           onDragLeave: event => event.currentTarget.removeAttribute('data-drag-over'),
-          onDrop: event => { event.preventDefault(); event.currentTarget.removeAttribute('data-drag-over'); const id = event.dataTransfer === null ? '' : event.dataTransfer.getData('text/plain'); if (id === '' || id === undefined) return; const wip = Number(config.columns?.[column.id]?.wip) || 0; const filled = (byStatus.get(column.id) ?? []).length; if (wip > 0 && filled >= wip) { toast(`「${column.label}」已到 WIP 上限 ${wip}，先把列里的卡往前推`, 'error'); return } void onMove(id, column.id) },
+          onDrop: event => { event.preventDefault(); event.currentTarget.removeAttribute('data-drag-over'); const id = event.dataTransfer === null ? '' : event.dataTransfer.getData('text/plain'); if (id === '' || id === undefined) return; const wip = Number(config.columns?.[column.id]?.wip) || 0; /* 用**全量**任务数判定 WIP：byStatus 是筛选后的结果，拿它计数会让「开着筛选就能绕过上限」 */
+            const filled = state.tasks.filter(task => task.status === column.id).length; if (wip > 0 && filled >= wip) { toast(`「${column.label}」已到 WIP 上限 ${wip}，先把列里的卡往前推`, 'error'); return } void onMove(id, column.id) },
         },
           h('div', { className: 'ds-col-head' },
             h('div', { className: 'ds-col-title' },
