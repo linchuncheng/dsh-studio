@@ -2084,3 +2084,32 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
   font-size: 11px;
   min-width: 0;
 }
+
+/* --------------------------------------------- 工作台首屏：两级指标 --- */
+/* 一级只有四项「今天要动手」的（逾期/阻塞/缺陷超时/准出被拦），数字放大到 24px；
+   其余是背景数字，保持原样。以前 8 个平铺，20px 与 18px 差 2px，读不出层级。 */
+[data-dsh-studio] .ds-kpi-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+[data-dsh-studio] .ds-kpi-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-secondary, var(--muted-foreground));
+}
+/* StatCard 的结构固定：卡片 > 标签 > 数值 > 提示，所以 nth-child(2) 就是那个大数字 */
+[data-dsh-studio] .ds-kpi-primary [data-stat-card] > div:nth-child(2) {
+  font-size: 24px;
+  line-height: 1.15;
+}
+[data-dsh-studio] .ds-kpi-primary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 980px) {
+  [data-dsh-studio] .ds-kpi-primary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
