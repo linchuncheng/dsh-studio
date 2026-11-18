@@ -129,6 +129,40 @@ sudo systemctl restart dsh-web
 curl -s http://<host>:<port>/studio-api/state | head -c 80   # 应返回 {"ok":true,"revision":...}
 ```
 
+## 安全与来源边界
+
+默认**不启用登录**（`access.enabled=false`），开箱即用。这个模式下有三类操作只允许在
+**服务器本机（127.0.0.1）**执行，其他机器调用会返回 `403 local_only`：
+
+| 限制的操作 | 为什么 |
+| --- | --- |
+| 插件安装 / 卸载（市场） | 装的是任意 npm 包，含 install 脚本 = 宿主 RCE |
+| 快照恢复 | 一次覆盖整个数据库，不可撤销 |
+| 审计 / 派单日志导出 | 内容是操作人姓名与操作路径 |
+
+其余管理操作（角色模板、项目、集成、成员权限）与全部业务读写不受影响。要在局域网里做上面三件事，
+先到「设置 → 权限与审计」开启登录。
+
+另外两条与安全有关的默认值：
+
+- **需求里的外部链接只接受 http(s) / mailto / 站内路径**，`javascript:` 一律被丢弃（防存储型 XSS）。
+- **更换 LDAP 服务器地址必须重新输入服务端账号口令**，不会拿已保存的口令去连新地址。
+
+## 发版
+
+打 tag 即自动发版，不需要任何令牌：
+
+```bash
+npm version 0.2.5 --no-git-tag-version
+cd web && pnpm run build && cd .. && npm test
+git commit -am "chore(release): v0.2.5"
+git tag -a v0.2.5 -m "v0.2.5" && git push && git push origin v0.2.5
+```
+
+GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `package.json` 一致 →
+语法 → 契约测试 → 构建 → 产物可复现 → 用 **Trusted Publishing(OIDC)** 发布到 npm（带 provenance，
+不依赖长期令牌）→ 等 registry 出现该版本 → 正式版再核对 `npm latest`。
+
 ## 质量闸门
 
 两类 HTML/CSS 抓不到的回归，现在由构建期守卫和真库自检挡住：
@@ -137,7 +171,21 @@ curl -s http://<host>:<port>/studio-api/state | head -c 80   # 应返回 {"ok":t
 | --- | --- |
 | `cd web && npm run guard` | CSS 里写回 `hsl(var(--x))`（颜色解析失败）、Radix Portal 忘记 `container={portalRoot()}`（弹层「存在但不可见」）、产物丢失门户作用域属性 |
 | `npm run smoke:store -- ~/.dsh/dsh-studio.db` | 用生产库的 `.db/-wal/-shm` 副本在本地跑真实启动路径，抓「空库能起、真库就炸」的 `ReferenceError` |
-| `npm test` | 102 条契约：manifest、产物哈希、宿主接口、跨模块导入、只读绑定赋值、迁移与文档一致性、门禁纯函数、快捷键解析 |
+| `npm test` | **108 条**契约：manifest、产物哈希、宿主接口、跨模块导入、只读绑定赋值、迁移与文档一致性、门禁纯函数、快捷键解析 |
+
+真机验收（需要 `STUDIO_TOKEN`，对着测试机跑，非零即红）：
+
+| 命令 | 覆盖 |
+| --- | --- |
+| `npm run verify:pages` | 8 个页面能进、能渲染、页签高亮、无 pageerror（22 项） |
+| `npm run verify:audit` | **27 个模块**（8 页签 + 16 设置面板 + 3 抽屉）里还有没有原生下拉/原生输入/老按钮（违规必须为 0） |
+| `npm run verify:selects` | 下拉是否都是官方组件、尺寸是否合规范、弹层是否真的在最上层 |
+| `npm run verify:drawer` | 抽屉打开/聚焦/Esc/取消（15 项） |
+| `npm run verify:drawertabs` | 卡片抽屉里 7 个内层页签 |
+| `npm run verify:auditlog` | 审计日志是官方 Table + 每页 50 行 + 翻页生效（7 项） |
+| `npm run verify:toast` | toast 真的出现在门户容器里、有尺寸、4 秒后消失（7 项） |
+| `npm run review:layout` | 24 个模块的字号/溢出/内联硬编码颜色巡检 |
+| `npm run review:components` | 官方元素 vs 自研元素的分布，看还有哪些组件没换 |
 
 `pnpm build` 已串上守卫（`make-legacy → guard --pre → vite build → sync-client → guard --post`），CI 也会跑：忘记构建或写出上面两类样式，流水线直接红。
 
