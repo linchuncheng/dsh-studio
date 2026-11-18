@@ -8,7 +8,7 @@ import { CASE_RESULTS, CASE_RESULT_LABEL } from '../labels.js'
 import { Button as BoarduiButton } from '../../boardui/index'
 import { fmtTime } from '../format.js'
 
-export function CasesPage({ state, onOpenTask }) {
+export function CasesPage({ state, onOpenTask, onOpenBoard }) {
   const { h, React, api, toast, confirmDialog, promptDialog, TextField, SelectField, ChipField, CheckField } = client()
   const [rows, setRows] = React.useState(null)
   const [error, setError] = React.useState(null)
@@ -231,7 +231,11 @@ export function CasesPage({ state, onOpenTask }) {
         rows === null
           ? h('div', { className: 'ds-hint', style: { padding: '10px 2px' } }, '载入用例…')
           : list.length === 0
-            ? h('div', { className: 'ds-empty' }, '没有符合条件的用例。用例登记在卡片详情的「测试」里。')
+            ? h('div', { className: 'ds-empty' },
+              h('div', null, '没有符合条件的用例。用例登记在卡片详情的「测试」里。'),
+              typeof onOpenBoard === 'function'
+                ? h('button', { className: 'ds-btn', onClick: () => onOpenBoard() }, '去看板开一张卡')
+                : null)
             : h('div', { className: 'ds-case-lib' },
               /* 官方 Table：react-aria 的 Table + Column/Row/Cell，产出真 <table>/<th>/<td>，
                  行选择与键盘导航由组件负责。原来是一串 div 拼的 8 列网格。

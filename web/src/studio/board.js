@@ -8,7 +8,7 @@ import { artifactsWithoutBody, buildRoster, filterRoster, ownerLabel } from './r
 const COLUMN_PAGE = 40
 
 export function createBoard({ h, React, Card, TextField, SearchField, SelectField, CheckField, toast }) {
-function Board({ state, onOpen, onMove, onWip }) {
+function Board({ state, onOpen, onMove, onWip, onCreate }) {
   const config = state.config ?? {}
   const experts = config.experts ?? []
   const [query, setQuery] = React.useState('')
@@ -67,8 +67,15 @@ function Board({ state, onOpen, onMove, onWip }) {
   const blockedCount = state.tasks.filter(task => (task.blocked ?? null) !== null).length
   const noBodyCount = state.tasks.filter(task => artifactsWithoutBody(task).length > 0).length
   const columns = state.statuses.filter(column => !hideEmpty || (byStatus.get(column.id) ?? []).length > 0)
+  /* 一张卡都没有时给一条「从零到一」的路，而不是让 8 列各写一句「暂无任务」 */
+  const boardEmpty = (state.tasks ?? []).length === 0 && filtering === false
   const filtering = query !== '' || expertFilter !== '' || typeFilter !== '' || onlyBlocked || onlyNoBody || projectFilter !== '' || iterationFilter !== '' || serviceFilter !== '' || requirementFilter !== ''
   return h('div', { style: { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } },
+    boardEmpty && typeof onCreate === 'function'
+      ? h('div', { className: 'ds-empty', style: { margin: '16px 20px 0' } },
+        h('div', null, '还没有任何卡。先建一张卡，再把需求、用例、版本挂上去。'),
+        h('button', { className: 'ds-btn ds-btn-primary', onClick: () => onCreate() }, '建第一张卡'))
+      : null,
     h('div', { className: 'ds-board-bar' },
       h('span', { className: 'ds-search' },
         /* 搜索用官方 SearchField：放大镜与清除键都是组件自带的，以前是给普通 Input 用 ::before 画了个假放大镜。 */

@@ -2362,13 +2362,13 @@ function installKeyboardActivation() {
           ? h('div', { className: 'ds-err', style: { padding: '6px 18px' } }, error)
           : null,
         tab === 'board'
-          ? h(Board, { state, onWip: async (status, current) => { const raw = await promptDialog(`这一列的 WIP 上限（0 = 不限，最多 50）`, { title: 'WIP 上限', defaultValue: String(current) }); if (raw === null) return; const value = Math.min(50, Math.max(0, Math.trunc(Number(String(raw).trim()) || 0))); try { await api('/columns/wip', { status, wip: value }); toast(value === 0 ? '已取消 WIP 上限' : `WIP 上限设为 ${value}`); await reload() } catch (cause) { toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onMove: async (id, status) => { try { await api('/task/update', { id, status }); await reload() } catch (cause) { /* 准出/设计闸门会在这里抛错。以前是 void 吞掉，界面只表现为「卡弹回去」，用户以为看板坏了 */ toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onOpen: setOpenId })
+          ? h(Board, { state, onWip: async (status, current) => { const raw = await promptDialog(`这一列的 WIP 上限（0 = 不限，最多 50）`, { title: 'WIP 上限', defaultValue: String(current) }); if (raw === null) return; const value = Math.min(50, Math.max(0, Math.trunc(Number(String(raw).trim()) || 0))); try { await api('/columns/wip', { status, wip: value }); toast(value === 0 ? '已取消 WIP 上限' : `WIP 上限设为 ${value}`); await reload() } catch (cause) { toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onCreate: () => setCreating(true), onMove: async (id, status) => { try { await api('/task/update', { id, status }); await reload() } catch (cause) { /* 准出/设计闸门会在这里抛错。以前是 void 吞掉，界面只表现为「卡弹回去」，用户以为看板坏了 */ toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onOpen: setOpenId })
           : tab === 'dashboard'
             ? h(DashboardPage, { state, onOpenTask: setOpenId, onOpenBoard: () => setTab('board'), onOpenCases: () => setTab('cases') })
           : tab === 'requirements'
             ? h(RequirementsPage, { state, onOpenTask: setOpenId, onChanged: reload, createSignal: newReq, focusReq })
             : tab === 'cases'
-              ? h(CasesPage, { state, onOpenTask: setOpenId })
+              ? h(CasesPage, { state, onOpenTask: setOpenId, onOpenBoard: () => setTab('board') })
             : tab === 'releases'
               ? h(ReleasesPage, { state, onOpenTask: setOpenId })
             : tab === 'projects'

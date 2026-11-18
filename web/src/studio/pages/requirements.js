@@ -1196,7 +1196,11 @@ return h('div', { className: 'ds-body' },
         formPanel,
         h('div', { className: 'ds-req-grid' },
           h('div', { className: 'ds-intake-launch', style: { display: 'flex', gap: 8, padding: '0 0 8px' } },
-            h('span', { className: 'ds-hint' }, '新建需求请用右上角「＋ 新建」'),
+            h('span', { className: 'ds-hint' }, '新需求从这里开始：'),
+            h('button', {
+              className: 'ds-btn ds-btn-primary',
+              onClick: () => openNew(),
+            }, '新建需求'),
           ),
           
           h('div', { className: 'ds-req-list' },
