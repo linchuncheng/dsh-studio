@@ -16,6 +16,8 @@ on:
   push:
     tags:
       - 'v*'
+  # 手动触发：只跑校验链、不发布（调试 workflow 用，不用造新版本号）
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -25,9 +27,9 @@ jobs:
       # OIDC 必需
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
@@ -37,7 +39,7 @@ jobs:
           npm install -g npm@latest
           npm --version
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 9
 
@@ -79,6 +81,7 @@ jobs:
           fi
 
       - name: 发布到 npm（OIDC，无需令牌）
+        if: github.event_name == 'push'
         run: |
           # 预发布版本（0.2.2-rc.1 这类）必须显式给 --tag，否则 npm 直接报
           # "You must specify a tag using --tag when publishing a prerelease version"。
