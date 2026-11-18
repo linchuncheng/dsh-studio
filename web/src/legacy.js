@@ -1239,7 +1239,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
     /** @ 选择器：一列可搜的名单，代替原来平铺的一堆按钮。 */
     const MentionPicker = createMentionPicker({ h, TextField })
     const Drawer = createDrawer({ h, React, api, kit, currentUser, renderMarkdown, tipOf, tipLabel, confirmDialog, promptDialog, TextField, TextAreaField, ChipField, CheckField, SelectField, MdField, MentionPicker })
-    const Palette = createPalette({ h, React })
+    const Palette = createPalette({ h, React, TextField })
     provideClient({ h, React, Editor, api, kit, toast, sessionToken, currentUser, confirmDialog, promptDialog, tipOf, tipLabel, renderMarkdown, SideDrawer, MentionPicker, Card, TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, DateField, MdField })
 
 

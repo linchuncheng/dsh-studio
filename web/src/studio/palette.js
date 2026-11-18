@@ -4,7 +4,6 @@
 
 import { fmtTime } from './format.js'
 import { ROLE_LABEL } from './labels.js'
-import { Input as BoarduiInput } from '../boardui/index'
 
 const clip = (text, max) => (text.length > max ? text.slice(0, max - 1) + '…' : text)
 
@@ -345,7 +344,7 @@ export function nextStatusOf(state, taskId) {
   return statuses[index + 1].id
 }
 
-export function createPalette({ h, React }) {
+export function createPalette({ h, React, TextField }) {
   return function Palette({ state, onPick, onClose, initialAction, initialSeq }) {
     const [query, setQuery] = React.useState('')
     const [active, setActive] = React.useState(0)
@@ -474,7 +473,7 @@ export function createPalette({ h, React }) {
         banner,
         /* 全站最后一个原生表单控件。官方 Input（TextField + InputBase），
            inputRef 透传到底层 <input>，打开面板时自动聚焦、方向键/Esc 照常走 onKeyDown。 */
-        h(BoarduiInput, {
+        h(TextField, {
           inputRef,
           autoFocus: true,
           'aria-label': '全局搜索',
