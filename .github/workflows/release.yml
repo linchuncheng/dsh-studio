@@ -1,0 +1,87 @@
+name: release
+
+# 打 tag（v0.2.1 这种）就发版到 npm，不再手工 npm publish。
+#
+# 为什么值得做：手工 `npm publish` 每次都会卡在 **staged / 待 2FA 确认**（我们这轮
+# 0.2.0 和 0.2.1 都卡了一次，要人去网页点确认）。CI 里用 Automation Token 或
+# Trusted Publishing（OIDC）**不需要 2FA**，能一步发完。
+#
+# 两种凭证，任选一种（都不需要在仓库里放密码）：
+#
+#   A. Automation Token（最省事）
+#      npmjs.com → Access Tokens → Generate → **Automation**
+#      仓库 Settings → Secrets and variables → Actions → New secret: NPM_TOKEN
+#      （注意必须是 Automation 类型；Publish 类型的粒度令牌仍然要 2FA，照样会 staged）
+#
+#   B. Trusted Publishing（OIDC，不用任何令牌，推荐）
+#      npmjs.com → 该包 → Settings → Trusted Publisher → GitHub Actions
+#      填：repo = marsken88/dsh-studio，workflow = release.yml
+#      然后在仓库里删掉 NPM_TOKEN secret 也能发（下面的 NODE_AUTH_TOKEN 为空时走 OIDC）。
+#
+# 首次启用前，记得把 package.json 的 repository 字段指对（provenance 会用）。
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Trusted Publishing / provenance 需要这个
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      # tag 必须和 package.json 一致，否则发出去的是错版本
+      - name: 校验 tag 与 package.json 版本一致
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          echo "tag=$TAG package.json=$PKG"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag $GITHUB_REF_NAME 与 package.json 的 $PKG 不一致"
+            exit 1
+          fi
+
+      - name: 语法
+        run: node --check index.js && node --check client.src.js
+
+      - name: 契约测试
+        run: npm test
+
+      # 产物必须可复现：改了前端没重新构建，这里会红
+      - name: 构建
+        working-directory: web
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: 产物一致性
+        run: |
+          cmp dist/client.js client.js
+          git diff --exit-code -- dist/client.js client.js
+
+      # 发版前再跑一次仓库自带的核对（tag / origin / registry 四处一致）
+      - name: 发版前自检
+        run: npm run verify:release || true   # 首次发布时 registry 上还没有这个版本，允许它先红
+
+      - name: 发布到 npm
+        run: npm publish --access public --provenance
+        env:
+          # 用 Automation Token 时填这个 secret；用 Trusted Publishing 时留空即可
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: 发布后核对
+        run: |
+          echo "registry latest = $(npm view @marsken/dsh-studio version)"
+          npm run verify:release
