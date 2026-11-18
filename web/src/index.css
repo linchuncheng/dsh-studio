@@ -1420,7 +1420,19 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 /* 全局搜索（⌘K / Ctrl+K） */
 [data-dsh-studio] .ds-palette-veil { position: fixed; inset: 0; z-index: 120; background: rgba(9, 9, 11, .38); display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh }
 [data-dsh-studio] .ds-palette { width: min(560px, 92vw); background: var(--ds-surface, #fff); border: 1px solid var(--ds-line, #e4e4e7); border-radius: 12px; box-shadow: 0 24px 64px rgba(0, 0, 0, .28); overflow: hidden }
-[data-dsh-studio] .ds-palette-input { width: 100%; height: 44px; padding: 0 14px; border: 0; border-bottom: 1px solid var(--ds-line, #e4e4e7); background: transparent; color: inherit; font-size: 14px; outline: none }
+/* 官方 Input 是「壳 div[role=presentation] + 内部 input」两层结构，
+   命令面板要的是「一整条无框输入」，所以两层都得重置：
+   壳去掉灰底/圆角/内边距，内部 input 撑满并只留一条底部分隔线。 */
+[data-dsh-studio] .ds-palette-input { width: 100% }
+[data-dsh-studio] .ds-palette-input > div[role="presentation"] {
+  background: transparent; border-radius: 0; padding: 0; box-shadow: none; outline: none;
+  --tw-ring-shadow: 0 0 #0000;
+}
+[data-dsh-studio] .ds-palette-input input {
+  width: 100%; height: 44px; padding: 0 14px; border: 0;
+  border-bottom: 1px solid var(--ds-line, #e4e4e7);
+  background: transparent; color: inherit; font-size: 14px; outline: none;
+}
 [data-dsh-studio] .ds-palette-flow { display: flex; align-items: center; gap: 8px; padding: 8px 14px 0; font-size: 12px; color: var(--ds-muted, #71717a) }
 [data-dsh-studio] .ds-palette-flow::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: #7c3aed }
 [data-dsh-studio] .ds-palette-flow[data-flow="expert"]::before { background: #0ea5e9 }
