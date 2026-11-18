@@ -432,8 +432,11 @@ export class Dispatcher {
     const state = this.store.snapshot()
     for (const task of state.tasks) {
       if (task.dispatch?.state !== 'running') continue
-      await markDispatch(this.store, task.id, { ...task.dispatch, state: 'stopped', at: Date.now() })
-      this.note(`清掉上次进程留下的派单印记 ${task.id}`)
+      /* 必须把 status 一起清掉：tick() 的判据是「dispatch.status === task.status 就跳过」，
+         只改 state 会让这张卡永久停摆 —— 看着是"已停止"，实际再也不会被派单。
+         清掉 status 之后，下一轮 tick 会重新拾起它（并把本轮记为一次 abandoned 尝试）。 */
+      await markDispatch(this.store, task.id, { state: 'stopped', at: Date.now(), status: '', attempts: task.dispatch?.attempts ?? 0 })
+      this.note(`清掉上次进程留下的派单印记，允许重新派单 ${task.id}`)
     }
   }
 

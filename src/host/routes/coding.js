@@ -120,6 +120,13 @@ if (method === 'POST' && route === '/task/agent/retry') {
   const id = String(body.id ?? '')
   const changed = await clearAgentFailure(store, id, String(body.by ?? '人').slice(0, 60))
   if (!changed) throw new Error(`no task ${id}`)
+  /* 光清失败计数不够：tick() 见到 dispatch.status === task.status 就跳过，
+     所以「重新派单」以前是个假按钮 —— 提示"下一轮自动接手"，实际永不重派。
+     这里把派单印记一起清掉，下一次 tick 才会真的重新派。 */
+  await store.mutate(state => {
+    const task = state.tasks.find(entry => entry.id === id)
+    if (task !== undefined) task.dispatch = null
+  })
   const state = store.snapshot()
   const task = state.tasks.find(entry => entry.id === id)
   host.sendJson(res, 200, { ok: true, task, state: host.publicState(store) })
