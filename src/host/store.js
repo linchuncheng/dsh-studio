@@ -84,6 +84,8 @@ export class StudioStore {
     this.engine = 'file'
     this.state = { revision: 1, updatedAt: Date.now(), config: defaultConfig(), tasks: [], requirements: [], releases: [], audit: [], fallbackFolder: null }
     this.chain = Promise.resolve()
+    /** 本进程这一轮写所基于的 revision（单写者校验用）：落盘前比对磁盘上的是不是它。 */
+    this.baseRevision = 0
     this.ready = this.#boot()
   }
 
@@ -205,6 +207,9 @@ export class StudioStore {
           : null,
       }
     }
+    /* 加载完成就把本进程的基础版本对齐磁盘 —— 单写者校验拿它比对，
+       没这一步第一次写就会误判成"被其它进程改过"。 */
+    this.baseRevision = this.state.revision
     await this.#hydrateSecrets()
     if (imported) {
       await this.#persist()
@@ -334,11 +339,19 @@ export class StudioStore {
   async mutate(fn) {
     const run = this.chain.then(async () => {
       await this.ready
-      fn(this.state)
-      this.state.revision += 1
-      this.state.updatedAt = Date.now()
-      await this.#persist()
-      return this.state
+      /* 落盘失败必须回滚内存：否则调用方收到 500 去重试，而这次"失败"的改动
+         会在下一次成功的写里被一起落盘 —— 一次变更变两次（实测过）。 */
+      const backup = JSON.parse(JSON.stringify(this.state))
+      try {
+        fn(this.state)
+        this.state.revision = backup.revision + 1
+        this.state.updatedAt = Date.now()
+        await this.#persist()
+        return this.state
+      } catch (error) {
+        this.state = backup
+        throw error
+      }
     })
     this.chain = run.then(() => undefined, () => undefined)
     return run
@@ -459,6 +472,16 @@ export class StudioStore {
     const text = JSON.stringify(plain)
     this.db.exec('BEGIN IMMEDIATE')
     try {
+      /* 单写者校验：磁盘上的 revision 必须还是我们这一轮的基础版本。
+         两个进程同时开着时，后写的那个会在这里报冲突 —— 而不是把对方的改动整包覆盖掉。 */
+      const row = this.db.prepare("SELECT value FROM meta WHERE key = 'state'").get()
+      if (row !== undefined && row !== null) {
+        let stored = 0
+        try { stored = Number(JSON.parse(row.value)?.revision ?? 0) } catch { stored = 0 }
+        if (stored !== this.baseRevision) {
+          throw new Error(`状态已被其它进程修改（磁盘 revision=${stored}，本进程基于 ${this.baseRevision}）：这次改动没有保存，请刷新后重试`)
+        }
+      }
       this.db.prepare('INSERT INTO snapshots (at, revision, bytes, blob) VALUES (?, ?, ?, ?)')
         .run(Date.now(), plain.revision, text.length, text)
       this.db.prepare('INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value')
@@ -466,6 +489,7 @@ export class StudioStore {
       this.db.prepare('DELETE FROM snapshots WHERE id NOT IN (SELECT id FROM snapshots ORDER BY id DESC LIMIT ?)')
         .run(this.snapshotLimit)
       this.db.exec('COMMIT')
+      this.baseRevision = plain.revision
     } catch (error) {
       try { this.db.exec('ROLLBACK') } catch { /* ignore */ }
       throw error
