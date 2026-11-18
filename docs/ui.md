@@ -904,3 +904,22 @@ CSS 层叠层按「名字第一次出现的位置」定优先级，后出现的�
 | `components/base/toast/toast.tsx` | `ToasterProps` 增加 `container`，透传给 `NotificationViewport` | 同上；面板要把 toast 挂进 `[data-dsh-studio-portal]` |
 
 补丁都带 `本地补丁：` 注释。守护脚本暂未断言这两处，重拉时要人工核（`grep -n "containerProp ?? document.body"`）。
+
+### 组件盘点结论：还剩下哪些「自研」，以及为什么不换（2026-11-18）
+
+用 `review:components`（运行时按类名统计官方 vs 自研）扫了 24 个模块，官方元素 2156 / 自研 2812。
+但自研里绝大多数是**布局容器**（`ds-panel` / `ds-row` / `ds-field` / `ds-hint` / `ds-label`），
+真正属于「组件」且仍自研的只有下面几个，每个都有明确结论：
+
+| 项 | 结论 | 依据 |
+| --- | --- | --- |
+| 审计日志表 | **已换** 官方 Table + Pagination | 原来 120 行 × 5 列平铺（600+ 节点），现在每页 50 行 |
+| 命令面板输入框 | **已换** 官方 Input | 全站最后一个原生 `<input>`；注意官方 Input 是「壳 + 内部 input」两层，样式要跟着改，否则内部 input 会缩成 4px |
+| 状态圆点 `ds-dot` | **不换** | 官方 `status-dot` 只有 green/yellow/indigo，**没有红色**；而它表达的是优先级（urgent 红），换过去等于丢掉「紧急」信号 |
+| 指标卡 `ds-stat` | **不换** | 官方 `stat-cards` 的 `Stat` 强制 `delta` + `deltaColor` + `icon`，我们没有趋势数据，只能编造；`warn`（超阈值变红）也无处安放 |
+| 设置左栏 `ds-nav-item` | **不换** | `r/sidebar.json` 是 `registry:block` 的 **DashboardSidebar**：团队切换器 + 用户菜单 + 主题切换 + KBD + settings-modal，三个文件约 40 kB、12 个 regdeps。它是「应用级侧栏」，不是「一组导航项」；接进来会重复已有功能并把包再撑大 40 kB |
+| 看板卡片 `ds-card*` / 任务行 / 空态 | **不换** | 官方 `task-list`、图表类（`bar-list-card`/`area-chart-card`/`activity-rings-card`）在 registry 里都是 **404**（Pro），`empty-state` 也不存在 |
+
+结论：**表单控件已 100% 官方**（Input / Textarea / Select / SearchField / Checkbox / Switch /
+DatePicker / 命令面板输入框），数据展示层用官方 Table，浮层用官方 Drawer / Modal / Tooltip /
+Toaster。剩下自研的都是「官方没有、或者语义不兼容」的部分。
