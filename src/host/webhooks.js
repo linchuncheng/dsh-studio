@@ -19,10 +19,38 @@ export function sanitizeWebhooks(raw) {
   }).filter(hook => hook.url !== '')
 }
 
+/** 私网 / 链路本地 / 回环地址：盲打这些地址等于让平台替调用方扫内网（SSRF）。
+ *  配置里 testing.allowHosts 可以显式放行（默认只放 127.0.0.1 / localhost）。 */
+function isPrivateHost(hostname) {
+  const host = String(hostname ?? '').replace(/^\[|\]$/g, '').toLowerCase()
+  if (host === 'localhost' || host === '::1' || host.endsWith('.localhost')) return true
+  if (/^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host)) return true
+  if (/^172\.(1[6-9]|2[0-9]|3[01])\./.test(host)) return true
+  if (/^169\.254\./.test(host)) return true          // 云元数据
+  if (/^fc00:|^fd[0-9a-f]{2}:|^fe80:/.test(host)) return true
+  return false
+}
+
+/** 这个出站地址是否允许。允许 = 公网地址，或在 allowHosts 白名单里。 */
+export function isAllowedOutbound(url, allowHosts = []) {
+  let parsed
+  try { parsed = new URL(String(url ?? '')) } catch { return false }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false
+  const host = parsed.hostname
+  if (!isPrivateHost(host)) return true
+  const list = Array.isArray(allowHosts) ? allowHosts.map(item => String(item).trim().toLowerCase()) : []
+  return list.includes(host.toLowerCase())
+}
+
 /** 真正发出去：每个订阅地址一次 POST，5 秒超时。 */
 export async function deliverWebhooks(config, event) {
   const hooks = (config?.webhooks ?? []).filter(hook => hook.enabled !== false && (hook.events ?? []).includes(event.type))
   for (const hook of hooks) {
+    const allowHosts = config?.testing?.allowHosts ?? []
+    if (!isAllowedOutbound(hook.url, allowHosts)) {
+      markHealth('webhook', 'fail', hook.id + ' 目标地址在内网，且不在 testing.allowHosts 白名单里')
+      continue
+    }
     try {
       const response = await fetch(hook.url, {
         method: 'POST',
