@@ -1888,7 +1888,17 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
       if (el.getAttribute('contenteditable') === 'true') return false
       let cursor = ''
       try { cursor = window.getComputedStyle(el).cursor } catch (error) { cursor = '' }
-      return cursor === 'pointer'
+      if (cursor !== 'pointer') return false
+      /* cursor 会继承：卡片本身是 pointer，卡里每个 chip 都会算出 pointer，
+         于是它们全被补成 role=button/tabindex=0 —— 但其中大半没有 onClick，
+         按 Enter 什么也不发生。父元素已经可聚焦时，子元素只是继承，跳过。 */
+      const parent = el.parentElement
+      if (parent !== null) {
+        let parentCursor = ''
+        try { parentCursor = window.getComputedStyle(parent).cursor } catch (error) { parentCursor = '' }
+        if (parentCursor === cursor) return false
+      }
+      return true
     }
     // 写：补键盘可达性。与读数分开调用，写完不再回读样式。
     function applyKeyboardSupport(el) {

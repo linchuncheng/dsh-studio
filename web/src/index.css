@@ -190,15 +190,6 @@
   box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--foreground) 16%, transparent);
 }
 
-[data-dsh-studio] .ds-panel-head,
-[data-dsh-studio] .ds-card-head {
-  padding: 10px 14px !important;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
 [data-dsh-studio] .ds-panel-body,
 [data-dsh-studio] .ds-card-body {
   padding: 12px 14px !important;
@@ -287,33 +278,6 @@
   color: var(--destructive);
 }
 
-[data-dsh-studio] .ds-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 12.5px;
-}
-
-[data-dsh-studio] .ds-table th {
-  padding: 8px 10px;
-  text-align: left;
-  font-weight: 500;
-  font-size: 11.5px;
-  color: var(--muted-foreground);
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--muted) 50%, transparent);
-}
-
-[data-dsh-studio] .ds-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  vertical-align: top;
-}
-
-[data-dsh-studio] .ds-table tbody tr:hover td {
-  background: color-mix(in srgb, var(--muted) 45%, transparent);
-}
-
 [data-dsh-studio] .ds-dw-tabs {
   display: inline-flex;
   gap: 2px;
@@ -345,24 +309,6 @@
 [data-dsh-studio] .ds-muted {
   color: var(--muted-foreground);
   font-size: 11.5px;
-}
-
-[data-dsh-studio] .ds-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--muted-foreground);
-  cursor: pointer;
-}
-
-[data-dsh-studio] .ds-icon-btn:hover {
-  background: var(--muted);
-  color: var(--foreground);
 }
 
 /* ------------------------------------------------------------ board cards --- */
@@ -621,12 +567,7 @@
 [data-dsh-studio] .ds-toasts { position:fixed; right:16px; bottom:16px; z-index:120; display:flex; flex-direction:column; gap:8px; align-items:flex-end; pointer-events:none; }
 [data-dsh-studio] .ds-toast { pointer-events:auto; display:flex; align-items:flex-start; gap:8px; max-width:340px; padding:9px 11px; border:1px solid var(--border); border-radius:calc(var(--radius) - 2px); background:var(--card); box-shadow:0 8px 24px -12px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.08); font-size:12px; animation:ds-toast-in .18s ease-out; }
 [data-dsh-studio] .ds-toast[data-tone="error"] { border-color:color-mix(in srgb, #dc2626 40%, var(--border)); }
-[data-dsh-studio] .ds-toast-icon { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-top:1px; border-radius:50%; background:#16a34a; color:#fff; font-size:10px; font-weight:700; flex:0 0 auto; }
-[data-dsh-studio] .ds-toast[data-tone="error"] .ds-toast-icon { background:#dc2626; }
-[data-dsh-studio] .ds-toast[data-tone="info"] .ds-toast-icon { background:var(--ds-accent); }
 [data-dsh-studio] .ds-toast-text { flex:1 1 auto; line-height:1.5; word-break:break-word; }
-[data-dsh-studio] .ds-toast-close { border:0; background:transparent; color:color-mix(in srgb, currentColor 55%, transparent); cursor:pointer; font-size:14px; line-height:1; padding:0 2px; }
-[data-dsh-studio] .ds-toast-close:hover { color:currentColor; }
 @keyframes ds-toast-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 [data-dsh-studio] .ds-ok, [data-dsh-studio] .ds-err { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:999px; font-size:11.5px; line-height:1.35; border:1px solid transparent; }
 [data-dsh-studio] .ds-ok { color:#15803d; background:color-mix(in srgb, #16a34a 10%, transparent); border-color:color-mix(in srgb, #16a34a 26%, transparent); }
@@ -733,13 +674,6 @@
   font-size: 12px;
   line-height: 1.65;
   text-align: center;
-}
-[data-dsh-studio] .ds-empty .ds-empty-title {
-  display: block;
-  margin-bottom: 3px;
-  color: var(--foreground);
-  font-weight: 600;
-  font-size: 12.5px;
 }
 
 /* 市场页与项目页的卡片一致性（2026-11-10）：与看板卡片、面板同一套圆角/描边/投影 */
@@ -1203,7 +1137,6 @@
 [data-dsh-studio] { height: 100% !important; min-height: 0 !important; max-height: 100% !important; overflow: hidden !important }
 [data-dsh-studio] > .ds-head { flex: 0 0 auto }
 [data-dsh-studio] > .ds-body { flex: 1 1 auto !important; min-height: 0 !important; overflow: auto !important }
-[data-dsh-studio] .ds-req-page, [data-dsh-studio] .ds-board, [data-dsh-studio] .ds-pane-stack { min-height: 0 }
 
 /* 工作区改成真正的一屏布局：head 固定 + body 内部滚动（2026-11-10 修正） */
 html body [data-dsh-studio] {
@@ -1247,9 +1180,6 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] .ds-an-grid > .ds-panel > .ds-panel-body { flex: 1 1 auto; min-height: 0 }
 [data-dsh-studio] .ds-an-grid .ds-panel-head { flex-direction: column; align-items: flex-start; gap: 3px }
 [data-dsh-studio] .ds-an-grid .ds-panel-head .ds-hint { margin-left: 0 }
-[data-dsh-studio] .ds-an-grid .ds-panel-title {
-  max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis
-}
 [data-dsh-studio] .ds-an-grid .ds-an-foot { margin-top: auto }
 /* 设置页统一（2026-11-10）：面板成栈、内边距一致、输入控件在设置里也看得见边框 */
 [data-dsh-studio] .ds-pane-stack { display: flex; flex-direction: column; gap: 12px }
@@ -1368,13 +1298,6 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 /* 业务提单条带与内嵌表单：条带横排换行；提单/查进度改成浮层，避免挤在窄列里 */
 [data-dsh-studio] .ds-biz-strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--muted);margin-bottom:8px}
 [data-dsh-studio] .ds-biz-rows{display:flex;flex-direction:column;gap:4px;width:100%;margin-top:2px}
-[data-dsh-studio] .ds-biz-row{display:flex;align-items:center;gap:8px;min-width:0;padding:4px 6px;border-radius:6px;background:var(--card);border:1px solid var(--border)}
-[data-dsh-studio] .ds-biz-row > span{min-width:0}
-[data-dsh-studio] .ds-biz-row .ds-btn{height:26px;padding:0 8px;font-size:11.5px}
-[data-dsh-studio] .ds-intake-form{position:fixed;right:24px;top:92px;width:min(460px,92vw);z-index:70;display:grid!important;gap:8px;padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--card);box-shadow:0 12px 32px -12px rgba(0,0,0,.45)}
-[data-dsh-studio] .ds-intake-form .ds-row{display:flex;gap:8px}
-[data-dsh-studio] .ds-intake-form .ds-field{min-width:0;flex:1 1 0}
-[data-dsh-studio] .ds-intake-form textarea{min-height:64px}
 
 /* 业务提单：从需求列表的窄列里抽出来，改成顶部浮条，不再占列宽 */
 [data-dsh-studio] .ds-biz-strip{position:fixed;left:50%;top:88px;transform:translateX(-50%);width:min(760px,94vw);z-index:65;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--card);box-shadow:0 14px 36px -16px rgba(0,0,0,.5)}
@@ -1520,11 +1443,6 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   box-shadow: -16px 0 40px -24px color-mix(in srgb, #000 55%, transparent);
 }
 
-[data-dsh-studio] .ds-drawer-head {
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--color-border-button-default, var(--border));
-}
-
 /* ========================================================================
  * BoardUI 外观覆盖（W2-3：设置面板 / 页签 / 弹窗）
  * 同样追加在末尾，整段可回退；变量都带旧值兜底。
@@ -1595,13 +1513,6 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
     font: inherit;
     color: inherit;
   }
-}
-
-/* 顶栏「明亮 / 黑暗 / 跟随系统」用小一号的胶囊 */
-[data-dsh-studio] .ds-pill-sm {
-  padding: 3px 9px;
-  font-size: 11.5px;
-  line-height: 17px;
 }
 
 /* 「流程与产出」那组数字：原来跟标签一个字号，看着像没写完 */
@@ -2151,9 +2062,6 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
   -webkit-background-clip: text;
   animation: ai-chat-text-shimmer 2.6s linear infinite;
   will-change: background-position;
-}
-[data-dsh-studio] :is(.ds-spark-day, .ds-col-count) {
-  font-size: 11px;
 }
 
 /* ------------------------------------------------- 需求矩阵：描述摘要两行 --- */

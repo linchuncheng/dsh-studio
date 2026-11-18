@@ -395,6 +395,9 @@ export function SkillsPanel({ config, onChanged }) {
       ),
       h('button', { className: 'ds-btn', disabled: busy || skills.length === 0, onClick: () => void resync() }, '重新写入磁盘'),
       note !== null ? h('span', { className: 'ds-ok' }, note) : null,
+      /* 同步/测试失败以前只在抽屉 footer 里渲染 —— 抽屉没打开时错误完全不显示，
+         表现是「按钮灰一下又恢复，像同步成功了」。放到面板级，失败一定看得见。 */
+      error !== null ? h('span', { className: 'ds-err' }, error) : null,
       error !== null ? h('span', { className: 'ds-error' }, error) : null,
     ),
     draft === null ? null : h(SideDrawer, {
