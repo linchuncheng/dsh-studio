@@ -175,6 +175,8 @@ window.__ModuleLoader__.load({
       if (TOAST_LAST.text === message && now - TOAST_LAST.at < 600) return null
       TOAST_LAST = { text: message, at: now }
       const id = ++TOAST_SEQ
+      const push = kit('pushToast')
+      if (typeof push === 'function') push(message, tone)
       TOAST_ITEMS = TOAST_ITEMS.concat([{ id, text: message, tone }])
       toastEmit()
       window.setTimeout(() => { dismissToast(id) }, ttl)
@@ -196,7 +198,10 @@ window.__ModuleLoader__.load({
         return () => { TOAST_LISTENERS = TOAST_LISTENERS.filter(entry => entry !== setItems) }
       }, [])
       if (items.length === 0) return null
-      if (Notification === null) {
+      const Toaster = kit('Toaster')
+      const official = Toaster === null ? null : h(Toaster, { container: typeof kit('portalRoot') === 'function' ? kit('portalRoot')() : undefined, position: 'bottom-end', limit: 3, duration: 3200, closeLabel: '关闭提示' })
+      if (official !== null) return official
+if (Notification === null) {
         return h('div', { className: 'ds-toasts', role: 'status', 'aria-live': 'polite' },
           items.map(item => h('div', { key: item.id, className: 'ds-toast', 'data-tone': item.tone }, h('span', { className: 'ds-toast-text' }, item.text))))
       }

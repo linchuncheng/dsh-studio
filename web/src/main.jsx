@@ -15,6 +15,8 @@ import { TaskRow as BoarduiTaskRow } from './boardui/task-list'
 import { EmptyState as BoarduiEmptyState } from './boardui/empty-state'
 import { Notification as BoarduiNotification } from './components/base/notification/notification'
 import { Chip as BoarduiChip, Select as BoarduiSelect } from './boardui/index'
+import { Toaster as BoarduiToaster, toast as boarduiToast } from './components/base/toast/toast'
+import { portalRoot } from './lib/portal.js'
 
 const STYLE_ID = 'dsh-studio-tw'
 
@@ -110,7 +112,12 @@ window.__ModuleLoader__.load({
     const studio = createStudio(React, h)
     // Hand the shadcn-based primitives to the legacy panel. It keeps its own
     // markup but swaps the high-traffic controls for the real components.
-    const uiKit = { SegGroup, SheetDrawer, TabsBar, Tip, ProgressBar, DialogBox, Badge, Input, Textarea, Label, Notification: BoarduiNotification }
+    const pushToast = (text, tone) => {
+      const name = tone === 'error' ? 'error' : (tone === 'warn' || tone === 'warning') ? 'warning' : tone === 'info' ? 'info' : 'success'
+      const fn = boarduiToast?.[name] ?? boarduiToast?.info ?? boarduiToast?.success
+      if (typeof fn === 'function') fn(String(text))
+    }
+    const uiKit = { SegGroup, SheetDrawer, TabsBar, Tip, ProgressBar, DialogBox, Badge, Toaster: BoarduiToaster, portalRoot, pushToast, Input, Textarea, Label, Notification: BoarduiNotification }
     if (typeof studio.useUIKit === 'function') studio.useUIKit(uiKit)
     const StudioBridge = createBridge(studio, hostReact, { pageProps: { loginGate: ShadcnLoginGate, ui: uiKit } })
 
