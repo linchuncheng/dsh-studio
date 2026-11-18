@@ -132,8 +132,16 @@ export async function handleAuthRoute({ method, route, req, res, store, url }) {
   if (method === 'POST' && route === '/auth/ldap/test') {
     const body = await host.readJsonBody(req)
     const config = store.snapshot().config
-    const settings = sanitizeLdap({ ...(config.ldap ?? {}), ...(body.ldap !== null && typeof body.ldap === 'object' ? body.ldap : {}) })
+    const incoming = body.ldap !== null && typeof body.ldap === 'object' ? body.ldap : {}
+    const settings = sanitizeLdap({ ...(config.ldap ?? {}), ...incoming })
     if (String(body.bindPassword ?? '') !== '') settings.bindPassword = String(body.bindPassword)
+    /* 换了服务器地址就必须重新输入口令：否则会拿**已存储的真口令**去连一个新地址，
+       等于让调用方指定目标、由我们的服务账号去 bind（口令以明文 simple bind 送出去）。 */
+    const previousUrl = String((config.ldap ?? {}).url ?? '')
+    if (String(incoming.url ?? '') !== '' && String(incoming.url ?? '') !== previousUrl && String(body.bindPassword ?? '') === '') {
+      host.sendJson(res, 400, { ok: false, error: '换了 LDAP 地址必须重新输入服务账号口令（不会沿用已保存的）' })
+      return true
+    }
     const steps = []
     const started = Date.now()
     const lookup = await host.ldapLookup(settings, String(body.username ?? '').trim() || '*')

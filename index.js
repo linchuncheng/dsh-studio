@@ -2350,7 +2350,10 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
         const ldapNow = configNow.ldap ?? {}
         const localNow = sanitizeLocalAuth(configNow.localAuth)
         const locked = ldapNow.enabled === true && ldapNow.requireLogin === true
-        const openRoutes = new Set(['/intake', '/intake/requirement', '/intake/status', '/intake/query', '/intake/mine', '/intake/mine/query', '/auth/login', '/auth/me', '/auth/logout', '/auth/password', '/auth/ldap/test', '/audit/export.csv', '/export/dispatch.csv', '/state', '/'])
+        /* /auth/ldap/test 从常开名单里拿掉：它会用**已存储的 LDAP 服务账号口令**
+           向调用方给的地址做 simple bind，匿名可调等于把域口令明文送到任意主机。
+           导出的两个 CSV 也拿掉（handler 自己已有会话校验，留着这层等于白名单绕过）。 */
+        const openRoutes = new Set(['/intake', '/intake/requirement', '/intake/status', '/intake/query', '/intake/mine', '/intake/mine/query', '/auth/login', '/auth/me', '/auth/logout', '/auth/password', '/state', '/'])
         const session = sessionOf(req, configNow)
         if (session !== null) {
           req.studioActor = String(session.user.name ?? session.user.id ?? '').slice(0, 40)
@@ -2428,6 +2431,16 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
   const readOnlyPost = READ_ONLY_POST_ROUTES.has(route)
     || (route === '/task/artifact' && String(req.__studioBody?.action ?? '') === 'get')
   const level = route.startsWith('/auth/') ? 'read' : readOnlyPost ? 'read' : accessLevelFor(route, method)
+    /* 审计/派单日志导出虽然是 GET，但内容是操作人姓名与路由，不该对局域网匿名开放。
+       和 admin 级操作同一条规则：未启用登录时只允许本机来源。 */
+    if ((route === '/audit/export.csv' || route === '/export/dispatch.csv') && (store.snapshot().config?.access ?? {}).enabled !== true) {
+      const who = String(req.socket?.remoteAddress ?? '')
+      const local = who === '127.0.0.1' || who === '::1' || who === '::ffff:127.0.0.1'
+      if (!local) {
+        sendJson(res, 403, { ok: false, code: 'local_only', error: '未启用登录时，审计/派单日志导出只允许在服务器本机执行' })
+        return
+      }
+    }
     let summary = ''
     if (method === 'POST') {
       try {
@@ -2435,6 +2448,23 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
         summary = auditSummary(req.__studioBody)
       } catch {
         /* 坏 JSON 交给下面的 core 去报 400 */
+      }
+    }
+    /* 只读 POST（取评论、取交付物正文、用例列表…）不记审计：审计写库会让 revision +1，
+       而 /state 的 ETag 就是 revision —— 于是每开一次卡片抽屉，所有在线客户端的
+       304 缓存全部失效、下一次轮询拉整包。读操作不该留下写痕迹。 */
+    if (readOnlyPost) summary = ''
+    /* 权限模型默认没开（access.enabled=false）。这种部署下，admin 级操作
+       （市场安装、快照恢复、成员权限、配置写入…）以前对任何能连到这个端口的人开放，
+       等于匿名超管。这里把 admin 级操作限制在回环来源；普通业务读写不受影响，
+       所以现在的使用体验不变。要多人协同时去「设置 → 权限与审计」开启登录。 */
+    if (level === 'admin' && (store.snapshot().config?.access ?? {}).enabled !== true) {
+      const address = String(req.socket?.remoteAddress ?? '')
+      const loopback = address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1'
+      if (!loopback) {
+        await recordAudit(store, { by: operator, route, level, status: 403, ok: false, summary: '管理操作只允许本机来源' })
+        sendJson(res, 403, { ok: false, code: 'local_only', error: '未启用登录时，管理类操作只允许在服务器本机（127.0.0.1）执行。要在局域网里管理，请先到「设置 → 权限与审计」开启登录。' })
+        return
       }
     }
     const trusted = typeof req.studioActor === 'string' && req.studioActor.trim() !== ''

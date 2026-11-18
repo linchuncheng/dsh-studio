@@ -975,6 +975,14 @@ export function sanitizeRequirementQuestions(raw) {
   return out
 }
 
+/** 只放行 http/https/mailto 与站内相对路径。需求链接、文档、交付物 URL 都会进 <a href>，
+ *  用户可控文本（含匿名 /intake/requirement）里写 `javascript:...` 就能在面板里执行脚本。 */
+export function sanitizeUrl(value) {
+  const text = String(value ?? '').trim().slice(0, 500)
+  if (text === '') return ''
+  return /^(https?:|mailto:|\/|#)/i.test(text) ? text : ''
+}
+
 export function sanitizeRequirement(raw) {
   if (raw === null || typeof raw !== 'object') return undefined
   const title = String(raw.title ?? '').trim().slice(0, 200)
@@ -995,13 +1003,13 @@ export function sanitizeRequirement(raw) {
     discovery: sanitizeDiscovery(raw.discovery), // 澄清三问，空的会在拆卡时被拦
     status: REQ_STATUSES.includes(String(raw.status)) ? String(raw.status) : 'draft',
     links: {
-      prd: String(links.prd ?? '').trim().slice(0, 500),
-      proto: String(links.proto ?? '').trim().slice(0, 500),
-      acceptance: String(links.acceptance ?? '').trim().slice(0, 500),
+      prd: sanitizeUrl(links.prd),
+      proto: sanitizeUrl(links.proto),
+      acceptance: sanitizeUrl(links.acceptance),
     },
     folder: {
       token: String(folderRaw.token ?? '').trim().slice(0, 80),
-      url: String(folderRaw.url ?? '').trim().slice(0, 500),
+      url: sanitizeUrl(folderRaw.url),
       name: String(folderRaw.name ?? '').trim().slice(0, 200),
       at: Number(folderRaw.at) || 0,
       error: String(folderRaw.error ?? '').slice(0, 300),
@@ -1169,7 +1177,7 @@ export function sanitizeArtifact(raw, index) {
     at: Number(raw.at) || 0,
     doc: {
       token: String(docRaw.token ?? '').trim().slice(0, 80),
-      url: String(docRaw.url ?? '').trim().slice(0, 500),
+      url: sanitizeUrl(docRaw.url),
       name: String(docRaw.name ?? '').trim().slice(0, 200),
       at: Number(docRaw.at) || 0,
       error: String(docRaw.error ?? '').slice(0, 300),
