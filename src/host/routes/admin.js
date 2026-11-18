@@ -17,11 +17,11 @@ export function configureAdminRoutes(services) {
 export async function handleAdminRoute({ method, route, req, res, store, url }) {
 if (method === 'POST' && route === '/config') {
   const body = await host.readJsonBody(req)
-  /* 只认 { patch: {...} }。其它顶层字段一律拒绝 —— 以前传 {"access":{...}} 会返回 200
-     但什么都不做，调用方以为成功了（这一轮实测踩到）。 */
-  const extra = Object.keys(body ?? {}).filter((key) => key !== 'patch')
-  if (extra.length > 0) {
-    host.sendJson(res, 400, { ok: false, error: `/config 只接受 {"patch": {...}}，不认识：${extra.join('、')}` })
+  /* access 归 /access/save 管：从 /config 传进来会被 mergeConfig 静默丢掉却返回 200
+     （这一轮实测踩到）。只针对它给明确报错，其它形状保持原样 —— 面板用的是「直接给配置键」，
+     一律拒绝未知顶层键会把「保存角色模板」打成 400。 */
+  if (body?.access !== undefined || body?.patch?.access !== undefined) {
+    host.sendJson(res, 400, { ok: false, error: '权限名单请用 /access/save（enabled / agents / member），/config 不接受 access' })
     return true
   }
   await host.applyConfig(store, body)
@@ -30,10 +30,9 @@ if (method === 'POST' && route === '/config') {
 }
 if (method === 'POST' && route === '/access/save') {
   const body = await host.readJsonBody(req)
-  /* 只认 enabled / agents / member。传 {"access":{"enabled":true}} 会 200 但无效 —— 同样是静默。 */
-  const extra = Object.keys(body ?? {}).filter((key) => !['enabled', 'agents', 'member'].includes(key))
-  if (extra.length > 0) {
-    host.sendJson(res, 400, { ok: false, error: `/access/save 只接受 enabled / agents / member，不认识：${extra.join('、')}` })
+  /* 传 {"access":{"enabled":true}} 会 200 但无效 —— 字段名写错就是静默失败。 */
+  if (body?.access !== undefined) {
+    host.sendJson(res, 400, { ok: false, error: 'enabled / agents / member 要放在顶层，不要包在 access 里' })
     return true
   }
   const member = body.member !== null && typeof body.member === 'object' ? body.member : null
