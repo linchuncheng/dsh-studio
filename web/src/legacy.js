@@ -2290,19 +2290,23 @@ function installKeyboardActivation() {
                   }, label)),
                 )
               })(),
-              h('button', { className: 'ds-btn', onClick: () => void reload() }, '刷新'),
-              h('a', {
-                className: 'ds-btn ds-btn-ghost',
-                style: { textDecoration: 'none' },
-                href: '/studio-api/export/tasks.csv',
-                title: '把看板上的卡导出成 CSV（Excel 可直接打开）',
-              }, '导出卡'),
-              h('a', {
-                className: 'ds-btn ds-btn-ghost',
-                style: { textDecoration: 'none' },
-                href: '/studio-api/export/requirements.csv',
-                title: '把需求与准出情况导出成 CSV',
-              }, '导出需求'),
+              /* 低频动作收进「⋯」：用原生 <details>，展开/收起与键盘都交给浏览器，
+                 不引入状态，也不会和宿主的 Esc / 焦点逻辑打架。 */
+              h('details', { className: 'ds-more' },
+                h('summary', { className: 'ds-btn ds-btn-ghost', title: '更多操作' }, '⋯'),
+                h('div', { className: 'ds-more-menu' },
+                  h('button', { className: 'ds-more-item', onClick: () => void reload() }, '刷新数据'),
+                  h('a', {
+                    className: 'ds-more-item',
+                    href: '/studio-api/export/tasks.csv',
+                    title: '把看板上的卡导出成 CSV（Excel 可直接打开）',
+                  }, '导出卡 CSV'),
+                  h('a', {
+                    className: 'ds-more-item',
+                    href: '/studio-api/export/requirements.csv',
+                    title: '把需求与准出情况导出成 CSV',
+                  }, '导出需求 CSV'),
+                )),
               (state.integrations?.broken ?? 0) > 0
                 ? h('button', {
                     className: 'ds-btn ds-btn-ghost',

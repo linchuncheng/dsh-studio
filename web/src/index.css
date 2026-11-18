@@ -2118,3 +2118,50 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
 [data-dsh-studio] .ds-kpi-section + .ds-kpi-section {
   margin-top: 6px;
 }
+
+/* ---------------------------------------------------- 顶栏「⋯」菜单 --- */
+/* 低频动作（刷新 / 导出）收进来，顶栏只留 品牌｜状态｜⋯｜＋新建。
+   用原生 details：展开收起、键盘、焦点全是浏览器原生行为，不引入状态。 */
+[data-dsh-studio] .ds-more {
+  position: relative;
+  display: inline-flex;
+}
+[data-dsh-studio] .ds-more > summary {
+  list-style: none;
+  cursor: pointer;
+  min-width: 32px;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  user-select: none;
+}
+[data-dsh-studio] .ds-more > summary::-webkit-details-marker { display: none }
+[data-dsh-studio] .ds-more[open] > summary { background: var(--ds-soft2, #f4f4f5) }
+[data-dsh-studio] .ds-more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  min-width: 168px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  border: 1px solid var(--color-border-button-default, var(--ds-line));
+  border-radius: 10px;
+  background: var(--color-background-primary-default, #fff);
+  box-shadow: 0 12px 32px -12px color-mix(in srgb, #000 30%, transparent);
+}
+[data-dsh-studio] .ds-more-item {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+[data-dsh-studio] .ds-more-item:hover { background: var(--ds-soft2, #f4f4f5) }
