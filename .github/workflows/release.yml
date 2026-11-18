@@ -68,6 +68,9 @@ jobs:
           cmp dist/client.js client.js
           git diff --exit-code -- dist/client.js client.js
 
+      - name: 发版前自检（文档是否跟上）
+        run: npm run release:check
+
       # 失败原因写成 GitHub annotation：Actions 日志接口对未认证请求是 403，
       # 而 annotations 是公开可读的，这样不用登录也能看到 npm 的真实报错。
       - name: 诊断环境

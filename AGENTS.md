@@ -182,7 +182,8 @@ README 里还写着旧行为（"安全边界"、"发版流程"、"探针清单"�
 | 兼容性声明 | `docs/compatibility.md` | 版本号、宿主依赖、已验证的 DSH 版本 |
 | 界面/组件决策 | `docs/ui.md` | 换了组件、改了样式体系、新增本地补丁 |
 | 探针清单 | `README.md` 的「质量闸门」 | 新增 `verify:*` / `review:*` 脚本 |
-| 一致性 | `GIT_SSH_COMMAND="ssh -p 443" npm run verify:release` | 必须「发版一致」才算完 |
+| 一致性（文档） | `npm run release:check` | 校验 CHANGELOG 有本版条目、compatibility 版本号一致、README 提到的脚本都存在；**若自上个 tag 以来改了代码却没改 README，直接失败** |
+| 一致性（发版） | `GIT_SSH_COMMAND="ssh -p 443" npm run verify:release` | 必须「发版一致」才算完 |
 
 顺序固定：**改代码 → 改文档 → `npm test` → 构建并 `cmp` 产物 → 提交 → 打 tag → 推 tag**。
 脚本改了但文档没改，等于把"怎么用"的答案留在上一个版本里。
