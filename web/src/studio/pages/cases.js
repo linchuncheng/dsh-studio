@@ -258,7 +258,9 @@ export function CasesPage({ state, onOpenTask }) {
                   h(TableColumn, { id: 'more' }, '明细'),
                 ),
                 h(TableBody, null,
-                  list.map(row => h(TableRow, { key: row.key, id: row.key, isDisabled: running || row.runnable !== true },
+                  /* 不能用 isDisabled 表达"不可跑"：它同时禁掉行激活，手工用例就点不开所属卡片了。
+               选择按 row.runnable 在 selection 层控制（见 selectedKeys 的计算）。 */
+              list.map(row => h(TableRow, { key: row.key, id: row.key, isDisabled: running === true },
                     h(TableCell, null, CASE_RESULT_LABEL[row.result] ?? row.result),
                     h(TableCell, null, row.title),
                     h(TableCell, null, `${row.taskCode || row.taskId} · ${row.requirementTitle || '未挂需求'}${row.pointId ? ' · ' + row.pointId : ''}`),

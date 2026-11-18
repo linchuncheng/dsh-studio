@@ -2414,7 +2414,8 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
       sendJson(res, 400, {
         ok: false,
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? String(error.stack ?? '').split('\n').slice(0, 6).join(' | ') : '',
+        /* 只在开发时回传调用栈：它会暴露内部文件路径、函数名与行号，线上没必要给。 */
+        stack: process.env.STUDIO_DEV === '1' && error instanceof Error ? String(error.stack ?? '').split('\n').slice(0, 6).join(' | ') : '',
       })
     }
   }

@@ -252,12 +252,19 @@ export function columnPlan(state, columnId) {
   const statuses = state.statuses ?? []
   const index = statuses.findIndex((entry) => entry.id === columnId)
   if (index < 0) return null
-  const ids = (state.tasks ?? []).filter((task) => task.status === columnId).map((task) => task.id)
+  /* 阻塞卡不参与批量推进：换列会自动清掉 blocked 标记，批量推等于静默解除阻塞。
+     要推进阻塞卡，得先在卡片里处理掉阻塞原因。 */
+  const blocked = (state.tasks ?? []).filter((task) => task.status === columnId && (task.blocked ?? null) !== null)
+  const ids = (state.tasks ?? [])
+    .filter((task) => task.status === columnId && (task.blocked ?? null) === null)
+    .map((task) => task.id)
   return {
     column: statuses[index],
     next: index + 1 >= statuses.length ? null : statuses[index + 1],
     total: ids.length,
     ids,
+    /** 被跳过的阻塞卡数量：确认框里要写明，否则用户以为全推过去了 */
+    skippedBlocked: blocked.length,
   }
 }
 
@@ -318,8 +325,14 @@ export async function advanceColumn({ api, state, columnId, confirm }) {
   const plan = columnPlan(state, columnId)
   if (plan === null) return { error: '没找到这一列' }
   if (plan.next === null) return { error: '「' + plan.column.label + '」已经是最后一列了' }
-  if (plan.total === 0) return { error: '「' + plan.column.label + '」这一列没有卡' }
-  const ok = await confirm('把「' + plan.column.label + '」里的 ' + plan.total + ' 张卡一起推进到「' + plan.next.label + '」？', { title: '整列推进', okText: '推进 ' + plan.total + ' 张' })
+  if (plan.total === 0) {
+    return { error: plan.skippedBlocked > 0
+      ? '「' + plan.column.label + '」里只剩 ' + plan.skippedBlocked + ' 张阻塞卡，阻塞卡不参与批量推进'
+      : '「' + plan.column.label + '」这一列没有卡' }
+  }
+  /* 有阻塞卡被跳过时必须在确认框里说清 —— 否则用户以为整列都推过去了 */
+  const skipNote = plan.skippedBlocked > 0 ? '（另有 ' + plan.skippedBlocked + ' 张阻塞卡会跳过）' : ''
+  const ok = await confirm('把「' + plan.column.label + '」里的 ' + plan.total + ' 张卡一起推进到「' + plan.next.label + '」？' + skipNote, { title: '整列推进', okText: '推进 ' + plan.total + ' 张' })
   if (ok !== true) return { canceled: true }
   let moved = 0
   const failed = []

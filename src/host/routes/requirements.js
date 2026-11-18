@@ -262,13 +262,17 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     if (title.length === 0) throw new Error('请填写需求标题')
     if (requester.length === 0) throw new Error('请填写您的姓名')
     if (description.length < 10) throw new Error('请把需求描述写得具体一些（至少 10 个字）')
+    /* 限流键：有联系方式就按联系方式，没有就按来源 IP —— 以前只在"填了联系方式"时
+       才限流，省略 contact 就能无限灌需求（会把 /state 和看板一起撑爆）。 */
     const contactKey = String(body.contact ?? '').trim()
-    if (contactKey.length > 0) {
+    const limitKey = contactKey.length > 0 ? 'contact:' + contactKey : 'ip:' + String(req.socket?.remoteAddress ?? 'unknown')
+    {
       const since = Date.now() - 10 * 60 * 1000
       const recent = (store.snapshot().requirements ?? []).filter(item => item.source === 'business'
-        && String(item.requester?.contact ?? '').trim() === contactKey
+        && (String(item.requester?.limitKey ?? '') === limitKey
+          || (contactKey.length > 0 && String(item.requester?.contact ?? '').trim() === contactKey))
         && Number(item.requester?.at ?? 0) > since)
-      if (recent.length >= 3) throw new Error('同一联系方式 10 分钟内最多提交 3 条，请稍后再试')
+      if (recent.length >= 3) throw new Error('同一联系方式/IP 10 分钟内最多提交 3 条，请稍后再试')
     }
     const requirement = await saveRequirement(store, {
       title,
@@ -279,7 +283,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     iteration: String(body.iteration ?? ''),
     links: { prd: String(body.links?.prd ?? body.prd ?? ''), proto: String(body.links?.proto ?? body.proto ?? ''), acceptance: String(body.links?.acceptance ?? body.acceptance ?? '') },
       source: 'business',
-      requester: { name: requester, dept: String(body.dept ?? '').slice(0, 40), contact: String(body.contact ?? '').slice(0, 80), at: Date.now() },
+      requester: { name: requester, dept: String(body.dept ?? '').slice(0, 40), contact: String(body.contact ?? '').slice(0, 80), limitKey, at: Date.now() },
     })
     host.sendJson(res, 200, { ok: true, code: requirement.code, id: requirement.id })
     return true
