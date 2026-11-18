@@ -99,8 +99,8 @@ jobs:
           fi
           exit $code
 
-      - name: 发布后核对
-        if: success()
+      - name: 发布后核对（仅正式版）
+        if: success() && !contains(github.ref_name, '-')
         run: |
           echo "registry latest = $(npm view @marsken/dsh-studio version)"
           npm run verify:release
