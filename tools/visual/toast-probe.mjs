@@ -41,12 +41,19 @@ await sleep(1200)
 check('面板正常挂载', true)
 
 // 触发 toast：点顶栏「刷新」——这条路径一定走 toast()
-const fired = await page.evaluate(() => {
-  const btn = [...document.querySelectorAll('[data-dsh-studio] button')].find((n) => (n.textContent || '').trim() === '刷新')
-  btn?.click()
-  return btn !== undefined
+// 「刷新」这条路径不一定 toast（grep 下来 client.src.js 里只有 2 处 toast 调用），
+// 改点「设置 → 专家 → 保存角色模板」——保存成功一定会 toast。
+await page.evaluate(() => {
+  const tab = [...document.querySelectorAll('[data-dsh-studio] [role=\'tab\]')].find((n) => (n.textContent || '').trim() === '设置')
+  tab?.click()
 })
-check('找到并点了「刷新」（会触发 toast）', fired)
+await sleep(1500)
+const fired = await page.evaluate(() => {
+  const btn = [...document.querySelectorAll('[data-dsh-studio] button')].find((n) => /保存角色模板|保存/.test((n.textContent || '').trim()))
+  btn?.click()
+  return btn !== undefined ? (btn.textContent || '').trim() : undefined
+})
+check('点了会触发 toast 的保存按钮', fired !== undefined, String(fired))
 await sleep(1500)
 
 const shown = await page.evaluate(() => {

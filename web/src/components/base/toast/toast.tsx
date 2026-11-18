@@ -154,6 +154,7 @@ export function Toaster({
   "aria-label": ariaLabel = "Notifications",
   closeLabel,
   className,
+  container,
 }: ToasterProps) {
   const ownerId = useId();
   const items = useSyncExternalStore(subscribe, () => toasts, () => toasts);
