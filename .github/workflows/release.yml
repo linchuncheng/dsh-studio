@@ -120,8 +120,17 @@ jobs:
           echo "::error::npm publish 返回成功，但 registry 上查不到 $VER"
           exit 1
 
+      # CI 里是 detached HEAD，仓库里没有本地 main 分支，跑 verify:release 的
+      # “没有未推送的提交 / origin/main 与 HEAD 一致” 必然误导。这里只核对 registry。
+      # 完整的一致性检查（本地 tag / origin / registry 四处）留在本地发版前跑。
       - name: 发布后核对（仅正式版）
         if: success() && !contains(github.ref_name, '-')
         run: |
-          echo "registry latest = $(npm view @marsken/dsh-studio version)"
-          npm run verify:release
+          VER="$(node -p "require('./package.json').version")"
+          LATEST="$(npm view @marsken/dsh-studio version)"
+          echo "package.json=$VER registry latest=$LATEST"
+          if [ "$LATEST" != "$VER" ]; then
+            echo "::error::registry latest=$LATEST 与 package.json=$VER 不一致"
+            exit 1
+          fi
+          echo "registry 已指向 $VER"
