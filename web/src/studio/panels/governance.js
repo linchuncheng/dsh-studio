@@ -4,6 +4,8 @@ import { ROLE_LABEL, ACCESS_ROLE_OPTIONS, STRATEGIES, ROUTE_LABEL } from '../lab
 import { buildRoster, filterRoster } from '../roster.js'
 import { fmtTime } from '../format.js'
 import { client } from '../context.js'
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '../../components/base/table/table'
+import { Pagination } from '../../components/base/pagination/pagination'
 
 export function AccessPanel({ state, config, onChanged }) {
   const { h, sessionToken, api, toast, currentUser, confirmDialog, TextField, ChipField, CheckField, SwitchToggle, SelectField , React } = client()
@@ -15,6 +17,8 @@ export function AccessPanel({ state, config, onChanged }) {
   const [onlyBy, setOnlyBy] = React.useState('')
   const [onlyFailed, setOnlyFailed] = React.useState(false)
   const [queryText, setQueryText] = React.useState('')
+  // 审计日志原来一次铺 120 行（600+ DOM 节点）。分页后每页 50 行。
+  const [auditPage, setAuditPage] = React.useState(1)
 
   const act = async (path, body) => {
     setBusy(true); setNote(null)
@@ -38,7 +42,11 @@ export function AccessPanel({ state, config, onChanged }) {
   const matched = audit.filter(item => (onlyBy === '' || item.by === onlyBy)
     && (onlyFailed === false || item.ok === false)
     && (keyword === '' || `${ROUTE_LABEL[item.route] ?? item.route} ${item.by} ${item.summary}`.toLowerCase().includes(keyword)))
-  const rows = matched.slice(0, 120)
+  const AUDIT_PAGE_SIZE = 50
+  const rows = matched.slice(0, 500)
+  const auditTotalPages = Math.max(1, Math.ceil(rows.length / AUDIT_PAGE_SIZE))
+  const auditCurrent = Math.min(auditPage, auditTotalPages)
+  const pageRows = rows.slice((auditCurrent - 1) * AUDIT_PAGE_SIZE, auditCurrent * AUDIT_PAGE_SIZE)
 
   // 走服务端导出：http 页面里的 blob 下载会被 Chrome 拦，服务端 Content-Disposition 才稳
   const exportCsv = () => {
@@ -154,13 +162,39 @@ export function AccessPanel({ state, config, onChanged }) {
           ? h('div', { className: 'ds-empty' }, audit.length === 0
             ? '还没有记录。做一次写操作就会出现在这里。'
             : '没有符合筛选条件的记录。把关键字清空或换个人试试。')
-          : rows.map(item => h('div', { key: item.id, className: 'ds-audit-row', 'data-ok': item.ok ? '1' : '0' },
-            h('span', { className: 'ds-audit-time' }, fmtTime(item.at)),
-            h('span', { className: 'ds-audit-by' }, item.by),
-            h('span', { className: 'ds-audit-what' }, ROUTE_LABEL[item.route] ?? item.route),
-            h('span', { className: 'ds-audit-detail' }, item.summary),
-            h('span', { className: 'ds-audit-status', 'data-ok': item.ok ? '1' : '0' }, item.ok ? '成功' : `失败 ${item.status}`),
-          )),
+          : [
+            // 官方 Table：真 <table> 语义（表头可被屏幕阅读器读到、行可用键盘导航），
+            // 替代原来 120 个 div.ds-audit-row 平铺。
+            h(Table, { key: 'table', size: 'sm', 'aria-label': '审计日志' },
+              h(TableHeader, null,
+                h(TableColumn, { id: 'time', isRowHeader: true }, '时间'),
+                h(TableColumn, { id: 'by' }, '操作人'),
+                h(TableColumn, { id: 'what' }, '动作'),
+                h(TableColumn, { id: 'detail' }, '详情'),
+                h(TableColumn, { id: 'status' }, '结果'),
+              ),
+              h(TableBody, null,
+                pageRows.map(item => h(TableRow, { key: item.id, id: item.id, 'data-ok': item.ok ? '1' : '0' },
+                  h(TableCell, null, fmtTime(item.at)),
+                  h(TableCell, null, item.by),
+                  h(TableCell, null, ROUTE_LABEL[item.route] ?? item.route),
+                  h(TableCell, null, item.summary),
+                  h(TableCell, null, item.ok ? '成功' : `失败 ${item.status}`),
+                )),
+              ),
+            ),
+            auditTotalPages > 1
+              ? h('div', { key: 'pager', style: { display: 'flex', justifyContent: 'flex-end', paddingTop: 10 } },
+                h(Pagination, {
+                  page: auditCurrent,
+                  totalPages: auditTotalPages,
+                  onChange: next => setAuditPage(next),
+                  'aria-label': '审计日志分页',
+                  previousLabel: '上一页',
+                  nextLabel: '下一页',
+                }))
+              : null,
+          ],
       ),
     ),
   )

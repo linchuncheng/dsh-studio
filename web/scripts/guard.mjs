@@ -167,8 +167,11 @@ if (mode === 'post') {
     // 体积观察线：接官方 SegmentedControl / Switch 之后到 1128 kB，线抬到 1.2 MB。早先记录：1085 kB 是「真组件」的现状（react-aria 的 Select/Modal/ListBox 占大头），
     // 定 1.1 MB。超了就说明又悄悄引了一整包东西，先停下来看是谁，别默默变大。
     const sizeKb = statSync(bundle).size / 1024
-    if (sizeKb > 1434) {
-      failures.push(`dist/client.js is ${sizeKb.toFixed(1)} kB — over the 1.4 MB watch line, check what got pulled in`)
+    // 观察线：1.4 MB（1434 kB）是接 DatePicker 时定的。之后审计日志换成官方 Table +
+    // Pagination（+6.3 kB，1436 kB）越线，按实际抬到 1460 kB。
+    // 再往上就该考虑拆包了 —— 单文件 IIFE 一旦超过 ~1.5 MB，宿主首屏会明显变慢。
+    if (sizeKb > 1460) {
+      failures.push(`dist/client.js is ${sizeKb.toFixed(1)} kB — over the 1.42 MB watch line, check what got pulled in`)
     }
   }
 }
