@@ -74,6 +74,31 @@ if (lastTag === '') {
   }
 }
 
+/* ── D. 真机探针（--probes）────────────────────────────────────────────
+   打 tag 之前先在真机上跑一遍关键探针：接口类改动最容易「本地测试全绿、发出去才发现
+   面板坏了」（0.3.1 就是这么把「保存角色模板」打成 400 的）。CI 里没有部署和 token，
+   所以默认不跑，只在本地发版前用 npm run release:preflight。 */
+const wantProbes = process.argv.includes('--probes')
+if (wantProbes) {
+  const token = String(process.env.STUDIO_TOKEN ?? '').trim()
+  if (token === '') {
+    problems.push('--probes 需要 STUDIO_TOKEN（先在目标机上取一个），否则只能在 CI 里跑离线检查')
+  } else {
+    const probes = ['tools/visual/pages-probe.mjs', 'tools/visual/toast-probe.mjs', 'tools/visual/drawer-probe.mjs']
+    for (const probe of probes) {
+      try {
+        const out = execFileSync(process.execPath, [probe], { encoding: 'utf8', env: process.env })
+        const last = out.trim().split('\n').pop() ?? ''
+        notes.push(`${probe.split('/').pop()} — ${last}`)
+      } catch (error) {
+        const out = String(error.stdout ?? '')
+        const last = out.trim().split('\n').filter(Boolean).slice(-2).join(' | ')
+        problems.push(`真机探针失败：${probe} — ${last.slice(0, 200)}`)
+      }
+    }
+  }
+}
+
 /* ── 输出 ───────────────────────────────────────────────────────────── */
 for (const note of notes) console.log(`ok    ${note}`)
 for (const problem of problems) console.log(`FAIL  ${problem}`)

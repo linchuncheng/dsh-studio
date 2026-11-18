@@ -183,6 +183,7 @@ README 里还写着旧行为（"安全边界"、"发版流程"、"探针清单"�
 | 界面/组件决策 | `docs/ui.md` | 换了组件、改了样式体系、新增本地补丁 |
 | 探针清单 | `README.md` 的「质量闸门」 | 新增 `verify:*` / `review:*` 脚本 |
 | 一致性（文档） | `npm run release:check` | 校验 CHANGELOG 有本版条目、compatibility 版本号一致、README 提到的脚本都存在；**若自上个 tag 以来改了代码却没改 README，直接失败** |
+| 一致性（真机） | `STUDIO_TOKEN=… npm run release:preflight` | 文档检查 + **真机跑 pages / toast / drawer 三套探针**。接口类改动最容易「本地全绿、发出去才发现面板坏了」——0.3.1 就是这么把「保存角色模板」打成 400 的。CI 里没有部署和 token，所以这一条只在本地发 tag 前跑 |
 | 一致性（发版） | `GIT_SSH_COMMAND="ssh -p 443" npm run verify:release` | 必须「发版一致」才算完 |
 
 顺序固定：**改代码 → 改文档 → `npm test` → 构建并 `cmp` 产物 → 提交 → 打 tag → 推 tag**。
