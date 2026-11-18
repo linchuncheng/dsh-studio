@@ -102,6 +102,24 @@ jobs:
           fi
           exit $code
 
+      # npm publish 返回 0 不等于真的发上去了（staged / 竞争 / 中断都可能让它变成空操作）。
+      # 这里直接问 registry：等约两分钟，等不到这个版本就让构建红。
+      - name: 确认版本真的进了 registry
+        if: github.event_name == 'push'
+        run: |
+          VER="$(node -p "require('./package.json').version")"
+          for i in $(seq 1 12); do
+            got="$(npm view "@marsken/dsh-studio@$VER" version 2>/dev/null | tail -1)"
+            echo "第 $i 次查询: ${got:-未出现}"
+            if [ "$got" = "$VER" ]; then
+              echo "已发布 $VER"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::npm publish 返回成功，但 registry 上查不到 $VER"
+          exit 1
+
       - name: 发布后核对（仅正式版）
         if: success() && !contains(github.ref_name, '-')
         run: |
