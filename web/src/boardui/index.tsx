@@ -82,6 +82,8 @@ export function Input({
   disabled,
   readOnly,
   required,
+  /** 外部要拿到底层 <input> 时传这个（React 18 下普通函数组件拿不到 ref）。 */
+  inputRef,
   ...rest
 }: any) {
   return (
@@ -97,7 +99,7 @@ export function Input({
       isRequired={required === true}
       aria-label={fieldLabel(rest)}
     >
-      <BoarduiInputBase {...rest} />
+      <BoarduiInputBase ref={inputRef} {...rest} />
     </BoarduiField>
   );
 }
