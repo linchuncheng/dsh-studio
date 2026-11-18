@@ -55,7 +55,10 @@ try { lastTag = git(['describe', '--tags', '--abbrev=0']) } catch { lastTag = ''
 if (lastTag === '') {
   notes.push('没有上一个 tag，跳过「代码改了文档没改」检查')
 } else {
-  const changed = git(['diff', '--name-only', `${lastTag}..HEAD`]).split('\n').filter(Boolean)
+  const committed = git(['diff', '--name-only', `${lastTag}..HEAD`]).split('\n').filter(Boolean)
+  // 还要算上未提交的改动：文档常常是在构建/测试后才写，只看 HEAD 会误判成「没改文档」
+  const working = git(['status', '--porcelain']).split('\n').filter(Boolean).map((line) => line.slice(3).trim())
+  const changed = [...new Set([...committed, ...working])]
   const codeTouched = changed.filter((file) => CODE_PATHS.some((prefix) => file === prefix || file.startsWith(prefix + '/')))
   const docTouched = changed.filter((file) => DOC_PATHS.some((prefix) => file === prefix || file.startsWith(prefix + '/')))
   if (codeTouched.length > 0 && docTouched.length === 0) {
