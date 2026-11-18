@@ -30,6 +30,9 @@ let host = {
   sendJson: () => {},
 }
 /** 需求（含交付物、文档、飞书同步）相关路由。宿主能力由 configureRequirementRoutes() 注入。 */
+/** /intake/query 的失败计数（IP → 最近失败时间戳）。进程内即可，重启丢失无所谓。 */
+const INTAKE_QUERY_FAILS = new Map()
+
 export function configureRequirementRoutes(services) {
   host = { ...host, ...(services ?? {}) }
 }
@@ -324,13 +327,25 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     return true
   }
   if (method === 'POST' && route === '/intake/query') {
+    /* 编号顺序递增、联系方式只比后四位 —— 不限流就能穷举出别人的需求。按来源 IP 记失败次数。 */
+    const source = String(req.socket?.remoteAddress ?? 'unknown')
+    const now = Date.now()
+    const recent = (INTAKE_QUERY_FAILS.get(source) ?? []).filter(at => now - at < 10 * 60 * 1000)
+    if (recent.length >= 20) {
+      host.sendJson(res, 429, { ok: false, error: '查询太频繁，请 10 分钟后再试' })
+      return true
+    }
+    INTAKE_QUERY_FAILS.set(source, recent)
     const body = await host.readJsonBody(req)
     const code = String(body.code ?? '').trim().toUpperCase()
     const tail = String(body.contact ?? '').trim().replace(/\s+/g, '')
     if (code.length === 0 || tail.length < 4) throw new Error('请填写需求编号，以及联系方式的后四位')
     const hit = (store.snapshot().requirements ?? []).find(item => String(item.code ?? '').toUpperCase() === code)
     const contact = String(hit?.requester?.contact ?? '').replace(/\s+/g, '')
-    if (hit === undefined || contact.length === 0 || !contact.endsWith(tail)) throw new Error('没查到：编号或联系方式对不上')
+    if (hit === undefined || contact.length === 0 || !contact.endsWith(tail)) {
+      INTAKE_QUERY_FAILS.set(source, [...(INTAKE_QUERY_FAILS.get(source) ?? []), now].slice(-40))
+      throw new Error('没查到：编号或联系方式对不上')
+    }
     const cards = (store.snapshot().tasks ?? []).filter(item => item.requirementId === hit.id)
     const open = (hit.questions ?? []).filter(item => item.status === 'open').length
     host.sendJson(res, 200, {

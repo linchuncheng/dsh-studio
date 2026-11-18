@@ -59,3 +59,18 @@ export function isLoopbackRequest(req) {
   const address = String(req?.socket?.remoteAddress ?? '')
   return address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1'
 }
+
+/** 跨站 POST 判定（CSRF）：带了 Origin 且与目标站点不同即为跨站。
+ *  curl / 服务端互调没有 Origin 头，同源请求的 Origin 与 Host 相同 —— 都放行。
+ *  恶意网页用 no-cors 的简单请求（content-type: text/plain）也能触发写操作，
+ *  而 readJsonBody 不校验 content-type，所以只能靠这条拦。 */
+export function isCrossSiteRequest(req) {
+  const origin = String(req?.headers?.origin ?? '')
+  const host = String(req?.headers?.host ?? '')
+  if (origin === '' || host === '') return false
+  try {
+    return new URL(origin).host !== host
+  } catch {
+    return false
+  }
+}
