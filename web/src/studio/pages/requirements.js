@@ -119,6 +119,9 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
       const [matrix, setMatrix] = React.useState(null)
       const [matrixNote, setMatrixNote] = React.useState(null)
       const [pointForm, setPointForm] = React.useState(null)
+      /* 需求矩阵里功能点描述是一整段 markdown，全渲染会把表格行撑到半屏高（一屏只看得下两三行）。
+         默认只显示两行摘要，点「全文」再展开 —— 表格回到「一眼扫完」的用途。 */
+      const [openPointIds, setOpenPointIds] = React.useState(() => new Set())
       // ---- 需求准出与验收签字
       const [reqSign, setReqSign] = React.useState('')
       const [reqNote, setReqNote] = React.useState(null)
@@ -1054,7 +1057,30 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
                     h(TableCell, null, h('span', { className: 'ds-chip-code' }, point.id)),
                     h(TableCell, { className: 'ds-pt-cell-main' },
                       h('b', null, point.title),
-                      String(point.description ?? '') === '' ? null : h('div', { className: 'ds-req-desc ds-md' }, renderMarkdown(point.description)),
+                      (() => {
+                        const description = String(point.description ?? '')
+                        if (description === '') return null
+                        const open = openPointIds.has(point.id)
+                        const summary = description
+                          .replace(/[#*`>|_~]/g, '')
+                          .replace(/\s+/g, ' ')
+                          .trim()
+                          .slice(0, 90)
+                        return h(React.Fragment, null,
+                          open
+                            ? h('div', { className: 'ds-req-desc ds-md' }, renderMarkdown(point.description))
+                            : h('div', { className: 'ds-pt-summary', title: description }, summary + (summary.length >= 90 ? '…' : '')),
+                          h('button', {
+                            className: 'ds-btn ds-btn-ghost ds-pt-more',
+                            onClick: () => setOpenPointIds((previous) => {
+                              const next = new Set(previous)
+                              if (next.has(point.id)) next.delete(point.id)
+                              else next.add(point.id)
+                              return next
+                            }),
+                          }, open ? '收起' : '全文'),
+                        )
+                      })(),
                     ),
                     h(TableCell, null,
                       h(ChipField, { className: 'ds-chip', 'data-pt': point.covered ? 'covered' : 'open' }, point.covered ? '已覆盖' : '未覆盖'),

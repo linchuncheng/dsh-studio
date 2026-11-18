@@ -2146,3 +2146,24 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
 [data-dsh-studio] :is(.ds-spark-day, .ds-col-count) {
   font-size: 11px;
 }
+
+/* ------------------------------------------------- 需求矩阵：描述摘要两行 --- */
+/* 功能点描述是一整段 markdown，全渲染会把表格行撑到半屏高（一屏只看得下两三行）。
+   默认只显示两行摘要，右侧「全文」按钮展开。 */
+[data-dsh-studio] .ds-pt-summary {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+[data-dsh-studio] .ds-pt-more {
+  margin-top: 2px;
+  height: auto;
+  padding: 0 6px;
+  font-size: 11px;
+  min-width: 0;
+}
