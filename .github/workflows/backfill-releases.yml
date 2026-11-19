@@ -3,14 +3,21 @@ name: backfill-releases
 # 补建历史 tag 的 GitHub Release。
 #
 # 为什么需要：仓库有 71 个 tag，但 Releases 页一直是空的（release.yml 以前只发 npm，
-# 从不建 release）。这个 workflow 是**手动触发**的补建工具：给还没有 release 的 tag
-# 各建一条，正文取 CHANGELOG 里对应那一段（没有就写一句"没写更新日志"）。
+# 从不建 release）。这个 workflow 给还没有 release 的 tag 各建一条，正文取 CHANGELOG
+# 里对应那一段（没有就写一句"没写更新日志"）。两种触发方式：
+#   · 推这个文件本身 → 自动补最近 10 个（一次性的修历史）
+#   · Actions 里手动 Run workflow → 按输入的 limit 补
 #
 # 用法：Actions → backfill-releases → Run workflow
-#   limit:   15 = 只补最近 15 个 tag（默认）；all = 全部 71 个
+#   limit:   15 = 只补最近 15 个 tag（手动触发时的默认）；all = 全部 71 个
 #   dry_run: true 只打印要建哪些，不真的建
 
 on:
+  # 推这个文件自己时也跑一次：仓库有 71 个 tag / 0 个 release，
+  # 补建这件事不该指望有人记得点按钮。幂等——已经有 release 的 tag 直接跳过。
+  push:
+    paths:
+      - '.github/workflows/backfill-releases.yml'
   workflow_dispatch:
     inputs:
       limit:
@@ -37,8 +44,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # push 触发时没有 inputs，退回一个保守的默认值
           LIMIT="${{ inputs.limit }}"
+          if [ -z "$LIMIT" ]; then LIMIT="10"; fi
           DRY="${{ inputs.dry_run }}"
+          if [ -z "$DRY" ]; then DRY="false"; fi
+          echo "limit=$LIMIT dry_run=$DRY event=$GITHUB_EVENT_NAME"
           existing="$(gh release list --limit 1000 --json tagName --jq '.[].tagName' || true)"
           echo "已有 release：$(echo "$existing" | grep -c . || true) 个"
 
