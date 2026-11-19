@@ -1390,9 +1390,24 @@ export async function mutateReqDoc(store, body) {
   return saved
 }
 
+/** 编辑版本冲突：调用方基于的版本已经不是最新的了。
+ *
+ *  为什么要有：以前两人同时改一张卡，后写的**静默覆盖**前一个——
+ *  谁改的、改掉了什么，事后一点痕迹都没有（产品定义第 6 条验收标准）。 */
+export class VersionConflictError extends Error {
+  constructor(message, current) {
+    super(message)
+    this.name = 'VersionConflictError'
+    this.code = 'version_conflict'
+    this.current = current
+  }
+}
+
 /** Update one task. */
 export async function updateTask(store, id, patch) {
   const normalized = normalizePatch(patch)
+  // 乐观锁：调用方给 ifVersion 就按「卡片的编辑版本」比对，不给就保持老行为（兼容面板与 agent）。
+  const ifVersion = Number.isInteger(Number(patch?.ifVersion)) ? Number(patch.ifVersion) : null
   const blockFlag = normalized.blocked
   delete normalized.blocked
   const override = normalized.override ?? ''
@@ -1427,9 +1442,17 @@ export async function updateTask(store, id, patch) {
   await store.mutate(state => {
     const task = state.tasks.find(t => t.id === id)
     if (task === undefined) throw new Error(`no task ${id}`)
+    if (ifVersion !== null && (Number(task.version) || 0) !== ifVersion) {
+      throw new VersionConflictError(
+        `这张卡已经被改过（当前版本 ${Number(task.version) || 0}，你基于 ${ifVersion}）：刷新后重做这次修改`,
+        JSON.parse(JSON.stringify(task)),
+      )
+    }
     const previous = task.status
     const previousRequirement = task.requirementId ?? ''
     Object.assign(task, normalized)
+    // 编辑版本：任何一次成功的 update 都 +1，供调用方下次带 ifVersion 做乐观锁。
+    task.version = (Number(task.version) || 0) + 1
     task.updatedAt = Date.now()
     // 服务必须属于它挂的项目：换项目或服务被删掉时，把失效的服务 id 清掉。
     if (String(task.service ?? '') !== '') {
@@ -1537,7 +1560,8 @@ export async function updateTask(store, id, patch) {
   if (moved !== null && moved.to === 'review') {
     await autoVerifyCoding(store, id).catch(() => {})
   }
-  return result
+  // 版本号在上面那次 mutate 里已经 +1（不再额外写一次盘）。
+  return store.snapshot().tasks.find(t => t.id === id) ?? result
 }
 
 /** Append a comment and report who it @mentioned. */

@@ -121,7 +121,11 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
   }
   if (method === 'POST' && route === '/task/update') {
     const body = await host.readJsonBody(req)
-    const task = await host.updateTask(store, String(body.id ?? ''), body.patch ?? body)
+    // ifVersion 是「我基于哪个版本改的」：顶层或 patch 里都认。
+    const patchBody = { ...(body.patch ?? body) }
+    const ifVersion = body.ifVersion ?? body.patch?.ifVersion
+    if (ifVersion !== undefined && ifVersion !== null) patchBody.ifVersion = ifVersion
+    const task = await host.updateTask(store, String(body.id ?? ''), patchBody)
     host.sendJson(res, 200, { ok: true, task, state: host.publicState(store) })
     return true
   }

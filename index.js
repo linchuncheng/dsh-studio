@@ -33,6 +33,7 @@ import { Dispatcher, RUN_LOG, attachRunLog, claimDispatchLock, clearAgentFailure
 import { mirrorCards } from './src/host/bitable.js'
 import { bugSeverityFor } from './src/host/bugs.js'
 import { automationRate } from './src/host/intervention.js'
+import { findIdempotent, normalizeIdempotencyKey, rememberIdempotent, IDEMPOTENCY_SIDE_KEY } from './src/host/idempotency.js'
 import { overrideSummary } from './src/host/override.js'
 import { sanitizeLimits } from './src/host/limits.js'
 import { attachWebhooks, sanitizeWebhooks } from './src/host/webhooks.js'
@@ -404,6 +405,12 @@ function sendCsv(res, rows, filename) {
 
 /** Write one JSON response. */
 function sendJson(res, status, body) {
+  /* 幂等回放：只有带着 Idempotency-Key 的请求会把响应记下来（res.__idemCapture），
+     其余请求走完全一样的路径，不多一次判断。 */
+  if (res.__idemCapture !== undefined && res.__idemCapture !== null) {
+    res.__idemCapture.status = status
+    res.__idemCapture.body = body
+  }
   const payload = JSON.stringify(body)
   res.writeHead(status, {
     'content-type': 'application/json; charset=utf-8',
@@ -2368,12 +2375,18 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
       if (await handleConnectRoute({ method, route, req, res, store, url })) return
       sendJson(res, 404, { ok: false, error: `no route ${method} ${route}` })
     } catch (error) {
-      sendJson(res, 400, {
-        ok: false,
-        error: error instanceof Error ? error.message : String(error),
-        /* 只在开发时回传调用栈：它会暴露内部文件路径、函数名与行号，线上没必要给。 */
-        stack: process.env.STUDIO_DEV === '1' && error instanceof Error ? String(error.stack ?? '').split('\n').slice(0, 6).join(' | ') : '',
-      })
+      /* 版本冲突回 409 并把当前卡带回去（前端据此刷新重做）；其余错误仍是 400。
+         注意：这段在内层 catch 里 —— 外层的映射轮不到它，路由抛错先被这里接住。 */
+      if (error?.code === 'version_conflict') {
+        sendJson(res, 409, { ok: false, code: 'version_conflict', error: error instanceof Error ? error.message : String(error), task: error?.current ?? null })
+      } else {
+        sendJson(res, 400, {
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+          /* 只在开发时回传调用栈：它会暴露内部文件路径、函数名与行号，线上没必要给。 */
+          stack: process.env.STUDIO_DEV === '1' && error instanceof Error ? String(error.stack ?? '').split('\n').slice(0, 6).join(' | ') : '',
+        })
+      }
     }
   }
   const handler = async (req, res) => {
@@ -2426,10 +2439,39 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
       sendJson(res, 403, { ok: false, error: denied })
       return
     }
+    /* 幂等：带 Idempotency-Key 的 POST，同样的 key 只真正执行一次，后面几次回放第一次的响应。
+       放在权限检查之后：没权限的请求不该被记录下来（否则重试会拿到旧的 403 而不是重新判权）。 */
+    const idempotencyKey = method === 'POST' ? normalizeIdempotencyKey(req.headers['idempotency-key']) : ''
+    if (idempotencyKey !== '') {
+      const scope = `${route}:${idempotencyKey}`
+      try {
+        const record = await store.readSide(IDEMPOTENCY_SIDE_KEY)
+        const hit = findIdempotent(record, scope)
+        if (hit !== null) {
+          res.setHeader('x-idempotent-replay', '1')
+          sendJson(res, hit.status, hit.body ?? { ok: true })
+          await recordAudit(store, { by: operator, route, level, status: hit.status, ok: true, summary: `idempotent replay | ${summary}` })
+          return
+        }
+      } catch { /* 读不到 side 键就当没命中，宁可多执行一次也不让请求失败 */ }
+      res.__idemCapture = { scope, status: 0, body: null }
+    }
     try {
       await core(req, res)
     } catch (error) {
-      sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : String(error) })
+      // 版本冲突要 409 且把当前卡带回去（前端据此刷新重做），其余错误仍是 400。
+      const conflict = error?.code === 'version_conflict'
+      if (conflict) {
+        sendJson(res, 409, { ok: false, code: 'version_conflict', error: error instanceof Error ? error.message : String(error), task: error?.current ?? null })
+      } else {
+        sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : String(error) })
+      }
+    }
+    if (res.__idemCapture !== undefined && (res.__idemCapture.status ?? 0) >= 200 && (res.__idemCapture.status ?? 0) < 300) {
+      try {
+        const record = await store.readSide(IDEMPOTENCY_SIDE_KEY)
+        await store.writeSide(IDEMPOTENCY_SIDE_KEY, rememberIdempotent(record, res.__idemCapture.scope, { status: res.__idemCapture.status, body: res.__idemCapture.body }))
+      } catch { /* 记不下不阻塞业务：下次重试会再执行一次，但至少这次是成功的 */ }
     }
     if (method === 'POST') {
       await recordAudit(store, {

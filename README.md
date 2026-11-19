@@ -269,6 +269,8 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 - GitLab 同步 Issue 与**关联 MR**（`/issues/:iid/related_merge_requests`）；卡上挂 MR 后「从 GitLab 核对」会拉 MR 详情、`/changes` 与 `/pipelines`（流水线状态进 `coding.gitlab`）。**不同步 MR 的评论**；MR 的合并/关闭状态要等下一次同步才反映到卡上。
 - 用例现在有两种：**带可执行断言的**（`studio_task_add_cases`：接口给 `method`/`path`/`expectStatus`，shell 给 `command`）与**只有描述的**（`studio_task_case`）。前者**写完会当场试跑第一条**，跑不通就把原因原样回给专家去改，写不出来的（只有标题、没有断言）直接拒收；后者能在卡上留档、能人工填结果，但**不计入「可执行覆盖率」**——那一栏只认真的能跑的用例（`src/host/case-strength.js`）。**卡上只要还有这种用例，任何列的专家接单时都会在提示词里看到「N 条用例没有可执行断言」**，并被要求补上或说明为什么补不了；用例库也能「只看无断言」把它们筛出来。
 - 用例记录存在卡上（`task.cases`）：跨卡的**用例总览**页签可以勾选批量跑（结果回写各自卡、失败照旧开缺陷），也支持**回归套件**（`/suite/*`：按规则或手选固定一批，一键重跑，`by` 记「套件：名字」）。但还没有「回归套件」这个对象——固定的用例集合、一键重跑、历次通过率趋势都还没有，批量跑是临时勾选、跑完即散。
+- **重复提交靠 `Idempotency-Key` 挡**：同一个 key 的 POST 只执行一次，之后回放第一次的响应（响应头 `x-idempotent-replay: 1`）。**不带这个头就还是每发一次执行一次** —— 自己的脚本要幂等就带上它。有效期 24 小时，最多记 200 个 key。
+- **并发改同一张卡会冲突，不会静默覆盖**：卡上有 `version`，`/task/update` 带上 `ifVersion` 时，基于旧版本的写入会拿到 **409 + 当前卡**。面板与 agent 目前不传 `ifVersion`（保持老行为），所以这条**只对你的脚本/集成生效**。
 - 缺陷卡的严重级别默认 `P2`、优先级 `normal`：自动建卡不猜严重程度，由人或在评论里改。
 - 派单失败会记在 `/studio-api/integrations` 与卡片抽屉里，并按 `agentRetryPlan` **自动重试**（间隔递增、有上限）；超过上限才挂阻塞等人。
 - 集成健康现在会**落盘保留最近一次结果**（SQLite 的 `meta:side:integration-health`，不进 state、不涨 revision、不占快照）：重启 dsh-web 后四条通道不再回到「还没用过」。仍然只是「最近一次」，没有按小时/按天的长期趋势（要趋势还得上采集）。
