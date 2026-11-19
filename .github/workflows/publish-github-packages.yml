@@ -1,0 +1,127 @@
+name: publish-github-packages
+
+# 把同一个包再镜像一份到 GitHub Packages（因为 npm 上那个名字是 @marsken/dsh-studio，
+# 而 GitHub Packages 的 npm 源要求 scope 必须等于仓库 owner，所以镜像只能叫 @marsken88/dsh-studio）。
+#
+# 主渠道仍然是 npm（README 只教 npm 那条命令）。镜像给两类人用：
+#   1. 内网/CI 只允许访问 GitHub 的环境
+#   2. 想在仓库页面就看到包的人
+#
+# 关键点：**镜像里的包名和 cordis.patch.yml 的 name 必须一起改**。bundle patch 的 name 是
+# 加载器用来解析模块的说明符，只改 package.json 不改 patch，装完就是 ERR_MODULE_NOT_FOUND
+# （0.5.1 之前那个 issue 就是这么来的，只是方向相反）。
+#
+# 触发：
+#   · 推这个文件本身 → 自动把当前 HEAD 的版本镜像一次（首次发布就是靠这条）
+#   · 打 tag 后由 release.yml 末尾调用（若开启了下面注释里的 workflow_call）
+#   · Actions 里手动 Run workflow（可指定 tag）
+
+on:
+  push:
+    paths:
+      - '.github/workflows/publish-github-packages.yml'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要镜像的 tag（留空 = 当前 HEAD 的版本）'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 切到要镜像的版本
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [ -n "$INPUT_TAG" ]; then
+            git checkout "$INPUT_TAG"
+            echo "镜像 $INPUT_TAG"
+          else
+            echo "镜像当前 HEAD：$(node -p "require('./package.json').version")"
+          fi
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: '@marsken88'
+
+      - name: 改成本仓库能发的名字（package.json + bundle patch 一起改）
+        run: |
+          node --input-type=module - <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs'
+          const mirror = '@marsken88/dsh-studio'
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+          const before = pkg.name
+          pkg.name = mirror
+          pkg.publishConfig = { ...(pkg.publishConfig ?? {}), registry: 'https://npm.pkg.github.com' }
+          writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n')
+          const yml = readFileSync('cordis.patch.yml', 'utf8')
+          const patched = yml.replaceAll(`name: "${before}"`, `name: "${mirror}"`)
+          if (patched === yml) throw new Error(`cordis.patch.yml 里没有 name: "${before}"，镜像会装不上`)
+          writeFileSync('cordis.patch.yml', patched)
+          console.log(`${before} → ${mirror}`)
+          NODE
+
+      - name: 一致性自检（patch 的 name 必须等于包名）
+        run: |
+          node --input-type=module - <<'NODE'
+          import { readFileSync } from 'node:fs'
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+          const yml = readFileSync('cordis.patch.yml', 'utf8')
+          const names = [...yml.matchAll(/^\s+name:\s*"?([^"\n]+)"?\s*$/gm)].map(m => m[1].trim())
+          if (names.length === 0) throw new Error('patch 里没有 name')
+          for (const name of names) {
+            if (name !== pkg.name) throw new Error(`patch 的 name（${name}）≠ 包名（${pkg.name}）`)
+          }
+          console.log(`ok  patch 与包名一致：${pkg.name}`)
+          NODE
+
+      - name: 已发布过同版本就跳过
+        id: check
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VER="$(node -p "require('./package.json').version")"
+          NAME="$(node -p "require('./package.json').name")"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          if npm view "$NAME@$VER" --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+            echo "已存在 $NAME@$VER，跳过发布"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 发布到 GitHub Packages
+        if: steps.check.outputs.skip != 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm publish --registry=https://npm.pkg.github.com --access public
+          echo "pushed $(node -p "require('./package.json').name")@$(node -p "require('./package.json').version")"
+
+      - name: 确认真的进了 GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NAME="$(node -p "require('./package.json').name")"
+          VER="$(node -p "require('./package.json').version")"
+          for i in $(seq 1 12); do
+            if npm view "$NAME@$VER" version --registry=https://npm.pkg.github.com 2>/dev/null | grep -q "$VER"; then
+              echo "ok  $NAME@$VER 已可查"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::GitHub Packages 上查不到 $NAME@$VER"
+          exit 1
