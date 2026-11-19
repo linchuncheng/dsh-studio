@@ -218,6 +218,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | `npm run verify:auditlog` | 审计日志是官方 Table + 每页 50 行 + 翻页生效（7 项） |
 | `npm run verify:toast` | toast 真的出现在门户容器里、有尺寸、4 秒后消失（7 项） |
 | `npm run verify:cases` | 用例库里草稿看得见、筛得出来：`只看无断言` 选中后只剩草稿，切回全部行数复原（8 项） |
+| `npm run verify:a11y` | 无障碍：6 个页签的正文对比度（WCAG AA）、交互元素可访问名称、Tab 焦点可见、卡片抽屉的 dialog 语义与焦点圈；`A11Y_THEME=dark` 量暗色 |
 | `npm run review:layout` | 24 个模块的字号/溢出/内联硬编码颜色巡检 |
 | `npm run review:components` | 官方元素 vs 自研元素的分布，看还有哪些组件没换 |
 
@@ -271,6 +272,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | 报告安全问题 | [SECURITY.md](SECURITY.md) —— **不要开公开 issue** |
 | 判断一个功能该不该做 | [docs/product.md](docs/product.md) 的 V1 范围与「明确不做」清单 |
 | 社区行为准则 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)（Contributor Covenant 2.1） |
+| 无障碍支持范围与已知限制 | [ACCESSIBILITY.md](ACCESSIBILITY.md)（量出来的，不是承诺） |
 
 ## 已知限制
 

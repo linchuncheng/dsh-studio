@@ -15,11 +15,41 @@ function Drawer({ task, state, onClose, onChanged }) {
   const [notice, setNotice] = React.useState(null)
   const [picked, setPicked] = React.useState('')
   const bodyRef = React.useRef(null)
-  // Esc 关抽屉：抽屉占满右侧，没有它只能去点右上角的小 ×。
+  /* 键盘可达（WCAG 2.1.1 / 2.4.3）：
+     - Esc 关抽屉：抽屉占满右侧，没有它只能去点右上角的小 ×
+     - 打开时把焦点移进抽屉，Tab 只在抽屉内循环（aria-modal 的语义要配焦点圈，
+       否则键盘用户一路 Tab 就跑到下面被遮住的页面里去了）
+     - 关闭后把焦点还给打开它的那个元素 */
+  const drawerRef = React.useRef(null)
   React.useEffect(() => {
-    const onKey = event => { if (event.key === 'Escape') onClose() }
+    const opener = typeof document === 'undefined' ? null : document.activeElement
+    const node = drawerRef.current
+    if (node !== null) node.focus()
+    const focusables = () => {
+      if (node === null) return []
+      return [...node.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+        .filter(el => el.disabled !== true && el.offsetParent !== null)
+    }
+    const onKey = event => {
+      if (event.key === 'Escape') { onClose(); return }
+      if (event.key !== 'Tab') return
+      const list = focusables()
+      if (list.length === 0) { event.preventDefault(); return }
+      const first = list[0]
+      const last = list[list.length - 1]
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === node)) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      if (opener !== null && typeof opener.focus === 'function') opener.focus()
+    }
   }, [onClose])
   const [plan, setPlan] = React.useState({
     project: task.project ?? '',
@@ -557,7 +587,14 @@ function Drawer({ task, state, onClose, onChanged }) {
   const columnLabel = (state.statuses.find(item => item.id === task.status) ?? {}).label ?? task.status
   const assignee = task.dispatch?.expert ? ownerLabel(state.config ?? {}, { kind: 'expert', id: task.dispatch.expert }) : ''
   return h('div', { className: 'ds-drawer-wrap', onClick: event => { if (event.target === event.currentTarget) onClose() } },
-    h('div', { className: 'ds-drawer' },
+    h('div', {
+      className: 'ds-drawer',
+      ref: drawerRef,
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': `卡片详情：${task.title || task.id}`,
+      tabIndex: -1,
+    },
       h('div', { className: 'ds-dw-head' },
         h('div', { className: 'ds-grow' },
           h('div', { className: 'ds-dw-title' }, task.title),

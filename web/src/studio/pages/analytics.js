@@ -157,7 +157,7 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
         h('span', { style: { display: 'block', height: '100%', width: Math.max(2, row.percent) + '%', background: row.percent >= 80 ? CTX_COLORS[3] : CTX_COLORS[2] } })),
       h('div', { style: CTX_NUM }, Math.round(row.peak / 1000) + 'k'),
       h('div', { style: { ...CTX_NUM, width: 44, color: row.percent >= 80 ? CTX_COLORS[3] : 'inherit' } }, (row.window > 0 ? row.percent + '%' : '—')),
-      h('div', { style: { ...CTX_NUM, color: row.retries > 100 ? CTX_COLORS[3] : 'inherit' } }, '重试 ' + row.retries),
+      h('div', { style: { ...CTX_NUM, color: row.retries > 100 ? 'var(--ds-warn-text)' : 'inherit' } }, '重试 ' + row.retries),
       h('div', { style: { ...CTX_NUM, color: row.alert === '' ? 'inherit' : CTX_COLORS[3] } }, '工具 ' + row.toolShare + '%'),
       h('div', { style: { width: 12, textAlign: 'right', fontSize: 11, opacity: 0.6 } }, open ? '▲' : '▼'))
     return h('div', { key: row.expert }, main, open ? renderContextDetail() : null)
