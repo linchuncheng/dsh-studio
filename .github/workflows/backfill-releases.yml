@@ -2,19 +2,17 @@ name: backfill-releases
 
 # 补建历史 tag 的 GitHub Release。
 #
-# 为什么需要：仓库有 71 个 tag，但 Releases 页一直是空的（release.yml 以前只发 npm，
-# 从不建 release）。这个 workflow 给还没有 release 的 tag 各建一条，正文取 CHANGELOG
-# 里对应那一段（没有就写一句"没写更新日志"）。两种触发方式：
-#   · 推这个文件本身 → 自动补最近 10 个（一次性的修历史）
-#   · Actions 里手动 Run workflow → 按输入的 limit 补
+# 为什么需要：仓库有 71 个 tag，但 Releases 页一直是空的 —— release.yml 以前只往 npm 发，
+# 从不建 release。tag 只是 git 里的标记，GitHub 不会自动把它变成 Release。
 #
-# 用法：Actions → backfill-releases → Run workflow
-#   limit:   15 = 只补最近 15 个 tag（手动触发时的默认）；all = 全部 71 个
-#   dry_run: true 只打印要建哪些，不真的建
+# 两种触发：
+#   · 推这个文件本身 → 自动跑一次（2026-11-19 用它把 71 个 tag 全补齐了）
+#   · Actions → Run workflow → 按输入补（limit 填 all 补全部，dry_run 先看一眼）
+#
+# 正文来源：工具链里的 tools/changelog-section.mjs 取 CHANGELOG 里这一版那一段；
+# 早期有几个版本没写日志（0.2.0~0.2.3），自动退回「列出 prev..tag 的提交 + 对比链接」。
 
 on:
-  # 推这个文件自己时也跑一次：仓库有 71 个 tag / 0 个 release，
-  # 补建这件事不该指望有人记得点按钮。幂等——已经有 release 的 tag 直接跳过。
   push:
     paths:
       - '.github/workflows/backfill-releases.yml'
@@ -44,42 +42,57 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # push 触发时没有 inputs，退回一个保守的默认值
+          # push 触发时没有 inputs：默认补全部（第一次补齐历史就靠这条，之后都是幂等的跳过）
           LIMIT="${{ inputs.limit }}"
-          if [ -z "$LIMIT" ]; then LIMIT="10"; fi
+          if [ -z "$LIMIT" ]; then LIMIT="all"; fi
           DRY="${{ inputs.dry_run }}"
           if [ -z "$DRY" ]; then DRY="false"; fi
           echo "limit=$LIMIT dry_run=$DRY event=$GITHUB_EVENT_NAME"
+
           existing="$(gh release list --limit 1000 --json tagName --jq '.[].tagName' || true)"
           echo "已有 release：$(echo "$existing" | grep -c . || true) 个"
 
+          mapfile -t ALL < <(git tag --sort=-v:refname)
+          echo "仓库 tag：${#ALL[@]} 个"
           if [ "$LIMIT" = "all" ]; then
-            tags="$(git tag --sort=-v:refname)"
+            COUNT=${#ALL[@]}
           else
-            tags="$(git tag --sort=-v:refname | head -n "$LIMIT")"
+            COUNT="$LIMIT"
           fi
 
           created=0
           skipped=0
-          for tag in $tags; do
+          failed=0
+          for ((i = 0; i < COUNT; i++)); do
+            tag="${ALL[$i]}"
+            prev="${ALL[$((i + 1))]:-}"
             if echo "$existing" | grep -qx "$tag"; then
               skipped=$((skipped + 1))
               continue
             fi
             ver="${tag#v}"
             notes="$RUNNER_TEMP/notes.md"
-            node tools/changelog-section.mjs "$ver" > "$notes"
+            if [ -n "$prev" ]; then
+              node tools/changelog-section.mjs "$ver" --prev "$prev" > "$notes"
+            else
+              node tools/changelog-section.mjs "$ver" > "$notes"
+            fi
             if [ "$DRY" = "true" ]; then
-              echo "[dry-run] 会建 $tag —— $(head -1 "$notes")"
+              echo "[dry-run] 会建 $tag（prev=${prev:-无}）—— $(head -1 "$notes")"
               continue
             fi
-            echo "→ 建 $tag"
-            # 有的 tag 可能不是 annotated tag（git tag --sort 里有过），--verify-tag 会拦住；
-            # 失败不中断整轮，最后统一报数字。
-            if gh release create "$tag" --title "$tag" --notes-file "$notes" --verify-tag; then
+            echo "→ 建 $tag（prev=${prev:-无}）"
+            # 有的 tag 可能是轻量 tag，--verify-tag 会拦；失败不中断整轮，最后统一报数字。
+            if gh release create "$tag" --title "$tag" --notes-file "$notes" --verify-tag 2>/dev/null \
+              || gh release create "$tag" --title "$tag" --notes-file "$notes"; then
               created=$((created + 1))
             else
-              echo "::warning::建 $tag 失败（可能是轻量 tag 或权限问题）"
+              failed=$((failed + 1))
+              echo "::warning::建 $tag 失败"
             fi
           done
-          echo "created=$created skipped=$skipped"
+          echo "created=$created skipped=$skipped failed=$failed"
+          if [ "$failed" -gt 0 ]; then
+            echo "::error::$failed 个 tag 建 release 失败"
+            exit 1
+          fi
