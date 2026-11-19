@@ -20,6 +20,13 @@ import {
   text } from '../domain.js'
 import { runSuite } from '../executor.js'
 
+/** 请求落在哪个地址上（用于"没配测试环境时回退到宿主自身"）。 */
+function originOf(req) {
+  const proto = String(req?.headers?.['x-forwarded-proto'] ?? 'http').split(',')[0].trim() || 'http'
+  const host = String(req?.headers?.host ?? '').trim()
+  return host === '' ? '' : `${proto}://${host}`
+}
+
 const INJECTED = ['sendJson', 'readJsonBody', 'createTask', 'updateTask', 'commentTask', 'runTaskCases', 'syncArtifact', 'getDispatcher', 'applyConfig', 'autoBugFromCase', 'publicState', 'upsertById']
 
 let host = {
@@ -61,7 +68,7 @@ async function runCaseKeys(store, keys, options = {}) {
   const results = []
   for (const [taskId, caseIds] of grouped) {
     try {
-      const out = await host.runTaskCases(store, taskId, { caseIds, env: options.env, by })
+      const out = await host.runTaskCases(store, taskId, { caseIds, env: options.env, by, origin: options.origin })
       const card = store.snapshot().tasks.find(entry => entry.id === taskId)
       results.push({
         taskId,
@@ -91,7 +98,15 @@ async function runCaseKeys(store, keys, options = {}) {
 
 export async function handleTaskRoute({ method, route, req, res, store, url }) {
   if (method === 'POST' && route === '/task/create') {
-    const task = await host.createTask(store, await host.readJsonBody(req))
+    const body = await host.readJsonBody(req)
+    /* 以前不传 requirementId 也能建卡：得到的卡 requirementId/code 都是空的，
+       需求侧永远看不到它，卡片显示「未挂需求」（issue #5 第 6 条）。
+       现在需求卡必须挂需求；缺陷可以例外（缺陷常常还没有需求）。 */
+    const createType = String(body.type ?? 'requirement')
+    if (createType !== 'bug' && String(body.requirementId ?? '').trim() === '') {
+      throw new Error('建卡要挂到一条需求上：先选或新建需求（缺陷可以不挂）')
+    }
+    const task = await host.createTask(store, body)
     host.sendJson(res, 200, { ok: true, task, state: host.publicState(store) })
     return true
   }
@@ -208,7 +223,9 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
   }
   if (method === 'POST' && route === '/experts/save') {
     const body = await host.readJsonBody(req)
-    await host.applyConfig(store, { experts: host.upsertById(store.snapshot().config.experts, body.expert ?? body) })
+    const incoming = body.expert ?? body
+    if (String(incoming.name ?? '').trim() === '') throw new Error('专家名称不能为空')
+    await host.applyConfig(store, { experts: host.upsertById(store.snapshot().config.experts, incoming) })
     // 把保存后的集合一起返回：脚本 / 前端不用再猜刚存的是哪一条。
     host.sendJson(res, 200, { ok: true, experts: store.snapshot().config.experts, state: host.publicState(store) })
     return true
@@ -222,7 +239,9 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
   }
   if (method === 'POST' && route === '/teams/save') {
     const body = await host.readJsonBody(req)
-    await host.applyConfig(store, { teams: host.upsertById(store.snapshot().config.teams, body.team ?? body) })
+    const incoming = body.team ?? body
+    if (String(incoming.name ?? '').trim() === '') throw new Error('专家团名称不能为空')
+    await host.applyConfig(store, { teams: host.upsertById(store.snapshot().config.teams, incoming) })
     host.sendJson(res, 200, { ok: true, teams: store.snapshot().config.teams, state: host.publicState(store) })
     return true
   }
@@ -305,7 +324,9 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
   if (method === 'POST' && route === '/suite/save') {
     const body = await host.readJsonBody(req)
     const list = await loadSuites(store)
-    const incoming = sanitizeSuite({ ...(body.suite ?? body), at: Date.now(), by: String(body.by ?? '人').slice(0, 40) })
+    const rawSuite = body.suite ?? body
+    if (String(rawSuite?.name ?? '').trim() === '') throw new Error('套件名称不能为空')
+    const incoming = sanitizeSuite({ ...rawSuite, at: Date.now(), by: String(body.by ?? '人').slice(0, 40) })
     const index = list.findIndex(item => item.id === incoming.id)
     if (index >= 0) list[index] = incoming
     else list.push(incoming)
@@ -598,6 +619,7 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
     }
     const caseIds = body.caseId !== undefined && String(body.caseId).length > 0 ? [String(body.caseId)] : body.caseIds
     const result = await host.runTaskCases(store, id, {
+      origin: originOf(req),
       caseIds: Array.isArray(caseIds) ? caseIds : undefined,
       env: body.env,
       by: String(body.by ?? '测试').slice(0, 40),

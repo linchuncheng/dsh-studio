@@ -909,7 +909,11 @@ export function registerTools(ctx, store) {
         status: args.status,
         by: String(args.by ?? 'agent'),
       }
-      const task = await store.mutate(state => {
+      /* store.mutate 返回的是整份 state（见 store.js 的注释），不是回调的返回值。
+         以前这里把它当任务对象用，于是写完之后读 task.artifacts 抛 TypeError —— 报错但真写了，
+         用户重试一次就多一条重复产物（issue #8）。改成在回调里把任务对象带出来。 */
+      let updated = null
+      await store.mutate(state => {
         const target = state.tasks.find(t => t.id === args.id)
         if (target === undefined) throw new Error(`no task ${args.id}`)
         if (action === 'add') {
@@ -923,8 +927,10 @@ export function registerTools(ctx, store) {
           target.artifacts = target.artifacts.map(item => (item.id === args.artifactId ? { ...item, ...sanitizeArtifact({ ...item, ...artifact }, 0) } : item))
         }
         target.updatedAt = Date.now()
-        return target
+        updated = target
       })
+      const task = updated
+      if (task === null) throw new Error(`no task ${args.id}`)
       const wanted = action === 'remove' ? [] : (task.artifacts ?? []).filter(item => args.artifactId === undefined || item.id === args.artifactId)
       if (args.sync !== false && wanted.length > 0) {
         const notes = []

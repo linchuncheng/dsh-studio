@@ -185,6 +185,22 @@ export function pickJsonPath(payload, path) {
   return cursor === null || cursor === undefined ? '' : String(cursor)
 }
 
+/** 用哪个测试环境（纯函数）。
+ *
+ *  没配环境时不要直接判死：用宿主的自身地址跑一遍 —— 否则新装后测试专家一写用例，
+ *  卡就永远过不了闸门（issue #5 第 7 条）。这条回退只对"从面板/接口触发"生效，
+ *  因为只有那条路径知道请求落在哪个地址上（options.origin）。
+ */
+export function resolveTestingEnv(config, options = {}) {
+  const envs = Array.isArray(config?.testing?.envs) ? config.testing.envs : []
+  const envId = String(options.env ?? config?.testing?.defaultEnv ?? '')
+  const configured = envs.find(item => item.id === envId) ?? envs[0]
+  if (configured !== undefined) return { env: configured, fallback: false }
+  const origin = String(options.origin ?? '').trim()
+  if (origin !== '') return { env: { id: 'inline', name: '本机回退（未配置测试环境）', baseUrl: origin, inline: true }, fallback: true }
+  return { env: undefined, fallback: false }
+}
+
 /**
  * 开跑之前先探一下环境。环境没起的时候，一整套用例会被刷成"失败"，
  * 需求准出还会因此被卡住——那不是用例坏了，是环境没开。
@@ -347,9 +363,7 @@ export async function runTaskCases(store, taskId, options = {}) {
   const task = state.tasks.find(entry => entry.id === String(taskId ?? ''))
   if (task === undefined) throw new Error('任务不存在')
   const config = state.config
-  const envs = config.testing.envs
-  const envId = String(options.env ?? config.testing.defaultEnv ?? '')
-  const env = envs.find(item => item.id === envId) ?? envs[0]
+  const { env } = resolveTestingEnv(config, options)
   const wanted = Array.isArray(options.caseIds) && options.caseIds.length > 0
     ? new Set(options.caseIds.map(id => String(id)))
     : null
@@ -359,8 +373,8 @@ export async function runTaskCases(store, taskId, options = {}) {
 
   // 只有接口用例才需要测试环境；纯 shell / 数据库用例不该被「环境不可达」挡住。
   if (targets.some(item => item.http != null)) {
-    if (env === undefined) throw new Error('还没有配置测试环境（设置 → 测试执行）')
-    const probe = await probeEnv(env, config)
+    if (env === undefined) throw new Error('还没有配置测试环境（设置 → 测试执行）：加一个环境，或从面板里跑（会回退到宿主自身地址）')
+    const probe = env.inline === true ? { ok: true } : await probeEnv(env, config)
     if (probe.ok !== true) {
       throw new Error(`测试环境「${env.name || env.id}」不可达（${probe.error}）：一条用例都没跑，先把 ${probe.baseUrl || 'baseUrl'} 起来`)
     }

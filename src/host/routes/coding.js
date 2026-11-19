@@ -173,6 +173,7 @@ if (method === 'POST' && route === '/task/worktree') {
 if (method === 'POST' && route === '/projects/save') {
   const body = await host.readJsonBody(req)
   const incoming = body.project ?? body
+  if (String(incoming.name ?? '').trim() === '') throw new Error('项目名称不能为空')
   const existing = store.snapshot().config.projects
   const wantedId = cleanId(incoming.id ?? incoming.name ?? incoming.key, 'proj')
   const saved = existing.find(item => item.id === wantedId)

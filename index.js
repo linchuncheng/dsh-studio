@@ -2474,7 +2474,10 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
     }
     /* 只读的 POST（例如 /task/design 只带 id）不该留下写痕迹：审计写库会让 revision +1，
        而 /state 的 ETag 就是 revision —— 一次读请求会把所有客户端的 304 缓存全冲掉。 */
-    if (method === 'POST' && req.__studioReadOnly !== true) {
+    /* 只读 POST 一律不记审计：审计是一次 store.mutate()，会把 revision +1，
+       而 /state 的 ETag 就是 revision —— 打开一次抽屉就能让所有客户端缓存失效（issue #7）。
+       404（未知路由）也不记：那不是用户操作留下的痕迹。 */
+    if (method === 'POST' && !readOnlyPost && req.__studioReadOnly !== true && (res.statusCode ?? 200) !== 404) {
       await recordAudit(store, {
         by: operator,
         route,

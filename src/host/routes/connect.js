@@ -20,11 +20,17 @@ export function configureConnectRoutes(services) {
 
 export async function handleConnectRoute({ method, route, req, res, store, url }) {
 if (method === 'GET' && route === '/market') {
+  const market = store.snapshot().config.market
   host.sendJson(res, 200, {
     ok: true,
-    title: store.snapshot().config.market.title,
-    items: store.snapshot().config.market.items,
+    title: market.title,
+    items: market.items,
     installed: await host.installedPackages(),
+    /* 目录是空的不是坏了：这一页的条目由公司自己维护（issue #5 第 10 条）。
+       给一句能照着做的提示，比留一块白板强。 */
+    hint: (market.items ?? []).length > 0
+      ? ''
+      : '市场目录还没配：面板里点「＋ 添加条目」，或 POST /studio-api/market/save { "item": { "name": "插件名", "spec": "@scope/dsh-xxx@0.1.0", "description": "一句话说明" } }',
   })
   return true
 }
@@ -120,6 +126,7 @@ if (method === 'POST' && route === '/repos/test') {
 if (method === 'POST' && route === '/bots/save') {
   const body = await host.readJsonBody(req)
   const incoming = body.bot ?? body
+  if (String(incoming.name ?? '').trim() === '') throw new Error('机器人名称不能为空')
   const existing = store.snapshot().config.feishu.bots
   const wantedId = cleanId(incoming.id ?? incoming.name, 'bot')
   const saved = existing.find(item => item.id === wantedId)

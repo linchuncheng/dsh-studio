@@ -1,6 +1,35 @@
 # 更新日志
 
 
+## [0.9.17] — 2026-11-20
+
+这一版把 [#5](https://github.com/marsken88/dsh-studio/issues/5) 剩下的四条、[#7](https://github.com/marsken88/dsh-studio/issues/7)
+和 [#8](https://github.com/marsken88/dsh-studio/issues/8) 一起清了。
+
+### 修复
+- **#7 只读 POST 仍在写审计**：审计是一次 `store.mutate()`，会让 `revision +1`，而 `/state` 的 ETag 就是 revision ——
+  打开一次卡片抽屉（`/task/parts` + `/task/comments`）就能让所有在线客户端的缓存失效。
+  请求管线现在对 **readOnlyPost / 显式只读标记 / 404** 一律不记审计。实测：连续两个只读 POST + 一个 404，revision 不动。
+- **#8 `studio_task_artifact` 每次调用都抛错但已经写入**：`store.mutate()` 返回的是**整份 state** 而不是回调返回值，
+  代码却把它当任务对象用，于是写完再读 `task.artifacts` 抛 `TypeError` —— 用户看到报错会重试，产物就重复。
+  改成在回调里把任务对象带出来。add / update / remove 三个动作都补了回归测试（把代码改回旧写法这条测试会红）。
+
+### 修复（issue #5 剩余四条）
+- **第 4 条 空 body 造垃圾记录**：`/projects/save`、`/experts/save`、`/teams/save`、`/bots/save`、`/suite/save`
+  现在要求名称非空，否则 400（以前 `POST {} ` 会造出 `proj-8ac46c` 这种记录）。
+- **第 6 条 手工建的卡不挂需求**：`/task/create` 对**非缺陷**卡要求 `requirementId`，
+  否则 400「建卡要挂到一条需求上」；缺陷仍可不挂（缺陷常常还没有需求）。
+- **第 7 条 测试环境默认值为空 → 新装即卡**：没配环境时，从面板/接口触发的用例执行会**回退到宿主自身地址**跑一遍，
+  不再直接 "还没有配置测试环境" 把卡锁死；agent 直接调用仍然明确报错（没有请求来源可回退）。
+  解析逻辑抽成 `resolveTestingEnv()` 纯函数并补了 4 条单测。
+- **第 10 条 市场目录为空**：`/market` 在目录为空时返回一条可照做的 `hint`（面板空态直接显示），
+  不再是一块白板。
+
+### 测试
+新增 `tests/artifact-tool.test.mjs`、`tests/testing-env.test.mjs`；总计 209 条。
+真机验收 12/12（空 body 400 ×5、不挂需求 400、缺陷可建、用例可跑、市场 hint、只读不推 revision、404 不推 revision、产物不报错）。
+
+
 ## [0.9.16] — 2026-11-20
 
 ### 修复（npm 的 `next` 通道悬空了一整代）

@@ -1331,7 +1331,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         error !== null ? h('div', { className: 'ds-err', style: { padding: '0 0 8px' } }, error) : null,
         notice !== null ? h('div', { className: 'ds-ok', style: { padding: '0 0 8px' } }, notice) : null,
         list.length === 0
-          ? h('div', { className: 'ds-empty' }, '还没有条目。把公司内部的插件包加进来，同事就能一键安装。')
+          ? h('div', { className: 'ds-empty' }, data?.hint || '还没有条目。把公司内部的插件包加进来，同事就能一键安装。')
           : h('div', { className: 'ds-market-grid' },
             list.map(item => {
               const name = packageOf(item.spec)
