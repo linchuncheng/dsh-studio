@@ -409,7 +409,7 @@ export function registerTools(ctx, store) {
 
   register(defineStudioTool({
     name: 'studio_task_add_cases',
-    description: '把**带可执行断言**的测试用例写进这张卡，并当场试跑第一条：跑不通就不算生成成功。接口用例形如 {title, method, path, body?, expectStatus, expectContains?}；shell 用例形如 {title, command, expectExit?}（需在设置里开 allowShell）。path 可写相对地址，会用测试环境 baseUrl 解析。有一条不合法就整体拒绝、一条都不写。',
+    description: '把**带可执行断言**的测试用例写进这张卡，并当场试跑第一条：跑不通就不算生成成功。接口用例形如 {title, method, path, body?, expectStatus, expectContains?, acceptanceId?}（acceptanceId 填这条用例验的那条验收条件，矩阵按它逐条判覆盖）；shell 用例形如 {title, command, expectExit?}（需在设置里开 allowShell）。path 可写相对地址，会用测试环境 baseUrl 解析。有一条不合法就整体拒绝、一条都不写。',
     parameters: {
       id: { type: 'string', required: true, description: 'Task id.' },
       cases: {

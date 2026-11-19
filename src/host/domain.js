@@ -1,4 +1,5 @@
 /** dsh-studio 的领域层：板列、卡片/需求/发布的数据形状与清洗、默认配置、编号生成。纯函数，可单测。 */
+import { sanitizeAcceptanceItem } from './acceptance.js'
 import { resolveCaseResult } from './case-strength.js'
 import { createHash, randomBytes } from 'node:crypto'
 import { sanitizeDbCase } from './db-runner.js'
@@ -825,18 +826,6 @@ export function sanitizeBaseline(raw) {
   }
 }
 
-export function sanitizeAcceptanceItem(raw, index) {
-  if (raw === null || raw === undefined) return undefined
-  const source = typeof raw === 'string' ? { text: raw } : raw
-  const text = String(source.text ?? '').trim().slice(0, 300)
-  if (text.length === 0) return undefined
-  return {
-    id: String(source.id ?? `a${index + 1}`).trim().slice(0, 24) || `a${index + 1}`,
-    text,
-    done: source.done === true,
-  }
-}
-
 /** 需求里的「功能点」：可追溯矩阵的锚点，卡与用例都挂到它上面。 */
 export function sanitizeRequirementPoint(raw, index) {
   if (raw === null || typeof raw !== 'object') return undefined
@@ -1309,6 +1298,7 @@ export function sanitizeCase(raw, index) {
     db: sanitizeDbCase(raw.db),
     expected: String(raw.expected ?? '').trim().slice(0, 300),
     pointId: String(raw.pointId ?? '').trim().slice(0, 24),
+    acceptanceId: String(raw.acceptanceId ?? '').trim().slice(0, 24), // 验的是哪条验收条件（矩阵按它逐条判覆盖）
     result,
     /** 用例类型：功能 / 接口 / 界面 / 性能 / 安全。 */
     type,

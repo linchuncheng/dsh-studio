@@ -647,10 +647,15 @@ export function requirementMatrix(state, requirement) {
       }
     }
     const artifacts = cards.flatMap(card => (card.artifacts ?? []).map(item => ({ ...item, taskCode: card.code || card.id })))
+    /* 逐条判覆盖：某条验收条件只有**挂在它自己身上**（acceptanceId 相符）的通过用例才算覆盖。
+       以前是「这个功能点任意一条用例通过 → 所有验收条件都标 covered」，
+       于是矩阵上「5/5 覆盖」可能只对应 1 条用例。 */
     const acceptance = (point.acceptance ?? []).map(item => {
-      const matched = cases.filter(entry => entry.result === 'pass')
+      const matched = cases.filter(entry => entry.result === 'pass' && String(entry.acceptanceId ?? '') === item.id)
       return { ...item, covered: matched.length > 0 }
     })
+    // 没挂验收条件的用例单独数出来：它们不进任何条件的覆盖，也不该被当成覆盖
+    const unmapped = cases.filter(entry => String(entry.acceptanceId ?? '') === '').length
     const pass = cases.filter(item => item.result === 'pass').length
     const fail = cases.filter(item => item.result === 'fail').length
     const pending = cases.length - pass - fail
@@ -665,6 +670,7 @@ export function requirementMatrix(state, requirement) {
       priority: point.priority,
       status: point.status,
       acceptance,
+      unmappedCases: unmapped,
       cards: cards.map(card => ({ id: card.id, code: card.code, title: card.title, status: card.status, date: card.status === 'done' ? card.updatedAt : 0 })),
       cases: { total: cases.length, pass, fail, pending },
       artifacts: artifacts.length,
@@ -785,6 +791,13 @@ export function requirementGate(state, requirement) {
   if (typed.length > 0) warnings.push(typed.length + ' 条用例的「通过」是手工标的、没有执行记录：' + typed.slice(0, 3).join('、') + (typed.length > 3 ? ' 等' : '') + '（跑一次才算验证过）')
   if (skipped.length > 0) warnings.push(skipped.length + ' 条用例被标成跳过：' + skipped.slice(0, 3).join('、') + (skipped.length > 3 ? ' 等' : '') + '（跳过要有理由）')
   const artifacts = tasks.reduce((sum, task) => sum + (task.artifacts ?? []).length, 0)
+  /* 验收条件逐条判覆盖：没被任何**通过**用例挂上的条件要单独点出来。
+     以前矩阵是"功能点任意一条用例通过 = 所有条件都覆盖"，所以这条提醒以前根本不会出现。 */
+  const acceptanceLines = matrix.points.flatMap(item => item.acceptance ?? [])
+  const uncoveredLines = acceptanceLines.filter(item => item.covered !== true)
+  if (acceptanceLines.length > 0 && uncoveredLines.length > 0) {
+    warnings.push(`${uncoveredLines.length}/${acceptanceLines.length} 条验收条件没有对应的通过用例：` + uncoveredLines.slice(0, 3).map(item => String(item.text).slice(0, 30)).join('、') + (uncoveredLines.length > 3 ? ' 等' : ''))
+  }
   if (artifacts === 0) warnings.push('这条需求下还没有登记任何交付物')
   else {
     const empty = tasks.reduce((sum, task) => sum + (task.artifacts ?? []).filter(item => String(item.content ?? '').trim() === '').length, 0)
@@ -1723,6 +1736,7 @@ export async function addAssertedCases(store, taskId, rawCases, options = {}) {
         title,
         expected,
         pointId: String(item.pointId ?? '').slice(0, 24),
+        acceptanceId: String(item.acceptanceId ?? '').slice(0, 24),
         http: { method, url: path.slice(0, 500), body: String(item.body ?? '').slice(0, 8000), expectStatus, expectContains, headers: item.headers },
       })
       continue
@@ -1777,6 +1791,7 @@ export async function addAssertedCases(store, taskId, rawCases, options = {}) {
         expected: item.expected,
         result: 'pending',
         pointId: item.pointId,
+        acceptanceId: item.acceptanceId ?? '',
         by,
         at: Date.now(),
         http: item.http ?? null,

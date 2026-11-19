@@ -1187,3 +1187,12 @@ test('client: components that use React. get React from client() or props', () =
   }
   assert.deepEqual(missing, [], 'modules use React. without receiving it: ' + missing.join(', '))
 })
+
+test('host: index.js 能被真的 import 起来（模块搬走后导入断裂，node --check 查不出）', async () => {
+  // 2026-11-19 实测事故：sanitizeAcceptanceItem 从 domain.js 搬到 acceptance.js 后，
+  // index.js 还在从 domain.js 导入 —— 语法检查通过、164 条契约测试全绿，
+  // 但插件在目标机上 import 失败，整个面板 405。
+  const module = await import('../index.js')
+  assert.equal(typeof module.apply, 'function', 'index.js 必须导出 apply')
+  assert.ok(Array.isArray(module.inject), 'index.js 必须导出 inject 数组')
+})

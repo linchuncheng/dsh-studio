@@ -1,3 +1,4 @@
+import { checklistFromAcceptance } from '../acceptance.js'
 import { actorKind } from '../intervention.js'
 import {
   INTAKE_HTML,
@@ -232,6 +233,10 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
         priority: requirement.priority,
         status: column,
         requirement: point.description ?? point.title,
+        /* 卡的验收清单 = 这个功能点的验收条件，一行一条。
+           以前这里是按类型铺的 3 条通用模板（"需求已确认"之类），勾完跟这条需求的验收毫无关系。 */
+        // 功能点没写验收条件时才退回按类型的通用模板（那是兜底，不是常态）
+        checklist: checklistFromAcceptance(point.acceptance).length > 0 ? checklistFromAcceptance(point.acceptance) : undefined,
       })
       created.push(task)
     }
