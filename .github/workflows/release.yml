@@ -22,9 +22,6 @@ on:
 # 发版的并发组**按 tag 区分**，不和 backfill / reorder 共用：
 # 共用过一次，结果 housekeeping 的运行把正在排队的 release 顶掉了，v0.7.0 的发布直接被 CANCELLED。
 # 同一个 tag 重复触发时串行；不同 tag 并行互不影响。
-concurrency:
-  group: release-${{ github.ref_name }}
-  cancel-in-progress: false
 
 jobs:
   publish:
