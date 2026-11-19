@@ -1,6 +1,29 @@
 # 更新日志
 
 
+## [0.9.9] — 2026-11-19
+
+### 新增
+- **桌面版验收脚本** `npm run verify:desktop`：在真实 Electron 客户端上验 host 半边 ——
+  插件是否加载、`/state.profile` 是否等于当前 profile、`/market.installed` 里有没有本插件、
+  破坏性路由是否要求 `confirm`。跑完会列出**脚本验不了的人工确认项**（见下）。
+
+### 实测（本机 DSH Desktop + desktop profile，0.9.8 代码）
+- 插件能加载（真实空库，tasks=0）
+- `/state.profile` = **desktop**（以前永远回退成 web —— issue #5 第 2 条，第一次在真实桌面环境验证）
+- `/market.installed` = 22 项且包含本插件（以前恒为空）
+- `POST /studio-api/task/delete {}` → **400 confirm_required**（issue #5 第 3 条）
+
+### 文档
+- README 新增「本地开发：把插件挂进某个 profile」：**只写 dependencies 不会加载**，
+  必须同时写 `dsh.profile.bundles`，再把文件放进 `node_modules/@marsken/dsh-studio`，然后重启。
+  （这次就是漏了 bundles，白重启一次。）
+
+### 说明
+- **客户端半边（侧栏入口 / 面板渲染）没有自动验**：桌面窗口走 `dsh-app://` + 启动令牌，
+  外部浏览器打不开那个页面。三项人工确认写在 `verify:desktop` 的输出里。
+
+
 ## [0.9.8] — 2026-11-19
 
 ### 修复

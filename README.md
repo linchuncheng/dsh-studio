@@ -203,6 +203,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | --- | --- |
 | `cd web && npm run guard` | CSS 里写回 `hsl(var(--x))`（颜色解析失败）、Radix Portal 忘记 `container={portalRoot()}`（弹层「存在但不可见」）、产物丢失门户作用域属性 |
 | `npm run smoke:store -- ~/.dsh/dsh-studio.db` | 用生产库的 `.db/-wal/-shm` 副本在本地跑真实启动路径，抓「空库能起、真库就炸」的 `ReferenceError` |
+| `npm run verify:desktop` | 桌面版（Electron 客户端）验收：插件是否加载、`/state.profile` 是否等于当前 profile、`/market.installed` 里有没有本插件、破坏性路由是否要求 `confirm`。**客户端半边（侧栏入口/面板渲染）验不了** —— 桌面窗口走 `dsh-app://` + 启动令牌，脚本会列出人工确认项 |
 | `npm run verify:empty` | 空数据巡检：把 `/state` 换成一"刚装好、什么都没建"的样子，走一遍全部页签 —— 空看板这类分支只有新装用户才会走到（issue #6 就是这么漏的） |
 | `npm run verify:mirror` | 本地演练 GitHub Packages 镜像的改名步骤（只在打 tag 时才跑的东西，提前在本地验一遍） |
 | `npm run verify:tdz` | 作用域级“先用后声明”扫描（TDZ）：浏览器里的 `Cannot access 'x' before initialization` 就是这么来的，`node --check` 查不出。已接进 `release:check` |
