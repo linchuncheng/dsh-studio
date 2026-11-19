@@ -323,6 +323,7 @@ export function ReleasesPage({ state, onOpenTask }) {
               }),
               h(TextField, {
                 className: 'ds-input', style: { flex: '0 0 88px' }, type: 'number', min: 1, max: 100,
+                'aria-label': '灰度批次比例（百分比）',
                 value: grayPercent, onChange: event => setGrayPercent(event.target.value),
               }),
               h('button', {

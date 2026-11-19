@@ -8,11 +8,19 @@
 import { Input as BoarduiInput, Textarea as BoarduiTextarea, Checkbox as BoarduiCheckbox, Select as BoarduiSelect, Chip as BoarduiChip, SwitchField as BoarduiSwitchField, DateField as BoarduiDateField, SearchInput as BoarduiSearchInput } from '../boardui/index'
 
 export function createFields({ h, kit, React }) {
+    /* 可访问名称兜底：无障碍树探针发现「只有 placeholder、没有 label」的输入框
+       在读屏里是空名字（只念"编辑框"）。这里统一补一个 aria-label：
+       显式传了 aria-label 就用它，否则用 label，再否则用 placeholder。 */
+    function withAccessibleName(props) {
+      const name = props['aria-label'] ?? props['aria-labelledby'] ?? props.label ?? props.placeholder
+      if (name === undefined || name === null || String(name).trim() === '') return props
+      return { ...props, 'aria-label': String(name) }
+    }
     function TextField(props) {
-      return h(BoarduiInput, props)
+      return h(BoarduiInput, withAccessibleName(props))
     }
     function TextAreaField(props) {
-      return h(BoarduiTextarea, props)
+      return h(BoarduiTextarea, withAccessibleName(props))
     }
     /* 状态标签。legacy 写法 h(ChipField, { className: 'ds-chip ds-chip-blocked' }, 文本)，
        语义（阻塞 / 缺陷 / 代码 / 普通）由适配层翻成 BoardUI Chip 的颜色。 */
@@ -56,8 +64,10 @@ export function createFields({ h, kit, React }) {
 
   /* 搜索框：官方 SearchField（放大镜 + 清除键 + role=searchbox），
      看板工具栏那一个输入框用它，其余文本输入仍是 Input。 */
+  /* 搜索框也要有可访问名称：无障碍树探针发现它只有 placeholder 时才带名字，
+     没有 placeholder 的那些（需求页/版本页的搜索）在读屏里是空名字。 */
   function SearchField(props) {
-    return h(BoarduiSearchInput, props)
+    return h(BoarduiSearchInput, withAccessibleName({ 'aria-label': '搜索', ...props }))
   }
 
   return { TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, DateField, SearchField }
