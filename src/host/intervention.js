@@ -23,6 +23,20 @@ export function isAiActor(name) {
 }
 
 /** 人 vs AI：空值算「未知」，不计入任何一边（宁可少算，不要算错）。 */
+/** 签字记录：可能是单个对象，也可能是数组，统一成数组处理。 */
+function listOf(one, many) {
+  const list = []
+  if (one !== null && typeof one === 'object') list.push(one)
+  if (Array.isArray(many)) for (const item of many) if (item !== null && typeof item === 'object') list.push(item)
+  return list
+}
+
+/** 签字是谁签的：优先读写入时记下的 actorKind，没有才回落到按名字判断。 */
+function signKind(sign) {
+  const kind = String(sign?.actorKind ?? '')
+  return kind === 'human' || kind === 'ai' ? kind : actorKind(sign?.by)
+}
+
 export function actorKind(name) {
   const text = String(name ?? '').trim()
   if (text === '') return 'unknown'
@@ -39,8 +53,10 @@ export function cardInterventions(task) {
     // history 里凡是有人名的都算人动过；系统自己写的（dispatcher/tick）没有 by
     if (actorKind(entry?.by) === 'human') points.push({ kind: String(entry.action ?? 'update'), by: entry.by, at: Number(entry.at) || 0 })
   }
-  for (const sign of task?.signoffs ?? []) {
-    if (actorKind(sign?.by) === 'human') points.push({ kind: 'signoff', by: sign.by, at: Number(sign.at) || 0 })
+  /* 签字是单个对象（task.signoff），不是数组 —— 第一版按 signoffs 读，等于把签字全漏了。
+     优先用记录里的 actorKind（写的时候已经判过），没有才回落到按名字猜。 */
+  for (const sign of listOf(task?.signoff, task?.signoffs)) {
+    if (signKind(sign) === 'human') points.push({ kind: 'signoff', by: sign.by, at: Number(sign.at) || 0 })
   }
   return points
 }
@@ -52,8 +68,8 @@ export function requirementInterventions(state, requirement) {
   for (const task of tasks) {
     for (const point of cardInterventions(task)) points.push({ ...point, taskId: task.id })
   }
-  for (const sign of requirement?.signoffs ?? []) {
-    if (actorKind(sign?.by) === 'human') points.push({ kind: 'requirement-signoff', by: sign.by, at: Number(sign.at) || 0 })
+  for (const sign of listOf(requirement?.signoff, requirement?.signoffs)) {
+    if (signKind(sign) === 'human') points.push({ kind: 'requirement-signoff', by: sign.by, at: Number(sign.at) || 0 })
   }
   const taskIds = tasks.map(task => task.id)
   return {
