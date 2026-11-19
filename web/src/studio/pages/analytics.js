@@ -88,6 +88,8 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
   /* 强制放行：门禁说不行、有人（或某个 agent）硬推的每一次。
      这些不是 bug，是必须被看见的例外 —— 以前只写进 history 一句话，效能页完全看不到。 */
   const ov = data.overrides ?? { total: 0, cards: 0, requirements: 0, noReason: 0, byPerson: [], list: [] }
+  /* 自动化率：已交付需求里「一次人工介入都没有」的占比。没人介入不代表质量好，但它是产品定义第 13 条。 */
+  const au = data.automation ?? { rate: null, untouched: 0, delivered: 0, perRequirement: [] }
 
   const cycleTotal = (data.cycle.buckets ?? []).reduce((sum, bucket) => sum + bucket.count, 0)
   const peak = Math.max(1, ...(data.throughput ?? []).map(point => point.count), ...(data.cycle.buckets ?? []).map(bucket => bucket.count))
@@ -202,7 +204,23 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
       kpi('返工率', pct(data.rework.rate), `${data.rework.reworked}/${data.rework.moved} 张卡倒退过`, data.rework.rate > 0.3),
       kpi('中位周期', fmtSpan(data.cycle.medianDays), `平均 ${fmtSpan(data.cycle.avgDays)} · P90 ${fmtSpan(data.cycle.p90Days)}`),
       kpi('AI 交付物采纳率', pct(data.ai.acceptedRate), `${data.ai.accepted}/${data.ai.artifactsAi} 件已被验收 · 占全部交付物 ${pct(data.ai.aiShare)}`),
+      kpi('自动化率', au.rate === null ? '—' : pct(au.rate), au.rate === null ? '还没有已交付的需求' : `零人工介入 ${au.untouched}/${au.delivered} 条已交付需求`),
     ),
+    h('div', { className: 'ds-panel', style: { marginTop: 12 } },
+      h('div', { className: 'ds-panel-head' },
+        '自动化率',
+        h('span', { className: 'ds-hint' }, '已交付需求里，全程没有人工介入（评论/换列/签字）的占比')),
+      h('div', { className: 'ds-panel-body' },
+        au.rate === null
+          ? h('div', { className: 'ds-hint' }, '还没有已交付的需求，算不出来。')
+          : [
+            h('div', { className: 'ds-an-foot' }, `零人工介入 ${au.untouched}/${au.delivered} 条 · ${pct(au.rate)}（AI 用专家名发的评论不算人工介入）`),
+            (au.unknown ?? 0) > 0
+              ? h('div', { className: 'ds-hint' }, `另有 ${au.unknown} 个介入点来源不明（旧记录只写了角色名，既算不了人也不算 AI）——这个百分比只对「能归因」的部分负责`)
+              : null,
+            ...(au.perRequirement ?? []).slice(0, 6).map(item => h('div', { key: item.id, className: 'ds-an-foot', title: item.interventions === 0 ? '全程没人工介入' : '有人工介入点' },
+              `${item.code || item.id} · 卡 ${item.tasks} 张 · 人工介入 ${item.interventions} 次${item.interventions === 0 ? '（零介入）' : ''}`)),
+          ])),
     ov.total === 0
       ? null
       : h('div', { className: 'ds-panel', style: { marginTop: 12 } },

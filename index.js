@@ -32,6 +32,7 @@ import { accessLevelFor, checkAccess, isCrossSiteRequest, isLoopbackRequest, nee
 import { Dispatcher, RUN_LOG, attachRunLog, claimDispatchLock, clearAgentFailure, configureDispatcher, noteAgentFailure, parseMentions, runSummary } from './src/host/dispatcher.js'
 import { mirrorCards } from './src/host/bitable.js'
 import { bugSeverityFor } from './src/host/bugs.js'
+import { automationRate } from './src/host/intervention.js'
 import { overrideSummary } from './src/host/override.js'
 import { sanitizeLimits } from './src/host/limits.js'
 import { attachWebhooks, sanitizeWebhooks } from './src/host/webhooks.js'
@@ -793,6 +794,12 @@ function buildAnalytics(state, options = {}) {
     generatedAt: now,
     scope: { tasks: inScope.length, moved, done },
     overrides: overrideSummary(state, { since, config: state.config, max: state.config.limits?.overrideMax ?? 3 }),
+    // 自动化率（产品定义第 13 条）：已交付需求里零人工介入的占比。「没数据」返回 null，不冒充 0%。
+    automation: automationRate(
+      state,
+      (state.requirements ?? []).filter(item => ['delivered', 'closed'].includes(String(item.status ?? ''))).map(item => item.id),
+      state.config,
+    ),
     cycle: {
       count: cycleValues.length,
       avgDays: cycleValues.length > 0 ? cycleValues.reduce((sum, value) => sum + value, 0) / cycleValues.length / DAY : 0,

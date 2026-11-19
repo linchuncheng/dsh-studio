@@ -69,39 +69,79 @@ export function isAiSignoff(sign, config) {
   return expertNames(config).includes(by)
 }
 
+/** 一条记录是谁做的：显式 kind > 会话痕迹 > 专家名册 > 其余算人。
+ *
+ *  和 isAiSignoff 同一套口径。以前这里只看名字长得像不像 \`studio-*\`，
+ *  于是 AI 用「测试工程师」这类专家名发的评论被算成人的介入，自动化率被压到 0。
+ */
+/* 角色名：派单时用角色命名，人手动改状态时也可能只留一个角色。两种都出现过，
+   所以这些名字**既不能算人也不能算 AI**，只能记成「来源不明」——
+   宁可少算一次介入，也不要把 AI 的活算成人的（那会把自动化率做成假的 0%）。 */
+const ROLE_LABELS = new Set(['产品', '产品经理', '架构师', '开发', '开发工程师', '测试', '测试工程师', '设计', '运维', '超管'])
+
+export function actorOf(name, kind, config) {
+  const text = String(name ?? '').trim()
+  const declared = String(kind ?? '').trim()
+  // 名字的证据优先于「显式写了 human」这条：早期把专家名判成 human 的记录都挂在这里，
+  // 否则 AI 自己签的字、自己发的评论会一直冒充人工介入（和 isAiSignoff 保持一致）。
+  if (text !== '' && (isAiActor(text) || expertNames(config).includes(text))) return 'ai'
+  if (declared === 'agent' || declared === 'ai') return 'ai'
+  if (declared === 'human') return 'human'
+  if (text === '') return 'unknown'
+  // 只有角色名、名册里又对不上：来源不明，既不算人也不算 AI
+  if (ROLE_LABELS.has(text)) return 'unknown'
+  return 'human'
+}
+
 /** 一张卡上的人工介入点：人写的评论 + 人动过的列 + 人签的字。 */
-export function cardInterventions(task) {
+export function cardInterventions(task, config) {
   const points = []
+  let unknown = 0
   for (const comment of task?.comments ?? []) {
-    if (actorKind(comment?.by) === 'human') points.push({ kind: 'comment', by: comment.by, at: Number(comment.at) || 0 })
+    const who = actorOf(comment?.by, comment?.kind, config)
+    if (who === 'human') points.push({ kind: 'comment', by: comment.by, at: Number(comment.at) || 0 })
+    else if (who === 'unknown') unknown += 1
   }
   for (const entry of task?.history ?? []) {
     // history 里凡是有人名的都算人动过；系统自己写的（dispatcher/tick）没有 by
-    if (actorKind(entry?.by) === 'human') points.push({ kind: String(entry.action ?? 'update'), by: entry.by, at: Number(entry.at) || 0 })
+    const who = actorOf(entry?.by, undefined, config)
+    if (who === 'human') points.push({ kind: String(entry.action ?? 'update'), by: entry.by, at: Number(entry.at) || 0 })
+    else if (who === 'unknown') unknown += 1
   }
   /* 签字是单个对象（task.signoff），不是数组 —— 第一版按 signoffs 读，等于把签字全漏了。
      优先用记录里的 actorKind（写的时候已经判过），没有才回落到按名字猜。 */
   for (const sign of listOf(task?.signoff, task?.signoffs)) {
-    if (signKind(sign) === 'human') points.push({ kind: 'signoff', by: sign.by, at: Number(sign.at) || 0 })
+    const who = actorOf(sign?.by, sign?.actorKind, config)
+    if (who === 'human') points.push({ kind: 'signoff', by: sign.by, at: Number(sign.at) || 0 })
+    else if (who === 'unknown') unknown += 1
   }
+  // 挂在数组上往外传（不可枚举）：调用方照旧读 points，需要的人能拿到「来源不明」的条数。
+  Object.defineProperty(points, 'unknown', { value: unknown, enumerable: false })
   return points
 }
 
 /** 一条需求的汇总：卡上的介入点 + 需求自身的签字。 */
-export function requirementInterventions(state, requirement) {
+export function requirementInterventions(state, requirement, config) {
   const tasks = (state?.tasks ?? []).filter(task => task.requirementId === requirement?.id)
   const points = []
+  let unknown = 0
   for (const task of tasks) {
-    for (const point of cardInterventions(task)) points.push({ ...point, taskId: task.id })
+    const cardPoints = cardInterventions(task, config)
+    for (const point of cardPoints) points.push({ ...point, taskId: task.id })
+    // 角色名写的评论/换列：不算人工介入，但要如实报出来（不计进 interventions）。
+    unknown += cardPoints.unknown ?? 0
   }
   for (const sign of listOf(requirement?.signoff, requirement?.signoffs)) {
-    if (signKind(sign) === 'human') points.push({ kind: 'requirement-signoff', by: sign.by, at: Number(sign.at) || 0 })
+    const who = actorOf(sign?.by, sign?.actorKind, config)
+    if (who === 'human') points.push({ kind: 'requirement-signoff', by: sign.by, at: Number(sign.at) || 0 })
+    else if (who === 'unknown') unknown += 1
   }
   const taskIds = tasks.map(task => task.id)
   return {
     requirementId: String(requirement?.id ?? ''),
     tasks: taskIds.length,
     interventions: points.length,
+    unknown,
     byKind: points.reduce((acc, point) => { acc[point.kind] = (acc[point.kind] ?? 0) + 1; return acc }, {}),
     actors: [...new Set(points.map(point => point.by))],
     points,
@@ -110,19 +150,21 @@ export function requirementInterventions(state, requirement) {
 
 /** 自动化率：已交付需求里，**零人工介入**走完的占比。
  *  「已交付」= 需求状态是 done 或 released（不由这里判断业务口径，调用方传进来）。 */
-export function automationRate(state, deliveredIds) {
+export function automationRate(state, deliveredIds, config) {
   const delivered = new Set(Array.isArray(deliveredIds) ? deliveredIds : [])
   const requirements = (state?.requirements ?? []).filter(item => delivered.has(item.id))
   if (requirements.length === 0) return { delivered: 0, untouched: 0, rate: null, perRequirement: [] }
   const perRequirement = requirements.map(item => {
-    const summary = requirementInterventions(state, item)
-    return { id: item.id, code: item.code ?? '', tasks: summary.tasks, interventions: summary.interventions }
+    const summary = requirementInterventions(state, item, config ?? state?.config)
+    return { id: item.id, code: item.code ?? '', tasks: summary.tasks, interventions: summary.interventions, unknown: summary.unknown ?? 0 }
   })
   const untouched = perRequirement.filter(item => item.interventions === 0).length
   return {
     delivered: requirements.length,
     untouched,
     rate: untouched / requirements.length,
+    // 来源不明的介入点（旧数据只记了角色名）：不计入人工介入，但要让人知道这个数靠不靠得住。
+    unknown: perRequirement.reduce((sum, item) => sum + item.unknown, 0),
     perRequirement,
   }
 }

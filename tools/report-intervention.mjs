@@ -19,7 +19,7 @@ const delivered = requirements
 
 console.log(`需求 ${requirements.length} 条 · 已交付 ${delivered.length} 条 · 卡 ${(state.tasks ?? []).length} 张\n`)
 for (const requirement of requirements.slice(0, 10)) {
-  const summary = requirementInterventions(state, requirement)
+  const summary = requirementInterventions(state, requirement, state.config)
   const who = summary.actors.slice(0, 3).join('、') || '—'
   console.log(
     ` ${String(requirement.code ?? requirement.id).padEnd(14)} ${String(requirement.status ?? '').padEnd(10)}`
@@ -27,23 +27,11 @@ for (const requirement of requirements.slice(0, 10)) {
   )
 }
 
-/* 「产品 / 架构师 / 开发 / 测试」这类名字是**角色名**：既可能是 AI 专家写的（派单时用角色命名），
-   也可能是真的由人签的。现有数据分不出来，所以两种口径都给，不替用户选。 */
-const ROLE_NAMES = new Set(['产品', '产品经理', '架构师', '开发', '开发工程师', '测试', '测试工程师'])
-const asHuman = (by) => ROLE_NAMES.has(String(by ?? '').trim()) ? 'unknown' : 'human'
-const strictDelivered = delivered.map(id => {
-  const req = requirements.find(item => item.id === id)
-  const summary = requirementInterventions(state, req)
-  const points = summary.points.filter(point => asHuman(point.by) === 'human')
-  return { id, interventions: points.length }
-})
-const strictUntouched = strictDelivered.filter(item => item.interventions === 0).length
-
-const rate = automationRate(state, delivered)
-console.log('')
-console.log(`口径二（把「产品/架构师/开发/测试」这类角色名当成 AI，不算人工介入）：`
-  + (delivered.length === 0 ? '无数据' : `${(strictUntouched / delivered.length * 100).toFixed(0)}%（${strictUntouched}/${delivered.length} 条）`))
+const rate = automationRate(state, delivered, state.config)
 console.log('')
 console.log(rate.rate === null
   ? '自动化率：无数据（还没有已交付的需求）'
   : `自动化率：${(rate.rate * 100).toFixed(0)}%（${rate.untouched}/${rate.delivered} 条需求零人工介入）`)
+if ((rate.unknown ?? 0) > 0) {
+  console.log(`另有 ${rate.unknown} 个介入点来源不明（旧记录只写了角色名，既算不了人也不算 AI）`)
+}

@@ -74,3 +74,42 @@ describe('intervention: 人工介入统计', () => {
     assert.equal(result.delivered, 0)
   })
 })
+
+describe('intervention: 和签字同一套口径（专家名 = AI）', () => {
+  const config = { experts: [{ id: 'e1', name: '测试工程师' }, { id: 'e2', name: '产品经理' }] }
+
+  it('AI 用专家名发的评论不算人工介入', () => {
+    const task = {
+      comments: [
+        { by: '测试工程师', kind: 'agent', at: 1 },   // 显式 kind
+        { by: '产品经理', at: 2 },                     // 只有名字，但在名册里
+        { by: '张三', at: 3 },                         // 真人
+      ],
+      history: [{ action: 'moved', by: '测试工程师', at: 4 }],
+      signoff: { by: '测试工程师', at: 5, note: 'ok' },
+    }
+    // 不传 config 时：专家名册用不上，但「角色名」仍然按来源不明处理（老数据里这两种混着用）
+    assert.equal(cardInterventions(task).length, 1, '只有真人张三那一条算人工介入')
+    assert.ok(cardInterventions(task).unknown >= 3, '角色名写的记录记成来源不明，并如实计数')
+    const withConfig = cardInterventions(task, config)
+    assert.equal(withConfig.length, 1, '传了 config 之后仍然只剩真人那一条')
+    assert.equal(withConfig[0].by, '张三')
+    assert.equal(withConfig[0].kind, 'comment')
+    assert.equal(withConfig.unknown, 0, '传了 config：名册里的名字都算 AI，没有来源不明的了')
+  })
+
+  it('自动化率跟着这套口径走：角色名既不冒充人也算不出介入', () => {
+    const aiOnly = {
+      requirements: [{ id: 'r-1', code: 'REQ-1', signoff: { by: '测试工程师', at: 1, note: 'ok' } }],
+      tasks: [{ id: 't-1', requirementId: 'r-1', comments: [{ by: '测试工程师', at: 2 }], history: [], signoffs: [] }],
+    }
+    assert.equal(automationRate(aiOnly, ['r-1'], config).untouched, 1, '名册里的名字 = AI，零人工介入')
+    assert.equal(automationRate(aiOnly, ['r-1']).untouched, 1, '不传 config 时角色名记来源不明，也不冒充人工介入')
+
+    const humanTouched = {
+      requirements: [{ id: 'r-1', code: 'REQ-1', signoff: { by: '张三', at: 1, note: '人看过' } }],
+      tasks: [{ id: 't-1', requirementId: 'r-1', comments: [], history: [], signoffs: [] }],
+    }
+    assert.equal(automationRate(humanTouched, ['r-1'], config).untouched, 0, '真人签过字 = 有人工介入')
+  })
+})
