@@ -46,6 +46,29 @@ export function actorKind(name) {
   return isAiActor(text) ? 'ai' : 'human'
 }
 
+/** 专家名册里的名字：派单出去的 AI 用的就是这些名字。 */
+export function expertNames(config) {
+  return (config?.experts ?? []).map(item => String(item?.name ?? '').trim()).filter(name => name !== '')
+}
+
+/** 这个签字算不算 AI 签的。
+ *
+ * 三道判断，命中任一即算 AI：
+ *   1. 写入时明确记了 agent / ai（0.3.8 起工具就这么写）
+ *   2. 签字人名字是会话痕迹（studio-…）或系统名
+ *   3. **签字人名字在专家名册里** —— 兜住历史数据：早期按名字猜来源，
+ *      「测试工程师」这种名字被误判成 human，AI 自助验收的记录一直挂着 human。
+ */
+export function isAiSignoff(sign, config) {
+  if (sign === null || sign === undefined) return false
+  const kind = String(sign.actorKind ?? '')
+  if (kind === 'agent' || kind === 'ai') return true
+  const by = String(sign.by ?? '').trim()
+  if (by === '') return false
+  if (isAiActor(by)) return true
+  return expertNames(config).includes(by)
+}
+
 /** 一张卡上的人工介入点：人写的评论 + 人动过的列 + 人签的字。 */
 export function cardInterventions(task) {
   const points = []

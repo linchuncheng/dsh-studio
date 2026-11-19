@@ -1039,6 +1039,8 @@ export function sanitizeRequirement(raw) {
         by: String(raw.signoff.by ?? '').slice(0, 60),
         at: Number(raw.signoff.at) || now,
         note: String(raw.signoff.note ?? '').slice(0, 600),
+        // 谁签的：不存下来，重启一轮又只能靠名字猜（卡片签字早就存了，需求这边漏了）。
+        actorKind: String(raw.signoff.actorKind ?? '').slice(0, 10),
       },
     // 需求评审：谁在什么时候看了这版需求、结论是什么。通过之前不往下拆卡。
     review: sanitizeRequirementReview(raw.review),

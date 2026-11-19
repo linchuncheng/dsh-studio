@@ -2,6 +2,7 @@
 // 代码事实核对、用例执行、缺陷回流、健康检查。宿主级依赖通过 configureExecutor() 注入。
 
 import { coverageStrength, draftCasesFromCriteria, isExecutable } from './case-strength.js'
+import { isAiSignoff } from './intervention.js'
 import { CASE_HTTP_METHODS, CODE_PREFIX, ROLE_IDS, STATUS_IDS, STATUSES, nextRequirementCode, nextTaskCode, normalizePatch, sanitizeBaseline, sanitizeCase, sanitizeReqDoc, sanitizeRequirement, sanitizeTestRun, text,
   canonicalAuthor,
   sanitizeCoding,
@@ -789,7 +790,7 @@ export function requirementGate(state, requirement) {
     if (empty > 0) warnings.push(`${empty} 件交付物还没有正文`)
   }
   if (requirement.signoff === null || requirement.signoff === undefined) blockers.push('还没有需求级验收签字')
-  else if (String(requirement.signoff.actorKind ?? '') === 'agent') warnings.push(`需求验收签字是 AI 写的（${requirement.signoff.by}）：产品定义第 3 条要求人再确认一次`)
+  else if (isAiSignoff(requirement.signoff, state.config)) blockers.push(`需求验收签字是 AI 写的（${requirement.signoff.by}）：交付前要人签（产品定义第 3 条：AI 只把草稿写好，人做审稿）`)
   // 评审没通过的草稿/待评审需求不该往下拆卡：先过评审，再干活。
   const review = requirement.review ?? null
   const reviewApproved = review !== null && review.status === 'approved'
@@ -883,7 +884,8 @@ export function taskExitGate(state, task) {
   if (task.gitlabMR?.pipeline?.status === 'failed') blockers.push(`CI 流水线没通过：${task.gitlabMR.pipeline.id ? `#${task.gitlabMR.pipeline.id}` : '最近一次运行'}`)
   if (task.blocked !== undefined && task.blocked !== null) blockers.push('这张卡还挂着阻塞标记')
   if (task.signoff === undefined || task.signoff === null) blockers.push('还没有验收签字')
-  else if (String(task.signoff.actorKind ?? '') === 'agent') warnings.push(`这张卡的验收签字是 AI 写的（${task.signoff.by}）：签字只说明 AI 自己验过，人还要再看一眼`)
+  // AI 不能代签：自己验、自己签、自己推到完成，等于验收这一环没人看过。
+  else if (isAiSignoff(task.signoff, state.config)) blockers.push(`验收签字是 AI 写的（${task.signoff.by}）：卡准出要人签。让人签一次，或者走 override 写明为什么这次可以例外`)
   if (cases.length === 0) warnings.push('这张卡没有测试用例，建议至少补一条主流程用例')
   else {
     const pending = cases.filter(item => item.result === 'pending' || item.result === 'skip').length
