@@ -10,10 +10,11 @@ import {
   runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask,
 } from './executor.js'
 import { runSummary } from './dispatcher.js'
-const INJECTED = ["activeDispatcher","activeSkills","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
+const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
 let host = {
   activeDispatcher: () => {},
   activeSkills: () => {},
+  addAssertedCases: () => {},
   addDraftCases: () => {},
   applyConfig: () => {},
   auditSummary: () => {},
@@ -38,7 +39,7 @@ export function configureToolHost(services) {
   host = { ...host, ...(services ?? {}) }
 }
 
-/** 注册 39 个 studio_* 工具。 */
+/** 注册 40 个 studio_* 工具。 */
 export function registerTools(ctx, store) {
   const disposers = []
   const register = tool => {
@@ -400,6 +401,43 @@ export function registerTools(ctx, store) {
       const result = await host.addDraftCases(store, String(args.id ?? ''), String(args.by ?? '人').slice(0, 40))
       if (result.added === 0 && result.reason !== '') return `没生成用例：${result.reason}`
       return `已生成 ${result.added} 条用例，这张卡现在共 ${result.total} 条。`
+    },
+  }))
+
+  register(defineStudioTool({
+    name: 'studio_task_add_cases',
+    description: '把**带可执行断言**的测试用例写进这张卡，并当场试跑第一条：跑不通就不算生成成功。接口用例形如 {title, method, path, body?, expectStatus, expectContains?}；shell 用例形如 {title, command, expectExit?}（需在设置里开 allowShell）。path 可写相对地址，会用测试环境 baseUrl 解析。有一条不合法就整体拒绝、一条都不写。',
+    parameters: {
+      id: { type: 'string', required: true, description: 'Task id.' },
+      cases: {
+        type: 'array',
+        required: true,
+        description: '用例数组：每条必须有 title，并且带 method + path + expectStatus（接口）或 command（shell）。',
+        items: { type: 'object' },
+      },
+      env: { type: 'string', description: '测试环境 id，默认用设置里的默认环境。' },
+      by: { type: 'string', description: '谁写的，默认「测试专家」。' },
+    },
+    async execute(args) {
+      const result = await host.addAssertedCases(store, String(args.id ?? ''), args.cases, {
+        env: args.env === undefined ? undefined : String(args.env),
+        by: String(args.by ?? '测试专家').slice(0, 40),
+      })
+      const strength = result.strength ?? { total: 0, executable: 0, rate: null }
+      const rate = strength.rate === null ? '—' : `${Math.round(strength.rate * 100)}%`
+      const lines = [
+        `已写入 ${result.added} 条用例${result.skipped > 0 ? `（${result.skipped} 条与已有用例重名，跳过）` : ''}；这张卡现在 ${result.total} 条，其中可执行 ${strength.executable} 条（${rate}）。`,
+      ]
+      const verified = result.verified
+      if (verified === null) {
+        lines.push('没有新用例可试跑：全部重名，已有用例未改动。')
+      } else if (verified.ok) {
+        lines.push(`试跑通过：${verified.title} → ${verified.status}（${verified.ms}ms）。`)
+      } else {
+        lines.push(`**试跑不通过**：${verified.title} → ${verified.error || '没有返回结果'}。`)
+        lines.push('这条用例写坏了或者环境不对：改断言/地址后重新调用，不要留着等别人发现。')
+      }
+      return lines.join('\n')
     },
   }))
 

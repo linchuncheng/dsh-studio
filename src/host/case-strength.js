@@ -80,7 +80,7 @@ export function draftCasesFromCriteria(criteria, options = {}) {
       cases.push({
         title: title.slice(0, 60),
         expected: text.slice(0, 300),
-        shell: { command: String(command).slice(0, 500), expectExitCode: 0 },
+        shell: { command: String(command).slice(0, 500), expectExit: 0 },
         draft: false,
       })
       continue

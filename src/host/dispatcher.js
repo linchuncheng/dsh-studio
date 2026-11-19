@@ -944,7 +944,7 @@ export function buildExpertPrompt(task, expert, column, config, team, instructio
       ? `\n这是评审环节：先读 MR 的改动（glab mr diff 或在 GitLab 上看），逐条对照方案与验收清单，把问题写清楚（文件、行、为什么、建议怎么改）。没问题就说明通过理由，推进到「待测试」；有问题就 @ 开发同学，把卡退回「开发中」。`
       : '',
     column.id === 'test'
-      ? `\n这是测试环节：先用 studio_task_case 把用例登记到卡上（做什么、期望什么）；**能写成接口调用的，就把 method/url/expectStatus/expectContains 一起写上，用 studio_test_run 让平台真的去跑**（它会发请求、比对状态码与响应体、把结果写回用例并留下执行记录，失败的自动开缺陷卡）。只有跑不了的用例（要人工操作、要看 UI、要连设备）才自己执行并用 result 回填 pass/fail/skip，失败要写清环境与复现步骤。**用例一旦判 fail，平台会自动开一张缺陷卡（挂同一需求、父任务指向本卡），你不用再手工建 Bug，也不要重复建**。全部用例有结论后：有用例失败就 @ 开发同学退回「开发中」；全通过就推进到「待验收」，并登记一份测试报告（kind=cases）。` +
+      ? `\n这是测试环节：**先写能跑的用例，再谈通过**。用例用 studio_task_add_cases 登记，每条必须带可执行断言：接口用例给 {title, method, path, body?, expectStatus, expectContains?}（path 可以写相对地址，平台会拼上测试环境的 baseUrl），shell 用例给 {title, command}（需要管理员先开 allowShell）。这个工具**写完会当场试跑第一条**，把试跑结果原样回给你——试跑不通过就改断言或地址再调一次，**不要把跑不了的用例留在卡上**（只有标题、没有断言的「用例」不许写，那不是用例，是待办）。真跑不了的（要人工操作、要看 UI、要连设备）才用 studio_task_case 登记成描述型用例，自己执行后用 result 回填 pass/fail/skip，失败要写清环境与复现步骤。其余用例用 studio_test_run 让平台真的去跑（它会发请求、比对状态码与响应体、把结果写回用例并留下执行记录，失败的自动开缺陷卡）。**用例一旦判 fail，平台会自动开一张缺陷卡（挂同一需求、父任务指向本卡），你不用再手工建 Bug，也不要重复建**。全部用例有结论后：有用例失败就 @ 开发同学退回「开发中」；全通过就推进到「待验收」，并登记一份测试报告（kind=cases）。` +
         (task.bugSource == null ? '' : `\n这张卡来自缺陷 ${task.bugSource.code || task.bugSource.taskId}（用例「${task.bugSource.caseTitle}」）。修复已进入待测试，平台把来源用例重置成了待执行：请复跑这一条，确认通过后把本卡推进到「待验收」，并通过就把缺陷关闭。`)
       : '',
     task.type === 'bug'

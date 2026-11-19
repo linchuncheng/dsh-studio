@@ -24,7 +24,7 @@
 | 澄清 | 拆卡前的必答项与门禁（`src/host/discovery.js`），答不全不许开工 |
 | 设计 | 设计评审记录 + 进开发前的闸门（`src/host/design.js`） |
 | 执行 | 一卡一会话、一卡一 worktree；自动派单给产品/架构/研发/测试四类专家 |
-| 用例 | 接口 / shell / 数据库三种执行器；跨卡用例总览；失败自动开缺陷卡 |
+| 用例 | 接口 / shell / 数据库三种执行器；**带可靠断言的用例写完当场试跑**；跨卡用例总览；失败自动开缺陷卡 |
 | 准出 | 卡片与需求两级准出、验收清单、覆盖矩阵、人工签字 |
 | 发布 | 版本 tag、灰度与部署记录、冒烟清单、发布门禁 |
 | 观测 | 工作台（在办/逾期/阻塞/缺陷）、效能（周期分布/返工/AI 成本）、燃尽 |
@@ -45,7 +45,7 @@
 ```mermaid
 flowchart LR
   UI["浏览器<br/>client.js + web/src<br/>看板 · 需求 · 用例 · 版本 · 效能 · 设置"]
-  API["index.js<br/>apply(ctx) · 39 个 studio_* 工具 · /studio-api 前缀路由"]
+  API["index.js<br/>apply(ctx) · 40 个 studio_* 工具 · /studio-api 前缀路由"]
   HOST["src/host/*<br/>domain · dispatcher · executor · integrations · routes"]
   DB[("SQLite<br/>state · 快照 · side 键")]
   AGENT["专家会话<br/>studio-任务-专家"]
@@ -236,6 +236,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 - 上下文**构成占比**（工具 / 助手 / 输入）是按会话日志文本体积估算的，不是引擎账目：宿主把 `sessionProjections` 暴露给了插件，`tokenMeasurement` 就是引擎计量，但 `stateOf()` 要**活会话对象**，只能在派单收尾时取——还没接（调研结论见 `docs/history.md`）。**占用率已经是真实数据**（用 `request/context` 的 `contextWindow`）。
 - 多维表格镜像是**手动触发**的（`POST /studio-api/feishu/mirror`，支持 `dryRun` 先看会写多少条）：一条记录 = 一张卡，200 条一批串行写；表里要有「编号 / 标题 / 状态 / 负责人 / 优先级 / 需求 / 更新时间」这几列。**还没在真实表格上验证成功路径**——本机 lark-cli 未完成用户授权时，它会如实返回 authorization 错误而不是假成功。
 - GitLab 同步 Issue 与**关联 MR**（`/issues/:iid/related_merge_requests`）；卡上挂 MR 后「从 GitLab 核对」会拉 MR 详情、`/changes` 与 `/pipelines`（流水线状态进 `coding.gitlab`）。**不同步 MR 的评论**；MR 的合并/关闭状态要等下一次同步才反映到卡上。
+- 用例现在有两种：**带可执行断言的**（`studio_task_add_cases`：接口给 `method`/`path`/`expectStatus`，shell 给 `command`）与**只有描述的**（`studio_task_case`）。前者**写完会当场试跑第一条**，跑不通就把原因原样回给专家去改，写不出来的（只有标题、没有断言）直接拒收；后者能在卡上留档、能人工填结果，但**不计入「可执行覆盖率」**——那一栏只认真的能跑的用例（`src/host/case-strength.js`）。
 - 用例记录存在卡上（`task.cases`）：跨卡的**用例总览**页签可以勾选批量跑（结果回写各自卡、失败照旧开缺陷），也支持**回归套件**（`/suite/*`：按规则或手选固定一批，一键重跑，`by` 记「套件：名字」）。但还没有「回归套件」这个对象——固定的用例集合、一键重跑、历次通过率趋势都还没有，批量跑是临时勾选、跑完即散。
 - 缺陷卡的严重级别默认 `P2`、优先级 `normal`：自动建卡不猜严重程度，由人或在评论里改。
 - 派单失败会记在 `/studio-api/integrations` 与卡片抽屉里，并按 `agentRetryPlan` **自动重试**（间隔递增、有上限）；超过上限才挂阻塞等人。

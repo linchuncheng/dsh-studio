@@ -1,8 +1,8 @@
 // -------------------------------------------------- 执行记录与接口测试执行器（P4）
 // 代码事实核对、用例执行、缺陷回流、健康检查。宿主级依赖通过 configureExecutor() 注入。
 
-import { isExecutable } from './case-strength.js'
-import { CODE_PREFIX, ROLE_IDS, STATUS_IDS, STATUSES, nextRequirementCode, nextTaskCode, normalizePatch, sanitizeBaseline, sanitizeReqDoc, sanitizeRequirement, sanitizeTestRun, text,
+import { coverageStrength, draftCasesFromCriteria, isExecutable } from './case-strength.js'
+import { CASE_HTTP_METHODS, CODE_PREFIX, ROLE_IDS, STATUS_IDS, STATUSES, nextRequirementCode, nextTaskCode, normalizePatch, sanitizeBaseline, sanitizeCase, sanitizeReqDoc, sanitizeRequirement, sanitizeTestRun, text,
   canonicalAuthor,
   sanitizeCoding,
 } from './domain.js'
@@ -1560,3 +1560,240 @@ export async function commentTask(store, id, body, author, kind) {
   return { task: result, mentions }
 }
 
+
+// ------------------------------------------------- 用例生成：草稿 vs 可执行断言
+
+/** 按需求的「功能点 + 验收条件」推导用例草稿。
+ *  注意：这里只能推标题（没有断言），所以产出的都是 draft —— 真正的断言要模型在会话里写，
+ *  通过 addAssertedCases 落库。见 docs/product.md §5.1。 */
+function draftCases(state, task) {
+  const requirement = state.requirements.find(item => item.id === task.requirementId)
+  if (requirement === undefined) return { cases: [], reason: '这张卡没挂需求，没有验收标准可以推导用例' }
+  const points = (requirement.points ?? []).filter(point => task.pointId === '' || point.id === task.pointId)
+  if (points.length === 0) return { cases: [], reason: '这个需求还没拆功能点：先去需求页加功能点与验收条件' }
+  const cases = []
+  for (const point of points) {
+    const lines = (point.acceptance ?? []).filter(item => String(item.text ?? '').trim() !== '')
+    if (lines.length === 0) {
+      cases.push({ title: `${point.title} 主流程`.slice(0, 200), expected: String(point.description || point.title).slice(0, 300), pointId: point.id })
+      continue
+    }
+    for (const line of lines) {
+      cases.push({ title: `${point.title}：${line.text}`.slice(0, 200), expected: String(line.text).slice(0, 300), pointId: point.id })
+    }
+  }
+  return { cases, reason: '' }
+}
+
+/** 模板生成：一条验收条件 = 一条用例。断言靠规则推断，推不出来就标 draft。 */
+export async function addDraftCases(store, taskId, by = '人') {
+  const before = store.snapshot()
+  const task = before.tasks.find(item => item.id === taskId)
+  if (task === undefined) throw new Error(`no task ${taskId}`)
+  const draft = draftCases(before, task)
+  if (draft.cases.length === 0) return { added: 0, total: (task.cases ?? []).length, reason: draft.reason }
+  const existing = new Set((task.cases ?? []).map(item => item.title))
+  let added = 0
+  await store.mutate(state => {
+    const entry = state.tasks.find(item => item.id === taskId)
+    for (const item of draft.cases) {
+      if (existing.has(item.title)) continue
+      existing.add(item.title)
+      /* 以前这里写死 http: null —— 生成的用例**永远不可执行**（全库 101 条 0 可执行就是这么来的）。
+         现在从验收条件里推断：有 URL 就生成接口用例，允许 shell 且有命令行就生成 shell 用例，
+         推不出来的明确标 draft（不计入覆盖率），而不是假装它是一条"用例"。 */
+      const inferred = draftCasesFromCriteria([item.expected || item.title], { allowShell: state.config?.testing?.allowShell === true })[0] ?? {}
+      entry.cases.push({
+        id: `c-${randomBytes(3).toString('hex')}`,
+        title: item.title,
+        expected: item.expected,
+        result: 'pending',
+        note: '',
+        pointId: item.pointId,
+        by,
+        at: Date.now(),
+        http: inferred.http ?? null,
+        shell: inferred.shell ?? null,
+        draft: inferred.draft === true,
+        lastRun: null,
+      })
+      added += 1
+    }
+    entry.updatedAt = Date.now()
+  })
+  const after = store.snapshot().tasks.find(item => item.id === taskId)
+  return { added, total: (after?.cases ?? []).length, reason: '' }
+}
+
+/** 把专家写好的**可执行**用例落库，并当场试跑第一条。
+ *
+ * 为什么要在生成这一刻跑：「用例全绿」曾经什么都不代表 —— 全库 101 条用例 0 条带断言，
+ * 谁也不知道哪一条真的验过。让写坏的用例当场失败，比攒成一百条草稿有用得多。
+ *
+ * 全有或全无：只要有一条不合法就整体拒绝并列出原因，不把能跑的和跑不了的混在一起存进去。
+ * 地址支持相对路径（用测试环境 baseUrl 解析），存回去时保持原样，环境换了不用改用例。
+ */
+export async function addAssertedCases(store, taskId, rawCases, options = {}) {
+  const by = text(options.by, 40) ?? '测试专家'
+  const list = Array.isArray(rawCases) ? rawCases : []
+  if (list.length === 0) throw new Error('cases 是空的：至少给一条带断言的用例')
+  const before = store.snapshot()
+  const task = before.tasks.find(item => item.id === String(taskId ?? ''))
+  if (task === undefined) throw new Error(`no task ${taskId}`)
+  const testing = before.config?.testing ?? {}
+  const envs = Array.isArray(testing.envs) ? testing.envs : []
+  const wanted = String(options.env ?? testing.defaultEnv ?? '')
+  const env = envs.find(item => item.id === wanted) ?? envs[0]
+  const allowShell = testing.allowShell === true
+
+  const prepared = []
+  const rejected = []
+  for (const [index, raw] of list.entries()) {
+    const item = raw !== null && typeof raw === 'object' ? raw : {}
+    const title = text(item.title, 200)
+    if (title === undefined) {
+      rejected.push(`第 ${index + 1} 条没有标题`)
+      continue
+    }
+    const expected = text(item.expected, 300) ?? title
+    const expectContains = String(item.expectContains ?? '').trim().slice(0, 300)
+    const path = String(item.path ?? item.url ?? '').trim()
+    if (path !== '') {
+      const method = String(item.method ?? '').trim().toUpperCase()
+      if (!CASE_HTTP_METHODS.includes(method)) {
+        rejected.push(`「${title}」的 method「${String(item.method ?? '')}」不认识：只认 ${CASE_HTTP_METHODS.join('/')}`)
+        continue
+      }
+      const absolute = /^https?:\/\//i.test(path)
+      if (!absolute && String(env?.baseUrl ?? '').trim() === '') {
+        rejected.push(`「${title}」只给了相对地址 ${path}，但还没配测试环境 baseUrl：补上环境，或者写完整地址`)
+        continue
+      }
+      if (!absolute) {
+        try {
+          const probe = new URL(path, String(env.baseUrl).trim())
+          if (probe.protocol !== 'http:' && probe.protocol !== 'https:') throw new Error(probe.protocol)
+        } catch {
+          rejected.push(`「${title}」的地址 ${path} 拼上环境 baseUrl 也不是合法的 http(s) 地址`)
+          continue
+        }
+      }
+      const expectStatus = Number(item.expectStatus)
+      if (!Number.isInteger(expectStatus) || expectStatus < 100 || expectStatus > 599) {
+        rejected.push(`「${title}」必须给期望状态码 expectStatus（100–599）：不给的话跑完也判不出对错`)
+        continue
+      }
+      prepared.push({
+        title,
+        expected,
+        pointId: String(item.pointId ?? '').slice(0, 24),
+        http: { method, url: path.slice(0, 500), body: String(item.body ?? '').slice(0, 8000), expectStatus, expectContains, headers: item.headers },
+      })
+      continue
+    }
+    const command = String(item.command ?? '').trim()
+    if (command !== '') {
+      if (!allowShell) {
+        rejected.push(`「${title}」是 shell 用例，但设置里没开 allowShell（设置 → 测试执行）`)
+        continue
+      }
+      // 字段名以 shell-case.js 为准：expectExit。老调用方写 expectExitCode 也认，避免再踩一次同名不同字的坑。
+      const rawExit = item.expectExit ?? item.expectExitCode
+      const expectExit = Number.isInteger(Number(rawExit)) ? Number(rawExit) : 0
+      prepared.push({
+        title,
+        expected,
+        pointId: '',
+        shell: {
+          command: command.slice(0, 2000),
+          cwd: String(item.cwd ?? '').slice(0, 300),
+          expectExit,
+          expectContains: String(item.expectContains ?? '').slice(0, 500),
+          expectNotContains: String(item.expectNotContains ?? '').slice(0, 500),
+        },
+      })
+      continue
+    }
+    rejected.push(`「${title}」既没有 path（接口）也没有 command（shell）：这条跑不了，等于又一条草稿`)
+  }
+  if (rejected.length > 0) {
+    const shown = rejected.slice(0, 5).join('；')
+    const more = rejected.length > 5 ? `；另有 ${rejected.length - 5} 条同样不合法` : ''
+    throw new Error(`${rejected.length}/${list.length} 条用例不合法，一条都没写进去：${shown}${more}`)
+  }
+
+  const existing = new Set((task.cases ?? []).map(item => item.title))
+  const fresh = prepared.filter(item => !existing.has(item.title))
+  if (fresh.length === 0) {
+    return { added: 0, skipped: prepared.length, total: (task.cases ?? []).length, verified: null, env: null }
+  }
+  const ids = []
+  await store.mutate(state => {
+    const entry = state.tasks.find(item => item.id === task.id)
+    for (const [index, item] of fresh.entries()) {
+      const id = `c-${randomBytes(3).toString('hex')}`
+      ids.push(id)
+      // 过一遍 sanitizeCase：写进内存的形状必须和重启后从磁盘读出来的形状一样，
+      // 否则「跑一次对、重启后字段名变了」这类问题查起来极难（shell 的 expectExit 就是这么撞出来的）。
+      const saved = sanitizeCase({
+        id,
+        title: item.title,
+        expected: item.expected,
+        result: 'pending',
+        pointId: item.pointId,
+        by,
+        at: Date.now(),
+        http: item.http ?? null,
+        shell: item.shell ?? null,
+      }, index)
+      entry.cases.push(saved)
+    }
+    entry.updatedAt = Date.now()
+  })
+
+  // 当场试跑第一条：跑不通就在这里暴露，而不是等谁来点「▶ 跑」。
+  const created = (store.snapshot().tasks.find(item => item.id === task.id)?.cases ?? []).filter(item => ids.includes(item.id))
+  const first = created[0]
+  let verified = null
+  if (first !== undefined) {
+    const needsEnv = first.http != null
+    if (needsEnv && env === undefined) {
+      verified = { id: first.id, title: first.title, ok: false, status: 0, ms: 0, error: '还没有配置测试环境（设置 → 测试执行）' }
+    } else {
+      try {
+        const outcome = await runOneCase(first, env, before.config)
+        verified = {
+          id: first.id,
+          title: first.title,
+          ok: outcome.ok === true,
+          status: Number(outcome.status) || 0,
+          ms: Number(outcome.ms) || 0,
+          error: String(outcome.error ?? '').slice(0, 300),
+        }
+      } catch (error) {
+        verified = { id: first.id, title: first.title, ok: false, status: 0, ms: 0, error: String(error?.message ?? error).slice(0, 300) }
+      }
+      const note = verified.ok
+        ? `生成时试跑：${String(first.http?.method ?? 'shell')} ${String(first.http?.url ?? first.shell?.command ?? '')} → ${verified.status}（${verified.ms}ms）`
+        : `生成时试跑失败：${verified.error}`
+      await store.mutate(state => {
+        const entry = state.tasks.find(item => item.id === task.id)
+        if (entry === undefined) return
+        entry.cases = entry.cases.map(c => (c.id === verified.id
+          ? { ...c, result: verified.ok ? 'pass' : 'fail', note: note.slice(0, 400), by, at: Date.now(), lastRun: { at: Date.now(), ok: verified.ok, status: verified.status, ms: verified.ms, error: verified.error, preview: '', response: '', env: String(env?.id ?? ''), steps: [] } }
+          : c))
+        entry.updatedAt = Date.now()
+      })
+    }
+  }
+
+  const total = (store.snapshot().tasks.find(item => item.id === task.id)?.cases ?? []).length
+  return {
+    added: fresh.length,
+    skipped: prepared.length - fresh.length,
+    total,
+    verified,
+    env: env === undefined ? null : { id: env.id, name: env.name, baseUrl: env.baseUrl },
+    strength: coverageStrength(store.snapshot().tasks.find(item => item.id === task.id)?.cases ?? []),
+  }
+}

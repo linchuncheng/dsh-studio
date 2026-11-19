@@ -12,7 +12,6 @@
  *
  * @module dsh-studio
  */
-import { draftCasesFromCriteria } from './src/host/case-strength.js'
 import { spawn } from 'node:child_process'
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 import { mkdir, readFile, readdir, rename, rm, stat, writeFile, chmod } from 'node:fs/promises'
@@ -35,7 +34,7 @@ import { mirrorCards } from './src/host/bitable.js'
 import { bugSeverityFor } from './src/host/bugs.js'
 import { sanitizeLimits } from './src/host/limits.js'
 import { attachWebhooks, sanitizeWebhooks } from './src/host/webhooks.js'
-import { buildDashboard, codingVerifyLine, commentTask, configureExecutor, ensureReqFolder, larkCliReady, invalidateLarkProbe, larkProbeCache, mutateReqDoc, probeEnv, pullFeishuDoc, requirementGate, requirementMatrix, requirementProgress, requirementRollup, runCommand, runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask, verifyCodingRecord } from './src/host/executor.js'
+import { addAssertedCases, addDraftCases, buildDashboard, codingVerifyLine, commentTask, configureExecutor, ensureReqFolder, larkCliReady, invalidateLarkProbe, larkProbeCache, mutateReqDoc, probeEnv, pullFeishuDoc, requirementGate, requirementMatrix, requirementProgress, requirementRollup, runCommand, runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask, verifyCodingRecord } from './src/host/executor.js'
 import { configureAuthRoutes, handleAuthRoute } from './src/host/routes/auth.js'
 import { configureExportRoutes, handleExportRoute } from './src/host/routes/exports.js'
 import { configureTaskRoutes, handleTaskRoute } from './src/host/routes/tasks.js'
@@ -2177,64 +2176,6 @@ function auditSummary(body) {
  * 用例不再靠人一条条敲：按需求的「功能点 + 验收条件」推导一遍。
  * 一个功能点有几条验收条件就出几条用例，一条都没有时退化成「主流程」一条。
  */
-function draftCases(state, task) {
-  const requirement = state.requirements.find(item => item.id === task.requirementId)
-  if (requirement === undefined) return { cases: [], reason: '这张卡没挂需求，没有验收标准可以推导用例' }
-  const points = (requirement.points ?? []).filter(point => task.pointId === '' || point.id === task.pointId)
-  if (points.length === 0) return { cases: [], reason: '这个需求还没拆功能点：先去需求页加功能点与验收条件' }
-  const cases = []
-  for (const point of points) {
-    const lines = (point.acceptance ?? []).filter(item => String(item.text ?? '').trim() !== '')
-    if (lines.length === 0) {
-      cases.push({ title: `${point.title} 主流程`.slice(0, 200), expected: String(point.description || point.title).slice(0, 300), pointId: point.id })
-      continue
-    }
-    for (const line of lines) {
-      cases.push({ title: `${point.title}：${line.text}`.slice(0, 200), expected: String(line.text).slice(0, 300), pointId: point.id })
-    }
-  }
-  return { cases, reason: '' }
-}
-
-async function addDraftCases(store, taskId, by = '人') {
-  const before = store.snapshot()
-  const task = before.tasks.find(item => item.id === taskId)
-  if (task === undefined) throw new Error(`no task ${taskId}`)
-  const draft = draftCases(before, task)
-  if (draft.cases.length === 0) return { added: 0, total: (task.cases ?? []).length, reason: draft.reason }
-  const existing = new Set((task.cases ?? []).map(item => item.title))
-  let added = 0
-  await store.mutate(state => {
-    const entry = state.tasks.find(item => item.id === taskId)
-    for (const item of draft.cases) {
-      if (existing.has(item.title)) continue
-      existing.add(item.title)
-      /* 以前这里写死 http: null —— 生成的用例**永远不可执行**（全库 101 条 0 可执行就是这么来的）。
-         现在从验收条件里推断：有 URL 就生成接口用例，允许 shell 且有命令行就生成 shell 用例，
-         推不出来的明确标 draft（不计入覆盖率），而不是假装它是一条"用例"。 */
-      const inferred = draftCasesFromCriteria([item.expected || item.title], { allowShell: state.config?.testing?.allowShell === true })[0] ?? {}
-      entry.cases.push({
-        id: `c-${Math.random().toString(36).slice(2, 7)}`,
-        title: item.title,
-        expected: item.expected,
-        result: 'pending',
-        note: '',
-        pointId: item.pointId,
-        by,
-        at: Date.now(),
-        http: inferred.http ?? null,
-        shell: inferred.shell ?? null,
-        draft: inferred.draft === true,
-        lastRun: null,
-      })
-      added += 1
-    }
-    entry.updatedAt = Date.now()
-  })
-  const after = store.snapshot().tasks.find(item => item.id === taskId)
-  return { added, total: (after?.cases ?? []).length, reason: '' }
-}
-
 /** 缺陷 SLA：按严重级别算应修时限，返回预期、剩余与状态。 */
 function bugSla(task, config) {
   if (task === null || typeof task !== 'object' || task.type !== 'bug') return null
@@ -2592,7 +2533,7 @@ export function apply(ctx) {
   ctx.effect(() => disposeSection, 'dsh-studio: protocol section')
 
   configureToolHost({
-    addDraftCases, applyConfig, auditSummary, buildAnalytics, buildMetrics, burndownReport, checkToolAccess, createTask,
+    addAssertedCases, addDraftCases, applyConfig, auditSummary, buildAnalytics, buildMetrics, burndownReport, checkToolAccess, createTask,
     releaseGate, releaseNotes, skillsRoot, taskLine, toolLevel, toolOperator, upsertById, workloadReport,
     getActiveDispatcher: () => activeDispatcher, getActiveSkills: () => activeSkills,
   })

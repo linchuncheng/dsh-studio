@@ -136,12 +136,41 @@ AI 是执行手，判定权在确定性规则和人手里。要变成 AI Native�
 尺子已经有了（`src/host/case-strength.js` 的 `coverageStrength` / `meetsCoverageTarget`），
 用它守住新增用例必须可执行。
 
-### 落地顺序
+### 落地进度
 
-1. 先跑 `node tools/prompt-ab.mjs --task <卡> --setup-only` 确认派单通路可用（免费）
-2. 加 `studio_task_add_cases`（校验 + 拼地址 + 试跑一条）
-3. 测试角色的提示词追加用例必须带可执行断言段落
-4. 真派一次单，断言新增用例的 `coverageStrength.executable > 0`
+| # | 做什么 | 状态 |
+| --- | --- | --- |
+| 1 | `prompt-ab.mjs --setup-only` 确认派单通路可用（免费） | ✅ 2026-11-19，建/删专家通路可用、零 token |
+| 2 | `studio_task_add_cases`：校验 schema、拼 `baseUrl`、**当场试跑一条** | ✅ 2026-11-19，`src/host/executor.js` 的 `addAssertedCases`；不合法整体拒绝（一条都不写），试跑不通过如实标 `fail` 并把原因回给专家；9 条单测在 `tests/case-intake.test.mjs` |
+| 3 | 测试角色提示词追加「用例必须带可执行断言」 | ✅ 2026-11-19，`buildExpertPrompt` 的 `test` 分支 |
+| 4 | 真派一次单，断言新增用例的 `coverageStrength.executable > 0` | ✅ 2026-11-19，见下（**顺带暴露一个真 bug**） |
+
+### 第 4 步的判据
+
+不是「跑完了」就算过，要同时满足三条：
+
+1. 卡上新增用例的 `http`/`shell` 不为空（`coverageStrength.executable > 0`）；
+2. 专家**收到过**试跑结果（通过或失败都行，但必须是被工具返回的，不是它自己编的）；
+3. 只有标题没有断言的新用例数 = 0。
+
+### 第 4 步的实测（2026-11-19，真机 192.168.120.218）
+
+派单：`POST /studio-api/agents/run {id: t-52a15ac7, expert: 测试工程师}`，卡是「REQ-004 登录失败次数限制与锁定」。
+
+| 判据 | 结果 |
+| --- | --- |
+| 可执行用例 | **11 条全部可执行**（10 条接口 + 1 条 shell 独立探针），空壳 0 条 |
+| 专家收到试跑结果 | 是：`studio_task_add_cases` 真的被调用（会话日志 `tool/call` seq 439），第一条当场返回 200/38ms |
+| 标题型用例 | 0 条 |
+| 回归 | 用例真打 `http://127.0.0.1:8787/api/auth/login`：200 / 401 / 423 / 403 四类状态码都验到了 |
+
+**它还替我抓到一个真 bug**：shell 用例写的是 `expectExitCode`，执行器读的是 `expectExit`，
+于是命令退出码 0 也被判「退出码 0（期望 undefined）」，平台还据此自动开了一张缺陷卡——
+测试专家核对后把它关掉并标了「误报：平台字段名不一致，不是产品缺陷」。
+这一条在 0.3.6 修掉了：统一 `expectExit`，且**写库前先过 `sanitizeCase`**，让「刚写入的形状」与「重启后加载的形状」一致。
+
+> 结论：用例生成这条路走通了。**尺子是真的**——11 条用例能跑，
+> 而且第一次真派单就证明这套校验能反过来查出平台自己的问题。
 
 ## 6. 待拍板（决定档位）
 
