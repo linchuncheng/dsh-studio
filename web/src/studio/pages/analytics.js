@@ -90,6 +90,9 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
   const ov = data.overrides ?? { total: 0, cards: 0, requirements: 0, noReason: 0, byPerson: [], list: [] }
   /* 自动化率：已交付需求里「一次人工介入都没有」的占比。没人介入不代表质量好，但它是产品定义第 13 条。 */
   const au = data.automation ?? { rate: null, untouched: 0, delivered: 0, perRequirement: [] }
+  const gate = data.gate ?? { cards: 0, firstPass: 0, rate: null, bounced: [] }
+  const dispatchData = data.dispatch ?? { weeks: [], latest: 0, target: 15, meetsTarget: false, average: 0 }
+  const delivery = data.delivery ?? { count: 0, medianDays: null, avgDays: null, rows: [] }
 
   const cycleTotal = (data.cycle.buckets ?? []).reduce((sum, bucket) => sum + bucket.count, 0)
   const peak = Math.max(1, ...(data.throughput ?? []).map(point => point.count), ...(data.cycle.buckets ?? []).map(bucket => bucket.count))
@@ -205,6 +208,8 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
       kpi('中位周期', fmtSpan(data.cycle.medianDays), `平均 ${fmtSpan(data.cycle.avgDays)} · P90 ${fmtSpan(data.cycle.p90Days)}`),
       kpi('AI 交付物采纳率', pct(data.ai.acceptedRate), `${data.ai.accepted}/${data.ai.artifactsAi} 件已被验收 · 占全部交付物 ${pct(data.ai.aiShare)}`),
       kpi('自动化率', au.rate === null ? '—' : pct(au.rate), au.rate === null ? '还没有已交付的需求' : `零人工介入 ${au.untouched}/${au.delivered} 条已交付需求`),
+      kpi('门禁一次通过率', gate.rate === null ? '—' : pct(gate.rate), gate.cards === 0 ? '还没有走到验收的卡' : `${gate.firstPass}/${gate.cards} 张第一次进待验收就完成`, gate.rate !== null && gate.rate < 0.3),
+      kpi('需求交付时长', delivery.medianDays === null ? '—' : fmtSpan(delivery.medianDays), delivery.count === 0 ? '还没有签过字的需求' : `中位 ${delivery.count} 条需求 · 创建到签字`),
     ),
     h('div', { className: 'ds-panel', style: { marginTop: 12 } },
       h('div', { className: 'ds-panel-head' },
@@ -221,6 +226,21 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
             ...(au.perRequirement ?? []).slice(0, 6).map(item => h('div', { key: item.id, className: 'ds-an-foot', title: item.interventions === 0 ? '全程没人工介入' : '有人工介入点' },
               `${item.code || item.id} · 卡 ${item.tasks} 张 · 人工介入 ${item.interventions} 次${item.interventions === 0 ? '（零介入）' : ''}`)),
           ])),
+    h('div', { className: 'ds-panel', style: { marginTop: 12 } },
+      h('div', { className: 'ds-panel-head' },
+        '交付节奏',
+        h('span', { className: 'ds-hint' }, 'AI 每周碰到几张卡 · 需求从创建到签字花多久 · 验收第一次就过多少')),
+      h('div', { className: 'ds-panel-body' },
+        h('div', { className: 'ds-an-foot' }, `派单周活：本周 ${dispatchData.latest} 张卡有 AI 评论 · 目标 ${dispatchData.target} · 近 8 周均值 ${dispatchData.average.toFixed(1)}${dispatchData.meetsTarget ? '（达标）' : ''}`),
+        h('div', { className: 'ds-an-foot' },
+          '近 8 周：' + (dispatchData.weeks ?? []).map(item => `${new Date(item.week).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })} ${item.cards}`).join(' · ')),
+        gate.rate === null
+          ? h('div', { className: 'ds-hint' }, '门禁一次通过率：还没有走到验收的卡。')
+          : h('div', { className: 'ds-an-foot' }, `门禁一次通过率 ${pct(gate.rate)}：${gate.cards} 张到过待验收，其中 ${gate.cards - gate.firstPass} 张被打回过${gate.bounced.length > 0 ? '（' + gate.bounced.map(item => item.code || item.id).join('、') + '）' : ''}`),
+        delivery.medianDays === null
+          ? h('div', { className: 'ds-hint' }, '需求交付时长：还没有签过字的需求。')
+          : h('div', { className: 'ds-an-foot' }, `需求交付时长：中位 ${fmtSpan(delivery.medianDays)}、平均 ${fmtSpan(delivery.avgDays)}（${delivery.count} 条已签字需求）`),
+      )),
     ov.total === 0
       ? null
       : h('div', { className: 'ds-panel', style: { marginTop: 12 } },

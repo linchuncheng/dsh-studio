@@ -33,6 +33,7 @@ import { Dispatcher, RUN_LOG, attachRunLog, claimDispatchLock, clearAgentFailure
 import { mirrorCards } from './src/host/bitable.js'
 import { bugSeverityFor } from './src/host/bugs.js'
 import { automationRate } from './src/host/intervention.js'
+import { dispatchWeekly, gateFirstPass, requirementDelivery } from './src/host/delivery.js'
 import { findIdempotent, normalizeIdempotencyKey, rememberIdempotent, IDEMPOTENCY_SIDE_KEY } from './src/host/idempotency.js'
 import { queryLedger, EVENT_LEDGER_SIDE_KEY } from './src/host/event-ledger.js'
 import { configureEventLedger } from './src/host/events.js'
@@ -803,6 +804,10 @@ function buildAnalytics(state, options = {}) {
     generatedAt: now,
     scope: { tasks: inScope.length, moved, done },
     overrides: overrideSummary(state, { since, config: state.config, max: state.config.limits?.overrideMax ?? 3 }),
+    // 交付节奏三把尺子（产品定义 #9 / #10 / #14）：口径写在 src/host/delivery.js 的注释里。
+    gate: gateFirstPass(inScope),
+    dispatch: dispatchWeekly(state.tasks, { weeks: 8, now }),
+    delivery: requirementDelivery(state.requirements),
     // 自动化率（产品定义第 13 条）：已交付需求里零人工介入的占比。「没数据」返回 null，不冒充 0%。
     automation: automationRate(
       state,
