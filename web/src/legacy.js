@@ -676,7 +676,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-pane-stack > .ds-panel { margin-bottom:0; }
 .ds-pane-stack > .ds-form-panel { order:-1; }
 /* Right-side editor drawer: keep the list in view while editing one record. */
-.ds-side-wrap { position:fixed; inset:0; z-index:80; display:flex; justify-content:flex-end; }
+.ds-side-wrap { position:fixed; inset:0; top:env(titlebar-area-height, 0px); z-index:80; display:flex; justify-content:flex-end; -webkit-app-region:no-drag; }
 .ds-side-mask { position:absolute; inset:0; background:rgba(15,18,25,.42); }
 .ds-side { position:relative; display:flex; flex-direction:column; width:min(760px,96vw); height:100%; background:var(--ds-surface); color:inherit; border-left:1px solid var(--ds-line); box-shadow:-18px 0 48px rgba(0,0,0,.18); }
 .ds-side-head { flex:0 0 auto; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:14px 18px 12px; border-bottom:1px solid var(--ds-line); }
@@ -726,8 +726,12 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-hint { font-size:11px; opacity:.5; }
 .ds-error { font-size:11px; color:#c0392b; }
 .ds-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-.ds-drawer-wrap { position:fixed; inset:0; background:#00000055; display:flex; justify-content:flex-end; z-index:60; }
-.ds-modal-wrap { position:fixed; inset:0; background:#00000055; display:flex; align-items:center; justify-content:center;
+/* 桌面版（Electron）是无边框窗口 + Window Controls Overlay：系统在窗口顶部画一条标题栏和
+   最小化/最大化/关闭按钮。fixed 覆盖层如果从 top:0 开始，就会钻到那条标题栏下面 ——
+   抽屉头部的「设计：…」和「关闭」被原生按钮盖住、点不动（issue #4）。
+   env(titlebar-area-height) 给出这条标题栏的高度；普通浏览器里它没有值，退回 0，行为不变。 */
+.ds-drawer-wrap { position:fixed; inset:0; top:env(titlebar-area-height, 0px); background:#00000055; display:flex; justify-content:flex-end; z-index:60; -webkit-app-region:no-drag; }
+.ds-modal-wrap { position:fixed; inset:0; top:env(titlebar-area-height, 0px); background:#00000055; display:flex; align-items:center; justify-content:center; -webkit-app-region:no-drag;
   z-index:70; padding:24px; }
 .ds-modal { width:min(560px,96vw); max-height:min(86vh,760px); overflow:auto; display:flex; flex-direction:column; gap:14px;
   background:var(--ds-surface); color:inherit; border:1px solid var(--ds-line); border-radius:16px; padding:20px 22px;
@@ -976,7 +980,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 /* ---- 登录页（统一登录要求登录、又还没有会话时盖的一层） ---- */
 .ds-login-wrap { flex:1 1 auto; display:flex; align-items:center; justify-content:center; padding:24px; }
 /* 已进入工作区后点「登录」时是浮层：固定盖住整页，别把下面的布局挤歪 */
-.ds-login-wrap[data-overlay="1"] { position:fixed; inset:0; z-index:90; flex:none;
+.ds-login-wrap[data-overlay="1"] { position:fixed; inset:0; top:env(titlebar-area-height, 0px); z-index:90; flex:none; -webkit-app-region:no-drag;
   background:color-mix(in srgb, var(--ds-surface) 76%, transparent); backdrop-filter:blur(2px); }
 .ds-login { width:min(380px,100%); display:flex; flex-direction:column; gap:10px; padding:20px;
   border:1px solid var(--ds-line); border-radius:16px; background:var(--ds-surface);

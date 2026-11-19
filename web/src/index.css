@@ -1346,7 +1346,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] .ds-col[data-drag-over="1"] { outline: 2px dashed var(--ds-accent); outline-offset: -3px; background: color-mix(in srgb, var(--ds-accent) 8%, var(--muted)) }
 
 /* 全局搜索（⌘K / Ctrl+K） */
-[data-dsh-studio] .ds-palette-veil { position: fixed; inset: 0; z-index: 120; background: rgba(9, 9, 11, .38); display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh }
+[data-dsh-studio] .ds-palette-veil { position: fixed; inset: 0; top: env(titlebar-area-height, 0px); z-index: 120; -webkit-app-region: no-drag; background: rgba(9, 9, 11, .38); display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh }
 [data-dsh-studio] .ds-palette { width: min(560px, 92vw); background: var(--ds-surface, #fff); border: 1px solid var(--ds-line, #e4e4e7); border-radius: 16px; box-shadow: 0 24px 64px rgba(0, 0, 0, .28); overflow: hidden }
 /* 官方 Input 是「壳 div[role=presentation] + 内部 input」两层结构，
    命令面板要的是「一整条无框输入」，所以两层都得重置：

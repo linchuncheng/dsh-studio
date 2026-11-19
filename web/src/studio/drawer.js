@@ -1153,7 +1153,7 @@ function Drawer({ task, state, onClose, onChanged }) {
               imageOf !== item.id ? null : h('div', {
                 className: 'ds-art-image',
                 onClick: () => setImageOf(''),
-                style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70, cursor: 'zoom-out' },
+                style: { position: 'fixed', inset: 0, top: 'env(titlebar-area-height, 0px)', background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70, cursor: 'zoom-out', WebkitAppRegion: 'no-drag' },
               },
                 imageError !== null
                   ? h('div', { className: 'ds-error', style: { background: '#fff', padding: 12, borderRadius: 8 } }, imageError)

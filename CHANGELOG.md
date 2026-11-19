@@ -1,6 +1,31 @@
 # 更新日志
 
 
+## [0.9.5] — 2026-11-19
+
+修的是 [issue #4](https://github.com/marsken88/dsh-studio/issues/4)：桌面版里卡片详情抽屉盖住窗口标题栏，
+头部的「设计：…」和「关闭」被原生窗口按钮遮挡、点不动。
+
+### 修复
+- 根因：桌面客户端是**无边框窗口 + Window Controls Overlay**，系统在窗口顶部画了一条标题栏
+  （最小化/最大化/关闭）。我们的覆盖层写的是 `position: fixed; inset: 0`，即从 `top: 0` 开始，
+  于是钻到那条标题栏下面 —— 视觉上被盖住，点击也落在原生按钮上。
+- 所有全屏覆盖层（卡片抽屉、弹窗、侧栏遮罩、登录浮层、命令面板遮罩、交付物图片查看器）
+  改为 `top: env(titlebar-area-height, 0px)`，并标 `-webkit-app-region: no-drag`（避免被当成拖拽窗口）。
+  普通浏览器/Web 版里 `env()` 没有值，退回 0，行为完全不变。
+
+### 测试
+- `tests/overlay-titlebar.test.mjs`：扫描源码里所有 `position: fixed; inset: 0` 的覆盖层，
+  必须带标题栏偏移；并检查产物里确实有偏移（`dist/client.js` 至少 5 处）。
+  把抽屉那一行改回 `inset:0`，这条会红（实测过）。
+
+### 说明
+- 这台机器上没有运行中的桌面客户端，所以**没有在 Windows 客户端里亲眼验证**遮挡是否消失；
+  验证到的是：① 桌面应用确实启用了 Window Controls Overlay（`app.asar` 里有 `titleBarOverlay` /
+  `titlebar-area`）；② Web 版里 `env()` 回退为 0，抽屉位置与之前一致（探针通过）；
+  ③ 覆盖层规则有测试兜底。仍需要在真实客户端上确认一次。
+
+
 ## [0.9.4] — 2026-11-19
 
 ### 修复
