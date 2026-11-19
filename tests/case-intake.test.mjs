@@ -195,3 +195,26 @@ test('绕过准出：卡级与需求级的 override 都能统计出来', async (
   assert.equal(overrideSummary(state, { since: now - 500 }).total, 1, '按区间过滤')
   assert.equal(overrideSummary({}).total, 0, '空状态不能炸')
 })
+
+test('绕过准出：区分 AI/人强推，超过上限要标出来', async () => {
+  const { overrideSummary } = await import('../src/host/override.js')
+  const now = Date.now()
+  const config = { experts: [{ id: 'e1', name: '测试工程师' }] }
+  const state = {
+    config,
+    tasks: [
+      { id: 't-1', code: 'DEV-001', title: 'AI 强推', status: 'done', override: { by: '测试工程师', at: now, reason: '急' } },
+      { id: 't-2', code: 'DEV-002', title: '人强推', status: 'done', override: { by: '张三', at: now - 10, reason: '客户要求' } },
+      { id: 't-3', code: 'DEV-003', title: '没记人', status: 'done', override: { by: '', at: now - 20, reason: '' } },
+    ],
+    requirements: [],
+  }
+  const out = overrideSummary(state, { config, max: 2 })
+  assert.equal(out.total, 3)
+  assert.equal(out.byAgent, 1, '专家名册里的名字算 AI 推的')
+  assert.equal(out.byHuman, 1)
+  assert.equal(out.byUnknown, 1)
+  assert.equal(out.overLimit, true, '3 > 上限 2')
+  assert.equal(overrideSummary(state, { config, max: 5 }).overLimit, false)
+  assert.equal(out.list.find(item => item.id === 't-1').ai, true)
+})

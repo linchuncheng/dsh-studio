@@ -207,8 +207,12 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
       ? null
       : h('div', { className: 'ds-panel', style: { marginTop: 12 } },
         h('div', { className: 'ds-panel-head' },
-          `强制放行 ${ov.total} 次`,
+          `${ov.overLimit ? '⚠ ' : ''}强制放行 ${ov.total} 次`,
           h('span', { className: 'ds-hint' }, `卡 ${ov.cards} · 需求 ${ov.requirements}${ov.noReason > 0 ? ` · ${ov.noReason} 次没写原因` : ''}（区间内）`)),
+        ov.overLimit
+          ? h('div', { className: 'ds-err' }, `超过上限 ${ov.max} 次：这个口子用得太勤了，先看看下面每一次是不是真的必要`)
+          : null,
+        h('div', { className: 'ds-an-foot' }, `AI 推 ${ov.byAgent ?? 0} 次 · 人推 ${ov.byHuman ?? 0} 次${(ov.byUnknown ?? 0) > 0 ? ` · 没记签名人 ${ov.byUnknown} 次` : ''}`),
         h('div', { className: 'ds-panel-body' },
           ov.byPerson.length === 0
             ? null

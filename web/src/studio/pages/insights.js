@@ -77,6 +77,8 @@ export function DashboardPage({ state, onOpenTask, onOpenBoard, onOpenCases }) {
         kpi('在办卡', data.scope.open, `共 ${data.scope.tasks} 张`),
         kpi('流水线失败', risks.pipelineFailed, '最近一次 CI 没通过', risks.pipelineFailed > 0),
         kpi('集成异常', risks.integrationsBroken, '飞书/GitLab/云盘/隔离', risks.integrationsBroken > 0),
+        // 强制放行是逃生舱：30 天内用超了就摆在这里，别让它变成默认操作。
+        kpi('强制放行', risks.overrideOver ?? 0, `近 30 天 · 上限 ${risks.overrideMax ?? 3} 次`, (risks.overrideOver ?? 0) > 0),
         kpi('AI 在跑', ai.running, `今天派单 ${ai.todayRuns} 次`),
       ),
     ),

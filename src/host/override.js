@@ -1,3 +1,5 @@
+import { isAiSignoff } from './intervention.js'
+
 // 绕过准出的记录：以前只写进 history 的一句话，需求准出看不到。
 /** 绕过准出的清单：卡级 task.override + 需求级 requirement.override。
  *
@@ -40,17 +42,31 @@ export function overrideSummary(state, options = {}) {
       reason: String(entry.reason ?? ''),
     })
   }
+  const config = options?.config ?? options?.state?.config ?? options?.state ?? {}
   const list = [...cards, ...requirements].sort((a, b) => b.at - a.at)
   const counts = new Map()
+  let byAgent = 0
+  let byHuman = 0
+  let byUnknown = 0
   for (const item of list) {
     const key = item.by.trim() === '' ? '（没记签名人）' : item.by
     counts.set(key, (counts.get(key) ?? 0) + 1)
+    // 和签字同一套口径：专家名册里的名字算 AI，会话痕迹算 AI，其余算人。
+    if (item.by.trim() === '') byUnknown += 1
+    else if (isAiSignoff({ by: item.by }, config)) { item.ai = true; byAgent += 1 }
+    else byHuman += 1
   }
+  const max = Number(options?.max) > 0 ? Number(options.max) : 0
   return {
     total: list.length,
     cards: cards.length,
     requirements: requirements.length,
     noReason: list.filter(item => item.reason.trim() === '').length,
+    byAgent,
+    byHuman,
+    byUnknown,
+    max,
+    overLimit: max > 0 && list.length > max,
     byPerson: [...counts.entries()].map(([by, count]) => ({ by, count })).sort((a, b) => b.count - a.count),
     list: list.slice(0, 50),
   }

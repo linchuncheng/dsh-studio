@@ -3,6 +3,7 @@
 
 import { coverageStrength, draftCasesFromCriteria, isExecutable } from './case-strength.js'
 import { isAiSignoff } from './intervention.js'
+import { overrideSummary } from './override.js'
 import { CASE_HTTP_METHODS, CODE_PREFIX, ROLE_IDS, STATUS_IDS, STATUSES, nextRequirementCode, nextTaskCode, normalizePatch, sanitizeBaseline, sanitizeCase, sanitizeReqDoc, sanitizeRequirement, sanitizeTestRun, text,
   canonicalAuthor,
   sanitizeCoding,
@@ -949,6 +950,10 @@ export function buildDashboard(state) {
   const overdue = open.filter(task => task.dueAt > 0 && task.dueAt < now)
   const blocked = open.filter(task => task.blocked != null)
   const slaOverdue = open.filter(task => task.type === 'bug' && host.bugSla(task, state.config).state === 'overdue')
+  // 强制放行是逃生舱，用得越来越顺就该被看一眼：30 天内超过上限算风险。
+  const overrideWindow = overrideSummary(state, { since: Date.now() - 30 * 86_400_000, config: state.config })
+  const overrideMax = Number(state.config?.limits?.overrideMax) || 3
+  const overrideOver = overrideWindow.total > overrideMax ? overrideWindow.total : 0
   const gateFailed = open.filter(task => {
     if (task.status !== 'test' && task.status !== 'accept') return false
     const gate = taskExitGate(state, task)
@@ -981,6 +986,8 @@ export function buildDashboard(state) {
       pipelineFailed: pipelineFailed.length,
       requirementBlocked: requirementBlocked.length,
       releaseBlocked: releaseBlocked.length,
+      overrideOver: overrideOver,
+      overrideMax,
       integrationsBroken: host.healthReport().broken,
     },
     flow: {
@@ -997,6 +1004,7 @@ export function buildDashboard(state) {
       slaOverdue: listOf(slaOverdue),
       gateFailed: listOf(gateFailed),
       pipelineFailed: listOf(pipelineFailed),
+      overrideOver: overrideWindow.list.slice(0, 6),
       requirementBlocked: requirementBlocked.slice(0, 6).map(item => ({
         id: item.id,
         code: item.code,

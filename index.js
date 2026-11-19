@@ -792,7 +792,7 @@ function buildAnalytics(state, options = {}) {
     project,
     generatedAt: now,
     scope: { tasks: inScope.length, moved, done },
-    overrides: overrideSummary(state, { since }),
+    overrides: overrideSummary(state, { since, config: state.config, max: state.config.limits?.overrideMax ?? 3 }),
     cycle: {
       count: cycleValues.length,
       avgDays: cycleValues.length > 0 ? cycleValues.reduce((sum, value) => sum + value, 0) / cycleValues.length / DAY : 0,
