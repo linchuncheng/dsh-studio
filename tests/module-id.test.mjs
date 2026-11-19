@@ -26,3 +26,9 @@ test('vite 入口：id 走 resolveModuleId()，兜底用编译期包名常量', 
   const config = read('web/vite.config.mjs')
   assert.match(config, /__STUDIO_PKG_NAME__:\s*JSON\.stringify\(/, 'vite.config 应该定义 __STUDIO_PKG_NAME__')
 })
+
+test('镜像 workflow 只改 package.json 与 patch 的名字（产物里的注册名是运行时推导的，不该再字符串替换）', () => {
+  const workflow = read('.github/workflows/publish-github-packages.yml')
+  assert.ok(workflow.includes('name: "${mirror}"'), 'patch 的名字要改成镜像包名')
+  assert.ok(!workflow.includes('id:"${before}"'), '产物里没有写死的注册名，镜像不该再做字符串替换（0.9.3 起会整条 CI 失败）')
+})

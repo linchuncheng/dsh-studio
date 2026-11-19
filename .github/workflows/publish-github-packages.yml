@@ -83,13 +83,9 @@ jobs:
           const patched = yml.replaceAll(`name: "${before}"`, `name: "${mirror}"`)
           if (patched === yml) throw new Error(`cordis.patch.yml 里没有 name: "${before}"，镜像会装不上`)
           writeFileSync('cordis.patch.yml', patched)
-          // 浏览器端注册名也在产物里写死了：镜像必须把它一起改成镜像包名，否则装镜像的人看不到面板。
-          for (const file of ['client.js', 'dist/client.js']) {
-            const original = readFileSync(file, 'utf8')
-            const next = original.replaceAll(`id:"${before}"`, `id:"${mirror}"`)
-            if (next === original) throw new Error(`${file} 里没找到注册名 id:"${before}"`)
-            writeFileSync(file, next)
-          }
+          // 浏览器端注册名不用改：产物会在运行时从 __DSH_BOOT__.entries / 自己的 script 地址
+          // 解析出宿主分配的真实模块 id（issue #3 修的就是"写死名字在另一种安装方式下失效"）。
+          // 以前这里做字符串替换，改名之后产物里已经没有那个字面量了，替换会整条 CI 失败。
           console.log(`${before} → ${mirror}`)
           NODE
 

@@ -1,6 +1,24 @@
 # 更新日志
 
 
+## [0.9.4] — 2026-11-19
+
+### 修复
+- **GitHub Packages 镜像 workflow 整条失败**（CI 红）：
+  `publish-github-packages.yml` 里还在用字符串替换把产物里的
+  `id:"@marsken/dsh-studio"` 改成镜像包名，但 0.9.3 起注册名是**运行时推导**的，
+  产物里已经没有那个字面量了 → 替换失败 → 抛错退出。
+
+  这一步本来就不再需要：运行时解析会从 `__DSH_BOOT__.entries` / 自己的 script 地址取到
+  宿主分配的真实 id，镜像装到哪儿都自动对得上（issue #3 修的就是"写死名字会失效"）。
+  已删掉这段改写，并留了注释说明为什么不能加回来。
+
+### 新增
+- `npm run verify:mirror`（`tools/mirror-dry-run.mjs`）：在临时目录里把镜像 workflow 的
+  **改名 + 自检**整套跑一遍，已接进 `release:check`。
+  这类"只在 CI 打 tag 时才跑"的步骤以前没有本地覆盖，坏一次要等到发版才知道。
+
+
 ## [0.9.3] — 2026-11-19
 
 修的是 [issue #6](https://github.com/marsken88/dsh-studio/issues/6)：macOS 桌面版点开「看板」报

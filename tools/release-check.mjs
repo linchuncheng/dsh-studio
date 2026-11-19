@@ -78,6 +78,17 @@ if (lastTag === '') {
    打 tag 之前先在真机上跑一遍关键探针：接口类改动最容易「本地测试全绿、发出去才发现
    面板坏了」（0.3.1 就是这么把「保存角色模板」打成 400 的）。CI 里没有部署和 token，
    所以默认不跑，只在本地发版前用 npm run release:preflight。 */
+/* ── 镜像改写演练（每次都跑）────────────────────────────────────────
+   GitHub Packages 的镜像 workflow 只在打 tag 时才跑，改坏了要等 tag 之后才知道
+   （0.9.3 那次就是：产物里没有写死的注册名了，镜像还在做字符串替换 → 整条失败）。 */
+try {
+  const out = execFileSync(process.execPath, ['tools/mirror-dry-run.mjs'], { encoding: 'utf8' })
+  notes.push('mirror-dry-run — ' + (out.trim().split('\n').pop() ?? ''))
+} catch (error) {
+  const out = String(error.stdout ?? '')
+  problems.push('镜像改写演练失败：' + (out.trim().split('\n').pop() ?? String(error.message).slice(0, 160)))
+}
+
 /* ── TDZ 扫描（每次都跑）────────────────────────────────────────────
    "同作用域内先用后声明" 在浏览器里是 `Cannot access 'x' before initialization`，
    而 node --check 与契约测试都看不见（issue #6：空看板第一行就读了还没初始化的 filtering，
