@@ -8,11 +8,15 @@
  *
  * token 只从环境变量读，不落盘、不进日志。没有 token 时只打印将要发的内容。
  */
+import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 
 const REPO = process.env.GITHUB_REPO ?? 'marsken88/dsh-studio'
 const TOKEN = String(process.env.GITHUB_TOKEN ?? '').trim()
-const dryRun = process.argv.includes('--dry-run') || TOKEN === ''
+const GH = process.env.GH_BIN ?? 'gh'
+const ghOk = (() => { try { execFileSync(GH, ['auth','status'], { stdio: 'ignore' }); return true } catch { return false } })()
+const useGh = ghOk && TOKEN === ''
+const dryRun = process.argv.includes('--dry-run') || (!ghOk && TOKEN === '')
 const onlyArg = process.argv.indexOf('--only')
 const only = onlyArg >= 0 ? String(process.argv[onlyArg + 1] ?? '').split(',').map(item => item.trim()).filter(Boolean) : []
 
