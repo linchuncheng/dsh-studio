@@ -29,10 +29,10 @@ on:
   # 之前那样调，release.yml 的每次运行都在 48 秒左右被 CANCELLED（v0.7.0 / v0.7.1 连着三次），
   # 拆成两个独立 workflow 之后，镜像再出问题也不会影响 npm 那条主链路。
   push:
+    # 只按 tag 触发。以前还写了 paths: [本文件]，于是「打 tag」和「改了本文件」两个条件
+    # 必须同时成立才跑 —— 正常发版永远不会触发镜像，GitHub Packages 上一直是旧版本。
     tags:
       - 'v*'
-    paths:
-      - '.github/workflows/publish-github-packages.yml'
   workflow_dispatch:
     inputs:
       tag:
