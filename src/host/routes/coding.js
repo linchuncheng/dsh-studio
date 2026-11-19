@@ -1,4 +1,5 @@
 import { CODING_REVIEW_STATUS, cleanId, mergeCoding, sanitizeCoding } from '../domain.js'
+import { isSelfReview, reviewDecision } from '../quality.js'
 import { clearAgentFailure, noteAgentFailure } from '../dispatcher.js'
 import { codingVerifyLine, runCommand, taskExitGate, verifyCodingRecord } from '../executor.js'
 import { compareCodingFacts } from '../gitlab-facts.js'
@@ -57,7 +58,13 @@ if (method === 'POST' && route === '/task/coding') {
       task.coding = null
     } else if (action === 'review') {
       const base = sanitizeCoding(task.coding ?? {})
-      const status = CODING_REVIEW_STATUS.includes(String(body.status)) ? String(body.status) : 'approved'
+      /* 与 studio_task_coding 工具同一套规则：不传结论 → pending；作者不能给自己盖"通过"。
+         以前这里默认 approved，面板点一下"评审通过"就完事，评审形同虚设。 */
+      const status = reviewDecision(body.status, CODING_REVIEW_STATUS)
+      const author = String(base.agent ?? '').trim()
+      if (status === 'approved' && isSelfReview(author, by)) {
+        throw new Error(`不能自评：这份执行记录的作者是「${author}」，评审人也是「${by}」。让另一个专家评审`)
+      }
       task.coding = sanitizeCoding({
         ...base,
         review: { status, by, at: Date.now(), note: String(body.note ?? '').slice(0, 600) },

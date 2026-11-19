@@ -1,3 +1,4 @@
+import { isSelfReview, reviewDecision } from './quality.js'
 import { randomBytes } from 'node:crypto'
 import {
   CASE_RESULTS, CODING_REVIEW_STATUS, RELEASE_STATUS_LABEL, REQ_STATUS_LABEL, ROLE_IDS, STATUSES, STATUS_IDS,
@@ -1026,10 +1027,18 @@ export function registerTools(ctx, store) {
           task.coding = null
         } else if (action === 'review') {
           const base = sanitizeCoding(task.coding ?? {})
+          /* 不传 reviewStatus 以前默认写成 approved —— 等于"看一眼就算通过"，评审形同虚设。
+             现在默认 pending：要放行必须显式说 approved。 */
+          const status = reviewDecision(args.reviewStatus, CODING_REVIEW_STATUS)
+          /* 禁自评：谁写的代码，谁就不能给自己盖"通过"。同一张卡的 agent 与会话作者都算自评。 */
+          const author = String(base.agent ?? '').trim()
+          if (status === 'approved' && isSelfReview(author, by)) {
+            throw new Error(`不能自评：这份执行记录的作者是「${author}」，评审人也是「${by}」。让另一个专家评审，或在评论里写清为什么这次可以自评`)
+          }
           task.coding = sanitizeCoding({
             ...base,
             review: {
-              status: CODING_REVIEW_STATUS.includes(String(args.reviewStatus)) ? String(args.reviewStatus) : 'approved',
+              status,
               by,
               at: Date.now(),
               note: String(args.reviewNote ?? '').slice(0, 600),

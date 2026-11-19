@@ -1,4 +1,5 @@
 import { checklistFromAcceptance } from '../acceptance.js'
+import { resolveSigner } from '../access.js'
 import { actorKind } from '../intervention.js'
 import {
   INTAKE_HTML,
@@ -78,14 +79,22 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     const id = String(body.id ?? '')
     const action = body.action === 'clear' ? 'clear' : 'sign'
     const note = String(body.note ?? '').trim().slice(0, 600)
-    const by = String(body.by ?? req.headers['x-studio-user'] ?? '').trim().slice(0, 60) || '人'
+    /* 签字人必须是服务端认定的身份：会话 > 反代注入头 > 请求体（免登录单机模式才轮到自报）。 */
+    const { by, source } = resolveSigner({
+      session: req.studioActor ?? '',
+      header: req.headers['x-studio-user'] ?? '',
+      body: body.by ?? '',
+    })
+    /* override 必须声明在函数作用域：下面 store.mutate 里要用它写 override 记录。
+       以前它声明在 if (action === 'sign') 块里，mutate 里引用 → 每次签字都 ReferenceError（400），
+       也就是说需求签字从 0.4.0 起就没成功过，而当时没有任何测试覆盖这条路径。 */
+    const override = String(body.override ?? '').trim()
     if (action === 'sign' && note === '') throw new Error('需求验收签字要写一句结论：交付了什么、遗留什么')
     // 准出门禁必须在签字前生效：否则「需求自己说没准备好，人却点了签字」会直接变成已交付。
     if (action === 'sign') {
       // 用「假设这次签字已经生效」的副本算门禁：否则「还没有签字」会把自己挡住，永远签不上。
       const current = store.snapshot().requirements.find(item => item.id === id) ?? {}
       const gate = requirementGate(store.snapshot(), { ...current, signoff: { by, at: Date.now(), note } })
-      const override = String(body.override ?? '').trim()
       if (gate.ready !== true && override === '') {
         throw new Error('这条需求还过不了准出：' + gate.blockers.join('；') + '（确实要提前签，传 override 写一句原因）')
       }
@@ -94,7 +103,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
       const target = state.requirements.find(item => item.id === id)
       if (target === undefined) throw new Error('需求不存在')
       if (action === 'sign') {
-        target.signoff = { by, at: Date.now(), note, actorKind: actorKind(by) }
+        target.signoff = { by, at: Date.now(), note, actorKind: actorKind(by), source }
         // 带着 override 强签的，把「谁、为什么」留下来：以前只在这一次请求里生效，事后查不到。
         if (override !== '') target.override = { by, at: Date.now(), reason: override.slice(0, 300) }
         const open = state.tasks.filter(task => task.requirementId === id && task.status !== 'done').length

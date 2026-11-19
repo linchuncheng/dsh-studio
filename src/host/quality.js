@@ -122,3 +122,20 @@ export function buildQuality(state, runs) {
     },
   }
 }
+
+/** 是不是自评：执行记录的作者和评审人是同一个人（或名字互相包含，比如「开发」vs「开发工程师」）。 */
+export function isSelfReview(author, reviewer) {
+  const a = String(author ?? '').trim()
+  const b = String(reviewer ?? '').trim()
+  if (a === '' || b === '') return false
+  return a === b || a.includes(b) || b.includes(a)
+}
+
+/** 评审结论怎么定：显式给了合法状态就按它，否则一律 pending。
+ *
+ *  以前工具与 HTTP 两条路都默认写成 approved —— "看一眼就算通过"，评审没有意义。
+ *  两条入口必须用同一个函数，否则改一条漏一条（这一版就是先只改了工具、面板照旧默认 approved）。 */
+export function reviewDecision(rawStatus, allowed) {
+  const value = String(rawStatus ?? '').trim()
+  return Array.isArray(allowed) && allowed.includes(value) ? value : 'pending'
+}

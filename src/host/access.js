@@ -74,3 +74,17 @@ export function isCrossSiteRequest(req) {
     return false
   }
 }
+
+/** 签字人身份：**服务端认定的会话身份优先**，其次反代注入的头，最后才是请求体自报。
+ *
+ *  以前直接取 body.by，于是开了 LDAP 也能用别人的名字签字 —— 门禁唯一的责任锚点成了自由文本。
+ *  返回 { by, source }：source = session / header / body / none，会一起写进签字记录。 */
+export function resolveSigner({ session = '', header = '', body = '', fallback = '人' } = {}) {
+  const s = String(session ?? '').trim()
+  const h = String(header ?? '').trim()
+  const b = String(body ?? '').trim()
+  if (s !== '') return { by: s.slice(0, 60), source: 'session' }
+  if (h !== '') return { by: h.slice(0, 60), source: 'header' }
+  if (b !== '') return { by: b.slice(0, 60), source: 'body' }
+  return { by: String(fallback).slice(0, 60), source: 'none' }
+}

@@ -1030,6 +1030,8 @@ export function sanitizeRequirement(raw) {
         note: String(raw.signoff.note ?? '').slice(0, 600),
         // 谁签的：不存下来，重启一轮又只能靠名字猜（卡片签字早就存了，需求这边漏了）。
         actorKind: String(raw.signoff.actorKind ?? '').slice(0, 10),
+        // 签字来源：session（登录身份）/ header（反代注入）/ body（自报）/ none
+        source: String(raw.signoff.source ?? '').slice(0, 10),
       },
     override: sanitizeOverride(raw.override) ?? null,
     // 需求评审：谁在什么时候看了这版需求、结论是什么。通过之前不往下拆卡。

@@ -908,6 +908,13 @@ export function taskExitGate(state, task) {
   const artifacts = task.artifacts ?? []
   // 核对过但没通过：给一句提醒（不拦准出：拦不拦是产品决定）。
   const coding = task.coding ?? null
+  /* 代码评审进准出：有执行记录就必须有评审结论，且不能被评审为「要改」。
+     以前 coding.review 完全不参与准出 —— pending 或 changes_requested 的卡照样能推到完成。 */
+  if (coding !== null) {
+    const reviewStatus = String(coding.review?.status ?? '')
+    if (reviewStatus === '' || reviewStatus === 'pending') blockers.push('代码评审还没给出结论：让评审人用 studio_task_coding action=review 写 approved / changes_requested')
+    else if (reviewStatus === 'changes_requested') blockers.push(`代码评审要改：${String(coding.review?.note ?? '').slice(0, 80) || '评审人要求修改'}`)
+  }
   if (coding?.verified !== null && coding?.verified !== undefined && coding.verified.ok !== true) {
     warnings.push('代码事实核对不通过：' + String((coding.verified.missingCommits ?? []).length) + ' 个提交 / ' + String((coding.verified.missingFiles ?? []).length) + ' 个文件在仓库里找不到')
   }
