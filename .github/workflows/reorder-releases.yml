@@ -18,6 +18,12 @@ on:
 permissions:
   contents: write
 
+# 同一时间只允许一个 release 相关写操作：backfill / reorder / release 都要建 release，
+# 并发跑会互相「刚建好就被对方删了」，2026-11-19 那次双向触发就是这么红的。
+concurrency:
+  group: github-releases
+  cancel-in-progress: false
+
 jobs:
   reorder:
     runs-on: ubuntu-latest
@@ -26,7 +32,23 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: 先看 Latest 是不是已经对了（对就什么都不做）
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          newest="$(git tag --sort=v:refname | tail -1)"
+          latest="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name 2>/dev/null || echo '')"
+          echo "期望 $newest / 实际 ${latest:-（无）}"
+          if [ "$latest" = "$newest" ]; then
+            echo "need=false" >> "$GITHUB_OUTPUT"
+            echo "Latest 已经指向最新版本，不用重排"
+          else
+            echo "need=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: 删掉现有 release（保留 tag）
+        if: steps.gate.outputs.need == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -38,6 +60,7 @@ jobs:
           done
 
       - name: 按版本从旧到新重建（最后创建的才是 Latest）
+        if: steps.gate.outputs.need == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -66,6 +89,7 @@ jobs:
           done
 
       - name: 确认 Latest 指向最新版本
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

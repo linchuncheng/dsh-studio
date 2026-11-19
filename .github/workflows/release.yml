@@ -19,6 +19,12 @@ on:
   # 手动触发：只跑校验链、不发布（调试 workflow 用，不用造新版本号）
   workflow_dispatch:
 
+# 同一时间只允许一个 release 相关写操作：backfill / reorder / release 都要建 release，
+# 并发跑会互相「刚建好就被对方删了」，2026-11-19 那次双向触发就是这么红的。
+concurrency:
+  group: github-releases
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest

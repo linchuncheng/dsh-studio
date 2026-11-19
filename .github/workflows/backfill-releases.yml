@@ -30,6 +30,12 @@ on:
 permissions:
   contents: write
 
+# 同一时间只允许一个 release 相关写操作：backfill / reorder / release 都要建 release，
+# 并发跑会互相「刚建好就被对方删了」，2026-11-19 那次双向触发就是这么红的。
+concurrency:
+  group: github-releases
+  cancel-in-progress: false
+
 jobs:
   backfill:
     runs-on: ubuntu-latest
@@ -89,6 +95,12 @@ jobs:
             echo "→ 建 $tag（prev=${prev:-无}）"
             # 有的 tag 可能是轻量 tag，--verify-tag 会拦；失败不中断整轮，最后统一报数字。
             if [ "$tag" = "$NEWEST" ]; then LATEST_ARG="--latest"; else LATEST_ARG="--latest=false"; fi
+            # 幂等：并发或重跑时对方可能刚建过，别把它当成失败
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "  已存在 $tag，跳过"
+              skipped=$((skipped + 1))
+              continue
+            fi
             if gh release create "$tag" --title "$tag" --notes-file "$notes" $LATEST_ARG --verify-tag 2>/dev/null \
               || gh release create "$tag" --title "$tag" --notes-file "$notes" $LATEST_ARG; then
               created=$((created + 1))
