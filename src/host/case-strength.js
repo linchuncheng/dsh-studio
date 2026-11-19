@@ -48,3 +48,45 @@ export function resolveCaseResult(rawResult, raw) {
   if (value !== 'pass') return value
   return isExecutable(raw) ? 'pass' : 'pending'
 }
+
+/** 从验收条件推断用例：能推断出可执行断言就给出断言，推断不出就标 draft。
+ *
+ * 以前是「一条验收条件 = 一个只有标题的用例」，全库 101 条里 0 条能跑。
+ * 这里做三件不依赖模型的事：
+ *   1. 条件里出现 URL（http/https）→ 生成接口用例（GET，断言状态码 200）
+ *   2. 条件里出现明显的命令行（以 $ 开头或 含 --flag）→ 生成 shell 用例（需 allowShell）
+ *   3. 都不是 → 生成 draft，**不计入覆盖率**
+ */
+export function draftCasesFromCriteria(criteria, options = {}) {
+  const allowShell = options.allowShell === true
+  const list = Array.isArray(criteria) ? criteria : []
+  const cases = []
+  for (const [index, raw] of list.entries()) {
+    const text = String(raw ?? '').trim()
+    if (text === '') continue
+    const title = text.slice(0, 80)
+    const url = (text.match(/https?:\/\/[^\s，。；、）)】]+/) ?? [])[0] ?? ''
+    if (url !== '') {
+      cases.push({
+        title: title.slice(0, 60),
+        expected: text.slice(0, 300),
+        http: { method: 'GET', url, expectStatus: 200, expectContains: '' },
+        draft: false,
+      })
+      continue
+    }
+    const command = (text.match(/(?:^|\s)\$\s*([^\n]+)/) ?? [])[1] ?? (/(--[a-z][\w-]*)/i.test(text) ? text : '')
+    if (allowShell && command !== '') {
+      cases.push({
+        title: title.slice(0, 60),
+        expected: text.slice(0, 300),
+        shell: { command: String(command).slice(0, 500), expectExitCode: 0 },
+        draft: false,
+      })
+      continue
+    }
+    // 推断不出断言：留着当草稿，但**明确标记**，不冒充已覆盖
+    cases.push({ title: title.slice(0, 60), expected: text.slice(0, 300), draft: true, index })
+  }
+  return cases
+}
