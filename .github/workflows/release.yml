@@ -19,10 +19,11 @@ on:
   # 手动触发：只跑校验链、不发布（调试 workflow 用，不用造新版本号）
   workflow_dispatch:
 
-# 同一时间只允许一个 release 相关写操作：backfill / reorder / release 都要建 release，
-# 并发跑会互相「刚建好就被对方删了」，2026-11-19 那次双向触发就是这么红的。
+# 发版的并发组**按 tag 区分**，不和 backfill / reorder 共用：
+# 共用过一次，结果 housekeeping 的运行把正在排队的 release 顶掉了，v0.7.0 的发布直接被 CANCELLED。
+# 同一个 tag 重复触发时串行；不同 tag 并行互不影响。
 concurrency:
-  group: github-releases
+  group: release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
