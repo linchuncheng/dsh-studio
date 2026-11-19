@@ -5,6 +5,7 @@ import test from 'node:test'
 
 const root = new URL('../', import.meta.url)
 const read = rel => readFileSync(new URL(rel, root), 'utf8')
+const releaseYml = read('.github/workflows/release.yml')
 const onBlock = source => {
   const start = source.indexOf('\non:')
   const end = source.indexOf('\npermissions:', start)
@@ -45,4 +46,19 @@ test('预发布占住 next 时 release.yml 必须给出提醒', () => {
   const release = read('.github/workflows/release.yml')
   assert.match(release, /--tag next/, '预发布预览版本仍走 next 通道')
   assert.match(release, /::warning::[^\n]*next/, '要提醒维护者在正式版之后清掉 next（CI 没有 dist-tag 令牌）')
+})
+
+// 预发布约定：*-* 的 tag 走 npm next 通道，不抢 GitHub Latest
+
+test('预发布 tag（含 -）走 next 通道', () => {
+  assert.match(releaseYml, /\*-\*\) TAG_ARG="--tag next"/, '预发布要带 --tag next')
+  assert.match(releaseYml, /\*-\*\) FLAGS="--prerelease --latest=false"/, 'GitHub Release 要标 prerelease 且不抢 Latest')
+})
+
+test('发布后"latest 一致"的核对只对正式版生效', () => {
+  assert.match(releaseYml, /if: success\(\) && !contains\(github\.ref_name, '-'\)/, '预发布不该被 latest 比对挡住')
+})
+
+test('registry 校验按版本查，不依赖 latest', () => {
+  assert.match(releaseYml, /tools\/registry-has\.mjs "\$VER"/, '要按版本号查 registry')
 })

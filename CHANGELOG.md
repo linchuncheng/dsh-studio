@@ -1,6 +1,17 @@
 # 更新日志
 
 
+## [0.9.19-next.0] — 2026-11-20（预发布，npm 通道 next）
+
+### 说明
+- 代码与 0.9.18 相同，**只是把 `next` 这个预发布通道从 2026-11-18 遗留的 `0.2.2-rc.3` 顶到当前版本**。
+  它一直悬在 97 个版本之前：`npm i @marsken/dsh-studio@next` 会装到一个对着老宿主接口写的构建。
+- 清 `next` 需要 npm 写权限（dist-tag 操作不受 Trusted Publishing 覆盖），本机只有只读令牌；
+  所以改为按预发布流程走一次：`*-*` 的 tag 由 `release.yml` 自动 `--tag next` 发布，
+  并且 `npm run verify:release` 的断言是「next 不比 latest 旧」—— 现在转绿。
+- 正式版 `latest` 仍是 0.9.18，没有变化。
+
+
 ## [0.9.18] — 2026-11-20
 
 ### 说明
