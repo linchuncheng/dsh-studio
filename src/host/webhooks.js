@@ -1,5 +1,5 @@
 // webhook 订阅者：把事件 POST 给配置里的地址。失败只记健康，不重试、不阻塞。
-import { emitEvent, subscribe } from './events.js'
+import { emitEvent, subscribeDurable } from './events.js'
 import { markHealth } from './integrations.js'
 
 export const WEBHOOK_EVENTS = ['task/moved', 'case/failed', 'gate/blocked', 'agent/failed', 'regression/finished']
@@ -67,9 +67,10 @@ export async function deliverWebhooks(config, event) {
   }
 }
 
-/** 进程内接上：事件 → webhook。返回取消订阅函数。 */
+/** 进程内接上：事件 → webhook。返回取消订阅函数。
+ *  用 subscribeDurable：**账本先落盘，再往外发**，所以外部收到的每个 seq 都能查回来。 */
 export function attachWebhooks(store) {
-  return subscribe(event => {
+  return subscribeDurable(event => {
     void deliverWebhooks(store?.snapshot?.()?.config, event)
   })
 }

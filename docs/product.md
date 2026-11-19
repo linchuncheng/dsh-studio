@@ -85,7 +85,7 @@ AI 是执行手，判定权在确定性规则和人手里。要变成 AI Native�
 | 4 | 失败不留半截 | 注入 persist 失败后，内存态 == 磁盘态 | ✅ 已做（`store.mutate` 落盘失败回滚内存，`tests/store-cas.test.mjs` 覆盖） |
 | 5 | 入站幂等 | 同 `Idempotency-Key` 连发 2 次评论 → 评论数 = 1 | ✅ 已做（0.6.0：POST 带 `Idempotency-Key`，同 key 回放第一次的响应并标 `x-idempotent-replay`；24h TTL、上限 200 条，存在 side 键不涨 revision） |
 | 6 | 冲突可见 | 两人带同一 version 改同一卡 → 一方 200、一方 **409 且返回当前卡** | ✅ 已做（0.6.0：卡有 `version`，`/task/update` 带 `ifVersion` 时后写方得 409 + 当前卡；不带 `ifVersion` 保持老行为） |
-| 7 | 无幻影事件 | webhook 收到的每个 seq 都能在 events 查到 | ❌ 闭包内发事件 |
+| 7 | 无幻影事件 | webhook 收到的每个 seq 都能在 events 查到 | ✅ 已做（0.7.0：事件先写进账本拿到 seq 再投递，落账失败就**不投**；`GET /studio-api/events?since=` 可按 seq 查，保留最近 500 条） |
 | 8 | **用例覆盖强度** | 带可执行断言的用例 ÷ 全部 ≥ **60%** | ≈ 0 |
 | 9 | 门禁一次通过率 | 40–70%（<30% 说明上游澄清失效，>90% 说明门禁太松） | 未统计（现在只有「卡的一次通过率=没被退回」，不是门禁口径） |
 | 10 | 派单周活 | 有 ≥1 条专家评论的卡 / 周 ≥ 15 张 | **未测量** |

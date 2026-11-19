@@ -5,6 +5,7 @@ import { runSummary } from '../dispatcher.js'
 import { collectSessionUsage, aggregateUsage } from '../session-usage.js'
 import { aggregateContext, breakdownContext } from '../context-insight.js'
 import { costOf } from '../usage.js'
+import { queryLedger, EVENT_LEDGER_SIDE_KEY } from '../event-ledger.js'
 const INJECTED = ['readJsonBody', 'getDispatcher', "buildAnalytics","buildMetrics","burndownReport","sendJson","workloadReport"]
 let host = {
   getDispatcher: () => undefined,
@@ -52,6 +53,19 @@ if (method === 'POST' && route === '/contexts') {
       sessions: mine.length,
       breakdown: breakdownContext(mine[0], String(expertConfig.prompt ?? '').length),
       engine: anchor === null ? null : { total: Number(anchor.totalTokens ?? 0), input: Number(anchor.inputTokens ?? 0), output: Number(anchor.outputTokens ?? 0), cacheRead: Number(anchor.cacheReadTokens ?? 0), at: Number(card?.insight?.at ?? 0) },
+    })
+    return true
+  }
+  /* 事件账本：webhook 投出去的每个 seq 都要能在这里查回来（产品定义第 7 条）。 */
+  if (method === 'GET' && route === '/events') {
+    const raw = await store.readSide(EVENT_LEDGER_SIDE_KEY)
+    host.sendJson(res, 200, {
+      ok: true,
+      ...queryLedger(raw, {
+        since: Number(url.searchParams.get('since') ?? 0),
+        limit: Number(url.searchParams.get('limit') ?? 100),
+        type: url.searchParams.get('type') ?? '',
+      }),
     })
     return true
   }

@@ -34,6 +34,8 @@ import { mirrorCards } from './src/host/bitable.js'
 import { bugSeverityFor } from './src/host/bugs.js'
 import { automationRate } from './src/host/intervention.js'
 import { findIdempotent, normalizeIdempotencyKey, rememberIdempotent, IDEMPOTENCY_SIDE_KEY } from './src/host/idempotency.js'
+import { queryLedger, EVENT_LEDGER_SIDE_KEY } from './src/host/event-ledger.js'
+import { configureEventLedger } from './src/host/events.js'
 import { overrideSummary } from './src/host/override.js'
 import { sanitizeLimits } from './src/host/limits.js'
 import { attachWebhooks, sanitizeWebhooks } from './src/host/webhooks.js'
@@ -2551,6 +2553,7 @@ export function apply(ctx) {
   // 派单日志落盘：重启后「按专家看质量」的派单量与耗时还在。
   attachRunLog(store)
   // 事件 → 出站 webhook（卡片流转、用例失败、派单失败）
+  configureEventLedger(store)
   attachWebhooks(store)
   activeSkills = skills
 
