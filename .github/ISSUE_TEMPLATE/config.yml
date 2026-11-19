@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 安全问题（不要开公开 issue）
+    url: https://github.com/marsken88/dsh-studio/security/advisories/new
+    about: 用 GitHub 私有渠道报告，只有维护者能看到
+  - name: 怎么本地跑起来 / 怎么提 PR
+    url: https://github.com/marsken88/dsh-studio/blob/main/CONTRIBUTING.md
+    about: 环境、测试（含 TZ=UTC）、构建产物与代码放哪里
+  - name: 这个功能到底做不做
+    url: https://github.com/marsken88/dsh-studio/blob/main/docs/product.md
+    about: 产品定义里的 V1 范围与「明确不做」清单

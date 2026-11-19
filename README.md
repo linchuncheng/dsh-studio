@@ -262,6 +262,16 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 发布到插件市场（npm / GitHub 发版 + 收录条目 + 自查清单）：[docs/publish.md](docs/publish.md)
 - 依赖的 dsh 宿主接口、升级 runbook、兼容矩阵与已知限制：[docs/compatibility.md](docs/compatibility.md)
 
+## 参与贡献
+
+| 想做什么 | 看这里 |
+| --- | --- |
+| 本地跑起来、改代码、提 PR | [CONTRIBUTING.md](CONTRIBUTING.md)（含 **`TZ=UTC npm test`** 这条容易漏的门槛） |
+| 报告缺陷 / 提功能建议 | [issue 模板](https://github.com/marsken88/dsh-studio/issues/new/choose) |
+| 报告安全问题 | [SECURITY.md](SECURITY.md) —— **不要开公开 issue** |
+| 判断一个功能该不该做 | [docs/product.md](docs/product.md) 的 V1 范围与「明确不做」清单 |
+| 社区行为准则 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)（Contributor Covenant 2.1） |
+
 ## 已知限制
 
 - 上下文**构成占比**（工具 / 助手 / 输入）是按会话日志文本体积估算的，不是引擎账目：宿主把 `sessionProjections` 暴露给了插件，`tokenMeasurement` 就是引擎计量，但 `stateOf()` 要**活会话对象**，只能在派单收尾时取——还没接（调研结论见 `docs/history.md`）。**占用率已经是真实数据**（用 `request/context` 的 `contextWindow`）。
