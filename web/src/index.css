@@ -2165,3 +2165,24 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
   cursor: pointer;
 }
 [data-dsh-studio] .ds-more-item:hover { background: var(--ds-soft2, #f4f4f5) }
+
+/* ------------------------------------------------ 卡片停摆态（AI 已中断）--- */
+/* 崩溃重启后 reconcile 把 state 改成 stopped，但印记仍匹配当前列 ——
+   这种卡既不在跑、也不会再被自动派单。以前和「排队中」长得一样，看不出来。 */
+[data-dsh-studio] .ds-card[data-stalled='1'] {
+  border-color: color-mix(in srgb, var(--color-notification-warning-foreground, #d97706) 45%, var(--ds-line));
+}
+[data-dsh-studio] .ds-chip-warn {
+  color: var(--color-notification-warning-foreground, #b45309);
+  border-color: color-mix(in srgb, var(--color-notification-warning-foreground, #d97706) 45%, transparent);
+  background: color-mix(in srgb, var(--color-notification-warning-foreground, #d97706) 12%, transparent);
+}
+[data-dsh-studio] .ds-stalled-line {
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-notification-warning-foreground, #b45309);
+  background: color-mix(in srgb, var(--color-notification-warning-foreground, #d97706) 12%, transparent);
+}

@@ -9,6 +9,12 @@ export function createCard({ h, ChipField }) {
 function Card({ task, onOpen, config, requirements, onPickRequirement, onPickProject }) {
   const owner = cardOwner(task, config ?? {})
   const running = task.dispatch?.state === 'running'
+  /* 崩溃后 reconcile 会把 state 改成 stopped，但印记仍匹配当前列 —— 这时卡既不在跑、
+     也不会再被派单。以前这种卡和"排队中"长得一模一样，看板上看不出来。
+     三态：running（正在跑）/ stalled（停摆了，要人管）/ queued（排队中）。 */
+  const dispatchPhase = task.dispatch === null || task.dispatch === undefined || task.dispatch.status !== task.status
+    ? 'queued'
+    : (task.dispatch.state === 'running' ? 'running' : 'stalled')
   const blocked = task.blocked ?? null
   const project = (config?.projects ?? []).find(entry => entry.id === task.project)
   const iteration = (project?.iterations ?? []).find(entry => entry.id === task.iteration)
@@ -26,6 +32,8 @@ function Card({ task, onOpen, config, requirements, onPickRequirement, onPickPro
     onDragEnd: event => { event.currentTarget.removeAttribute('data-dragging') },
     'data-urgent': task.priority === 'urgent' ? '1' : '0',
     'data-running': running ? '1' : '0',
+    'data-stalled': dispatchPhase === 'stalled' ? '1' : '0',
+    'data-phase': dispatchPhase,
     'data-blocked': blocked === null ? '0' : '1',
     'data-nobody': noBody > 0 ? '1' : '0',
     onClick: () => onOpen(task.id),
@@ -116,8 +124,14 @@ function Card({ task, onOpen, config, requirements, onPickRequirement, onPickPro
       }, owner.label),
       task.domain ? h(ChipField, { className: 'ds-chip' }, task.domain) : null,
       running ? h(ChipField, { className: 'ds-chip ds-chip-ai' }, 'AI 处理中') : null,
+
     ),
     blocked !== null ? h('div', { className: 'ds-blocked-line' }, blocked.reason || '未填写原因') : null,
+    /* 停摆用独立一行，不用 chip：Chip 适配层会把自定义类名吃掉（试过，DOM 里没有这个类）。
+       这条必须一眼能看见 —— 停摆的卡不会再被自动派单，只会静静躺着。 */
+    dispatchPhase === 'stalled'
+      ? h('div', { className: 'ds-stalled-line' }, '⚠ AI 上次没有正常结束，这张卡不会再被自动派单 —— 需要手动「重新派单」')
+      : null,
     h('div', { className: 'ds-card-foot' },
       h('span', {}, task.id),
       task.dueAt > 0 ? h('span', { 'data-overdue': overdue ? '1' : '0', style: overdue ? { color: 'var(--color-notification-error-foreground)', fontWeight: 600 } : null }, `· ${fmtDate(task.dueAt)}${overdue ? ' 逾期' : ''}`) : null,
