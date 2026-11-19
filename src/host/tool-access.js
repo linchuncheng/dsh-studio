@@ -1,0 +1,59 @@
+/* 每个 studio_* 工具要求的权限档位（纯数据 + 一个查表函数）。
+ *
+ * 没登记就按 'write' 处理是"收紧"的默认值，但**不能静默漏登记**：
+ * issue #5 第 1 条就是 4 个纯读工具（dashboard / workload / burndown / costs）不在表里，
+ * 拿到 'write' 后被当成写操作去审计，直接抛错。契约测试会遍历所有已注册工具，
+ * 要求每一个都在下面出现。
+ */
+
+export const TOOL_ACCESS = {
+  studio_config_get: 'read',
+  studio_requirement_list: 'read',
+  studio_requirement_get: 'read',
+  studio_task_list: 'read',
+  studio_task_get: 'read',
+  studio_project_list: 'read',
+  studio_release_list: 'read',
+  studio_release_get: 'read',
+  studio_analytics: 'read',
+  studio_skill_list: 'read',
+  studio_skill_get: 'read',
+  studio_dashboard: 'read',
+  studio_workload: 'read',
+  studio_burndown: 'read',
+  studio_costs: 'read',
+  studio_task_create: 'write',
+  studio_task_update: 'write',
+  studio_task_comment: 'write',
+  studio_task_block: 'write',
+  studio_task_unblock: 'write',
+  studio_task_check: 'write',
+  studio_task_case: 'write',
+  studio_task_add_cases: 'write',
+  studio_task_generate_cases: 'write',
+  studio_task_artifact: 'write',
+  studio_task_coding: 'write',
+  studio_task_signoff: 'write',
+  studio_requirement_save: 'write',
+  studio_requirement_signoff: 'write',
+  studio_requirement_folder: 'write',
+  studio_project_save: 'write',
+  studio_skill_save: 'write',
+  studio_bug_duplicate: 'write',
+  studio_test_run: 'write',
+  studio_test_suite: 'write',
+  studio_config_set: 'admin',
+  studio_release_publish: 'admin',
+  studio_release_save: 'admin',
+  studio_release_gray: 'admin',
+  studio_skill_delete: 'admin',
+}
+
+export function toolLevel(name) {
+  return TOOL_ACCESS[name] ?? 'write'
+}
+
+/** 已登记的工具名（契约测试用）。 */
+export function toolAccessTable() {
+  return { ...TOOL_ACCESS }
+}

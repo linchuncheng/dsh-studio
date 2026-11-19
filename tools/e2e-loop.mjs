@@ -99,15 +99,15 @@ async function runOnce(round) {
   const rel = await post('/release/save', { release: { name: '全闭环自检版本 ' + stamp, version: '0.0.0-' + stamp.replace(/[^0-9]/g, ''), project: PROJECT, tagName: 'e2e-' + stamp.replace(/[^0-9]/g, ''), smoke: [{ text: '自检脚本跑通', done: true }] } })
   const release = rel.body.release ?? {}
   await post('/release/link', { id: release.id, taskIds: cardsNow.map(c => c.id) })
-  const published = await post('/release/publish', { id: release.id, by: '产品' })
+  const published = await post('/release/publish', { id: release.id, by: '产品', confirm: 'PUBLISH' })
   step('版本发布', published.body.release?.status === 'released', String(published.body.release?.status ?? published.body.error).slice(0, 50))
 
   if (!keep) {
     // 卡删掉但 worktree/分支留着的话会越积越多（实测积了 27 个）
     for (const card of cardsNow) await post('/task/worktree', { id: card.id, action: 'remove' })
-    for (const card of cardsNow) await post('/task/delete', { id: card.id })
-    await post('/requirement/delete', { id: req.id })
-    if (release.id !== undefined) await post('/release/delete', { id: release.id })
+    for (const card of cardsNow) await post('/task/delete', { id: card.id, confirm: 'DELETE' })
+    await post('/requirement/delete', { id: req.id, confirm: 'DELETE' })
+    if (release.id !== undefined) await post('/release/delete', { id: release.id, confirm: 'DELETE' })
     const left = await state()
     step('清理', left.tasks.filter(t => t.requirementId === req.id).length === 0, '已删除自检数据')
   }

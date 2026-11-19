@@ -68,7 +68,7 @@ try {
     JSON.stringify({ commits: saved?.coding?.gitlab?.commitList?.length, ci: saved?.coding?.gitlab?.ci?.total }))
 
   for (const task of after.tasks) {
-    if (!beforeIds.has(task.id)) await post('/task/delete', { id: task.id })
+    if (!beforeIds.has(task.id)) await post('/task/delete', { id: task.id, confirm: 'DELETE' })
   }
   await post('/config', { gitlab: gitlabBefore })
   const final = await stateOf()

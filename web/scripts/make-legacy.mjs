@@ -90,6 +90,7 @@ const imports = [
   "import { advanceColumn, createPalette, nextStatusOf, paletteShortcut, runPaletteAction } from './studio/palette.js'",
   "import { parseSteps } from './studio/cases.js'",
   "import { provideClient } from './studio/context.js'",
+  "import { withDestructiveConfirm } from './studio/destructive.js'",
   "import { createEditor } from './studio/editor.js'",
   "import { ExpertsPanel, TeamsPanel, TestingPanel, EscalatePanel, EnvironmentsPanel } from './studio/panels/people.js'",
   "import { LdapPanel, CostsPanel, BusinessPanel } from './studio/panels/platform.js'",

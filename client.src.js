@@ -337,6 +337,7 @@ window.__ModuleLoader__.load({
       const token = sessionToken()
       if (token !== '') headers['x-studio-session'] = token
       if (extraHeaders !== null && typeof extraHeaders === 'object') Object.assign(headers, extraHeaders)
+      body = withDestructiveConfirm(path, body)
       if (body !== undefined) headers['content-type'] = 'application/json'
       const init = body === undefined
         ? { method: 'GET', headers }

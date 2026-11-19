@@ -1,6 +1,6 @@
 {
   "name": "@marsken/dsh-studio",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "type": "module",
   "description": "DSH Studio: role-based multi-agent workspace (product / architect / developer / QA) with a live work board, GitLab + Feishu connection settings, all configurable from the web GUI.",
   "main": "index.js",
@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/marsken88/dsh-studio#readme",
   "scripts": {
-    "test": "node --test tests/repo.test.mjs tests/dispatch-state.test.mjs tests/store-cas.test.mjs tests/intervention.test.mjs tests/case-strength.test.mjs tests/case-intake.test.mjs tests/conflict.test.mjs tests/events.test.mjs tests/delivery.test.mjs tests/acceptance.test.mjs tests/gates.test.mjs tests/module-id.test.mjs tests/overlay-titlebar.test.mjs tests/tools-audit.test.mjs tests/store-boot.test.mjs tests/client-units.test.mjs tests/notify.test.mjs",
+    "test": "node --test tests/repo.test.mjs tests/dispatch-state.test.mjs tests/store-cas.test.mjs tests/intervention.test.mjs tests/case-strength.test.mjs tests/case-intake.test.mjs tests/conflict.test.mjs tests/events.test.mjs tests/delivery.test.mjs tests/acceptance.test.mjs tests/gates.test.mjs tests/module-id.test.mjs tests/overlay-titlebar.test.mjs tests/issue5-guards.test.mjs tests/tools-audit.test.mjs tests/store-boot.test.mjs tests/client-units.test.mjs tests/notify.test.mjs",
     "check": "node --check index.js && node --check client.src.js && node --test tests/repo.test.mjs tests/store-boot.test.mjs tests/client-units.test.mjs tests/notify.test.mjs",
     "smoke:store": "node scripts/smoke-store.mjs",
     "verify:cases": "node tools/visual/cases-probe.mjs",

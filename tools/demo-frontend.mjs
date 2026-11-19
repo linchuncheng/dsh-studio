@@ -16,8 +16,8 @@ await post('/requirement/review', { id: wr.id, decision: 'approve', by: '架构�
 const warned = await post('/requirement/split', { id: wr.id })
 ok('说有大后端但只写界面 → 有警告', (warned.body.warnings ?? []).length === 1, (warned.body.warnings ?? [])[0] ?? '')
 for (const card of (warned.body.created ?? [])) await post('/task/worktree', { id: card.id, action: 'remove' })
-for (const card of (warned.body.created ?? [])) await post('/task/delete', { id: card.id })
-await post('/requirement/delete', { id: wr.id })
+for (const card of (warned.body.created ?? [])) await post('/task/delete', { id: card.id, confirm: 'DELETE' })
+await post('/requirement/delete', { id: wr.id, confirm: 'DELETE' })
 
 // B) 纯前端需求：说「没有服务端」→ 不该有警告，且能走完
 const points = [

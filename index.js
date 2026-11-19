@@ -28,7 +28,7 @@ export const inject = ['tools', 'systemPrompt']
 
 
 import { ACCESS_ROLE_LABEL, ACCESS_ROLES, ADMIN_ROUTES, ARTIFACT_KINDS, ARTIFACT_STATUS, CASE_HTTP_METHODS, CASE_PRIORITIES, CASE_RESULTS, CASE_TYPE_LABEL, CASE_TYPES, cleanId, CODE_PREFIX, CODING_FILE_CHANGES, CODING_REVIEW_STATUS, codingSummary, COLUMN_STRATEGIES, DEFAULT_ROLES, defaultColumns, defaultConfig, defaultDeployEnvs, defaultTemplates, DEPLOY_ENV_KINDS, FALLBACK_AGENT_MODEL, hashLocalPassword, INTAKE_HTML, ISOLATION_MODES, LEGACY_BLOCKED_STATUS, LEVEL_RANK, LOCAL_DEFAULT_PASSWORD, mergeCoding, mergeConfig, mergeSection, MINE_HTML, nextRequirementCode, nextTaskCode, normalizePatch, normalizeStrategy, publicArtifact, publicCases, publicChecklist, publicComments, PRIORITIES, ROLE_LABELS, canonicalAuthor, RELEASE_STATUSES, RELEASE_STATUS_LABEL, REQ_DOC_KIND_LABEL, REQ_DOC_KINDS, REQ_DOC_STATUS, REQ_REVIEW_LABEL, REQ_REVIEW_STATUS, REQ_STATUS_LABEL, REQ_STATUSES, ROLE_IDS, ROLE_LEVEL, SANDBOX_MODES, sanitizeAccess, sanitizeAllowHosts, sanitizeArtifact, sanitizeArtifacts, sanitizeBaseline, sanitizeBots, sanitizeBugSource, sanitizeCase, sanitizeCaseHttp, sanitizeCaseRun, sanitizeCases, sanitizeChangedFile, sanitizeChangedFiles, sanitizeChecklist, sanitizeChecklistItem, sanitizeCoding, sanitizeColumns, sanitizeCommit, sanitizeCommits, sanitizeCosts, sanitizeDeployEnvs, sanitizeEnvs, sanitizeExperts, sanitizeIterations, sanitizeLdap, sanitizeLocalAuth, sanitizeProjects, sanitizeReqDoc, sanitizeReqDocs, sanitizeRelease, sanitizeRequirement, sanitizeRequirementChange, sanitizeRequirementHistory, sanitizeRequirementPoint, sanitizeRequirementPoints, sanitizeRequirementPool, sanitizeRequirementQuestions, sanitizeRequirementReview, sanitizeRequirements, sanitizeServices, sanitizeSla, sanitizeTeams, sanitizeTemplates, sanitizeTesting, sanitizeTestRun, sanitizeTestRuns, sanitizeUsers, sanitizeWorkProjects, seedExperts, SEVERITIES, STATUS_HTML, STATUS_IDS, STATUS_SET, STATUSES, TASK_TYPES, text, verifyLocalPassword, worktreeRoot } from './src/host/domain.js'
-import { accessLevelFor, checkAccess, isCrossSiteRequest, isLoopbackRequest, needsLocalSource, READ_ONLY_POST_ROUTES } from './src/host/access.js'
+import { accessLevelFor, checkAccess, isCrossSiteRequest, isLoopbackRequest, needsConfirm, needsLocalSource, READ_ONLY_POST_ROUTES } from './src/host/access.js'
 import { Dispatcher, RUN_LOG, attachRunLog, claimDispatchLock, clearAgentFailure, configureDispatcher, noteAgentFailure, parseMentions, runSummary } from './src/host/dispatcher.js'
 import { mirrorCards } from './src/host/bitable.js'
 import { bugSeverityFor } from './src/host/bugs.js'
@@ -38,6 +38,7 @@ import { findIdempotent, normalizeIdempotencyKey, rememberIdempotent, IDEMPOTENC
 import { queryLedger, EVENT_LEDGER_SIDE_KEY } from './src/host/event-ledger.js'
 import { configureEventLedger } from './src/host/events.js'
 import { overrideSummary } from './src/host/override.js'
+import { toolAccessTable, toolLevel } from './src/host/tool-access.js'
 import { sanitizeLimits } from './src/host/limits.js'
 import { attachWebhooks, sanitizeWebhooks } from './src/host/webhooks.js'
 import { addAssertedCases, addDraftCases, buildDashboard, codingVerifyLine, commentTask, configureExecutor, ensureReqFolder, larkCliReady, invalidateLarkProbe, larkProbeCache, mutateReqDoc, probeEnv, pullFeishuDoc, requirementGate, requirementMatrix, requirementProgress, requirementRollup, runCommand, runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask, verifyCodingRecord } from './src/host/executor.js'
@@ -1746,7 +1747,14 @@ async function detectProfile() {
       const parsed = JSON.parse(await readFile(join(root, name, 'package.json'), 'utf8'))
       const bundles = parsed?.dsh?.profile?.bundles ?? []
       const deps = parsed.dependencies ?? {}
-      if (deps['dsh-studio'] !== undefined || bundles.includes('dsh-studio')) return name
+      /* 包里注册的名字是 scoped 的 @marsken/dsh-studio（issue #5 第 2 条）：
+     只认短名会让 desktop/profile 永远匹配不上，最后回退成 web —— 面板显示错误的 profile、
+     /market 的 installed 恒为空、在面板里点安装会装到 web profile 去。 */
+  const isStudio = deps['@marsken/dsh-studio'] !== undefined
+    || deps['dsh-studio'] !== undefined
+    || bundles.includes('@marsken/dsh-studio')
+    || bundles.some(item => typeof item === 'string' && (item === 'dsh-studio' || item.endsWith('/dsh-studio')))
+  if (isStudio) return name
     } catch { /* 跳过坏 profile */ }
   }
   return names.includes('web') ? 'web' : (names[0] ?? 'web')
@@ -2084,31 +2092,7 @@ async function recordLogin(store, user, ip) {
   })
 }
 
-/**
- * 每个工具要求的权限档位。没列出来的一律按「写」处理——收紧是默认，
- * 放松要显式写在这里，避免新工具默默变成后门。
- */
-const TOOL_ACCESS = {
-  studio_config_get: 'read',
-  studio_requirement_list: 'read',
-  studio_requirement_get: 'read',
-  studio_task_list: 'read',
-  studio_task_get: 'read',
-  studio_project_list: 'read',
-  studio_release_list: 'read',
-  studio_release_get: 'read',
-  studio_analytics: 'read',
-  studio_skill_list: 'read',
-  studio_skill_get: 'read',
-  studio_config_set: 'admin',
-  studio_release_publish: 'admin',
-  studio_release_save: 'admin',
-  studio_skill_delete: 'admin',
-}
 
-function toolLevel(name) {
-  return TOOL_ACCESS[name] ?? 'write'
-}
 
 /** 会话名形如 `studio-<taskId>-<expertId>`，从里面认出是哪个专家在调用。 */
 function operatorFromSessionId(sessionId, config) {
@@ -2437,6 +2421,17 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
     if (needsLocalSource(route, level, store.snapshot().config) && !isLoopbackRequest(req)) {
       await recordAudit(store, { by: operator, route, level, status: 403, ok: false, summary: '敏感操作只允许本机来源' })
       sendJson(res, 403, { ok: false, code: 'local_only', error: '未启用登录时，插件安装/卸载、快照恢复与审计导出只允许在服务器本机（127.0.0.1）执行。要在局域网里做这些，请先到「设置 → 权限与审计」开启登录。' })
+      return
+    }
+    /* 破坏性操作要显式确认：缺 confirm 或词不对就 400，别让"空 body 打一下"就删掉审计/成员/任务。 */
+    const requiredWord = needsConfirm(route, method, req.__studioBody ?? {})
+    if (requiredWord !== null) {
+      await recordAudit(store, { by: operator, route, level, status: 400, ok: false, summary: '破坏性操作缺少确认' })
+      sendJson(res, 400, {
+        ok: false,
+        code: 'confirm_required',
+        error: `这是破坏性操作，请带 \`confirm: "${requiredWord}"\` 再试`,
+      })
       return
     }
     const trusted = typeof req.studioActor === 'string' && req.studioActor.trim() !== ''

@@ -73,11 +73,15 @@ export function registerTools(ctx, store) {
           }
           return value
         } catch (error) {
+          /* 审计写失败不能盖掉原始错误：以前业务抛错后审计又抛 `recordAudit is not defined`，
+             用户只能看到一个跟问题无关的报错（issue #5 第 8 条）。 */
           if (operator !== null && level !== 'read') {
-            await host.recordAudit(store, {
-              by: `${operator.name}(AI)`, route: `tool:${tool.name}`, level,
-              status: 500, ok: false, summary: String(error?.message ?? error).slice(0, 200),
-            })
+            try {
+              await host.recordAudit(store, {
+                by: `${operator.name}(AI)`, route: `tool:${tool.name}`, level,
+                status: 500, ok: false, summary: String(error?.message ?? error).slice(0, 200),
+              })
+            } catch { /* 审计失败不能盖掉业务错误 */ }
           }
           throw error
         }

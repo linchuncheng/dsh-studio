@@ -59,7 +59,7 @@ const makeExpert = async (name, prompt) => {
   if (created === undefined) throw new Error('建专家失败')
   return String(created.id)
 }
-const delExpert = async (id) => { await post('/experts/delete', { id }) }
+const delExpert = async (id) => { await post('/experts/delete', { id, confirm: 'DELETE' }) }
 const basePrompt = String((((await state()).config.experts ?? []).find(item => item.role === 'dev') ?? {}).prompt ?? '')
 const expertA = await makeExpert('AB-base-' + stamp, basePrompt)
 const expertB = await makeExpert('AB-var-' + stamp, basePrompt + '\n\n' + VARIANT)
@@ -113,7 +113,7 @@ for (let round = 1; round <= ROUNDS; round += 1) {
     console.log([label, 'ok=' + row.ok, row.commits + ' 提交', '列=' + row.status, '核对=' + row.verified, row.secs + 's', row.error ?? ''].join('  '))
     const branch = result.branch
     await ssh('cd ' + REPO + ' && git worktree remove --force /tmp/studio-wt-test/' + card.id + ' 2>/dev/null; git branch -D ' + branch + ' 2>&1 | head -1')
-    await post('/task/delete', { id: card.id })
+    await post('/task/delete', { id: card.id, confirm: 'DELETE' })
   }
 }
 await delExpert(expertA); await delExpert(expertB)

@@ -501,11 +501,15 @@ export async function saveRequirement(store, input) {
     const existing = state.requirements.find(item => item.id === draft.id)
     if (existing === undefined) {
       const now = Date.now()
-      const needsProduct = String(draft.links?.prd ?? '').trim() === '' && (draft.docs ?? []).every(doc => String(doc.content ?? '').trim() === '') && draft.baseline === null
+      /* 以前没有 PRD 的新需求会被自动置成 status=review + review.pending（by「系统」），
+         但没有评审人、也没有自动流转 —— 需求永久卡在「评审中」，准出长期挂一条 blocker（issue #5 第 11 条）。
+         现在落 draft：想进评审就显式点评审，评审人才会被记录。 */
       const created = {
         ...draft,
-        status: needsProduct === true ? 'review' : draft.status,
-        review: needsProduct === true ? { status: 'pending', by: String(input.by ?? input.operator ?? '系统').slice(0, 40), at: now, note: '新建需求：保存后自动转产品补 PRD' } : draft.review,
+        status: draft.status === 'review' && String(draft.links?.prd ?? '').trim() === '' && (draft.docs ?? []).every(doc => String(doc.content ?? '').trim() === '') && draft.baseline === null
+          ? 'draft'
+          : draft.status,
+        review: draft.review,
         code: draft.code.length > 0 ? draft.code : nextRequirementCode(state.requirements),
         createdAt: now,
         updatedAt: now,

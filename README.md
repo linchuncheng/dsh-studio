@@ -317,6 +317,20 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
   仍缺：CI 产物本身（构建物、报告文件）不下载，只记数字；真实 `git.lyf.com` 令牌还没接通，这条链目前用 `tools/mock-gitlab.mjs` 打桩验过。
 - 「业务负责人」与「期望完成」是可选项：没填时抽屉里显示「未指派」/「未排期」，不是数据丢失；需要时补上再点「保存改动」。
 
+## 破坏性接口需要 `confirm`（0.9.6 起）
+
+删数据、清审计、改成员权限、动发布这类路由，现在要求请求体带一个确认词，否则 400 `confirm_required`：
+
+| 路由 | 需要带 |
+| --- | --- |
+| `/task/delete` `/requirement/delete` `/release/delete` `/projects/delete` `/repos/delete` `/bots/delete` `/experts/delete` `/teams/delete` `/suite/delete` `/skills/delete` `/access/delete` | `confirm: "DELETE"` |
+| `/audit/clear` `/team/memory/clear` | `confirm: "CLEAR"` |
+| `/snapshot/restore` `/market/install` `/market/uninstall` `/release/publish` `/release/rollback` `/reset` | `confirm: "RESTORE" / "INSTALL" / "UNINSTALL" / "PUBLISH" / "ROLLBACK" / "RESET"` |
+| `/access/save` | `confirm: "SAVE ACCESS"` |
+
+面板自己会自动带上（界面上本来就有确认对话框），只有自己写脚本调接口时需要注意。
+这不是权限系统，是防止「空 body 打一下就把审计/成员删了」的护栏 —— 真正的鉴权仍然靠登录。
+
 ## 装完不对劲先看这里
 
 | 现象 | 原因与处置 |

@@ -1,6 +1,37 @@
 # 更新日志
 
 
+## [0.9.6] — 2026-11-19
+
+[issue #5](https://github.com/marsken88/dsh-studio/issues/5) 的 11 项里，三条高危 + 两条中危已修；
+其余四条按"需要产品决策"记录在下面，没有假装做过。
+
+### 修复（高危）
+- **4 个只读工具被当成写工具**：`studio_dashboard` / `studio_workload` / `studio_burndown` / `studio_costs`
+  不在权限表里，`toolLevel()` 兜底成 `write` → 走审计 → 抛错（#3 那条 `recordAudit` 之后仍然会踩）。
+  现在 40 个工具**全部显式登记**（读的 `read`、写的 `write`、发布/灰度/改名 `admin`），
+  权限表搬到 `src/host/tool-access.js`，并有契约测试遍历注册表要求无一遗漏。
+- **`detectProfile()` 认不出 scoped 包名**：只匹配 `dsh-studio` 短名 → desktop profile 永远回退成 `web`，
+  于是 `/state.profile` 错、`/market.installed` 恒为空、面板里点安装会装到 web profile。
+  现在同时认 `@marsken/dsh-studio`、`*/dsh-studio` 与短名。
+- **破坏性路由零确认**（安全）：删数据 / 清审计 / 改成员 / 发布 / 回滚 / 装机等 20 条路由，
+  现在必须带 `confirm` 且值等于约定词（`DELETE` / `CLEAR` / `RESTORE` / `INSTALL` / `UNINSTALL` /
+  `PUBLISH` / `ROLLBACK` / `RESET` / `SAVE ACCESS`），否则 400 `confirm_required`。
+  面板的 `api()` 会自动补（界面上本来就有确认框）；自写脚本要按 README 的表格带上。
+  实测：`POST /audit/clear {}` 现在是 400，不再是"真删"。
+
+### 修复（中）
+- **新建需求不再永久卡「评审中」**：以前没有 PRD 的新需求自动置成 `status=review` + `review.pending`
+  （评审人写"系统"），但既没有评审人也没有自动流转 → 准出长期挂 blocker。现在落 `draft`。
+- **错误信息被审计顶掉**：写工具业务体抛错后，catch 里的审计又抛错，原始报错被覆盖。
+  现在审计失败不影响原始错误。
+
+### 未做（需要产品决策，不假装完成）
+- #5 `/task/design` 只带 id 就写数据、#9 `/state` 同时下发 `comments: []` 与 `commentCount`（契约不一致）、
+  #7 测试环境默认值为空导致新装即卡、#10 插件市场目录需要配源 —— 这四条都要先定"新装默认该怎么表现"，
+  不是纯 bug，留给下一轮和「空库实例探针」一起做。
+
+
 ## [0.9.5] — 2026-11-19
 
 修的是 [issue #4](https://github.com/marsken88/dsh-studio/issues/4)：桌面版里卡片详情抽屉盖住窗口标题栏，

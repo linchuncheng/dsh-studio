@@ -88,3 +88,47 @@ export function resolveSigner({ session = '', header = '', body = '', fallback =
   if (b !== '') return { by: b.slice(0, 60), source: 'body' }
   return { by: String(fallback).slice(0, 60), source: 'none' }
 }
+
+/** 破坏性路由：会删数据、清审计、改权限、动发布。
+ *
+ *  以前它们和普通写路由一样，未开登录时任何能连到端口的人（包括同机页面里的脚本）都能直接打：
+ *  实测 `POST /studio-api/audit/clear {}` 就把 58 条审计删了（issue #5 第 3 条）。
+ *  现在要求请求体带 `confirm`，值必须是下面这个词（大写），否则 400。
+ *  这不是权限系统，是"别手滑"和"别被随便打"的护栏；真正的鉴权仍然靠 access + 登录。
+ */
+export const DESTRUCTIVE_ROUTES = new Map([
+  ['/audit/clear', 'CLEAR'],
+  ['/team/memory/clear', 'CLEAR'],
+  ['/task/delete', 'DELETE'],
+  ['/requirement/delete', 'DELETE'],
+  ['/release/delete', 'DELETE'],
+  ['/projects/delete', 'DELETE'],
+  ['/repos/delete', 'DELETE'],
+  ['/bots/delete', 'DELETE'],
+  ['/experts/delete', 'DELETE'],
+  ['/teams/delete', 'DELETE'],
+  ['/suite/delete', 'DELETE'],
+  ['/skills/delete', 'DELETE'],
+  ['/access/delete', 'DELETE'],
+  ['/snapshot/restore', 'RESTORE'],
+  ['/market/install', 'INSTALL'],
+  ['/market/uninstall', 'UNINSTALL'],
+  ['/release/publish', 'PUBLISH'],
+  ['/release/rollback', 'ROLLBACK'],
+  ['/reset', 'RESET'],
+  ['/access/save', 'SAVE ACCESS'],
+])
+
+/** 这条路由要求的确认词；不需要确认返回 null。 */
+export function confirmWordFor(route) {
+  return DESTRUCTIVE_ROUTES.get(String(route ?? '')) ?? null
+}
+
+/** 缺确认 / 确认词不对时返回该提示的确认词，通过时返回 null。 */
+export function needsConfirm(route, method, body) {
+  const word = confirmWordFor(route)
+  if (word === null) return null
+  if (String(method ?? '').toUpperCase() !== 'POST') return null
+  const given = String(body?.confirm ?? '').trim().toUpperCase()
+  return given === word ? null : word
+}
