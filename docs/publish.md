@@ -227,6 +227,8 @@ token 只写进临时 npmrc（放在仓库外或 `tmp/` 且不提交），发完
   `dry_run` 先看一眼要建哪些）。幂等的：已经有 release 的 tag 会跳过。
 - **GitHub Packages 是镜像，不是主渠道**：它的 npm 源要求包 scope **等于仓库 owner**，
   所以镜像只能叫 `@marsken88/dsh-studio`（主包仍然是 npm 上的 `@marsken/dsh-studio`）。
+  两个名字不是打错了：npm 账号是 `marsken`、GitHub 账号是 `marsken88`，同一个人的两个平台身份；
+  npm 的 scope 与 GitHub 用户无关，而 GitHub Packages 只认仓库 owner。
   `publish-github-packages.yml` 负责这件事：**把 package.json 的 name 和 `cordis.patch.yml`
   里的 name 一起改**（只改一处 = 装了不加载，0.5.1 那个 issue 就是这条线崩的），
   然后 `npm publish --registry=https://npm.pkg.github.com --access public`，最后用

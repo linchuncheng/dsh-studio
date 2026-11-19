@@ -112,8 +112,10 @@ sudo systemctl restart dsh-web
 
 ### 方式二（可选）：从 GitHub Packages 装镜像
 
-只在内网/CI 只能访问 GitHub 时用。镜像包名不同（`@marsken88/dsh-studio`：GitHub Packages
-要求 scope 等于仓库 owner），内容和 npm 上那一份一致，版本号同步。
+只在内网/CI 只能访问 GitHub 时用。**作者在 npm 上的账号是 `marsken`（所以主包是 `@marsken/dsh-studio`），
+在 GitHub 上是 `marsken88`（所以仓库是 `marsken88/dsh-studio`）——同一个人的两个平台账号。**
+镜像因此只能叫 `@marsken88/dsh-studio`：GitHub Packages 的 npm 源要求 scope 等于仓库 owner，
+而 npm 的 scope 与 GitHub 用户无关。两个包内容一致、版本号同步。
 
 ```bash
 # 需要一个有 read:packages 权限的 GitHub token

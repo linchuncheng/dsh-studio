@@ -98,5 +98,9 @@
     "pngjs": "^7.0.0",
     "puppeteer-core": "^25.17.0",
     "ssh2": "^1.17.0"
+  },
+  "author": "marsken <https://github.com/marsken88>",
+  "bugs": {
+    "url": "https://github.com/marsken88/dsh-studio/issues"
   }
 }
