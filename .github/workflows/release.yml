@@ -144,14 +144,19 @@ jobs:
         run: |
           VER="${GITHUB_REF_NAME#v}"
           node tools/changelog-section.mjs "$VER" > "$RUNNER_TEMP/notes.md"
+          # GitHub 的 Latest 按**创建时间**算，不按版本号：预发布不能抢 Latest。
+          case "$VER" in
+            *-*) FLAGS="--prerelease --latest=false" ;;
+            *)   FLAGS="--latest" ;;
+          esac
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             echo "release 已存在，只更新正文"
-            gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
+            gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md" $FLAGS
           else
             gh release create "$GITHUB_REF_NAME" \
               --title "$GITHUB_REF_NAME" \
               --notes-file "$RUNNER_TEMP/notes.md" \
-              --verify-tag
+              --verify-tag $FLAGS
           fi
           echo "release: $(gh release view "$GITHUB_REF_NAME" --json url --jq .url)"
 

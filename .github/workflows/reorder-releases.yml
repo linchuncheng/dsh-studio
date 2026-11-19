@@ -1,0 +1,79 @@
+name: reorder-releases
+
+# 修一个真的踩到的坑：GitHub 的「Latest」不是按版本号，而是按 **release 的创建时间**。
+# 补建历史 release 时我是从最新版本往最旧版本建的，于是 v0.1.0 最后创建 → 它成了 Latest，
+# /releases/latest 直接跳到 0.1.0（用户看到的就是这个）。
+#
+# 这个 workflow 把全部 release 删掉重建，**按版本从旧到新**，最后一个（最新版本）自然成为 Latest。
+# 删 release 不动 tag，正文照样能从 CHANGELOG / 提交重新生成，所以是可恢复操作。
+#
+# 触发：推这个文件自己（一次性修数据）+ 手动 Run workflow。
+
+on:
+  push:
+    paths:
+      - '.github/workflows/reorder-releases.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  reorder:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 删掉现有 release（保留 tag）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tags="$(gh release list --limit 1000 --json tagName --jq '.[].tagName')"
+          count="$(echo "$tags" | grep -c . || true)"
+          echo "现有 release：$count 个，开始删除（tag 保留）"
+          for tag in $tags; do
+            gh release delete "$tag" --yes >/dev/null 2>&1 && echo "  deleted $tag" || echo "  ::warning::删 $tag 失败"
+          done
+
+      - name: 按版本从旧到新重建（最后创建的才是 Latest）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mapfile -t ALL < <(git tag --sort=v:refname)   # 升序：v0.1.0 → v0.5.2
+          newest="${ALL[${#ALL[@]} - 1]}"
+          total=${#ALL[@]}
+          echo "共 $total 个 tag，升序重建；最新是 $newest"
+          i=0
+          for tag in "${ALL[@]}"; do
+            i=$((i + 1))
+            ver="${tag#v}"
+            prev=""
+            if [ "$i" -gt 1 ]; then prev="${ALL[$((i - 2))]}"; fi
+            notes="$RUNNER_TEMP/notes.md"
+            if [ -n "$prev" ]; then
+              node tools/changelog-section.mjs "$ver" --prev "$prev" > "$notes"
+            else
+              node tools/changelog-section.mjs "$ver" > "$notes"
+            fi
+            if [ "$tag" = "$newest" ]; then
+              gh release create "$tag" --title "$tag" --notes-file "$notes" --latest
+            else
+              gh release create "$tag" --title "$tag" --notes-file "$notes" --latest=false
+            fi
+            echo "  created $tag"
+          done
+
+      - name: 确认 Latest 指向最新版本
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          newest="$(git tag --sort=v:refname | tail -1)"
+          latest="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name)"
+          echo "期望 Latest = $newest / 实际 = $latest"
+          if [ "$latest" != "$newest" ]; then
+            echo "::error::Latest 仍然指向 $latest，不是 $newest"
+            exit 1
+          fi
+          echo "ok  Latest 已是 $newest"

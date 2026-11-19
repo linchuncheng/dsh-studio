@@ -53,7 +53,12 @@ jobs:
           echo "已有 release：$(echo "$existing" | grep -c . || true) 个"
 
           mapfile -t ALL < <(git tag --sort=-v:refname)
-          echo "仓库 tag：${#ALL[@]} 个"
+          NEWEST="${ALL[0]}"
+          echo "仓库 tag：${#ALL[@]} 个，最新是 $NEWEST"
+          # GitHub 的 Latest 是按 release 的**创建时间**定的，不是版本号。
+          # 补历史时如果从新往旧建，最旧的那个会变成 Latest（2026-11-19 就这么踩过），
+          # 所以除了最新那个 tag，其余一律 --latest=false。
+          LATEST_ARG="--latest=false"
           if [ "$LIMIT" = "all" ]; then
             COUNT=${#ALL[@]}
           else
@@ -83,8 +88,9 @@ jobs:
             fi
             echo "→ 建 $tag（prev=${prev:-无}）"
             # 有的 tag 可能是轻量 tag，--verify-tag 会拦；失败不中断整轮，最后统一报数字。
-            if gh release create "$tag" --title "$tag" --notes-file "$notes" --verify-tag 2>/dev/null \
-              || gh release create "$tag" --title "$tag" --notes-file "$notes"; then
+            if [ "$tag" = "$NEWEST" ]; then LATEST_ARG="--latest"; else LATEST_ARG="--latest=false"; fi
+            if gh release create "$tag" --title "$tag" --notes-file "$notes" $LATEST_ARG --verify-tag 2>/dev/null \
+              || gh release create "$tag" --title "$tag" --notes-file "$notes" $LATEST_ARG; then
               created=$((created + 1))
             else
               failed=$((failed + 1))
