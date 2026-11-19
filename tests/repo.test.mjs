@@ -695,6 +695,21 @@ test('host: an expert with skills does not crash the prompt builder', async () =
   assert.ok(String(prompt).includes('lark-base'), '技能名要出现在提示词里')
 })
 
+test('host: a card with unasserted cases asks the expert to fill assertions', async () => {
+  const { buildExpertPrompt, configureDispatcher } = await import('../src/host/dispatcher.js')
+  configureDispatcher(new Proxy({}, { get: () => () => undefined }))
+  const expert = { id: 'dev', name: '开发工程师', emoji: '🛠️', role: 'dev' }
+  const column = { id: 'dev', label: '开发中' }
+  const draft = { id: 'c1', title: '登录失败 5 次后锁定', expected: '第 6 次返回 423', http: null, shell: null, db: null, result: 'pending' }
+  const ok = { id: 'c2', title: '真能跑的那条', http: { method: 'GET', url: '/x', expectStatus: 200 }, result: 'pending' }
+  const prompt = String(buildExpertPrompt({ id: 't-1', code: 'DEV-001', title: 'x', comments: [], cases: [draft, ok] }, expert, column, { experts: [expert] }, undefined, '', undefined, {}, []))
+  assert.match(prompt, /1 条用例没有可执行断言/, '只数没有断言的那一条')
+  assert.match(prompt, /studio_task_add_cases/, '要给出补断言用的工具名')
+  assert.doesNotMatch(prompt, /没有可执行断言[^\n]*真能跑的那条/, '已经能跑的用例不该被点名')
+  const clean = String(buildExpertPrompt({ id: 't-1', code: 'DEV-001', title: 'x', comments: [], cases: [ok] }, expert, column, { experts: [expert] }, undefined, '', undefined, {}, []))
+  assert.doesNotMatch(clean, /没有可执行断言/, '全都能跑时不要多嘴')
+})
+
 test('host: a tool-heavy session gets a plain-language warning', async () => {
   const { breakdownContext, toolHeavyWarning, TOOL_HEAVY_THRESHOLD } = await import('../src/host/context-insight.js')
   const heavy = breakdownContext({ usage: [{ input: 100, cacheRead: 900 }], counts: { turns: 2 }, volume: { tool: 8000, assistant: 1000, user: 500, other: 500 } }, 300)

@@ -150,3 +150,21 @@ test('用例库：草稿标记要能一路透到列表里（否则分不清草�
   assert.equal(rows[0].draft, true, '用例库这一层也要带 draft')
   assert.equal(rows[0].runnable, false)
 })
+
+test('签字来源：AI 签的字不能被当成人工签字', async () => {
+  const { actorKind } = await import('../src/host/intervention.js')
+  const { configureExecutor, taskExitGate } = await import('../src/host/executor.js')
+  // 门禁会用到不少注入（服务依赖、附件…）；给一个「任何属性都是空函数」的桩，免得以后再加依赖就要改测试。
+  configureExecutor(new Proxy({}, { get: () => () => undefined }))
+  // 名字看着像人，但 AI 会话签的字在写入时就该记成 agent —— 这一条是 t-a55ccbfc 撞出来的：
+  // 测试专家验收后，记录里 actorKind 竟然等于 human，门禁于是把它当人工签字放行。
+  assert.equal(actorKind('测试工程师'), 'human', '纯按名字判断本来就是不够的，所以写入时要显式给来源')
+  const base = {
+    id: 't-1', code: 'DEV-001', status: 'accept', cases: [{ id: 'c1', title: 'x', result: 'pass', http: { url: '/x', expectStatus: 200 } }],
+    checklist: [], artifacts: [{ kind: 'doc', title: '报告', status: 'ready' }], coding: null, blocked: null, gitlabMR: null,
+  }
+  const byAgent = taskExitGate({ tasks: [base], config: { experts: [] } }, { ...base, signoff: { by: '测试工程师', at: 1, note: 'ok', actorKind: 'agent' } })
+  assert.ok(byAgent.warnings.some(item => item.includes('AI 写的')), JSON.stringify(byAgent.warnings))
+  const byHuman = taskExitGate({ tasks: [base], config: { experts: [] } }, { ...base, signoff: { by: '张三', at: 1, note: 'ok', actorKind: 'human' } })
+  assert.ok(!byHuman.warnings.some(item => item.includes('AI 写的')), '人签的字不该提醒')
+})

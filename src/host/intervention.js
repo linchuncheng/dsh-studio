@@ -34,7 +34,10 @@ function listOf(one, many) {
 /** 签字是谁签的：优先读写入时记下的 actorKind，没有才回落到按名字判断。 */
 function signKind(sign) {
   const kind = String(sign?.actorKind ?? '')
-  return kind === 'human' || kind === 'ai' ? kind : actorKind(sign?.by)
+  // 'ai' 是早期写法，统一按 agent 对待：签字只分「人签的」和「AI 签的」。
+  if (kind === 'ai' || kind === 'agent') return 'agent'
+  if (kind === 'human') return 'human'
+  return actorKind(sign?.by)
 }
 
 export function actorKind(name) {

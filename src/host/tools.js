@@ -1,4 +1,3 @@
-import { actorKind } from './intervention.js'
 import { randomBytes } from 'node:crypto'
 import {
   CASE_RESULTS, CODING_REVIEW_STATUS, RELEASE_STATUS_LABEL, REQ_STATUS_LABEL, ROLE_IDS, STATUSES, STATUS_IDS,
@@ -214,7 +213,10 @@ export function registerTools(ctx, store) {
         const target = state.requirements.find(item => item.id === id)
         if (target === undefined) throw new Error('需求不存在')
         if (action === 'sign') {
-          target.signoff = { by: String(args.by ?? 'agent').slice(0, 60), at: Date.now(), note, actorKind: actorKind(String(args.by ?? 'agent')) }
+          /* 这个工具只有派单出去的 AI 会话能调，所以签字来源是 agent ——
+             以前按名字猜（actorKind('测试工程师') === 'human'），于是 AI 验收在
+             记录里变成了人工签字，门禁也就当真了（2026-11-19 在 t-a55ccbfc 上撞到）。 */
+          target.signoff = { by: String(args.by ?? 'agent').slice(0, 60), at: Date.now(), note, actorKind: 'agent' }
           const open = state.tasks.filter(task => task.requirementId === id && task.status !== 'done').length
           const total = state.tasks.filter(task => task.requirementId === id).length
           if (open === 0 && total > 0) target.status = 'delivered'
@@ -379,7 +381,8 @@ export function registerTools(ctx, store) {
           entry.history.push({ at: Date.now(), by, status: entry.status, note: 'signoff-cleared' })
         } else {
           if (note.trim() === '') throw new Error('验收签字要写一句结论：验了什么、遗留什么')
-          entry.signoff = { by, at: Date.now(), note, actorKind: actorKind(by) }
+          // 同上：卡片验收签字的调用方是 AI 会话，如实记 agent。
+          entry.signoff = { by, at: Date.now(), note, actorKind: 'agent' }
           entry.history.push({ at: Date.now(), by, status: entry.status, note: `signoff：${note.slice(0, 80)}` })
         }
         entry.updatedAt = Date.now()

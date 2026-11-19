@@ -789,6 +789,7 @@ export function requirementGate(state, requirement) {
     if (empty > 0) warnings.push(`${empty} 件交付物还没有正文`)
   }
   if (requirement.signoff === null || requirement.signoff === undefined) blockers.push('还没有需求级验收签字')
+  else if (String(requirement.signoff.actorKind ?? '') === 'agent') warnings.push(`需求验收签字是 AI 写的（${requirement.signoff.by}）：产品定义第 3 条要求人再确认一次`)
   // 评审没通过的草稿/待评审需求不该往下拆卡：先过评审，再干活。
   const review = requirement.review ?? null
   const reviewApproved = review !== null && review.status === 'approved'
@@ -882,6 +883,7 @@ export function taskExitGate(state, task) {
   if (task.gitlabMR?.pipeline?.status === 'failed') blockers.push(`CI 流水线没通过：${task.gitlabMR.pipeline.id ? `#${task.gitlabMR.pipeline.id}` : '最近一次运行'}`)
   if (task.blocked !== undefined && task.blocked !== null) blockers.push('这张卡还挂着阻塞标记')
   if (task.signoff === undefined || task.signoff === null) blockers.push('还没有验收签字')
+  else if (String(task.signoff.actorKind ?? '') === 'agent') warnings.push(`这张卡的验收签字是 AI 写的（${task.signoff.by}）：签字只说明 AI 自己验过，人还要再看一眼`)
   if (cases.length === 0) warnings.push('这张卡没有测试用例，建议至少补一条主流程用例')
   else {
     const pending = cases.filter(item => item.result === 'pending' || item.result === 'skip').length

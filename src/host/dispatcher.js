@@ -925,6 +925,15 @@ export function buildExpertPrompt(task, expert, column, config, team, instructio
     (task.cases ?? []).length > 0
       ? `\n已登记的测试用例：\n${(task.cases ?? []).map(item => `- ${item.result === 'pass' ? '✅' : item.result === 'fail' ? '❌' : item.result === 'skip' ? '⏭️' : '⬜'} ${item.id} ${item.title}${item.expected ? `（期望：${item.expected}）` : ''}${item.note ? ` — ${item.note}` : ''}`).join('\n')}`
       : '',
+    /* 卡上有「跑不了」的用例时，不看列：谁接手谁负责补断言。
+       以前只有测试列的提示词提这件事，于是别的列推进卡片时把 41 条空壳一路带到了待验收。 */
+    (() => {
+      const bare = (task.cases ?? []).filter(item => item.http == null && item.shell == null && item.db == null)
+      if (bare.length === 0) return ''
+      const names = bare.slice(0, 5).map(item => item.title).join('、')
+      return `\n这张卡上有 ${bare.length} 条用例没有可执行断言（跑不了，也不计入覆盖率）：${names}${bare.length > 5 ? ' 等' : ''}。
+它们不能靠「标成通过」过关。你手上有对应的验证条件时，用 studio_task_add_cases 把断言补上（接口给 method + path + expectStatus，shell 给 command + expectExit），工具会当场试跑一条并把结果回给你；确实补不了就在评论里说明为什么，别留空壳。`
+    })(),
     (task.gitlabMR?.iid ?? 0) > 0 ? `\n关联 MR：!${task.gitlabMR.iid} ${task.gitlabMR.title}（${task.gitlabMR.state}）${task.gitlabMR.url ? ` ${task.gitlabMR.url}` : ''}` : '',
     task.coding !== null && task.coding !== undefined && codingSummary(task.coding) !== ''
       ? `\n这一棒的 AI Coding 执行记录：${codingSummary(task.coding)}${task.coding.branch ? `（分支 ${task.coding.branch}）` : ''}${task.coding.review.status === 'changes_requested' && task.coding.review.note ? `\n评审意见：${task.coding.review.note}` : ''}`
