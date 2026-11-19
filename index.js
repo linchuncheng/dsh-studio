@@ -12,6 +12,7 @@
  *
  * @module dsh-studio
  */
+import { draftCasesFromCriteria } from './src/host/case-strength.js'
 import { spawn } from 'node:child_process'
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 import { mkdir, readFile, readdir, rename, rm, stat, writeFile, chmod } from 'node:fs/promises'
@@ -2208,6 +2209,10 @@ async function addDraftCases(store, taskId, by = '人') {
     for (const item of draft.cases) {
       if (existing.has(item.title)) continue
       existing.add(item.title)
+      /* 以前这里写死 http: null —— 生成的用例**永远不可执行**（全库 101 条 0 可执行就是这么来的）。
+         现在从验收条件里推断：有 URL 就生成接口用例，允许 shell 且有命令行就生成 shell 用例，
+         推不出来的明确标 draft（不计入覆盖率），而不是假装它是一条"用例"。 */
+      const inferred = draftCasesFromCriteria([item.expected || item.title], { allowShell: state.config?.testing?.allowShell === true })[0] ?? {}
       entry.cases.push({
         id: `c-${Math.random().toString(36).slice(2, 7)}`,
         title: item.title,
@@ -2217,7 +2222,9 @@ async function addDraftCases(store, taskId, by = '人') {
         pointId: item.pointId,
         by,
         at: Date.now(),
-        http: null,
+        http: inferred.http ?? null,
+        shell: inferred.shell ?? null,
+        draft: inferred.draft === true,
         lastRun: null,
       })
       added += 1
