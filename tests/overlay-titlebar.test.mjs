@@ -30,6 +30,12 @@ test('抽屉/弹窗/侧栏/登录浮层/命令面板遮罩都避开桌面标题�
   // 图片查看器是内联样式，单独查
   assert.ok(drawer.includes('env(titlebar-area-height, 0px)'), '图片查看器的 fixed 覆盖层也要避开标题栏')
 
+  // 桌面客户端里 env(titlebar-area-height) 实测为 0，必须有保底下沉（issue #4 二次复现）
+  assert.ok(legacy.includes('max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px))'), '覆盖层要有保底下沉')
+  const titlebar = read('web/src/studio/titlebar.js')
+  assert.match(titlebar, /Electron/, '要检测 Electron')
+  assert.match(titlebar, /setProperty\('--ds-titlebar-floor', '32px'\)/, 'Electron 里要把下限设成 32px')
+  assert.match(legacy, /applyTitlebarFloor\(\)/, '客户端要调用它')
   // 覆盖层不该落进拖拽区，否则点击会被当成拖窗口
   assert.ok(legacy.includes('-webkit-app-region:no-drag') || legacy.includes('-webkit-app-region: no-drag'), '覆盖层要标 no-drag')
 })
