@@ -30,9 +30,12 @@ test('用真实的 desktop profile 数据验一遍（加进本插件后必须认
     console.log('（本机没有 desktop profile，跳过真实数据校验）')
     return
   }
-  const dependencies = desktop.dependencies ?? {}
-  assert.ok(Object.keys(dependencies).length > 0, 'desktop profile 应该有依赖')
-  // 现状：没装本插件 → 认不出（这也是 issue #5 里"回退成 web"的前提）
+  const all = desktop.dependencies ?? {}
+  assert.ok(Object.keys(all).length > 0, 'desktop profile 应该有依赖')
+  // 把本插件摘掉，模拟"装之前"：必须认不出（这就是 issue #5 里回退成 web 的前提）
+  const dependencies = { ...all }
+  delete dependencies['@marsken/dsh-studio']
+  delete dependencies['dsh-studio']
   assert.equal(isStudioProfile(dependencies, Object.keys(dependencies)), false)
   // 加上本插件（npm 装法用 scoped 名，本地开发用 link: 也是 scoped 名）→ 必须认得出
   const withStudio = { ...dependencies, '@marsken/dsh-studio': 'link:E:/deepseekWorkSpace/super-agents/dsh-studio' }

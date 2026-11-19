@@ -48,9 +48,10 @@ test('前端 api() 会自动给破坏性路由补 confirm（否则界面上的�
 })
 
 test('detectProfile 认 scoped 包名（只认短名会让 desktop profile 回退成 web）', () => {
-  const index = read('index.js')
-  assert.ok(index.includes("deps['@marsken/dsh-studio']"), '要认 scoped 依赖名')
-  assert.ok(index.includes("endsWith('/dsh-studio')"), '要认 bundles 里的 scoped 名')
+  const module = read('src/host/profile-detect.js')
+  assert.match(module, /@marsken\/dsh-studio/, '要认 scoped 依赖名')
+  assert.match(module, /endsWith\('\/dsh-studio'\)/, '要认任意 scope 的同名包')
+  assert.match(read('index.js'), /isStudioProfile\(deps, bundles\)/, 'detectProfile 要用这个判据')
 })
 
 test('新建需求不再自动落「评审中」（没有评审人只会永久卡住）', () => {
