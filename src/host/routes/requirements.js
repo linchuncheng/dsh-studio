@@ -1,3 +1,4 @@
+import { actorKind } from '../intervention.js'
 import {
   INTAKE_HTML,
   MINE_HTML,
@@ -92,7 +93,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
       const target = state.requirements.find(item => item.id === id)
       if (target === undefined) throw new Error('需求不存在')
       if (action === 'sign') {
-        target.signoff = { by, at: Date.now(), note }
+        target.signoff = { by, at: Date.now(), note, actorKind: actorKind(by) }
         const open = state.tasks.filter(task => task.requirementId === id && task.status !== 'done').length
         const total = state.tasks.filter(task => task.requirementId === id).length
         // 签完字且卡全完成，需求自动落到「已交付」；否则留在进行中，等卡收口。
@@ -134,7 +135,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
         entry.history.push({ at: Date.now(), by, status: entry.status, note: 'signoff-cleared' })
       } else {
         if (note.length === 0) throw new Error('验收签字要写一句结论：验了什么、遗留什么')
-        entry.signoff = { by, at: Date.now(), note }
+        entry.signoff = { by, at: Date.now(), note, actorKind: actorKind(by) }
         entry.history.push({ at: Date.now(), by, status: entry.status, note: `signoff：${note.slice(0, 80)}` })
       }
       entry.updatedAt = Date.now()

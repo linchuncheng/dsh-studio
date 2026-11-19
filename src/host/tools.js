@@ -1,3 +1,4 @@
+import { actorKind } from './intervention.js'
 import { randomBytes } from 'node:crypto'
 import {
   CASE_RESULTS, CODING_REVIEW_STATUS, RELEASE_STATUS_LABEL, REQ_STATUS_LABEL, ROLE_IDS, STATUSES, STATUS_IDS,
@@ -212,7 +213,7 @@ export function registerTools(ctx, store) {
         const target = state.requirements.find(item => item.id === id)
         if (target === undefined) throw new Error('需求不存在')
         if (action === 'sign') {
-          target.signoff = { by: String(args.by ?? 'agent').slice(0, 60), at: Date.now(), note }
+          target.signoff = { by: String(args.by ?? 'agent').slice(0, 60), at: Date.now(), note, actorKind: actorKind(String(args.by ?? 'agent')) }
           const open = state.tasks.filter(task => task.requirementId === id && task.status !== 'done').length
           const total = state.tasks.filter(task => task.requirementId === id).length
           if (open === 0 && total > 0) target.status = 'delivered'
@@ -377,7 +378,7 @@ export function registerTools(ctx, store) {
           entry.history.push({ at: Date.now(), by, status: entry.status, note: 'signoff-cleared' })
         } else {
           if (note.trim() === '') throw new Error('验收签字要写一句结论：验了什么、遗留什么')
-          entry.signoff = { by, at: Date.now(), note }
+          entry.signoff = { by, at: Date.now(), note, actorKind: actorKind(by) }
           entry.history.push({ at: Date.now(), by, status: entry.status, note: `signoff：${note.slice(0, 80)}` })
         }
         entry.updatedAt = Date.now()
