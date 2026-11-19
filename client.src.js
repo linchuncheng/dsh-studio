@@ -394,7 +394,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 }
 [data-dsh-studio][data-theme="dark"] {
   /* 暗色下的"文字安全色"：浅色主题那套在深底上不够亮（实测 3.0~3.5:1），这里单独给一套。 */
-  --ds-muted:#a1a1aa; --ds-warn-text:#fbbf24; --ds-danger-text:#ff9a9d;
+  --ds-muted:#a1a1aa; --ds-warn-text:#fbbf24; --ds-danger-text:#ff9a9d; --ds-ok-text:#4ade80; --ds-violet-text:#c4b5fd;
   color-scheme:dark; color:#e6e8ee; background:var(--ds-bg); --ds-accent:#7ba2ff;
   --ds-bg:#0e1014; --ds-surface:#181b22; --ds-surface-2:#1e222a; --ds-card:#181b22;
   --ds-line:#2c323d; --ds-line-soft:#232830;
@@ -461,7 +461,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-mc-name { font-weight:600; font-size:13px; }
 .ds-mc-desc { font-size:12px; opacity:.72; }
 .ds-market-card code { font-size:11px; opacity:.55; word-break:break-all; }
-.ds-chip[data-on="1"] { color:#0f9d58; border-color:#0f9d5855; }
+.ds-chip[data-on="1"] { color:#0b7a43; border-color:#0f9d5855; }
 .ds-board { display:flex; gap:12px; padding:12px 16px 16px; overflow-x:auto; overflow-y:hidden; flex:1; min-height:0; align-items:stretch; }
 .ds-col { flex:0 0 282px; display:flex; flex-direction:column; min-height:0; border:1px solid var(--ds-line); border-radius:16px;
   background:var(--ds-surface-2); overflow:hidden; }
@@ -972,7 +972,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
   --popover:#ffffff; --popover-foreground:#09090b;
   --primary:#18181b; --primary-foreground:#fafafa;
   --secondary:#f4f4f5; --secondary-foreground:#18181b;
-  --muted:#f4f4f5; --muted-foreground:#6b6b74; --ds-danger-text:#c4282f; --ds-warn-text:#a26100;
+  --muted:#f4f4f5; --muted-foreground:#6b6b74; --ds-danger-text:#c4282f; --ds-warn-text:#a26100; --ds-ok-text:#0b7a43; --ds-violet-text:#6d28d9;
   --accent:#f4f4f5; --accent-foreground:#18181b;
   --destructive:#dc2626; --destructive-foreground:#fafafa;
   --border:#e4e4e7; --input:#e4e4e7; --ring:#a1a1aa;
@@ -990,7 +990,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
   --popover:#ffffff; --popover-foreground:#09090b;
   --primary:#18181b; --primary-foreground:#fafafa;
   --secondary:#f4f4f5; --secondary-foreground:#18181b;
-  --muted:#f4f4f5; --muted-foreground:#6b6b74; --ds-danger-text:#c4282f; --ds-warn-text:#a26100;
+  --muted:#f4f4f5; --muted-foreground:#6b6b74; --ds-danger-text:#c4282f; --ds-warn-text:#a26100; --ds-ok-text:#0b7a43; --ds-violet-text:#6d28d9;
   --accent:#f4f4f5; --accent-foreground:#18181b;
   --destructive:#dc2626; --border:#e4e4e7; --input:#e4e4e7; --ring:#a1a1aa;
   --ds-bg:var(--background); --ds-surface:var(--card); --ds-surface-2:var(--muted);
@@ -1001,7 +1001,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 }
 [data-dsh-studio][data-theme="dark"] {
   /* 暗色下的"文字安全色"：浅色主题那套在深底上不够亮（实测 3.0~3.5:1），这里单独给一套。 */
-  --ds-muted:#a1a1aa; --ds-warn-text:#fbbf24; --ds-danger-text:#ff9a9d;
+  --ds-muted:#a1a1aa; --ds-warn-text:#fbbf24; --ds-danger-text:#ff9a9d; --ds-ok-text:#4ade80; --ds-violet-text:#c4b5fd;
   color-scheme:dark; color:var(--foreground); background:var(--background);
   --background:#09090b; --foreground:#fafafa;
   --card:#111113; --card-foreground:#fafafa;

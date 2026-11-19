@@ -133,7 +133,17 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
       strokeDasharray: '3 3',
       vectorEffect: 'non-scaling-stroke',
     }))
-    const chart = h('svg', { style: { display: 'block', width: '100%', height: 52 }, viewBox: '0 0 560 60', preserveAspectRatio: 'none' },
+    const trendSummary = trend.length === 0
+      ? '上下文占用趋势：暂无数据'
+      : `上下文占用趋势：最近 ${trend.length} 次会话，峰值占用 ${Math.round(Math.max(...trend) / 1000)}k token`
+    const chart = h('svg', {
+      style: { display: 'block', width: '100%', height: 52 },
+      viewBox: '0 0 560 60',
+      preserveAspectRatio: 'none',
+      role: 'img',
+      'aria-label': trendSummary,
+    },
+      h('title', null, trendSummary),
       h('polygon', { points: '0,60 ' + trendPointsOf(trend) + ' 560,60', fill: CTX_COLORS[0], opacity: 0.12 }),
       h('polyline', { points: trendPointsOf(trend), fill: 'none', stroke: CTX_COLORS[0], strokeWidth: 1.6, vectorEffect: 'non-scaling-stroke' }),
       marks)

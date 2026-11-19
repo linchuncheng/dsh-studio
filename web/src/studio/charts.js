@@ -28,6 +28,7 @@ export function BurnChart({ series }) {
   const area = `${line} L100,40 L0,40 Z`
   return h('div', { className: 'ds-burn' },
     h('svg', { viewBox: '0 0 100 40', preserveAspectRatio: 'none', className: 'ds-burn-svg', role: 'img', 'aria-label': '燃尽趋势' },
+      h('title', null, '燃尽趋势'),
       h('path', { d: area, className: 'ds-burn-area' }),
       h('path', { d: line, className: 'ds-burn-line', vectorEffect: 'non-scaling-stroke' }),
       coords.map(point => h('circle', { key: point.day, cx: point.x, cy: point.y, r: 1.1, className: 'ds-burn-dot' },

@@ -129,6 +129,7 @@ const collectAudit = () => {
     if (tag === 'input' || tag === 'select' || tag === 'textarea') {
       const id = node.getAttribute('id')
       const labelled = (id !== null && document.querySelector(`label[for="${CSS.escape(id)}"]`) !== null)
+        || node.closest('label') !== null   // 包在 label 里的控件有隐式标签（HTML 规范），别误报
         || node.getAttribute('aria-label') !== null
         || node.getAttribute('aria-labelledby') !== null
         || node.getAttribute('title') !== null
@@ -177,6 +178,32 @@ try {
     }
     await sleep(1800)
     report.tabs[name] = await page.evaluate(collectAudit)
+  }
+
+  // 1b) 设置页的 17 个面板逐屏扫（这页是最容易被漏掉的：左栏一堆导航 + 密集表单）
+  const settingsTab = await page.$$eval('[data-dsh-studio] .ds-head-tabs button', nodes => nodes.map(node => node.textContent.trim()))
+  if (settingsTab.includes('设置')) {
+    for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
+      if (((await tab.evaluate(node => node.textContent)) || '').trim() === '设置') { await tab.click(); break }
+    }
+    await sleep(1500)
+    const panels = await page.$$eval('[data-dsh-studio] .ds-settings-nav button', nodes => nodes.map(node => node.textContent.trim()).filter(Boolean))
+    for (const name of panels.slice(0, 20)) {
+      for (const button of await page.$$('[data-dsh-studio] .ds-settings-nav button')) {
+        if (((await button.evaluate(node => node.textContent)) || '').trim() === name) { await button.click(); break }
+      }
+      await sleep(700)
+      report.tabs['设置 · ' + name] = await page.evaluate(collectAudit)
+    }
+
+    // 命令面板（⌘K / Ctrl+K）
+    await page.keyboard.down('Control')
+    await page.keyboard.press('KeyK')
+    await page.keyboard.up('Control')
+    await sleep(900)
+    report.tabs['命令面板'] = await page.evaluate(collectAudit)
+    await page.keyboard.press('Escape')
+    await sleep(400)
   }
 
   // 2) 键盘可达：Tab 走一圈，看焦点是否可见

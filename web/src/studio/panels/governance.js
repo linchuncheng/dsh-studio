@@ -462,7 +462,9 @@ export function HealthPanel({ state, config, onChanged }) {
   }
 
   const LABEL = { ok: '正常', error: '异常', idle: '还没用过' }
-  const COLOR = { ok: '#0f9d58', error: '#e5484d', idle: '#8a8f98' }
+  // 这三个颜色只用来画「●」这个字符（等于文字），所以取的是过 AA 的那一档，不是图表的鲜艳色。
+  // 用 CSS 变量而不是写死 hex：这是内联样式，写死就不会跟着深色主题变（实测深色下只有 3.0:1）。
+  const COLOR = { ok: 'var(--ds-ok-text)', error: 'var(--ds-danger-text)', idle: 'var(--ds-muted)' }
 
   return h('div', { className: 'ds-pane-stack' },
     h('div', { className: 'ds-panel' },
