@@ -315,6 +315,14 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
   仍缺：CI 产物本身（构建物、报告文件）不下载，只记数字；真实 `git.lyf.com` 令牌还没接通，这条链目前用 `tools/mock-gitlab.mjs` 打桩验过。
 - 「业务负责人」与「期望完成」是可选项：没填时抽屉里显示「未指派」/「未排期」，不是数据丢失；需要时补上再点「保存改动」。
 
+## 装完不对劲先看这里
+
+| 现象 | 原因与处置 |
+| --- | --- |
+| 装了插件但侧栏没有「需求&任务工作空间」（`studio_*` 工具能用、看板数据也在） | 浏览器端注册名必须等于**包名**。0.9.0/0.9.1 的产物里写的是短名 `dsh-studio`，宿主按包名取工厂取不到 → 模块不实例化 → 侧栏入口根本没注册。**升到 0.9.2** |
+| 写工具报 `recordAudit is not defined` | 0.9.0/0.9.1 的 `src/host/tools.js` 裸引用了宿主函数（没走注入）。**升到 0.9.2** |
+| 提示 `ERR_MODULE_NOT_FOUND` / 装完不加载 | 0.5.1 及更早的 `cordis.patch.yml` 里写的是裸名 `dsh-studio`。**升到 0.5.2+**（`npm run verify:pack` 会拦这类问题） |
+
 ## 许可证
 
 Apache-2.0，见 [LICENSE](LICENSE)。仓库里不含公司数据，配置示例里的地址 / token / 主机名都是占位值。

@@ -83,6 +83,13 @@ jobs:
           const patched = yml.replaceAll(`name: "${before}"`, `name: "${mirror}"`)
           if (patched === yml) throw new Error(`cordis.patch.yml 里没有 name: "${before}"，镜像会装不上`)
           writeFileSync('cordis.patch.yml', patched)
+          // 浏览器端注册名也在产物里写死了：镜像必须把它一起改成镜像包名，否则装镜像的人看不到面板。
+          for (const file of ['client.js', 'dist/client.js']) {
+            const original = readFileSync(file, 'utf8')
+            const next = original.replaceAll(`id:"${before}"`, `id:"${mirror}"`)
+            if (next === original) throw new Error(`${file} 里没找到注册名 id:"${before}"`)
+            writeFileSync(file, next)
+          }
           console.log(`${before} → ${mirror}`)
           NODE
 

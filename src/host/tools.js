@@ -10,7 +10,7 @@ import {
   runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask,
 } from './executor.js'
 import { runSummary } from './dispatcher.js'
-const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
+const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","recordAudit","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
 let host = {
   activeDispatcher: () => {},
   activeSkills: () => {},
@@ -23,6 +23,7 @@ let host = {
   burndownReport: () => {},
   checkToolAccess: () => {},
   createTask: () => {},
+  recordAudit: () => {},
   releaseGate: () => {},
   releaseNotes: () => {},
   skillsRoot: () => {},
@@ -55,7 +56,7 @@ export function registerTools(ctx, store) {
           ? { level: host.toolLevel(tool.name), denial: null }
           : host.checkToolAccess(config, operator.name, tool.name)
         if (denial !== null) {
-          await recordAudit(store, {
+          await host.recordAudit(store, {
             by: `${operator.name}(AI)`, route: `tool:${tool.name}`, level,
             status: 403, ok: false, summary: denial,
           })
@@ -65,7 +66,7 @@ export function registerTools(ctx, store) {
           const value = await body(args, exec)
           // 只给写操作留痕，读太多会把审计刷成流水账。
           if (operator !== null && level !== 'read') {
-            await recordAudit(store, {
+            await host.recordAudit(store, {
               by: `${operator.name}(AI)`, route: `tool:${tool.name}`, level,
               status: 200, ok: true, summary: host.auditSummary(args),
             })
@@ -73,7 +74,7 @@ export function registerTools(ctx, store) {
           return value
         } catch (error) {
           if (operator !== null && level !== 'read') {
-            await recordAudit(store, {
+            await host.recordAudit(store, {
               by: `${operator.name}(AI)`, route: `tool:${tool.name}`, level,
               status: 500, ok: false, summary: String(error?.message ?? error).slice(0, 200),
             })

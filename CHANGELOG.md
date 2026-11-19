@@ -1,6 +1,34 @@
 # 更新日志
 
 
+## [0.9.2] — 2026-11-19
+
+修的是 [issue #3](https://github.com/marsken88/dsh-studio/issues/3) 报的两个阻断级缺陷。
+
+### 修复
+- **侧边栏入口完全不出现**（工具能用、面板不见）：浏览器端注册名必须等于**宿主给这个插件分配的模块 id**，
+  写死任何一个名字都会在另一种安装方式下失效：
+  - npm / profile 安装：id 是包名（`@marsken/dsh-studio`）
+  - 本地目录挂载：id 是目录名（`dsh-studio`）
+
+  现在改成**运行时解析**：优先读宿主写进页面的 `window.__DSH_BOOT__.entries`（每项 `{id,url}`，id 就是宿主分配的模块 id），
+  取不到再从自己的 script 地址推（`/plugins/<id>/client.js`，要吃掉 `??` 多入口前缀与 `&rev=`），最后才退回包名。实测：改回短名 → 本地面板复活但 npm 装的不显示；改成包名 → npm 正常但本地面板消失
+  （`web boot: 1 entry did not activate`）；运行时推导后两边都对。
+- **所有写工具抛 `recordAudit is not defined`**：`src/host/tools.js` 裸引用了 index.js 的
+  `recordAudit`（没走 `configureToolHost` 注入）。已加进注入列表并改成 `host.recordAudit(...)`。
+
+### 测试（两类都补了防回归）
+- `tests/module-id.test.mjs`：`dist/client.js` / `client.js` / `client.src.js` 的注册名必须等于包名；
+  vite 入口必须用编译期常量；镜像 workflow 必须同步改名。（把产物改回短名，这条会红。）
+- `tests/tools-audit.test.mjs`：静态检查 `INJECTED` 里的宿主能力不许裸调用；
+  动态起一个真 `StudioStore`、注册工具、跑一个写工具，确认不抛 `ReferenceError`。
+- `tests/repo.test.mjs` 里那条「bundle 注册名」断言原来写死的正是短名 —— 已改成按包名比对。
+
+### 为什么之前没被发现
+- 面板探针一直打的是**手工部署**的那份，宿主按目录名解析，短名恰好能对上；npm 装到 profile 里才暴露。
+- 写工具只在**真的调用工具**时触发，而之前的验收全走 HTTP 路由（路由用的是 `host.recordAudit`，一直是对的）。
+
+
 ## [0.9.1] — 2026-11-19
 
 ### 修复

@@ -9,7 +9,8 @@
  * own module table, so no bundler and no second React copy are involved.
  */
 window.__ModuleLoader__.load({
-  id: 'dsh-studio',
+  // 注册 id 由 web/src/main.jsx 在构建时按运行环境推导（这里只是手工产物形态，值不进产物）
+  id: '@marsken/dsh-studio',
   factory(require) {
     const React = require('react')
     const h = React.createElement

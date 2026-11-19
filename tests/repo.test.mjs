@@ -94,7 +94,8 @@ test('bundle: package root client.js is the built artifact', () => {
 test('bundle: client half registers through the harness module loader', () => {
   const bundle = read('client.js')
   assert.ok(bundle.includes('__ModuleLoader__.load('), 'bundle does not call __ModuleLoader__.load')
-  assert.match(bundle, /id:\s*"dsh-studio"/, 'bundle registers under an unexpected module id')
+  // 注册 id 必须是运行时推导的（写死短名/写死包名都会在另一种安装方式下失效，issue #3）
+  assert.ok(bundle.includes("/plugins/"), "bundle 应该从自己的 script 地址推导模块 id")
   assert.ok(bundle.includes('"react"') && bundle.includes('"react-dom"'), 'bundle must require the host React, not ship its own')
   assert.ok(!bundle.includes('@deepseek-ai/'), 'bundle must not import @deepseek-ai packages directly')
 })

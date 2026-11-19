@@ -2592,7 +2592,7 @@ export function apply(ctx) {
   ctx.effect(() => disposeSection, 'dsh-studio: protocol section')
 
   configureToolHost({
-    addAssertedCases, addDraftCases, applyConfig, auditSummary, buildAnalytics, buildMetrics, burndownReport, checkToolAccess, createTask,
+    addAssertedCases, addDraftCases, applyConfig, auditSummary, buildAnalytics, buildMetrics, burndownReport, checkToolAccess, createTask, recordAudit,
     releaseGate, releaseNotes, skillsRoot, taskLine, toolLevel, toolOperator, upsertById, workloadReport,
     getActiveDispatcher: () => activeDispatcher, getActiveSkills: () => activeSkills,
   })

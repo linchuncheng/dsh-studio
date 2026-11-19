@@ -19,7 +19,7 @@ let text = readFileSync(source, 'utf8')
 // client.js ships with CRLF; the transforms below are written for LF.
 text = text.replace(/\r\n/g, '\n')
 
-const header = /window\.__ModuleLoader__\.load\(\{\s*\n\s*id: 'dsh-studio',\s*\n\s*factory\(require\) \{\s*\n\s*const React = require\('react'\)\s*\n\s*const h = React\.createElement\s*\n/
+const header = /window\.__ModuleLoader__\.load\(\{\s*\n(?:\s*\/\/[^\n]*\n)*\s*id: '[^']*',\s*\n\s*factory\(require\) \{\s*\n\s*const React = require\('react'\)\s*\n\s*const h = React\.createElement\s*\n/
 if (!header.test(text)) {
   console.error('make-legacy: loader header not found in client.js')
   process.exit(1)

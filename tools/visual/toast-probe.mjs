@@ -27,9 +27,17 @@ const check = (label, ok, detail = '') => {
 }
 
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'], defaultViewport: { width: 1400, height: 900 } })
+/* 宿主级别的噪声（不是本插件的错误）：DSH 的模块系统在批量入口/重复拦截时会抛
+   client-modules: duplicate factory registration for "@deepseek-ai/…"。
+   实测 0.9.1 与 0.9.2 的产物都出现，加载完成后面板正常 —— 单独计数，
+   但**只放行 @deepseek-ai/ 开头的核心插件**；提到 dsh-studio 的一律照常报错。 */
+const HOST_NOISE = /client-modules: duplicate factory registration for "@deepseek-ai\//
+const hostNoise = []
+const isHostNoise = text => HOST_NOISE.test(String(text))
+
 const page = await browser.newPage()
 const errors = []
-page.on('pageerror', (e) => errors.push(String(e).slice(0, 200)))
+page.on('pageerror', (e) => { if (isHostNoise(e)) { hostNoise.push(String(e).slice(0, 120)); return } errors.push(String(e).slice(0, 200)) })
 page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)) })
 
 await page.goto(`${BASE}/?token=${TOKEN}`, { waitUntil: 'networkidle2', timeout: 60000 })
@@ -95,7 +103,8 @@ if (shown.ok === true) {
   check('约 4 秒后自动消失', gone === true)
 }
 
-check('全程没有 pageerror / console error', errors.length === 0, errors.slice(0, 2).join(' | '))
+if (hostNoise.length > 0) console.log(`note 忽略宿主级噪声 ${hostNoise.length} 条（duplicate factory registration @deepseek-ai/…，与本插件无关）`)
+  check('全程没有 pageerror / console error', errors.length === 0, errors.slice(0, 2).join(' | '))
 await browser.close()
 
 console.log(fails.length === 0 ? '\n全部通过（7 项）' : `\n${fails.length} 项失败（7 项）`)

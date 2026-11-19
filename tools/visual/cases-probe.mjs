@@ -48,9 +48,17 @@ const browser = await puppeteer.launch({
   args: ['--no-sandbox'],
   defaultViewport: { width: 1600, height: 1000 },
 })
+/* 宿主级别的噪声（不是本插件的错误）：DSH 的模块系统在批量入口/重复拦截时会抛
+   client-modules: duplicate factory registration for "@deepseek-ai/…"。
+   实测 0.9.1 与 0.9.2 的产物都出现，加载完成后面板正常 —— 单独计数，
+   但**只放行 @deepseek-ai/ 开头的核心插件**；提到 dsh-studio 的一律照常报错。 */
+const HOST_NOISE = /client-modules: duplicate factory registration for "@deepseek-ai\//
+const hostNoise = []
+const isHostNoise = text => HOST_NOISE.test(String(text))
+
 const page = await browser.newPage()
 const errors = []
-page.on('pageerror', error => errors.push(String(error).slice(0, 200)))
+page.on('pageerror', error => { if (isHostNoise(error)) { hostNoise.push(String(error).slice(0, 120)); return } errors.push(String(error).slice(0, 200)) })
 
 try {
   await page.goto(`${baseUrl}/?token=${token}`, { waitUntil: 'networkidle2', timeout: 60000 })
@@ -100,6 +108,7 @@ try {
     return at < 0 ? null : text.slice(Math.max(0, at - 10), at + 90).replace(/\s+/g, ' ')
   })
   check('面板没有渲染失败', crash === null, crash ?? '')
+  if (hostNoise.length > 0) console.log(`note 忽略宿主级噪声 ${hostNoise.length} 条（duplicate factory registration @deepseek-ai/…，与本插件无关）`)
   check('pageerror 为空', errors.length === 0, errors.slice(0, 2).join(' | '))
 } catch (error) {
   check('探针没跑完', false, String(error?.message ?? error).slice(0, 200))
