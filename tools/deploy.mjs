@@ -72,13 +72,27 @@ echo '${PASSWORD}' | sudo -S systemctl restart dsh-web >/dev/null 2>&1 || system
 for i in $(seq 1 25); do if ss -ltn 2>/dev/null | grep -q ':18080'; then break; fi; sleep 1; done
 echo "active=$(systemctl is-active dsh-web)"
 echo "files=$(find "$DEST/src/host" -name '*.js' | wc -l)"
-echo "state=$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: 127.0.0.1:18080' http://127.0.0.1/studio-api/state 2>/dev/null || echo 0)"
+STATE=000
+for i in $(seq 1 20); do
+  STATE=$(curl -s --max-time 5 -o /dev/null -w '%{http_code}' http://${HOST}:18080/studio-api/state 2>/dev/null)
+  [ "\${STATE}" = "200" ] && break
+  sleep 2
+done
+echo "state=\${STATE}"
 `
 
 if (DRY) {
   console.log(JSON.stringify({ host: HOST, user: USER, port: PORT, remoteDir: REMOTE_DIR, files, mode: PASSWORD !== '' ? 'ssh2(password)' : 'ssh/scp(key)' }, null, 1))
   process.exit(0)
 }
+
+/* 看门狗：10 分钟还没结束就强制退出并说明"上传可能已完成"。
+   用 unref：它不该成为让进程活着的理由，但真挂住时必须能兜住。 */
+const WATCHDOG = setTimeout(() => {
+  console.error('deploy: 10 分钟没结束，强制退出。上传很可能已经完成 —— 去目标机核对 active= / 文件时间，别只看本脚本输出。')
+  process.exit(3)
+}, 10 * 60 * 1000)
+WATCHDOG.unref()
 
 const verify = out => {
   console.log(out.trim())
@@ -99,6 +113,7 @@ if (PASSWORD !== '') {
   const conn = new Client()
   conn.on('ready', async () => {
     try {
+      console.log(`连接就绪：${USER}@${HOST}:${PORT}`)
       const sftp = await new Promise((res, rej) => conn.sftp((e, s) => (e ? rej(e) : res(s))))
       const run = cmd => new Promise((res, rej) => conn.exec(cmd, (e, stream) => {
         if (e) { rej(e); return }
@@ -108,15 +123,24 @@ if (PASSWORD !== '') {
         stream.on('close', () => res(out))
       }))
       await run(`mkdir -p ${TMP}/src/host/routes`)
+      console.log(`开始上传 ${files.length} 个文件`)
+      let uploaded = 0
       for (const file of files) {
         const target = file.remote.startsWith('src/') ? `${TMP}/${file.remote}` : `${TMP}/${file.remote}`
         await new Promise((res, rej) => sftp.fastPut(file.local, target, e => (e ? rej(e) : res())))
+        uploaded += 1
+        if (uploaded % 10 === 0) console.log(`  已上传 ${uploaded}/${files.length}`)
       }
+      console.log(`上传完成，执行安装脚本（重启 dsh-web）`)
       const script = Buffer.from(INSTALL).toString('base64')
       await run(`printf %s '${script}' | base64 -d > ${TMP}/deploy-studio.sh`)
+      console.log('安装脚本执行中…')
       verify(await run(`bash ${TMP}/deploy-studio.sh`))
       sftp.end()
       conn.end()
+      /* ssh2 偶尔不释放定时器/套接字，脚本"做完了却不退出"，在 CI 或被脚本串起来时会一直卡住。
+         验证已经通过，给 stdout 200ms 冲干净后主动退出。 */
+      setTimeout(() => process.exit(0), 200)
     } catch (error) {
       console.error('部署失败：', error.message)
       conn.end()
@@ -127,7 +151,9 @@ if (PASSWORD !== '') {
 } else {
   const ssh = (...argv) => execFileSync('ssh', ['-p', String(PORT), ...(KEY === '' ? [] : ['-i', KEY.replace('~', homedir())]), `${USER}@${HOST}`, ...argv], { encoding: 'utf8' })
   const scp = (...argv) => execFileSync('scp', ['-P', String(PORT), ...(KEY === '' ? [] : ['-i', KEY.replace('~', homedir())]), ...argv], { encoding: 'utf8' })
+  console.log(`连接就绪：${USER}@${HOST}:${PORT}（key 模式）`)
   ssh(`mkdir -p ${TMP}/src/host/routes`)
+  console.log(`开始上传 ${files.length} 个文件`)
   for (const file of files) {
     const target = file.remote.startsWith('src/') ? `${TMP}/${file.remote}` : `${TMP}/${file.remote}`
     scp(file.local, `${USER}@${HOST}:${target}`)
