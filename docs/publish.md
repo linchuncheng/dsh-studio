@@ -217,7 +217,9 @@ token 只写进临时 npmrc（放在仓库外或 `tmp/` 且不提交），发完
 两条硬规矩，每次发版都过一遍：
 
 1. `npm run check` + `pnpm build` + `cmp -s dist/client.js client.js`（产物必须逐字节一致）；
-2. 发完**在临时 profile 里装一遍**并跑 `dsh --profile <tmp> --dump-config | grep dsh-studio`，确认宿主真认到了，然后把 profile 删掉；
+2. 发完**在临时 profile 里装一遍**（`dsh plugin --profile <tmp> install @marsken/dsh-studio@<版本>`）并跑 `dsh --profile <tmp> --dump-config | grep dsh-studio`，确认宿主真认到了，然后把 profile 删掉。
+   **这一步是硬门槛，不是可选项**：0.5.1 及以前 `cordis.patch.yml` 里写的是裸名 `dsh-studio`，
+   从 npm 装完 `plugin.not-loaded` + `ERR_MODULE_NOT_FOUND`，而所有本地探针都打的是手工部署的那份，
 3. **发版一致性用命令查，不靠记性**：`npm run verify:release`（= `node tools/verify-release.mjs`）比对五处——
    package.json 版本、本地 tag、tag 里的 package.json、origin/main 与 origin 上的 tag、npm registry 的版本与 latest。
    全绿输出「发版一致」，有不一致退出码 1。

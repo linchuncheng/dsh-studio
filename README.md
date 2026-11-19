@@ -110,6 +110,20 @@ dsh plugin --profile web install @marsken/dsh-studio@latest
 sudo systemctl restart dsh-web
 ```
 
+> **已经装过 0.5.1 及更早版本的，先看这里。** 那些版本的 `cordis.patch.yml` 里把包名写成了裸名
+> `dsh-studio`（真实包名是 `@marsken/dsh-studio`），加载器按裸名去 profile 的 `node_modules` 里解析，
+> 结果是 `plugin.not-loaded` + `Cannot find package 'dsh-studio'`——面板、工具、路由全都不会出现。
+> 0.5.2 起改成完整包名。升级后如果还是不加载，把 profile 里那一行改掉或删掉再装一次：
+>
+> ```bash
+> # 1) 删掉旧的挂载行（id: dsh-studio / name: dsh-studio 那两行）
+> grep -n -A2 'id: dsh-studio' ~/.dsh/profiles/web/cordis.patch.yml
+> # 2) 重新装一遍，确认宿主认到了
+> dsh plugin --profile web install @marsken/dsh-studio@latest
+> dsh --profile web --dump-config | grep -A2 'dsh-studio'
+> sudo systemctl restart dsh-web
+> ```
+
 ### 方式二：从源码装（要改代码时）
 
 ```bash

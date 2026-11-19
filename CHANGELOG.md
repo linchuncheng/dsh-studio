@@ -1,6 +1,23 @@
 # 更新日志
 
 
+## [0.5.2] — 2026-11-19
+
+### 修复
+- **从 npm / 插件市场装完插件根本不加载**（issue 报的 `ERR_MODULE_NOT_FOUND: Cannot find package 'dsh-studio'`）：
+  `cordis.patch.yml` 里写的是裸名 `dsh-studio`，而 npm 包叫 `@marsken/dsh-studio`。加载器把 `name`
+  当模块说明符去 profile 的 `node_modules` 里解析，裸名必然找不到 —— 于是宿主日志里只有
+  `plugin.not-loaded`，面板、工具、路由全都没有。现在 `name` 是完整包名。
+
+### 说明
+- **已经装过 ≤0.5.1 的人需要处理一次**：profile 的 `cordis.patch.yml` 里那行还是旧的裸名。
+  升级到 0.5.2 后如果仍不加载，删掉 `~/.dsh/profiles/<profile>/cordis.patch.yml` 里
+  `id: dsh-studio` / `name: dsh-studio` 那两行再装一次（或整条删除后重装）。
+- 为什么以前没发现：发版只跑 `npm test` 和真机探针，而探针打的是**已经手工部署**的那份，
+  patch 里的名字从来没被真正解析过。现在多了一条契约测试（patch 里的 `name` 必须等于包名），
+  发布清单也加了「在临时 profile 里真装一遍」。
+
+
 ## [0.5.1] — 2026-11-19
 
 ### 新增

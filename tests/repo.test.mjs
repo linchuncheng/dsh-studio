@@ -57,6 +57,22 @@ test('manifest: dsh bundle patch and client declaration are present', () => {
   assert.equal(manifest.exports['./client'], './client.js')
 })
 
+test('manifest: bundle patch mounts the package by its real npm name', async () => {
+  // issue（2026-11-19）：cordis.patch.yml 里写的是裸名 dsh-studio，而 npm 包叫
+  // @marsken/dsh-studio。加载器把 name 当模块说明符去 profile 的 node_modules 里解析，
+  // 于是从市场/NPM 装的人 100% 得到 ERR_MODULE_NOT_FOUND（Cannot find package 'dsh-studio'）。
+  // 这条测试盯的就是「patch 里的名字必须和 package.json 一致」，含 scope。
+  const { readFileSync } = await import('node:fs')
+  const yml = readFileSync(path('cordis.patch.yml'), 'utf8')
+  const names = [...yml.matchAll(/^\s+name:\s*"?([^"\n]+)"?\s*$/gm)].map(match => match[1].trim())
+  assert.ok(names.length > 0, 'cordis.patch.yml 里没有 name 行')
+  for (const name of names) {
+    assert.equal(name, manifest.name, `patch 里的 name（${name}）必须等于 package.json 的 name（${manifest.name}）`)
+  }
+  const ids = [...yml.matchAll(/^\s+-\s*id:\s*(.+)$/gm)].map(match => match[1].trim())
+  assert.ok(ids.length > 0, 'patch 里缺少 id（profile 内标识）')
+})
+
 test('manifest: files whitelist covers every shipped artifact', () => {
   const required = ['index.js', 'client.js', 'cordis.patch.yml', 'icon.svg', 'README.md', 'AGENTS.md', 'dist/client.js', 'client.src.js']
   for (const entry of required) assert.ok(manifest.files.includes(entry), `files[] is missing ${entry}`)

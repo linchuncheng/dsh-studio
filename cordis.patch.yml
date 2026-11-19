@@ -4,6 +4,11 @@
 # DSH host process (settings store, work ledger, studio_* agent tools,
 # /studio-api routes), and the `dsh.client` declaration in package.json makes
 # the browser half (exports "./client") load in the web GUI as a sidebar panel.
+#
+# name 必须和 package.json 的 name 一模一样（含 scope）：加载器拿它当模块说明符去
+# profile 的 node_modules 里解析，写成裸名 dsh-studio 会直接 ERR_MODULE_NOT_FOUND。
+# 从 npm / 插件市场装的人 100% 撞这个（issue #? 2026-11-19）。id 只是本 profile 里的
+# 标识，保持短名就行，改它等于换插件身份。
 - insert:
     - id: dsh-studio
-      name: dsh-studio
+      name: "@marsken/dsh-studio"
