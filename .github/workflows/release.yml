@@ -155,3 +155,14 @@ jobs:
           fi
           echo "release: $(gh release view "$GITHUB_REF_NAME" --json url --jq .url)"
 
+  # npm 发完之后再镜像一份到 GitHub Packages（@marsken88/dsh-studio）。
+  # 单独一个 job：镜像挂了不影响 npm 那条主渠道已经发出去的版本，
+  # 但整个 workflow 会红——这是故意的，别让第二渠道悄悄停摆。
+  mirror:
+    needs: publish
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-github-packages.yml
+    with:
+      tag: ${{ github.ref_name }}

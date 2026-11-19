@@ -225,10 +225,14 @@ token 只写进临时 npmrc（放在仓库外或 `tmp/` 且不提交），发完
 - **历史 tag 要补一次**：仓库有 71 个 tag，但 release 之前一个都没建过。补建走手动 workflow：
   Actions → **backfill-releases** → Run workflow（`limit` 填 `15` 补最近 15 个，填 `all` 补全部；
   `dry_run` 先看一眼要建哪些）。幂等的：已经有 release 的 tag 会跳过。
-- **不用 GitHub Packages**：它的 npm 源要求包 scope **等于仓库 owner**（这里是 `marsken88`），
-  而包名是 `@marsken/dsh-studio`。要发就得改名成 `@marsken88/dsh-studio`，
-  等于把 npm 上已有的历史版本和安装命令全部作废。分发渠道**只保留 npm**，
-  Releases 页只放版本说明，不放包本体。那条 "No packages published" 是有意留空的，不是漏了。
+- **GitHub Packages 是镜像，不是主渠道**：它的 npm 源要求包 scope **等于仓库 owner**，
+  所以镜像只能叫 `@marsken88/dsh-studio`（主包仍然是 npm 上的 `@marsken/dsh-studio`）。
+  `publish-github-packages.yml` 负责这件事：**把 package.json 的 name 和 `cordis.patch.yml`
+  里的 name 一起改**（只改一处 = 装了不加载，0.5.1 那个 issue 就是这条线崩的），
+  然后 `npm publish --registry=https://npm.pkg.github.com --access public`，最后用
+  `npm view` 回查一遍才算成功。`release.yml` 的 `mirror` job 在 npm 发完后自动调它。
+  已发布过的同版本会跳过，所以重跑是安全的。
+  **README 里的安装命令只教 npm 那条**：镜像给内网/CI 只能访问 GitHub 的环境用。
 
 2. 发完**在临时 profile 里装一遍**（`dsh plugin --profile <tmp> install @marsken/dsh-studio@<版本>`）并跑 `dsh --profile <tmp> --dump-config | grep dsh-studio`，确认宿主真认到了，然后把 profile 删掉。
    **这一步是硬门槛，不是可选项**：0.5.1 及以前 `cordis.patch.yml` 里写的是裸名 `dsh-studio`，

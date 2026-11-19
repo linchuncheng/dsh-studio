@@ -110,6 +110,20 @@ dsh plugin --profile web install @marsken/dsh-studio@latest
 sudo systemctl restart dsh-web
 ```
 
+### 方式二（可选）：从 GitHub Packages 装镜像
+
+只在内网/CI 只能访问 GitHub 时用。镜像包名不同（`@marsken88/dsh-studio`：GitHub Packages
+要求 scope 等于仓库 owner），内容和 npm 上那一份一致，版本号同步。
+
+```bash
+# 需要一个有 read:packages 权限的 GitHub token
+echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> ~/.npmrc
+dsh plugin --profile web install @marsken88/dsh-studio
+```
+
+> 镜像里的 `cordis.patch.yml` 已经改组内包名，所以装它不会出现「模块找不到」。
+> 但**别把两个装进同一个 profile**：它们注册的是同一个面板与同一批工具。
+
 > **已经装过 0.5.1 及更早版本的，先看这里。** 那些版本的 `cordis.patch.yml` 里把包名写成了裸名
 > `dsh-studio`（真实包名是 `@marsken/dsh-studio`），加载器按裸名去 profile 的 `node_modules` 里解析，
 > 结果是 `plugin.not-loaded` + `Cannot find package 'dsh-studio'`——面板、工具、路由全都不会出现。

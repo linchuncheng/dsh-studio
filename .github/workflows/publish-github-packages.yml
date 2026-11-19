@@ -17,6 +17,14 @@ name: publish-github-packages
 #   · Actions 里手动 Run workflow（可指定 tag）
 
 on:
+  # release.yml 每次发完 npm 会调它（tag 传 github.ref_name）
+  workflow_call:
+    inputs:
+      tag:
+        description: '要镜像的 tag（留空 = 当前 HEAD 的版本）'
+        required: false
+        type: string
+        default: ''
   push:
     paths:
       - '.github/workflows/publish-github-packages.yml'
