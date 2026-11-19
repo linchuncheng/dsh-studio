@@ -85,6 +85,9 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
   }
   // KPI 方块换成我们自己写的 StatCard（BoardUI 的 stats 卡是 Pro，按公开行为自研）
   const kpi = (label, value, hint, warn) => h(StatCard, { label, value, hint, warn: warn === true })
+  /* 强制放行：门禁说不行、有人（或某个 agent）硬推的每一次。
+     这些不是 bug，是必须被看见的例外 —— 以前只写进 history 一句话，效能页完全看不到。 */
+  const ov = data.overrides ?? { total: 0, cards: 0, requirements: 0, noReason: 0, byPerson: [], list: [] }
 
   const cycleTotal = (data.cycle.buckets ?? []).reduce((sum, bucket) => sum + bucket.count, 0)
   const peak = Math.max(1, ...(data.throughput ?? []).map(point => point.count), ...(data.cycle.buckets ?? []).map(bucket => bucket.count))
@@ -200,6 +203,22 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
       kpi('中位周期', fmtSpan(data.cycle.medianDays), `平均 ${fmtSpan(data.cycle.avgDays)} · P90 ${fmtSpan(data.cycle.p90Days)}`),
       kpi('AI 交付物采纳率', pct(data.ai.acceptedRate), `${data.ai.accepted}/${data.ai.artifactsAi} 件已被验收 · 占全部交付物 ${pct(data.ai.aiShare)}`),
     ),
+    ov.total === 0
+      ? null
+      : h('div', { className: 'ds-panel', style: { marginTop: 12 } },
+        h('div', { className: 'ds-panel-head' },
+          `强制放行 ${ov.total} 次`,
+          h('span', { className: 'ds-hint' }, `卡 ${ov.cards} · 需求 ${ov.requirements}${ov.noReason > 0 ? ` · ${ov.noReason} 次没写原因` : ''}（区间内）`)),
+        h('div', { className: 'ds-panel-body' },
+          ov.byPerson.length === 0
+            ? null
+            : h('div', { className: 'ds-an-foot' }, '谁放的：' + ov.byPerson.map(item => `${item.by} ${item.count} 次`).join(' · ')),
+          ov.list.map(item => h('div', {
+            key: `${item.kind}:${item.id}`,
+            className: 'ds-an-foot',
+            title: item.reason === '' ? '这次没写原因' : item.reason,
+          }, `${item.kind === 'card' ? '卡' : '需求'} ${item.code || item.id} ${item.title} · ${item.by || '（没记签名人）'} · ${fmtTime(item.at)} — ${item.reason === '' ? '（没写原因）' : item.reason}`)),
+        )),
     h('div', { className: 'ds-an-sec' },
       '流程与产能',
       h('span', { className: 'ds-hint' }, '完成的卡各花了多久 · 时间都卡在哪一列 · 最近每天完成几张'),

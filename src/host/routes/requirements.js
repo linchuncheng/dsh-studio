@@ -94,6 +94,8 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
       if (target === undefined) throw new Error('需求不存在')
       if (action === 'sign') {
         target.signoff = { by, at: Date.now(), note, actorKind: actorKind(by) }
+        // 带着 override 强签的，把「谁、为什么」留下来：以前只在这一次请求里生效，事后查不到。
+        if (override !== '') target.override = { by, at: Date.now(), reason: override.slice(0, 300) }
         const open = state.tasks.filter(task => task.requirementId === id && task.status !== 'done').length
         const total = state.tasks.filter(task => task.requirementId === id).length
         // 签完字且卡全完成，需求自动落到「已交付」；否则留在进行中，等卡收口。

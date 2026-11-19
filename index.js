@@ -32,6 +32,7 @@ import { accessLevelFor, checkAccess, isCrossSiteRequest, isLoopbackRequest, nee
 import { Dispatcher, RUN_LOG, attachRunLog, claimDispatchLock, clearAgentFailure, configureDispatcher, noteAgentFailure, parseMentions, runSummary } from './src/host/dispatcher.js'
 import { mirrorCards } from './src/host/bitable.js'
 import { bugSeverityFor } from './src/host/bugs.js'
+import { overrideSummary } from './src/host/override.js'
 import { sanitizeLimits } from './src/host/limits.js'
 import { attachWebhooks, sanitizeWebhooks } from './src/host/webhooks.js'
 import { addAssertedCases, addDraftCases, buildDashboard, codingVerifyLine, commentTask, configureExecutor, ensureReqFolder, larkCliReady, invalidateLarkProbe, larkProbeCache, mutateReqDoc, probeEnv, pullFeishuDoc, requirementGate, requirementMatrix, requirementProgress, requirementRollup, runCommand, runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask, verifyCodingRecord } from './src/host/executor.js'
@@ -791,6 +792,7 @@ function buildAnalytics(state, options = {}) {
     project,
     generatedAt: now,
     scope: { tasks: inScope.length, moved, done },
+    overrides: overrideSummary(state, { since }),
     cycle: {
       count: cycleValues.length,
       avgDays: cycleValues.length > 0 ? cycleValues.reduce((sum, value) => sum + value, 0) / cycleValues.length / DAY : 0,

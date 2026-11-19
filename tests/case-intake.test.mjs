@@ -171,3 +171,27 @@ test('签字来源：AI 签的字过不了准出（含早期被误记成 human �
   assert.ok(gateWith(null).blockers.some(item => item.includes('还没有验收签字')), '没签字仍然是有各自的那条拦')
 })
 
+
+test('绕过准出：卡级与需求级的 override 都能统计出来', async () => {
+  const { overrideSummary } = await import('../src/host/override.js')
+  const now = Date.now()
+  const state = {
+    tasks: [
+      { id: 't-1', code: 'DEV-001', title: '卡一', status: 'done', override: { by: '张三', at: now, reason: '客户等着上线' } },
+      { id: 't-2', code: 'DEV-002', title: '卡二', status: 'done' },
+    ],
+    requirements: [
+      { id: 'r-1', code: 'REQ-001', title: '需求一', status: 'delivered', override: { by: '', at: now - 1000, reason: '' } },
+      { id: 'r-2', code: 'REQ-002', title: '需求二', status: 'active' },
+    ],
+  }
+  const all = overrideSummary(state)
+  assert.equal(all.total, 2, '两张卡里只有一张有 override，需求同理')
+  assert.equal(all.cards, 1)
+  assert.equal(all.requirements, 1)
+  assert.equal(all.noReason, 1, '没写原因的要单独数出来')
+  assert.deepEqual(all.byPerson.map(item => item.by), ['张三', '（没记签名人）'])
+  assert.equal(all.list[0].id, 't-1', '按时间倒序，新的在前')
+  assert.equal(overrideSummary(state, { since: now - 500 }).total, 1, '按区间过滤')
+  assert.equal(overrideSummary({}).total, 0, '空状态不能炸')
+})
