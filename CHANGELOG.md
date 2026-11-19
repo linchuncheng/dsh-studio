@@ -1,6 +1,18 @@
 # 更新日志
 
 
+## [0.9.18] — 2026-11-20
+
+### 说明
+- 这一版是 **issue 清账版**：把 GitHub 上最后三个未结 issue（#5 全链路自测 11 项、#7 只读 POST 写审计、
+  #8 交付物工具报错但已写入）的修复、实测数据与结论整理进仓库（`docs/issue-replies/`），并在 GitHub 上评论后关闭。
+  功能代码与 0.9.17 相同，没有新增行为。
+
+### 顺带
+- 发布后清掉 `next` 这个悬空的 dist-tag（它一直指着 2026-11-18 调 CI 时的 `0.2.2-rc.3`）。
+  `npm run verify:release` 里那条「next 不比 latest 旧」的断言就是为它加的。
+
+
 ## [0.9.17] — 2026-11-20
 
 这一版把 [#5](https://github.com/marsken88/dsh-studio/issues/5) 剩下的四条、[#7](https://github.com/marsken88/dsh-studio/issues/7)
