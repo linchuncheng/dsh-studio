@@ -1111,10 +1111,10 @@ test('host: cases and checklist leave the poll as counts', async () => {
     checklist: [{ done: true }, { done: true }, { done: false }],
   }
   const trimmedCases = publicCases(task)
-  assert.deepEqual(trimmedCases.cases, [])
+  assert.equal('cases' in trimmedCases, false, '不再下发空数组：读 task.cases.length 的视图会永远看到 0')
   assert.deepEqual(trimmedCases.caseSummary, { total: 3, pass: 1, fail: 1 })
   const trimmedCheck = publicChecklist(task)
-  assert.deepEqual(trimmedCheck.checklist, [])
+  assert.equal('checklist' in trimmedCheck, false)
   assert.deepEqual(trimmedCheck.checkSummary, { done: 2, total: 3 })
   assert.equal(task.cases.length, 3, 'the stored task must not be stripped in place')
 })
@@ -1123,9 +1123,9 @@ test('host: comments leave the poll as a count', async () => {
   const { publicComments } = await import('../src/host/domain.js')
   const task = { id: 't1', comments: [{ id: 'c1', body: '一' }, { id: 'c2', body: '二' }] }
   const slim = publicComments(task)
-  assert.deepEqual(slim.comments, [], 'bodies must not travel with the poll')
+  assert.equal('comments' in slim, false, '正文不下发，也不再下发空数组')
   assert.equal(slim.commentCount, 2)
-  assert.deepEqual(publicComments({ id: 't2' }), { comments: [], commentCount: 0 })
+  assert.deepEqual(publicComments({ id: 't2' }), { commentCount: 0 })
   assert.equal(task.comments.length, 2, 'the stored task must not be stripped in place')
 })
 

@@ -106,3 +106,18 @@ export function designGate(config, task, nextStatus) {
   const label = { pending: '还没评审', changes_requested: '评审要求修改' }[state] ?? '还没有设计记录'
   return { needed: true, ready: false, blockers: [`设计${label}：先把设计稿放进卡片并让评审通过（或填 override 说明原因）`] }
 }
+
+/** 请求体里到底有没有"要改设计评审"的内容。
+ *
+ *  以前 /task/design 只带 id 也会写一条 `{link:"",status:"pending",by:"人"}` 并让 revision +1 ——
+ *  一个读请求却改了状态，被轮询打到就会反复刷版本（issue #5 第 5 条）。
+ *  这里只做判断：没有任何字段就返回 null，路由据此走只读分支。 */
+export function designPatchFrom(body) {
+  const source = body !== null && typeof body === 'object' ? body : {}
+  const design = source.design !== null && typeof source.design === 'object' ? source.design : null
+  const fields = [ 'link', 'status', 'note', 'diff', 'spec' ]
+  const fromDesign = design !== null && fields.some(key => design[key] !== undefined && design[key] !== null)
+  const fromTop = fields.some(key => source[key] !== undefined && source[key] !== null)
+  if (!fromDesign && !fromTop) return null
+  return design ?? Object.fromEntries(fields.filter(key => source[key] !== undefined && source[key] !== null).map(key => [key, source[key]]))
+}

@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { readArtifactImage } from '../artifact-image.js'
-import { applyFidelityItem, applySpecItem, pushDiffHistory, sanitizeDesign } from '../design.js'
+import { applyFidelityItem, applySpecItem, designPatchFrom, pushDiffHistory, sanitizeDesign } from '../design.js'
 import { emitEvent } from '../events.js'
 import { collectCases, groupCaseKeys, loadSuites, resolveSuiteKeys, sanitizeSuite, saveSuites, summarizeRun } from '../cases.js'
 import { clearTeamMemory, loadTeamMemory } from '../team-memory.js'
@@ -17,8 +17,7 @@ import {
   sanitizeArtifact,
   sanitizeCaseHttp,
   sanitizeCases,
-  text,
-} from '../domain.js'
+  text } from '../domain.js'
 import { runSuite } from '../executor.js'
 
 const INJECTED = ['sendJson', 'readJsonBody', 'createTask', 'updateTask', 'commentTask', 'runTaskCases', 'syncArtifact', 'getDispatcher', 'applyConfig', 'autoBugFromCase', 'publicState', 'upsertById']
@@ -101,12 +100,21 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
     const body = await host.readJsonBody(req)
     const id = String(body.id ?? '')
     const by = String(body.by ?? '人').slice(0, 40)
-    let design = sanitizeDesign({ ...(body.design ?? {}), by, at: Date.now() })
+    /* 只带 id = 读：不写、不加 revision、不记历史（issue #5 第 5 条）。 */
+    const incoming = designPatchFrom(body)
+    if (incoming === null) {
+      const task = store.snapshot().tasks.find(entry => entry.id === id)
+      if (task === undefined) throw new Error(`no task ${id}`)
+      req.__studioReadOnly = true   // 让请求管线的审计跳过这条（读请求不该推 revision）
+      host.sendJson(res, 200, { ok: true, design: task.design ?? null, readOnly: true })
+      return true
+    }
+    let design = sanitizeDesign({ ...incoming, by, at: Date.now() })
     const saved = await store.mutate(state => {
       const task = state.tasks.find(entry => entry.id === id)
       if (task === undefined) throw new Error(`no task ${id}`)
       // 合并而不是覆盖：只带 diff 的调用不该把 link/status/spec 抹掉，顺带记一条历史。
-      const merged = sanitizeDesign({ ...(task.design ?? {}), ...(body.design !== null && typeof body.design === 'object' ? body.design : {}), by, at: Date.now() })
+      const merged = sanitizeDesign({ ...(task.design ?? {}), ...incoming, by, at: Date.now() })
       if (merged !== null && merged.diff !== null) merged.diffHistory = pushDiffHistory(task.design?.diffHistory ?? [], merged.diff)
       design = merged
       task.design = design

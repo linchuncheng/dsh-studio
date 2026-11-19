@@ -1068,7 +1068,8 @@ function publicState(store) {
     roles: ROLE_IDS,
     priorities: PRIORITIES,
     config: publicConfig(state.config),
-    tasks: state.tasks.map(task => ({
+    tasks: state.tasks.map(({ comments, checklist, cases, ...task }) => ({
+      /* 库里存的三个数组不随轮询下发（否则既有空数组又有计数，issue #5 第 9 条） */
       ...task,
       ...publicComments(task),
       ...publicCases(task),
@@ -2471,7 +2472,9 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
         await store.writeSide(IDEMPOTENCY_SIDE_KEY, rememberIdempotent(record, res.__idemCapture.scope, { status: res.__idemCapture.status, body: res.__idemCapture.body }))
       } catch { /* 记不下不阻塞业务：下次重试会再执行一次，但至少这次是成功的 */ }
     }
-    if (method === 'POST') {
+    /* 只读的 POST（例如 /task/design 只带 id）不该留下写痕迹：审计写库会让 revision +1，
+       而 /state 的 ETag 就是 revision —— 一次读请求会把所有客户端的 304 缓存全冲掉。 */
+    if (method === 'POST' && req.__studioReadOnly !== true) {
       await recordAudit(store, {
         by: operator,
         route,
