@@ -353,7 +353,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | --- | --- |
 | 装了插件但侧栏没有「需求&任务工作空间」（`studio_*` 工具能用、看板数据也在） | 浏览器端注册名必须等于**包名**。0.9.0/0.9.1 的产物里写的是短名 `dsh-studio`，宿主按包名取工厂取不到 → 模块不实例化 → 侧栏入口根本没注册。**升到 0.9.2** |
 | 写工具报 `recordAudit is not defined` | 0.9.0/0.9.1 的 `src/host/tools.js` 裸引用了宿主函数（没走注入）。**升到 0.9.2** |
-| 桌面版（Windows/macOS 客户端）里抽屉头部的「关闭」被窗口按钮盖住 | 0.9.4 及更早：`fixed` 覆盖层从 `top:0` 开始，钻到了无边框窗口的标题栏下面。**升到 0.9.5**（覆盖层改用 `env(titlebar-area-height)` 下移） |
+| 桌面版（Windows/macOS 客户端）里抽屉头部的「关闭」被窗口按钮盖住 | 覆盖层要避开窗口顶部那条标题栏。0.9.13 起改成**量**那条 `-webkit-app-region: drag` 标题栏的高度（env(titlebar-area-height) 在客户端里实测为 0，UA 里的 Electron 段也可能被去掉）；系统标题栏更高就改 `--ds-titlebar-floor` |
 | 提示 `ERR_MODULE_NOT_FOUND` / 装完不加载 | 0.5.1 及更早的 `cordis.patch.yml` 里写的是裸名 `dsh-studio`。**升到 0.5.2+**（`npm run verify:pack` 会拦这类问题） |
 
 ## 许可证

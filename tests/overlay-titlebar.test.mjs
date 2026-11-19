@@ -33,8 +33,9 @@ test('抽屉/弹窗/侧栏/登录浮层/命令面板遮罩都避开桌面标题�
   // 桌面客户端里 env(titlebar-area-height) 实测为 0，必须有保底下沉（issue #4 二次复现）
   assert.ok(legacy.includes('max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px))'), '覆盖层要有保底下沉')
   const titlebar = read('web/src/studio/titlebar.js')
-  assert.match(titlebar, /Electron/, '要检测 Electron')
-  assert.match(titlebar, /setProperty\('--ds-titlebar-floor', '32px'\)/, 'Electron 里要把下限设成 32px')
+  assert.match(titlebar, /app-region/, '要量 -webkit-app-region: drag 那条标题栏（UA 会被客户端去掉，不能当主判据）')
+  assert.match(titlebar, /setProperty\('--ds-titlebar-floor'/, '要把量到的高度写进 CSS 变量')
+  assert.match(legacy, /applyTitlebarFloor\(\)/, '客户端要调用它')
   assert.match(legacy, /applyTitlebarFloor\(\)/, '客户端要调用它')
   // 覆盖层不该落进拖拽区，否则点击会被当成拖窗口
   assert.ok(legacy.includes('-webkit-app-region:no-drag') || legacy.includes('-webkit-app-region: no-drag'), '覆盖层要标 no-drag')

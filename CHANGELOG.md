@@ -1,6 +1,29 @@
 # 更新日志
 
 
+## [0.9.13] — 2026-11-20
+
+### 修复（issue #4 第三次，这次是量的）
+覆盖层没避开桌面窗口顶部标题栏，前两版都没真正修好，过程如实记下来：
+
+| 版本 | 做法 | 实测结果 |
+| --- | --- | --- |
+| 0.9.5 | `top: env(titlebar-area-height, 0px)` | 客户端里该环境变量是 **0**，覆盖层仍从最顶端开始 |
+| 0.9.12 | UA 含 `Electron` → 下沉 32px | 这个客户端把 UA 里的 Electron 段去掉了，**仍然 0** |
+| **0.9.13** | 用 `elementsFromPoint` 找顶部那条 `-webkit-app-region: drag` 的元素，**量它的高度**；量不到再依次退回 `process.versions.electron`、UA、0 | — |
+
+用户截图里的像素证据（0.9.12 之后仍是）：抽屉白底起点 y≈13、抽屉关闭按钮 y 25–60、窗口按钮 y 15–40 —— 三者重叠。
+
+- 下沉量写进 CSS 变量 `--ds-titlebar-floor`，覆盖层统一 `top: max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px))`
+- 覆盖层 6 处都吃同一个值：卡片抽屉、弹窗、侧栏遮罩、登录浮层、命令面板遮罩、图片查看器
+- Web 版没有可拖拽标题栏、也不是 Electron → 保持 0，行为不变
+
+### 测试
+- `tests/titlebar.test.mjs`（5 条）：量到标题栏就用它的高度、量不到但进程里有 Electron 用 32、UA 兜底、
+  普通浏览器不设变量、环境异常不抛。
+- `tests/overlay-titlebar.test.mjs`：断言覆盖层必须有保底下沉，且判定不能只靠 UA。
+
+
 ## [0.9.12] — 2026-11-20
 
 ### 修复（issue #4 第二次）
