@@ -53,6 +53,8 @@ export function collectCases(state) {
     db: item.db !== null && item.db !== undefined,
     // 能跑的三种：接口 / shell / 数据库。以前界面只认 http，另外两种建得出来却跑不了。
     runnable: item.http != null || item.shell != null || item.db != null,
+    // 草稿 = 生成器留下的、没有可执行断言的用例。旧数据没有这个标记，前端退一步按「无断言」显示。
+    draft: item.draft === true,
         lastRunAt: item.lastRun?.at ?? 0,
         // 失败时最想看的三样：错在哪、返回了什么、上一次的结论文案。
         lastError: String(item.lastRun?.error ?? '').slice(0, 300),

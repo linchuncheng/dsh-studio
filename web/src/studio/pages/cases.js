@@ -15,6 +15,9 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
   const [query, setQuery] = React.useState('')
   const [requirement, setRequirement] = React.useState('__all__')
   const [result, setResult] = React.useState('__all__')
+  /* 可跑 / 无断言：41 条用例里有一批只有标题，跑不了也不计入覆盖率。
+     以前它们混在列表里、类型列还显示成「手工」，看起来像是有人故意做的人工用例。 */
+  const [kind, setKind] = React.useState('__all__')
   const [selected, setSelected] = React.useState(() => new Set())
   const [running, setRunning] = React.useState(false)
   const [suites, setSuites] = React.useState([])
@@ -54,10 +57,12 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
       if (only !== null && !only.has(row.key)) return false
       if (requirement !== '__all__' && row.requirementId !== requirement) return false
       if (result !== '__all__' && row.result !== result) return false
+      if (kind === 'runnable' && row.runnable !== true) return false
+      if (kind === 'bare' && row.runnable === true) return false
       if (text === '') return true
       return `${row.id} ${row.title} ${row.taskTitle} ${row.requirementTitle} ${row.pointId}`.toLowerCase().includes(text)
     })
-  }, [rows, query, requirement, result, suiteFilter, suiteKeys])
+  }, [rows, query, requirement, result, kind, suiteFilter, suiteKeys])
 
   const counts = React.useMemo(() => {
     const pass = list.filter(row => row.result === 'pass').length
@@ -68,6 +73,7 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
 
   const requirements = state.requirements ?? []
   const runnable = list.filter(row => row.runnable === true)
+  const bareCount = list.filter(row => row.runnable !== true).length
   const picked = runnable.filter(row => selected.has(row.key))
 
   const toggle = key => setSelected(previous => {
@@ -193,13 +199,21 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
             h('option', { value: '__all__' }, '全部结果'),
             CASE_RESULTS.map(value => h('option', { key: value, value }, CASE_RESULT_LABEL[value])),
           ),
+          h(SelectField, {
+            className: 'ds-select', style: { width: 150 }, value: kind,
+            onChange: event => setKind(event.target.value),
+          },
+            h('option', { value: '__all__' }, '全部用例'),
+            h('option', { value: 'runnable' }, '只可跑'),
+            h('option', { value: 'bare' }, `只看无断言 ${bareCount}`),
+          ),
         ),
         h('div', { className: 'ds-row', style: { marginTop: 8 } },
           h(BoarduiButton, { variant: 'secondary', size: 'small', disabled: running || runnable.length === 0, onClick: selectAllRunnable }, `全选可跑的 ${runnable.length} 条`),
           h(BoarduiButton, { variant: 'secondary', size: 'small', disabled: running || selected.size === 0, onClick: clearSelection }, '清空选择'),
           h(BoarduiButton, { variant: 'primary', size: 'small', disabled: running || picked.length === 0, onClick: () => void runSelected() }, running ? '跑着…' : `▶ 跑选中的 ${picked.length} 条`),
           h(BoarduiButton, { variant: 'secondary', size: 'small', disabled: running || failedRunnable.length === 0, title: '只补跑上次不通过、且有接口定义的用例', onClick: () => void runFailed() }, `↻ 只跑上次失败的 ${failedRunnable.length} 条`),
-          h('span', { className: 'ds-hint' }, '按卡串行跑，每张卡一轮；失败的照旧自动开缺陷（最多一次 60 条）'),
+          h('span', { className: 'ds-hint' }, `按卡串行跑，每张卡一轮；失败的照旧自动开缺陷（最多一次 60 条）。${bareCount > 0 ? `另有 ${bareCount} 条没有可执行断言，跑不了也不计入覆盖率。` : ''}`),
         ),
         h('div', { className: 'ds-row', style: { marginTop: 8, flexWrap: 'wrap', gap: 8 } },
           h('span', { className: 'ds-hint' }, '回归套件：'),
@@ -268,7 +282,13 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
                     h(TableCell, null, CASE_RESULT_LABEL[row.result] ?? row.result),
                     h(TableCell, null, row.title),
                     h(TableCell, null, `${row.taskCode || row.taskId} · ${row.requirementTitle || '未挂需求'}${row.pointId ? ' · ' + row.pointId : ''}`),
-                    h(TableCell, null, row.http ? '接口' : row.shell ? 'shell' : row.db ? '数据库' : '手工'),
+                    h(TableCell, null, row.http
+                      ? '接口'
+                      : row.shell
+                        ? 'shell'
+                        : row.db
+                          ? '数据库'
+                          : h('span', { className: 'ds-hint', title: '没有可执行断言：跑不了，也不计入可执行覆盖率' }, row.draft ? '草稿' : '无断言')),
                     h(TableCell, null, row.priority),
                     h(TableCell, null, row.lastRunAt > 0 ? fmtTime(row.lastRunAt) : '没跑过'),
                     h(TableCell, null,

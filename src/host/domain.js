@@ -1321,6 +1321,8 @@ export function sanitizeCase(raw, index) {
     /** 不稳定用例：失败时不自动开缺陷，避免把环境抖动当成产品缺陷。 */
     flaky: raw.flaky === true,
     note: String(raw.note ?? '').trim().slice(0, 400),
+    /** 生成器标出来的草稿：没有可执行断言，不计入覆盖率。以前这个标记存取一圈就没了。 */
+    draft: raw.draft === true,
     by: String(raw.by ?? '').slice(0, 40),
     at: Number(raw.at) || 0,
     http: sanitizeCaseHttp(raw.http),

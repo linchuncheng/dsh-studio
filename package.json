@@ -1,6 +1,6 @@
 {
   "name": "@marsken/dsh-studio",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "type": "module",
   "description": "DSH Studio: role-based multi-agent workspace (product / architect / developer / QA) with a live work board, GitLab + Feishu connection settings, all configurable from the web GUI.",
   "main": "index.js",
@@ -23,6 +23,7 @@
     "test": "node --test tests/repo.test.mjs tests/dispatch-state.test.mjs tests/store-cas.test.mjs tests/intervention.test.mjs tests/case-strength.test.mjs tests/case-intake.test.mjs tests/store-boot.test.mjs tests/client-units.test.mjs tests/notify.test.mjs",
     "check": "node --check index.js && node --check client.src.js && node --test tests/repo.test.mjs tests/store-boot.test.mjs tests/client-units.test.mjs tests/notify.test.mjs",
     "smoke:store": "node scripts/smoke-store.mjs",
+    "verify:cases": "node tools/visual/cases-probe.mjs",
     "mock:gitlab": "node tools/mock-gitlab.mjs",
     "verify:gitlab": "node tools/verify-gitlab-facts.mjs",
     "selfcheck": "node tools/e2e-loop.mjs --k 3",

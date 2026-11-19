@@ -24,7 +24,7 @@
 | 澄清 | 拆卡前的必答项与门禁（`src/host/discovery.js`），答不全不许开工 |
 | 设计 | 设计评审记录 + 进开发前的闸门（`src/host/design.js`） |
 | 执行 | 一卡一会话、一卡一 worktree；自动派单给产品/架构/研发/测试四类专家 |
-| 用例 | 接口 / shell / 数据库三种执行器；**带可靠断言的用例写完当场试跑**；跨卡用例总览；失败自动开缺陷卡 |
+| 用例 | 接口 / shell / 数据库三种执行器；**带可靠断言的用例写完当场试跑**；跨卡用例总览（可只看无断言的那批）；失败自动开缺陷卡 |
 | 准出 | 卡片与需求两级准出、验收清单、覆盖矩阵、人工签字 |
 | 发布 | 版本 tag、灰度与部署记录、冒烟清单、发布门禁 |
 | 观测 | 工作台（在办/逾期/阻塞/缺陷）、效能（周期分布/返工/AI 成本）、燃尽 |
@@ -187,6 +187,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | `npm run verify:drawertabs` | 卡片抽屉里 7 个内层页签 |
 | `npm run verify:auditlog` | 审计日志是官方 Table + 每页 50 行 + 翻页生效（7 项） |
 | `npm run verify:toast` | toast 真的出现在门户容器里、有尺寸、4 秒后消失（7 项） |
+| `npm run verify:cases` | 用例库里草稿看得见、筛得出来：`只看无断言` 选中后只剩草稿，切回全部行数复原（8 项） |
 | `npm run review:layout` | 24 个模块的字号/溢出/内联硬编码颜色巡检 |
 | `npm run review:components` | 官方元素 vs 自研元素的分布，看还有哪些组件没换 |
 

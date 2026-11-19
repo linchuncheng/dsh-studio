@@ -136,3 +136,17 @@ test('用例入库：写进 state 的形状 = 从磁盘重新加载后的形状�
   assert.deepEqual(Object.keys(saved).sort(), Object.keys(reloaded).sort(), '字段集合必须一致，否则重启后行为会变')
   assert.deepEqual(saved.http, reloaded.http)
 })
+
+test('用例库：草稿标记要能一路透到列表里（否则分不清草稿和手工用例）', async () => {
+  const { sanitizeCase } = await import('../src/host/domain.js')
+  const { collectCases } = await import('../src/host/cases.js')
+  const kept = sanitizeCase({ title: '旧生成器留下的空壳', draft: true }, 0)
+  assert.equal(kept.draft, true, 'sanitizeCase 不能把 draft 丢掉')
+  assert.equal(sanitizeCase({ title: '正常人写的' }, 0).draft, false)
+  const rows = collectCases({
+    requirements: [],
+    tasks: [{ id: 't-1', title: '卡', code: 'T-1', status: 'test', cases: [kept] }],
+  })
+  assert.equal(rows[0].draft, true, '用例库这一层也要带 draft')
+  assert.equal(rows[0].runnable, false)
+})

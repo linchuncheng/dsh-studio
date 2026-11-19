@@ -84,7 +84,10 @@ if (wantProbes) {
   if (token === '') {
     problems.push('--probes 需要 STUDIO_TOKEN（先在目标机上取一个），否则只能在 CI 里跑离线检查')
   } else {
-    const probes = ['tools/visual/pages-probe.mjs', 'tools/visual/toast-probe.mjs', 'tools/visual/drawer-probe.mjs']
+    if (String(process.env.STUDIO_BASE ?? '').trim() === '') {
+      problems.push('--probes 现在还会跑用例库探针，需要 STUDIO_BASE（例：STUDIO_BASE=http://192.168.120.218:18080），不猜默认地址免得打到别的机器上')
+    }
+    const probes = ['tools/visual/pages-probe.mjs', 'tools/visual/toast-probe.mjs', 'tools/visual/drawer-probe.mjs', 'tools/visual/cases-probe.mjs']
     for (const probe of probes) {
       try {
         const out = execFileSync(process.execPath, [probe], { encoding: 'utf8', env: process.env })
