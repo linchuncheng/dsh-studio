@@ -99,6 +99,15 @@ jobs:
             *-*) TAG_ARG="--tag next" ;;
             *)   TAG_ARG="" ;;
           esac
+          # next 是**预发布通道**：发布后它一直留在 registry 上，之后的正式版不会把它挪走。
+          # 0.2.2-rc.1/2/3（2026-11-18 调 CI 的试发版）就是这样把 next 钉死在 0.2.2-rc.3 上的 ——
+          # 紧接着 0.3 → 0.9 十几个正式版全走 latest，于是 `npm i @marsken/dsh-studio@next` 装到的
+          # 是一个早于全部功能、还对着老宿主接口写的构建。
+          # CI 里修不了：Trusted Publishing 只覆盖 publish，dist-tag 要令牌。
+          # 真正的守卫在本地 —— `npm run verify:release` 断言「next 不比 latest 旧」。
+          if [ -n "$TAG_ARG" ]; then
+            echo "::warning::预发布 $VER 会占住 next 通道：它之后的第一个正式版发完，请在本机跑 npm dist-tag rm @marsken/dsh-studio next（或 npm dist-tag add @marsken/dsh-studio@<new> next），否则 next 会一直指着 $VER"
+          fi
           echo "publishing $VER ${TAG_ARG:-(default tag latest)}"
           set +e
           out=$(npm publish --access public --provenance $TAG_ARG 2>&1)

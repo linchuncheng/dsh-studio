@@ -5,12 +5,12 @@
 [![downloads](https://img.shields.io/npm/dm/@marsken%2Fdsh-studio)](https://www.npmjs.com/package/@marsken/dsh-studio)
 [![license](https://img.shields.io/npm/l/@marsken%2Fdsh-studio)](LICENSE)
 ![node](https://img.shields.io/badge/node-22%2B-brightgreen)
-![dsh](https://img.shields.io/badge/DSH-0.2.2--rc.1-blue)
+![dsh](https://img.shields.io/badge/DSH-%3E%3D0.2.2--rc.1-blue)
 
 给一家公司用的「需求&任务工作空间」：一个常驻的 DSH 插件，把**看板 + 角色 agent + 内部市场**装进 DSH Web 的同一个页面里。
 自建 GitLab 管代码、飞书管交流，agent 负责产品 / 架构 / 研发 / 测试四个角色的具体活儿。
 
-运行环境：DSH `0.2.2-rc.1`，Node 22 以上，Linux/macOS（Windows 原生不支持 `link:` 安装 + systemd 托管）。
+运行环境：DSH `>=0.2.2-rc.1`（宿主**最低**版本；实际验证过的组合与逐项依赖见 [docs/compatibility.md](docs/compatibility.md)），Node 22 以上，Linux/macOS（Windows 原生不支持 `link:` 安装 + systemd 托管）。
 
 维护：供应链数字化组。有问题在本仓库开 issue，或直接找看板里的「产品」；发版流程见 [docs/publish.md](docs/publish.md)。
 
@@ -109,6 +109,11 @@ sudo systemctl restart dsh-web
 dsh plugin --profile web install @marsken/dsh-studio@latest
 sudo systemctl restart dsh-web
 ```
+
+> **只装 `@latest`，不要装 `@next`。** `next` 是预发布通道：2026-11-18 试发的 `0.2.2-rc.1` / `rc.2` / `rc.3`
+> 是调 CI 的构建（同一小时里连发三次），之后仓库再没发过预发布，`next` 就一直钉在 `0.2.2-rc.3` 上 ——
+> 装 `@next` 拿到的是**早于全部功能、并且对着老宿主接口写**的插件：面板可能照常出现，工具却落在旧契约上。
+> 0.9.16 起 `npm run verify:release` 会断言「`next` 不比 `latest` 旧」，三个 rc 也已在 npm 上标记弃用。
 
 ### 方式二（可选）：从 GitHub Packages 装镜像
 
@@ -353,6 +358,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | --- | --- |
 | 装了插件但侧栏没有「需求&任务工作空间」（`studio_*` 工具能用、看板数据也在） | 浏览器端注册名必须等于**包名**。0.9.0/0.9.1 的产物里写的是短名 `dsh-studio`，宿主按包名取工厂取不到 → 模块不实例化 → 侧栏入口根本没注册。**升到 0.9.2** |
 | 写工具报 `recordAudit is not defined` | 0.9.0/0.9.1 的 `src/host/tools.js` 裸引用了宿主函数（没走注入）。**升到 0.9.2** |
+| 用 `@next` 装的，面板/工具行为莫名其妙地旧 | `next` 通道曾长期指着 `0.2.2-rc.3`（2026-11-18 的预发布调试图），比 `latest` 落后十几个版本。改装 `@latest`；核对：`npm view @marsken/dsh-studio dist-tags` 里 `next` 要么没有，要么不旧于 `latest` |
 | 桌面版（Windows/macOS 客户端）里抽屉头部的「关闭」被窗口按钮盖住 | 覆盖层要避开窗口顶部那条标题栏。0.9.13 起改成**量**那条 `-webkit-app-region: drag` 标题栏的高度（env(titlebar-area-height) 在客户端里实测为 0，UA 里的 Electron 段也可能被去掉）；系统标题栏更高就改 `--ds-titlebar-floor` |
 | 提示 `ERR_MODULE_NOT_FOUND` / 装完不加载 | 0.5.1 及更早的 `cordis.patch.yml` 里写的是裸名 `dsh-studio`。**升到 0.5.2+**（`npm run verify:pack` 会拦这类问题） |
 

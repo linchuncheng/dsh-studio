@@ -13,6 +13,25 @@ const env = { ...process.env, GIT_SSH_COMMAND: process.env.GIT_SSH_COMMAND ?? 's
 
 const rows = []
 const add = (name, ok, detail) => rows.push({ name, ok, detail })
+
+/* 只比本仓库会产生的两种形状：x.y.z 与 x.y.z-<pre>（同号时预发布小于正式版）。
+   不引 semver 依赖：这里只需要「谁更新」，多一个依赖反而多一处发版风险。 */
+const cmpSemver = (a, b) => {
+  const split = (v) => {
+    const [core, pre = ''] = String(v).split('-', 2)
+    return { nums: core.split('.').map((n) => Number(n) || 0), pre }
+  }
+  const pa = split(a)
+  const pb = split(b)
+  for (let i = 0; i < 3; i += 1) {
+    const diff = (pa.nums[i] ?? 0) - (pb.nums[i] ?? 0)
+    if (diff !== 0) return diff < 0 ? -1 : 1
+  }
+  if (pa.pre === pb.pre) return 0
+  if (pa.pre === '') return 1
+  if (pb.pre === '') return -1
+  return pa.pre < pb.pre ? -1 : 1
+}
 const git = (args) => execFileSync('git', args, { env, encoding: 'utf8' }).trim()
 
 let head = ''
@@ -77,6 +96,23 @@ try {
   add('npm 上已发布 ' + pkg.version, Boolean(reg.versions?.[pkg.version]), reg.versions?.[pkg.version] === undefined ? pkg.version + '（刚发布的话可以用 --wait 120 等一等）' : pkg.version)
   const latest = reg['dist-tags']?.latest ?? '(无)'
   add('npm latest == ' + pkg.version, latest === pkg.version, latest === pkg.version ? latest : 'latest 还是 ' + latest + '（可能还没同步，等几分钟）')
+
+  /* dist-tags.next 悬空过一整代：0.2.2-rc.1/2/3 是 2026-11-18 调 CI 的试发版，之后
+     0.3 → 0.9 十几个正式版全走 latest，next 一直钉在 0.2.2-rc.3 上，于是
+     `npm i @marsken/dsh-studio@next` 装到的是早于全部功能、还对着老宿主接口的构建。
+     规则：next 要么不存在（没有预发布通道），要么不比 latest 旧（预发布本来就该更新）。 */
+  const next = reg['dist-tags']?.next ?? ''
+  const comparable = /^\d+\.\d+\.\d+/.test(next) && /^\d+\.\d+\.\d+/.test(latest)
+  const nextBehind = comparable && cmpSemver(next, latest) < 0
+  add(
+    'npm next 不比 latest 旧',
+    !nextBehind,
+    next === ''
+      ? '没有 next 通道'
+      : nextBehind
+        ? next + ' 落后于 latest ' + latest + '；修：npm dist-tag rm ' + PKG + ' next（或 npm dist-tag add ' + PKG + '@' + latest + ' next）'
+        : next,
+  )
 } catch (e) {
   add('能读 npm registry', false, String(e.message).slice(0, 120))
 }

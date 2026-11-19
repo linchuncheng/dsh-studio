@@ -111,6 +111,7 @@ npm publish（几分钟生效，以 registry 为准）
 - [ ] 没有把密钥、内网地址、个人路径写进仓库（`git grep -nE '192\.168\.|/home/[a-z]+'`）
 - [ ] `license` 与 `LICENSE` 文件一致
 - [ ] 版本号更新，tag 已推
+- [ ] **dist-tags 没有悬空通道**：`npm view @marsken/dsh-studio dist-tags` —— `next` 要么没有、要么不旧于 `latest`。发过预发布（`--tag next`）的，下一个正式版发完必须 `npm dist-tag rm @marsken/dsh-studio next`（CI 只有 publish 权限，做不了这一步）；`npm run verify:release` 会替你断言这条
 - [ ] 在**真实 dsh** 上装一遍（`dsh plugin --profile web add <包名>`），面板能开、`pageerror` 为空
 - [ ] **仓库已加 `dsh-plugin` topic**（不带这个，awesome-dsh-plugin 的 CI 会挡）
 - [ ] `assets/icon-180.png` 是 GitHub 托管的位图（SVG 会被拒）

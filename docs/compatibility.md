@@ -6,7 +6,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| dsh-studio | `package.json` `version: 0.9.15` |
+| dsh-studio | `package.json` `version: 0.9.16` |
 | DeepSeek Harness | `0.2.2-rc.1`（`dsh --version`） |
 | Node | `v24.22.2`（Linux 目标机）；本机 Windows `v24.19.0` |
 | 目标系统 | Ubuntu 24.04，`dsh web` 监听 `18080`，nginx `:80` 反代并注入 `dsh-auth-*` cookie |
@@ -14,6 +14,10 @@
 | 兼容声明 | `engines.dsh: ">=0.2.2-rc.1"`、`dsh.compatibility.dshReleases: { "0.2.2-rc.1+": "compatible" }` |
 
 > 结论：只在 **0.2.2-rc.1** 上做过端到端验证。0.2.2 正式版、以及 `<0.2.2` 均未验证。
+
+> **装哪个通道**：只装 `@latest`。npm 的 `next` 通道长期指着 `0.2.2-rc.3`（2026-11-18 的预发布
+> 调试图，已在 npm 上弃用），比 `latest` 落后十几个版本；0.9.16 起 `npm run verify:release`
+> 会断言「`next` 不比 `latest` 旧」，把这类悬空挡在发版前。
 
 ## 2. 宿主接口依赖（宿主半边）
 

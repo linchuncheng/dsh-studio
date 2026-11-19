@@ -31,3 +31,18 @@ test('发版校验会盯 GitHub Releases 的 Latest', () => {
   assert.match(script, /releases\/latest/, 'verify:release 要查 releases/latest')
   assert.match(script, /Latest ==/, '要有可读的断言名')
 })
+
+// 0.2.2-rc.3 的教训：next 是预发布通道，正式版不会把它挪走，于是 `npm i @xxx/name@next`
+// 装到的是早于全部功能的构建。verify:release 必须断言它不落后于 latest。
+test('发版校验会盯 npm 的 next 通道不落后于 latest', () => {
+  const script = read('tools/verify-release.mjs')
+  assert.match(script, /dist-tags'\]\?\.next|dist-tags\?\.next/, 'verify:release 要读 dist-tags.next')
+  assert.match(script, /npm next 不比 latest 旧/, '要有可读的断言名')
+  assert.match(script, /cmpSemver/, '要真的比版本号，不是只判空')
+})
+
+test('预发布占住 next 时 release.yml 必须给出提醒', () => {
+  const release = read('.github/workflows/release.yml')
+  assert.match(release, /--tag next/, '预发布预览版本仍走 next 通道')
+  assert.match(release, /::warning::[^\n]*next/, '要提醒维护者在正式版之后清掉 next（CI 没有 dist-tag 令牌）')
+})

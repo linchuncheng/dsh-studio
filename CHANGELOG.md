@@ -1,6 +1,36 @@
 # 更新日志
 
 
+## [0.9.16] — 2026-11-20
+
+### 修复（npm 的 `next` 通道悬空了一整代）
+- **`npm i @marsken/dsh-studio@next` 装到的是 `0.2.2-rc.3`**：2026-11-18 为了调 CI 连发了
+  `0.2.2-rc.1` / `rc.2` / `rc.3` 三个预发布版，`release.yml` 按「版本号带 `-` 就走 `--tag next`」
+  把它们发到 `next` 通道；紧接着 0.3 → 0.9 十几个正式版都只走 `latest`，**没有任何一步会把
+  `next` 挪走**。于是一个早于全部功能、还对着老宿主接口写的构建在 `next` 上挂了整整一天多。
+  三个 rc 已在 npm 上 `deprecate`，`next` 标签从 `0.2.2-rc.3` 上摘掉。
+- `npm run verify:release` 新增断言 **「`next` 不比 `latest` 旧」**：`next` 要么不存在，
+  要么不落后于 `latest`（预发布本来就该更新）；落后就 FAIL，并直接印出
+  `npm dist-tag rm|add` 的修法。
+- `release.yml` 发预发布时打 `::warning::`，写明「下一个正式版发完必须清掉 `next`」——
+  CI 走 Trusted Publishing，只有 `publish` 权限、**没有 `dist-tag` 权限**，这一步只能在本机做。
+- `tests/release-workflows.test.mjs` 加两条契约：`verify-release.mjs` 必须读 `dist-tags.next`
+  并真的比版本号（不是只判空），`release.yml` 必须留着那句警告。
+
+### 文档
+- README 的 DSH 徽章与「运行环境」改成 `>=0.2.2-rc.1`（宿主**最低**版本），不再读起来像
+  「当前就是 rc.1」；安装章节写明**只装 `@latest`**，「装完不对劲」表加一行 `@next` 的坑。
+- 兼容性文档（`docs/compatibility.md`）同步版本号，并注明装哪个通道。
+
+### 一次性清理（需要本机 npm 登录态，CI 做不了）
+```bash
+npm dist-tag rm @marsken/dsh-studio next
+npm deprecate @marsken/dsh-studio@0.2.2-rc.1 "调 CI 的试发版，已废弃：请装 @marsken/dsh-studio@latest"
+npm deprecate @marsken/dsh-studio@0.2.2-rc.2 "调 CI 的试发版，已废弃：请装 @marsken/dsh-studio@latest"
+npm deprecate @marsken/dsh-studio@0.2.2-rc.3 "调 CI 的试发版，已废弃：请装 @marsken/dsh-studio@latest"
+npm run verify:release   # 应看到「npm next 不比 latest 旧 — 没有 next 通道」
+```
+
 ## [0.9.15] — 2026-11-20
 
 ### 修复（issue #5 剩下两条）
