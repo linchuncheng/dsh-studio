@@ -39,6 +39,7 @@ import { queryLedger, EVENT_LEDGER_SIDE_KEY } from './src/host/event-ledger.js'
 import { configureEventLedger } from './src/host/events.js'
 import { overrideSummary } from './src/host/override.js'
 import { toolAccessTable, toolLevel } from './src/host/tool-access.js'
+import { isStudioProfile } from './src/host/profile-detect.js'
 import { sanitizeLimits } from './src/host/limits.js'
 import { attachWebhooks, sanitizeWebhooks } from './src/host/webhooks.js'
 import { addAssertedCases, addDraftCases, buildDashboard, codingVerifyLine, commentTask, configureExecutor, ensureReqFolder, larkCliReady, invalidateLarkProbe, larkProbeCache, mutateReqDoc, probeEnv, pullFeishuDoc, requirementGate, requirementMatrix, requirementProgress, requirementRollup, runCommand, runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask, verifyCodingRecord } from './src/host/executor.js'
@@ -1747,14 +1748,9 @@ async function detectProfile() {
       const parsed = JSON.parse(await readFile(join(root, name, 'package.json'), 'utf8'))
       const bundles = parsed?.dsh?.profile?.bundles ?? []
       const deps = parsed.dependencies ?? {}
-      /* 包里注册的名字是 scoped 的 @marsken/dsh-studio（issue #5 第 2 条）：
-     只认短名会让 desktop/profile 永远匹配不上，最后回退成 web —— 面板显示错误的 profile、
-     /market 的 installed 恒为空、在面板里点安装会装到 web profile 去。 */
-  const isStudio = deps['@marsken/dsh-studio'] !== undefined
-    || deps['dsh-studio'] !== undefined
-    || bundles.includes('@marsken/dsh-studio')
-    || bundles.some(item => typeof item === 'string' && (item === 'dsh-studio' || item.endsWith('/dsh-studio')))
-  if (isStudio) return name
+      /* 判据抽到 src/host/profile-detect.js：认 scoped 名、短名与任意 scope 的同名包
+     （issue #5 第 2 条 —— 只认短名会让 desktop 永远回退成 web）。 */
+  if (isStudioProfile(deps, bundles)) return name
     } catch { /* 跳过坏 profile */ }
   }
   return names.includes('web') ? 'web' : (names[0] ?? 'web')
