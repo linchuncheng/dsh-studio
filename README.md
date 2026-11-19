@@ -332,6 +332,20 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 面板自己会自动带上（界面上本来就有确认对话框），只有自己写脚本调接口时需要注意。
 这不是权限系统，是防止「空 body 打一下就把审计/成员删了」的护栏 —— 真正的鉴权仍然靠登录。
 
+## 本地开发：把插件挂进某个 profile
+
+`dsh plugin --profile <p> install` 会自动做下面两件事，**手工装必须两件都做**，少一件都看不到面板：
+
+1. `~/.dsh/profiles/<p>/package.json` 的 `dependencies` 里加 `"@marsken/dsh-studio": "link:<仓库路径>"`
+2. **同一份 package.json 的 `dsh.profile.bundles` 数组里加 `"@marsken/dsh-studio"`** —— profile 的插件树
+   是按这个数组逐层合成的（`cordis.yml` 里写着「each bundle in package.json's dsh.profile.bundles」），
+   只在 `dependencies` 里出现**不会加载**
+3. 然后 `node_modules/@marsken/dsh-studio` 要真的指向仓库（Windows 没管理员权限建不了符号链接时，
+   直接把这几个文件拷进去：`index.js client.js package.json cordis.patch.yml locale src`）
+4. **重启 dsh**（桌面端：退出并重开客户端）—— host 半边只在启动时加载
+
+挂好之后自检：`curl -s localhost:<port>/studio-api/state | head -c 80` 应该返回 `{"ok":true,...}`。
+
 ## 装完不对劲先看这里
 
 | 现象 | 原因与处置 |
