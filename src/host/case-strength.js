@@ -40,3 +40,11 @@ export function meetsCoverageTarget(cases, target = COVERAGE_TARGET) {
   if (strength.rate === null) return null
   return strength.rate >= target
 }
+
+/** 用例结果：**没有可执行定义就不许标 pass** —— 跑不起来的用例点成通过就是假绿。
+ *  规则放这里而不是 domain.js：那边有 2000 行上限，规则也该跟其他判定放一起。 */
+export function resolveCaseResult(rawResult, raw) {
+  const value = String(rawResult ?? 'pending')
+  if (value !== 'pass') return value
+  return isExecutable(raw) ? 'pass' : 'pending'
+}

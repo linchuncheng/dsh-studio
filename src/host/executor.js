@@ -1,6 +1,7 @@
 // -------------------------------------------------- 执行记录与接口测试执行器（P4）
 // 代码事实核对、用例执行、缺陷回流、健康检查。宿主级依赖通过 configureExecutor() 注入。
 
+import { isExecutable } from './case-strength.js'
 import { CODE_PREFIX, ROLE_IDS, STATUS_IDS, STATUSES, nextRequirementCode, nextTaskCode, normalizePatch, sanitizeBaseline, sanitizeReqDoc, sanitizeRequirement, sanitizeTestRun, text,
   canonicalAuthor,
   sanitizeCoding,
@@ -865,6 +866,16 @@ export function taskExitGate(state, task) {
     blockers.push(`验收清单还有 ${unchecked.length} 项没勾：${unchecked.slice(0, 3).map(item => item.text).join('、')}`)
   }
   const cases = task.cases ?? []
+  /* 「用例全绿」曾经是假的：全库 101 条用例里 0 条带可执行定义（http/shell/db），
+     而门禁只把「没有用例」和「没跑」当 warning —— 于是 0/0 也能通过。
+     现在：有用例但一条都跑不了、或跑得了但一条都没通过，都算阻断。 */
+  const executable = cases.filter(item => isExecutable(item))
+  const executablePassed = executable.filter(item => item.result === 'pass')
+  if (cases.length > 0 && executable.length === 0) {
+    blockers.push(`${cases.length} 条用例都只有标题，没有一条带可执行定义（http / shell / db）—— 无法判定是否验过`)
+  } else if (executable.length > 0 && executablePassed.length === 0) {
+    blockers.push(`${executable.length} 条可执行用例一条都没通过（当前通过 0 条）`)
+  }
   const failed = cases.filter(item => item.result === 'fail')
   if (failed.length > 0) blockers.push(`${failed.length} 条用例不通过：${failed.slice(0, 3).map(item => item.title).join('、')}`)
   // CI 门禁：真跑过流水线且失败，不允许收口（没接 GitLab 时这个字段是空的，不会误伤）。

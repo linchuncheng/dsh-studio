@@ -1,4 +1,5 @@
 /** dsh-studio 的领域层：板列、卡片/需求/发布的数据形状与清洗、默认配置、编号生成。纯函数，可单测。 */
+import { resolveCaseResult } from './case-strength.js'
 import { createHash, randomBytes } from 'node:crypto'
 import { sanitizeDbCase } from './db-runner.js'
 import { sanitizeDiscovery } from './discovery.js'
@@ -1295,7 +1296,7 @@ export function sanitizeCase(raw, index) {
   if (raw === null || typeof raw !== 'object') return undefined
   const title = String(raw.title ?? '').trim().slice(0, 200)
   if (title.length === 0) return undefined
-  const result = CASE_RESULTS.includes(String(raw.result)) ? String(raw.result) : 'pending'
+  const result = resolveCaseResult(CASE_RESULTS.includes(String(raw.result)) ? String(raw.result) : 'pending', raw)
   const type = CASE_TYPES.includes(String(raw.type)) ? String(raw.type) : 'functional'
   const priority = CASE_PRIORITIES.includes(String(raw.priority).toLowerCase()) ? String(raw.priority).toLowerCase() : 'p2'
   return {
