@@ -1,6 +1,23 @@
 # 更新日志
 
 
+## [0.9.8] — 2026-11-19
+
+### 修复
+- **`backfill-releases` / `reorder-releases` 以前每次发版都跑**：两个 workflow 写的是
+  `on.push.paths: [本文件]`，但 **GitHub 对 tag push 不评估 `paths` 过滤器** —— 于是每次打 tag
+  都会额外跑一遍「删掉全部 release 再按版本升序重建」和「补建历史 release」，和 `release.yml` 抢着建 release
+  （靠 `concurrency` 串行才没出事）。现在两者都只在**手动 Run workflow** 时跑。
+- 正常发版本来就不需要它们：`release.yml` 建当前 tag 的 release 时带 `--latest`，GitHub 会把上一版降级。
+
+### 新增
+- `npm run verify:release` 多一条断言：**GitHub Releases 的 `latest` 必须等于当前版本**
+  （GitHub 的 Latest 是按创建时间定的，不是版本号；补建历史 release 那次就把 v0.1.0 顶成了 Latest）。
+  接口限流时只记「未检查」，不阻塞发版。
+- 契约测试 `tests/release-workflows.test.mjs`：两个维修 workflow 不许再挂 `push`、
+  `release.yml` 必须带 `--latest` / 预发布 `--latest=false`、发版校验必须查 `releases/latest`。
+
+
 ## [0.9.7] — 2026-11-19
 
 ### 新增

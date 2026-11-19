@@ -13,9 +13,10 @@ name: backfill-releases
 # 早期有几个版本没写日志（0.2.0~0.2.3），自动退回「列出 prev..tag 的提交 + 对比链接」。
 
 on:
-  push:
-    paths:
-      - '.github/workflows/backfill-releases.yml'
+  # 只在手动 Run workflow 时跑。
+  # 以前写的是 push.paths: [本文件]，但 GitHub **对 tag push 不评估 paths 过滤器** ——
+  # 结果每次打 tag 都跟着跑一遍，和 release.yml 抢着建 release（靠 concurrency 串行才没出事）。
+  # 正常发版不需要它：release.yml 建当前 tag 的 release；这个只在"历史 tag 缺 release"时手动补。
   workflow_dispatch:
     inputs:
       limit:

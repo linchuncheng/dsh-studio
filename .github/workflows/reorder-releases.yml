@@ -10,9 +10,9 @@ name: reorder-releases
 # 触发：推这个文件自己（一次性修数据）+ 手动 Run workflow。
 
 on:
-  push:
-    paths:
-      - '.github/workflows/reorder-releases.yml'
+  # 只在手动 Run workflow 时跑（自愈：Latest 已经对了就直接跳过）。
+  # 以前挂 push.paths，但 tag push 不评估 paths —— 每次发版都会跑一遍全套"删了重建"，
+  # 平白多一个动 release 的作业。正常发版靠 release.yml 的 --latest 就够。
   workflow_dispatch:
 
 permissions:

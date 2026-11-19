@@ -1,0 +1,33 @@
+// 发版链路的约定：正常发版只走 release.yml；backfill/reorder 是手动维修工具
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import test from 'node:test'
+
+const root = new URL('../', import.meta.url)
+const read = rel => readFileSync(new URL(rel, root), 'utf8')
+const onBlock = source => {
+  const start = source.indexOf('\non:')
+  const end = source.indexOf('\npermissions:', start)
+  return source.slice(start, end < 0 ? undefined : end)
+}
+
+test('backfill / reorder 只在手动触发时跑（tag push 不评估 paths，挂着 push 会每次发版都跑）', () => {
+  for (const file of ['.github/workflows/backfill-releases.yml', '.github/workflows/reorder-releases.yml']) {
+    const block = onBlock(read(file))
+    assert.ok(block.includes('workflow_dispatch'), file + ' 必须保留手动触发')
+    assert.ok(!/\bpush:/.test(block), file + ' 不能再挂 push 触发：GitHub 对 tag push 不评估 paths 过滤器，会每次发版都跑')
+  }
+})
+
+test('正常发版由 release.yml 建 release 并抢 Latest', () => {
+  const release = read('.github/workflows/release.yml')
+  assert.match(release, /gh release create/, 'release.yml 要建 release')
+  assert.match(release, /--latest/, '稳定版要带 --latest')
+  assert.match(release, /--prerelease --latest=false/, '预发布不能抢 Latest')
+})
+
+test('发版校验会盯 GitHub Releases 的 Latest', () => {
+  const script = read('tools/verify-release.mjs')
+  assert.match(script, /releases\/latest/, 'verify:release 要查 releases/latest')
+  assert.match(script, /Latest ==/, '要有可读的断言名')
+})

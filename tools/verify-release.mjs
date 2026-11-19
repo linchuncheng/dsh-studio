@@ -81,6 +81,30 @@ try {
   add('能读 npm registry', false, String(e.message).slice(0, 120))
 }
 
+/* GitHub Releases 的 Latest 必须指向当前版本。
+   GitHub 的 Latest 是按**创建时间**定的，不是版本号 —— 补建历史 release 那次就把 v0.1.0 顶成了 Latest。
+   正常发版走 release.yml（会带 --latest），这条平时应该绿；一旦变红说明有人乱序建了 release，
+   手动跑一次 reorder-releases 就能修（它自带"Latest 对了就跳过"的自愈判断）。
+   限流/网络问题时只当"未检查"，不阻塞发版。 */
+{
+  const repoField = typeof pkg.repository === 'string' ? pkg.repository : pkg.repository?.url
+  const slug = typeof repoField === 'string' ? (/github\.com[/:]([^/]+\/[^/.]+)/.exec(repoField)?.[1] ?? '') : ''
+  if (slug !== '') {
+    try {
+      const res = await fetch('https://api.github.com/repos/' + slug + '/releases/latest', {
+        headers: { accept: 'application/vnd.github+json', 'user-agent': 'dsh-studio-verify-release' },
+      })
+      if (res.status === 404) add('GitHub Releases Latest == ' + tag, false, '还没有任何 release')
+      else if (res.ok) {
+        const latestTag = (await res.json()).tag_name ?? '(无)'
+        add('GitHub Releases Latest == ' + tag, latestTag === tag, latestTag === tag ? latestTag : 'Latest 是 ' + latestTag)
+      } else add('GitHub Releases Latest（未检查）', true, 'API ' + res.status + '（限流时不阻塞）')
+    } catch (error) {
+      add('GitHub Releases Latest（未检查）', true, String(error?.message ?? error).slice(0, 80))
+    }
+  }
+}
+
 const hardFail = rows.some((row) => row.ok !== true && !row.name.startsWith('npm latest'))
 for (const row of rows) {
   const mark = row.ok === true ? 'ok  ' : row.name.startsWith('npm latest') ? 'warn' : 'FAIL'
