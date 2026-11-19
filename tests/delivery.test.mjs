@@ -32,7 +32,8 @@ test('#9 只按时间排序，不依赖 history 写入顺序', () => {
 })
 
 test('#10 派单周活：只数有 AI 评论的卡，按周分桶', () => {
-  const now = new Date('2026-11-19T10:00:00+08:00').getTime() // 周四
+  // 用本地构造器（不用带 +08:00 的字面量）：CI 跑在 UTC，字面量会把「周四」算成别的日子。
+  const now = new Date(2026, 10, 19, 10, 0, 0).getTime() // 本地时间的周四
   const thisWeek = weekStart(now)
   const lastWeek = thisWeek - 7 * 86_400_000
   const tasks = [
@@ -50,15 +51,15 @@ test('#10 派单周活：只数有 AI 评论的卡，按周分桶', () => {
 })
 
 test('#10 周一为一周之始（不是周日）', () => {
-  const monday = new Date('2026-11-16T00:00:00+08:00').getTime()
-  const sunday = new Date('2026-11-22T23:59:00+08:00').getTime()
+  const monday = new Date(2026, 10, 16, 0, 0, 0).getTime()
+  const sunday = new Date(2026, 10, 22, 23, 59, 0).getTime()
   assert.equal(weekStart(monday), monday)
   assert.equal(weekStart(sunday), monday, '周日晚仍算这一周')
 })
 
 test('#14 需求交付时长：创建 → 签字，中位数；没签字的跳过', () => {
   const day = 86_400_000
-  const base = Date.parse('2026-11-01T00:00:00+08:00')
+  const base = new Date(2026, 10, 1, 0, 0, 0).getTime()
   const requirements = [
     { id: 'r1', code: 'REQ-1', createdAt: base, signoff: { at: base + 2 * day, note: 'ok' } },
     { id: 'r2', code: 'REQ-2', createdAt: base, signoff: { at: base + 4 * day, note: 'ok' } },
