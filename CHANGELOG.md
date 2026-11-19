@@ -1,6 +1,25 @@
 # 更新日志
 
 
+## [0.9.10] — 2026-11-20
+
+### 修复
+- **`abandoned` 事件以前只写在注释里**：`reconcile()` 的注释一直写着「并把本轮记为一次 abandoned 尝试」，
+  但代码只是原样保留 `attempts` —— 崩溃的那一轮不进计数，重试上限永远判不到；
+  事件账本里也看不到任何"这张卡崩过"的痕迹。
+
+  现在进程重启收掉跑着的派单时：
+  - `attempts` 递增（到上限时事件里带 `exhausted: true`）
+  - 发一条 `task/abandoned` 事件（带 taskId / title / attempts / sessionId / reason）
+  - 卡片历史留一行「abandoned：上次进程结束时这张卡还在跑（第 N 次尝试）」
+
+  判定逻辑抽成 `src/host/dispatch-state.js` 的 `abandonedRetry()`（纯函数，可单测）。
+
+### 测试
+- `tests/abandoned.test.mjs`：attempts 递增 / 上限标记 / 脏数据不炸；
+  以及契约检查——`reconcile` 里确实发了 `task/abandoned` 并写了历史。
+
+
 ## [0.9.9] — 2026-11-19
 
 ### 新增

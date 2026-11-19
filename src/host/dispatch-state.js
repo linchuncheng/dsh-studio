@@ -38,3 +38,15 @@ export function countStalled(tasks) {
   const list = Array.isArray(tasks) ? tasks : []
   return list.filter(isStalled).length
 }
+
+/** 进程重启把「跑着的派单」收掉时，这张卡该记成第几次尝试。
+ *
+ *  注释里一直写着「并把本轮记为一次 abandoned 尝试」，但代码只是原样保留 attempts ——
+ *  崩过的这一轮不进计数，重试上限就永远判不到（CTO 评审点名的"注释与代码不一致"）。
+ *  返回新的 attempts 与是否已经用尽（用尽就不该再自动派）。 */
+export function abandonedRetry(dispatch, maxAttempts = 3) {
+  const previous = Number(dispatch?.attempts ?? 0) || 0
+  const attempts = previous + 1
+  const limit = Number(maxAttempts) > 0 ? Number(maxAttempts) : 3
+  return { attempts, previous, exhausted: attempts >= limit }
+}

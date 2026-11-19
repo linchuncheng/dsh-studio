@@ -1,5 +1,6 @@
 // ------------------------------------------------------------------ dispatcher
 import { DEFAULT_ROLES, FALLBACK_AGENT_MODEL, ROLE_IDS, SANDBOX_MODES, STATUSES, codingSummary, normalizeStrategy, worktreeRoot } from './domain.js'
+import { abandonedRetry } from './dispatch-state.js'
 import { emitEvent } from './events.js'
 import { loadTeamMemory, teamMemoryBlock } from './team-memory.js'
 import { mkdir } from 'node:fs/promises'
@@ -435,8 +436,29 @@ export class Dispatcher {
       /* 必须把 status 一起清掉：tick() 的判据是「dispatch.status === task.status 就跳过」，
          只改 state 会让这张卡永久停摆 —— 看着是"已停止"，实际再也不会被派单。
          清掉 status 之后，下一轮 tick 会重新拾起它（并把本轮记为一次 abandoned 尝试）。 */
-      await markDispatch(this.store, task.id, { state: 'stopped', at: Date.now(), status: '', attempts: task.dispatch?.attempts ?? 0 })
-      this.note(`清掉上次进程留下的派单印记，允许重新派单 ${task.id}`)
+      const retry = abandonedRetry(task.dispatch)
+      await markDispatch(this.store, task.id, { state: 'stopped', at: Date.now(), status: '', attempts: retry.attempts })
+      /* 这一轮是"进程没跑完就没了"，要留痕：事件 + 卡片历史。
+         以前只静默清印记，事后完全看不出这张卡崩过几次（事件账本里也只有业务事件）。 */
+      emitEvent('task/abandoned', {
+        taskId: task.id,
+        title: task.title,
+        attempts: retry.attempts,
+        exhausted: retry.exhausted,
+        sessionId: String(task.dispatch?.sessionId ?? ''),
+        reason: 'process-restart',
+      })
+      await this.store.mutate(state => {
+        const target = state.tasks.find(entry => entry.id === task.id)
+        if (target === undefined) return
+        target.history = [...(target.history ?? []), {
+          at: Date.now(),
+          by: 'dispatcher',
+          status: target.status,
+          note: `abandoned：上次进程结束时这张卡还在跑（第 ${retry.attempts} 次尝试）`,
+        }]
+      }).catch(() => {})
+      this.note(`清掉上次进程留下的派单印记，允许重新派单 ${task.id}（第 ${retry.attempts} 次尝试）`)
     }
   }
 
