@@ -1,6 +1,6 @@
 {
   "name": "@marsken/dsh-studio",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "type": "module",
   "description": "DSH Studio: role-based multi-agent workspace (product / architect / developer / QA) with a live work board, GitLab + Feishu connection settings, all configurable from the web GUI.",
   "main": "index.js",
@@ -52,7 +52,8 @@
     "verify:ax": "node tools/visual/ax-tree-probe.mjs",
     "verify:pack": "node tools/pack-check.mjs",
     "verify:tdz": "node tools/tdz-scan.mjs",
-    "verify:mirror": "node tools/mirror-dry-run.mjs"
+    "verify:mirror": "node tools/mirror-dry-run.mjs",
+    "verify:empty": "node tools/visual/empty-state-probe.mjs"
   },
   "exports": {
     ".": "./index.js",
