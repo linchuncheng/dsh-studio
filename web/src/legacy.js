@@ -1166,6 +1166,17 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 [data-dsh-studio] .ds-sec-head, [data-dsh-studio] .ds-an-sec { font-size:12px; font-weight:600; color:var(--muted-foreground); text-transform:none; letter-spacing:.01em; }
 [data-dsh-studio] .ds-panel-head .ds-hint, [data-dsh-studio] .ds-head .ds-sub { font-size:12px; }
 [data-dsh-studio] .ds-filters, [data-dsh-studio] .ds-check-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+/* 系统开了「减少动态效果」就关掉过渡与动画（WCAG 2.3.3）：抽屉滑入、toast 淡出这类动效
+   对前庭功能敏感的人是实打实的不适，不是装饰偏好。 */
+@media (prefers-reduced-motion: reduce) {
+  [data-dsh-studio], [data-dsh-studio] *, [data-dsh-studio] *::before, [data-dsh-studio] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 `
 
     // ----------------------------------------------------------------- state

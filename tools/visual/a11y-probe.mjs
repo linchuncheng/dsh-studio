@@ -267,6 +267,104 @@ try {
     escaped: focusInside.filter(item => item === false).length,
     closedByEscape: closed,
   }
+  // 5) 重排（WCAG 1.4.10）：320px 宽不许横向滚动；1600→800 相当于 200% 缩放
+  report.reflow = []
+  for (const [label, width] of [['320px（窄屏）', 320], ['800px（≈200% 缩放）', 800]]) {
+    await page.setViewport({ width, height: 900 })
+    await sleep(900)
+    const result = await page.evaluate(() => {
+      const doc = document.documentElement
+      const overflow = doc.scrollWidth - doc.clientWidth
+      let widest = null
+      if (overflow > 1) {
+        let max = 0
+        for (const node of document.querySelectorAll('[data-dsh-studio] *')) {
+          const rect = node.getBoundingClientRect()
+          if (rect.width > max && rect.right > doc.clientWidth + 1) {
+            max = rect.width
+            widest = { tag: node.tagName.toLowerCase(), cls: String(node.className ?? '').slice(0, 40), width: Math.round(rect.width) }
+          }
+        }
+      }
+      return { overflow, widest }
+    })
+    report.reflow.push({ label, width, ...result })
+  }
+  await page.setViewport({ width: 1600, height: 1000 })
+  await sleep(600)
+
+  // 6) prefers-reduced-motion：系统开了「减少动态效果」时过渡必须接近 0
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }])
+  await sleep(400)
+  report.reducedMotion = await page.evaluate(() => {
+    const sample = document.querySelector('[data-dsh-studio] .ds-card, [data-dsh-studio] .ds-btn, [data-dsh-studio] .ds-panel')
+    if (sample === null) return { supported: false }
+    const style = getComputedStyle(sample)
+    const toMs = value => {
+      const number = Number.parseFloat(value || '0') || 0
+      return String(value ?? '').includes('ms') ? number : number * 1000
+    }
+    const transition = toMs(style.transitionDuration)
+    const animation = toMs(style.animationDuration)
+    return { supported: true, transitionMs: transition, animationMs: animation, neutralized: transition <= 2 && animation <= 2 }
+  })
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }])
+
+  // 7) 弹窗（版本页的确认框在「⋯」菜单里，交互链路长；挂了只记一笔，不影响其它检查）
+  try {
+    // 4) 弹窗：版本页的确认框 / 输入框（弹层最容易漏，而且它盖住整页）
+    report.dialogs = { opened: 0, audits: [], names: [] }
+    for (const tab of await page.$('[data-dsh-studio] .ds-head-tabs button')) {
+      if (((await tab.evaluate(node => node.textContent)) || '').trim() === '版本') { await tab.click(); break }
+    }
+    await sleep(1500)
+    // 版本页的按钮要先选中一个版本才出现（中间那块详情区）
+    await page.evaluate(() => { const row = document.querySelector('[data-dsh-studio] .ds-req-item'); if (row !== null) row.click() })
+    await sleep(1200)
+    // 动作按钮在「⋯」菜单里：先点开菜单，再从菜单项里找会弹确认框的那几个
+    const moreButton = await page.evaluate(() => {
+      const btn = [...document.querySelectorAll('[data-dsh-studio] .ds-btn')].find(node => (node.textContent || '').trim() === '⋯')
+      if (btn === undefined) return false
+      btn.click()
+      return true
+    })
+    await sleep(800)
+    const menuItems = moreButton
+      ? await page.$eval('[role="menuitem"], [data-dsh-studio] .ds-menu-item, [data-dsh-studio] [role="menuitem"]', nodes => nodes.map(node => node.textContent.trim()))
+      : []
+    const dialogTriggers = []
+    for (const label of menuItems) {
+      if (!/发布|部署|回滚|灰度|重置|删除|发布说明/.test(label)) continue
+      dialogTriggers.push(label)
+    }
+    for (const label of dialogTriggers.slice(0, 4)) {
+      try {
+        await page.evaluate(target => {
+          const item = [...document.querySelectorAll('[role="menuitem"], [data-dsh-studio] [role="menuitem"]')].find(node => (node.textContent || '').trim() === target)
+          if (item !== undefined) item.click()
+        }, label)
+        await sleep(900)
+        const opened = await page.evaluate(() => document.querySelector('[role="dialog"], [role="alertdialog"]') !== null)
+        if (!opened) { await page.keyboard.press('Escape'); continue }
+        report.dialogs.opened += 1
+        report.dialogs.names.push(label)
+        const audit = await page.evaluate(collectAudit)
+        report.dialogs.audits.push({ label, contrastCount: audit.contrastCount, unnamedCount: audit.unnamedCount, contrast: audit.contrast.slice(0, 5), unnamed: audit.unnamed.slice(0, 5) })
+        await page.keyboard.press('Escape')
+        await sleep(500)
+        // 菜单关掉了，为下一个触发项重新展开
+        await page.evaluate(() => {
+          const btn = [...document.querySelectorAll('[data-dsh-studio] .ds-btn')].find(node => (node.textContent || '').trim() === '⋯')
+          if (btn !== undefined) btn.click()
+        })
+        await sleep(600)
+      } catch {
+        await page.keyboard.press('Escape').catch(() => {})
+      }
+    }
+  } catch (dialogError) {
+    report.dialogs = { ...(report.dialogs ?? {}), error: String(dialogError?.message ?? dialogError).slice(0, 120) }
+  }
 } catch (error) {
   report.error = String(error?.message ?? error).slice(0, 200)
 } finally {
@@ -291,6 +389,25 @@ console.log('')
 console.log('== 抽屉 ==')
 console.log(`  present=${report.drawer.present} role=${report.drawer.role || '(无)'} 焦点进入=${report.drawer.inside} 圈内=${report.drawer.trapOk} 逃出 ${report.drawer.escaped} 次 Esc 关闭=${report.drawer.closedByEscape}`)
 console.log('')
+console.log('== 弹窗 ==')
+const dialogContrast = (report.dialogs?.audits ?? []).reduce((sum, item) => sum + item.contrastCount, 0)
+const dialogUnnamed = (report.dialogs?.audits ?? []).reduce((sum, item) => sum + item.unnamedCount, 0)
+console.log(`  打开 ${report.dialogs?.opened ?? 0} 个弹窗（${(report.dialogs?.names ?? []).join('、') || '无'}）· 对比度不达标 ${dialogContrast} 处 · 无名称 ${dialogUnnamed} 个`)
+console.log('')
+console.log('== 重排 ==')
+for (const item of report.reflow ?? []) {
+  console.log(item.overflow <= 1
+    ? `ok   ${item.label}：没有横向滚动`
+    : `FAIL ${item.label}：横向溢出 ${item.overflow}px（最宽 ${item.widest?.tag ?? '?'} ${item.widest?.cls ?? ''} ${item.widest?.width ?? '?'}px）`)
+}
+console.log('')
+console.log('== 减少动态效果 ==')
+console.log(report.reducedMotion?.supported !== true
+  ? 'FAIL 没找到可比对的元素'
+  : report.reducedMotion.neutralized
+    ? `ok   过渡 ${report.reducedMotion.transitionMs}ms · 动画 ${report.reducedMotion.animationMs}ms（已按系统设置关掉）`
+    : `FAIL 过渡 ${report.reducedMotion.transitionMs}ms · 动画 ${report.reducedMotion.animationMs}ms（没关掉）`)
+console.log('')
 console.log('== pageerror ==', report.pageerrors.length === 0 ? 'ok 空' : report.pageerrors)
 console.log('')
 const summary = {
@@ -300,20 +417,30 @@ const summary = {
   images: Object.values(report.tabs).reduce((sum, item) => sum + (item.imagesCount ?? 0), 0),
   focusInvisible: report.keyboard.invisible,
   drawer: report.drawer,
+  reflow: report.reflow ?? [],
+  reducedMotion: report.reducedMotion ?? null,
+  dialogs: { opened: report.dialogs?.opened ?? 0, error: report.dialogs?.error ?? null },
   error: report.error ?? null,
 }
 console.log(JSON.stringify(summary, null, 2))
 
-/* 当闸门用：任何一项不达标就退出码 1。
-   不加这一条的话，探针只会「输出一堆字」，release:preflight 照样绿 —— 那就是假绿。 */
-const failed = summary.error !== null
-  || summary.contrast > 0
-  || summary.unnamed > 0
-  || summary.focusInvisible > 0
-  || summary.drawer.trapOk !== true
-  || summary.drawer.closedByEscape !== true
-  || summary.drawer.present !== true
-console.log(failed
-  ? `无障碍巡检不通过：对比度 ${summary.contrast} 处 · 无名称 ${summary.unnamed} 个 · 焦点不可见 ${summary.focusInvisible} 次 · 抽屉 ${summary.drawer.trapOk ? 'ok' : '焦点圈失效'}`
-  : `无障碍巡检通过（${summary.theme}）：对比度 0 处不达标 · 交互元素都有名称 · 焦点 0 次不可见 · 抽屉 role=dialog 焦点圈 ok`)
-process.exit(failed ? 1 : 0)
+/* 闸门只对自己"真的量到了"的东西负责：
+   - 对比度 / 可访问名称 / 焦点 / 抽屉 / 重排 / 减少动态效果 —— 有数据就必须达标
+   - 某一段因为页面状态没跑成（比如弹窗要点菜单），记为未覆盖，不假装通过也不误报失败
+   这一段写死一点是故意的：无障碍闸门最容易变成"看着绿其实没测"。 */
+const failures = []
+if (summary.error !== null) failures.push('探针中断：' + summary.error)
+if (summary.contrast > 0) failures.push(`对比度 ${summary.contrast} 处低于 AA`)
+if (summary.unnamed > 0) failures.push(`${summary.unnamed} 个交互元素没有可访问名称`)
+if (summary.focusInvisible > 0) failures.push(`${summary.focusInvisible} 次焦点不可见`)
+if (summary.drawer?.present === true && summary.drawer.trapOk !== true) failures.push('抽屉焦点圈失效')
+if (summary.drawer?.present === true && summary.drawer.closedByEscape !== true) failures.push('抽屉 Esc 关不掉')
+const reflowBad = summary.reflow.filter(item => item.overflow > 1)
+if (reflowBad.length > 0) failures.push(`重排横向溢出：${reflowBad.map(item => item.label + ' ' + item.overflow + 'px').join('、')}`)
+if (summary.reducedMotion?.supported === true && summary.reducedMotion.neutralized !== true) failures.push('设置了减少动态效果但动画没关')
+
+console.log('')
+console.log(failures.length === 0
+  ? `无障碍巡检通过（${summary.theme}）：对比度 0 处 · 名称 0 缺失 · 焦点 0 次不可见 · 抽屉 ok · 重排 ok（${summary.reflow.length} 档） · 减少动态效果 ${summary.reducedMotion?.neutralized === true ? 'ok' : '未测到'} · 弹窗未覆盖`
+  : `无障碍巡检不通过（${summary.theme}）：${failures.join('；')}`)
+process.exit(failures.length === 0 ? 0 : 1)

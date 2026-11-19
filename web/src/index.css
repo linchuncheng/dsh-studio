@@ -2186,3 +2186,14 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
   color: var(--ds-warn-text, #a26100);
   background: color-mix(in srgb, var(--color-notification-warning-foreground, #d97706) 12%, transparent);
 }
+
+/* 系统设置里开了「减少动态效果」时，关掉过渡与动画（WCAG 2.3.3）。
+   抽屉滑入、toast 淡出这类动效对前庭功能敏感的用户是实打实的不适，不是装饰偏好。 */
+@media (prefers-reduced-motion: reduce) {
+  [data-dsh-studio], [data-dsh-studio] *, [data-dsh-studio] *::before, [data-dsh-studio] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
