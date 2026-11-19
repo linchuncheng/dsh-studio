@@ -78,6 +78,19 @@ if (lastTag === '') {
    打 tag 之前先在真机上跑一遍关键探针：接口类改动最容易「本地测试全绿、发出去才发现
    面板坏了」（0.3.1 就是这么把「保存角色模板」打成 400 的）。CI 里没有部署和 token，
    所以默认不跑，只在本地发版前用 npm run release:preflight。 */
+/* ── TDZ 扫描（每次都跑）────────────────────────────────────────────
+   "同作用域内先用后声明" 在浏览器里是 `Cannot access 'x' before initialization`，
+   而 node --check 与契约测试都看不见（issue #6：空看板第一行就读了还没初始化的 filtering，
+   平时靠 && 短路侥幸不触发）。这条扫描只要毫秒。 */
+try {
+  const out = execFileSync(process.execPath, ['tools/tdz-scan.mjs'], { encoding: 'utf8' })
+  notes.push('tdz-scan — ' + (out.trim().split('\n').pop() ?? ''))
+} catch (error) {
+  const out = String(error.stdout ?? '')
+  const detail = out.trim().split('\n').filter(line => line.includes('之前就被用了')).join(' | ')
+  problems.push('TDZ 扫描失败：' + (detail || String(error.message).slice(0, 160)))
+}
+
 /* ── 打包后自检（每次都跑）──────────────────────────────────────────
    为什么放在这里而不是只在 CI：0.5.1 那次「装完不加载」的根因在 tarball 里才看得见，
    而当时所有校验都在源码树上做。这条不通过，后面写多少文档都没意义。 */

@@ -203,6 +203,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | --- | --- |
 | `cd web && npm run guard` | CSS 里写回 `hsl(var(--x))`（颜色解析失败）、Radix Portal 忘记 `container={portalRoot()}`（弹层「存在但不可见」）、产物丢失门户作用域属性 |
 | `npm run smoke:store -- ~/.dsh/dsh-studio.db` | 用生产库的 `.db/-wal/-shm` 副本在本地跑真实启动路径，抓「空库能起、真库就炸」的 `ReferenceError` |
+| `npm run verify:tdz` | 作用域级“先用后声明”扫描（TDZ）：浏览器里的 `Cannot access 'x' before initialization` 就是这么来的，`node --check` 查不出。已接进 `release:check` |
 | `npm run verify:pack` | 打包后自检（**验的是要发的 tarball**）：patch 在包里且 `name` 等于包名、`exports`/`dsh` 指向的文件都在、`index.js` 能被真的 import。已接进 `release:check` |
 | `npm run release:check` | 发版前文档自检：CHANGELOG 有本版条目、compatibility 版本号一致、README 提到的脚本都存在；**改了代码却没改 README 会直接红** |
 | `npm test` | 契约测试（**条数以 `npm test` 输出为准，不在文档里写死**）：manifest、产物哈希、宿主接口、跨模块导入、只读绑定赋值、迁移与文档一致性、门禁纯函数、快捷键解析 |

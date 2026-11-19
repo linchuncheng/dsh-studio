@@ -67,9 +67,12 @@ function Board({ state, onOpen, onMove, onWip, onCreate }) {
   const blockedCount = state.tasks.filter(task => (task.blocked ?? null) !== null).length
   const noBodyCount = state.tasks.filter(task => artifactsWithoutBody(task).length > 0).length
   const columns = state.statuses.filter(column => !hideEmpty || (byStatus.get(column.id) ?? []).length > 0)
-  /* 一张卡都没有时给一条「从零到一」的路，而不是让 8 列各写一句「暂无任务」 */
-  const boardEmpty = (state.tasks ?? []).length === 0 && filtering === false
+  /* 一张卡都没有时给一条「从零到一」的路，而不是让 8 列各写一句「暂无任务」。
+     注意顺序：filtering 必须先声明。以前它写在 boardEmpty 后面，靠 && 短路侥幸不触发 ——
+     空看板（新装用户）第一条就为 true，于是去读还没初始化的 filtering：
+     `Cannot access 're' before initialization`（issue #6，macOS 桌面版首次打开看板）。 */
   const filtering = query !== '' || expertFilter !== '' || typeFilter !== '' || onlyBlocked || onlyNoBody || projectFilter !== '' || iterationFilter !== '' || serviceFilter !== '' || requirementFilter !== ''
+  const boardEmpty = (state.tasks ?? []).length === 0 && filtering === false
   return h('div', { style: { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } },
     boardEmpty && typeof onCreate === 'function'
       ? h('div', { className: 'ds-empty', style: { margin: '16px 20px 0' } },

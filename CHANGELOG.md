@@ -1,6 +1,30 @@
 # 更新日志
 
 
+## [0.9.3] — 2026-11-19
+
+修的是 [issue #6](https://github.com/marsken88/dsh-studio/issues/6)：macOS 桌面版点开「看板」报
+`工作空间渲染失败：Cannot access 're' before initialization`。
+
+### 修复
+- **空看板必崩**：`web/src/studio/board.js` 里 `boardEmpty` 的判断用了下面一行才声明的 `filtering`：
+
+  ```js
+  const boardEmpty = (state.tasks ?? []).length === 0 && filtering === false  // ← 先用了
+  const filtering = query !== '' || …                                        // ← 才声明
+  ```
+
+  `&&` 短路把它藏住了：**板上有卡时**第一个条件就是 `false`，`filtering` 根本不会被求值，所以
+  我们自己的实例（31 张卡）一直没暴露；**新装用户第一次打开看板**（0 张卡）第一个条件为 `true`，
+  立刻去读还没初始化的 `filtering` → `ReferenceError`（压缩后就是 `Cannot access 're' before initialization`）。
+  现在先声明 `filtering` 再算 `boardEmpty`。
+
+### 新增
+- `npm run verify:tdz`（`tools/tdz-scan.mjs`）：按**作用域**扫「同作用域内先用后声明」。
+  已在 `release:check` 里每次发版都跑。把上面两行换回原顺序，这条扫描会当场红（实测过）。
+- 实测它能覆盖 `for (let i …)` 这类循环头（不会误报），也不会把注释/字符串里的同名标识符算进去。
+
+
 ## [0.9.2] — 2026-11-19
 
 修的是 [issue #3](https://github.com/marsken88/dsh-studio/issues/3) 报的两个阻断级缺陷。

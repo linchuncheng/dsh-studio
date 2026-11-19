@@ -70,6 +70,7 @@ STUDIO_TOKEN=$(sudo journalctl -u dsh-web -n 50 | grep -o 'token=[A-Za-z0-9_-]*'
 ## 4. 每次改动前后的硬性检查
 
 1. `node --check index.js && node --check client.src.js`（语法；但**查不出**运行期 `ReferenceError`，见第 11 节）
+   再加 `npm run verify:tdz`：作用域内“先用后声明”在浏览器里是 `Cannot access 'x' before initialization`（issue #6 就是空看板第一行读了还没初始化的 `filtering`，平时被 `&&` 短路掩盖）
 2. 构建后 `cmp` 两个 client.js 一致
 3. 服务端行为：写一个 `tmp/*.mjs`（或 `.py`）脚本直接打 `/studio-api/*`，**不要在 PowerShell 里内联复杂 `node -e`**
 4. UI 行为：先跑 `node tools/visual/smoke.mjs`（部署后冒烟，见 §3）；要验具体功能就照它的写法加探针，必须
