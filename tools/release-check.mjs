@@ -78,6 +78,19 @@ if (lastTag === '') {
    打 tag 之前先在真机上跑一遍关键探针：接口类改动最容易「本地测试全绿、发出去才发现
    面板坏了」（0.3.1 就是这么把「保存角色模板」打成 400 的）。CI 里没有部署和 token，
    所以默认不跑，只在本地发版前用 npm run release:preflight。 */
+/* ── 打包后自检（每次都跑）──────────────────────────────────────────
+   为什么放在这里而不是只在 CI：0.5.1 那次「装完不加载」的根因在 tarball 里才看得见，
+   而当时所有校验都在源码树上做。这条不通过，后面写多少文档都没意义。 */
+try {
+  const out = execFileSync(process.execPath, ['tools/pack-check.mjs'], { encoding: 'utf8' })
+  const last = out.trim().split('\n').pop() ?? ''
+  notes.push('pack-check — ' + last)
+} catch (error) {
+  const out = String(error.stdout ?? '')
+  const detail = out.trim().split('\n').filter(line => line.startsWith('FAIL')).join(' | ')
+  problems.push('打包后自检失败：' + (detail || String(error.message).slice(0, 160)))
+}
+
 const wantProbes = process.argv.includes('--probes')
 if (wantProbes) {
   const token = String(process.env.STUDIO_TOKEN ?? '').trim()

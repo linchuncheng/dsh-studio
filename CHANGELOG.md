@@ -1,6 +1,25 @@
 # 更新日志
 
 
+## [0.8.6] — 2026-11-19
+
+### 新增
+- **打包后自检** `npm run verify:pack`：直接验 `npm pack` 出来的 tarball ——
+  bundle patch 在不在包里、它的 `name` 是否等于包名（含 scope）、`exports` / `dsh` 指向的文件是否都在、
+  `index.js` 能不能被真的 `import` 起来。已接进 `release:check`，CI 也会跑。
+  **它抓的正是 0.5.1 那次「装完不加载」的根因**：把 patch 改回裸名 `dsh-studio`，
+  这条会红并直接说「patch 里的 name ≠ 包名：装完会 ERR_MODULE_NOT_FOUND」。
+
+### 修复
+- **GitHub Packages 镜像不再过期**：镜像 workflow 的 `push` 同时要求 `tags` 和 `paths: [本文件]`，
+  两者必须同时成立 —— 所以正常打 tag 永远不会触发，内网用户一直拿到旧版本。现在只按 tag 触发。
+- README 不再写死测试条数（写的是 108，实际 164），兼容文档的工具数 39 → 40。
+
+### 说明
+- 探针本身仍跑在**部署好的实例**上；要做到「探针打的就是 tarball 里的东西」，下一步是把部署改成
+  从 pack 产物安装到临时 profile（需要 dsh CLI，本机没有）。这一版先把「产物能不能加载」这条堵住。
+
+
 ## [0.8.5] — 2026-11-19
 
 ### 新增
