@@ -32,6 +32,8 @@ test('抽屉/弹窗/侧栏/登录浮层/命令面板遮罩都避开桌面标题�
 
   // 桌面客户端里 env(titlebar-area-height) 实测为 0，必须有保底下沉（issue #4 二次复现）
   assert.ok(legacy.includes('max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px))'), '覆盖层要有保底下沉')
+  const shell = read('web/src/studio/shell.js')
+  assert.match(shell, /titlebarFloor\(\) === 0/, '需要下沉时不能再用宿主 SheetDrawer')
   const titlebar = read('web/src/studio/titlebar.js')
   assert.match(titlebar, /app-region/, '要量 -webkit-app-region: drag 那条标题栏（UA 会被客户端去掉，不能当主判据）')
   assert.match(titlebar, /setProperty\('--ds-titlebar-floor'/, '要把量到的高度写进 CSS 变量')
