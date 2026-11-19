@@ -186,6 +186,7 @@ README 里还写着旧行为（"安全边界"、"发版流程"、"探针清单"�
 | 一致性（文档） | `npm run release:check` | 校验 CHANGELOG 有本版条目、compatibility 版本号一致、README 提到的脚本都存在；**若自上个 tag 以来改了代码却没改 README，直接失败** |
 | 一致性（真机） | `STUDIO_TOKEN=… npm run release:preflight` | 文档检查 + **真机跑 pages / toast / drawer 三套探针**。接口类改动最容易「本地全绿、发出去才发现面板坏了」——0.3.1 就是这么把「保存角色模板」打成 400 的。CI 里没有部署和 token，所以这一条只在本地发 tag 前跑 |
 | 一致性（安装） | `dsh plugin --profile <临时 profile> install @marsken/dsh-studio@<版本>`，再 `--dump-config \| grep dsh-studio` | **每次发版前都要真装一遍**：0.5.1 及以前的 `cordis.patch.yml` 里写的是裸名 `dsh-studio`，从 npm 装完根本不加载（issue，2026-11-19）。探针打的是手工部署那份，抓不到这类问题 |
+| GitHub Release | `release.yml` 自动建（正文取 CHANGELOG） | 打 tag 后要能在 Releases 页看到这一版；正文来自 `tools/changelog-section.mjs`，所以 **CHANGELOG 没写这一版 = Release 里只剩一句"没写更新日志"** |
 | 一致性（发版） | `GIT_SSH_COMMAND="ssh -p 443" npm run verify:release` | 必须「发版一致」才算完 |
 
 顺序固定：**改代码 → 改文档 → `npm test` → 构建并 `cmp` 产物 → 提交 → 打 tag → 推 tag**。

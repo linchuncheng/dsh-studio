@@ -23,7 +23,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # contents: write 给「建 GitHub Release」用（默认只读）
+      contents: write
       # OIDC 必需
       id-token: write
     steps:
@@ -132,3 +133,25 @@ jobs:
             exit 1
           fi
           echo "registry 已指向 $VER"
+      # ── GitHub Release ───────────────────────────────────────────────
+      # 以前只往 npm 发，GitHub 的 Releases 页一直是空的（71 个 tag、0 个 release），
+      # 用户点进去看不到任何版本说明。这里在 publish 成功后补一条 release，
+      # 正文直接用 CHANGELOG 里这一版那一段（tools/changelog-section.mjs）。
+      - name: 建 GitHub Release（正文取 CHANGELOG 这一段）
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          node tools/changelog-section.mjs "$VER" > "$RUNNER_TEMP/notes.md"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "release 已存在，只更新正文"
+            gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "$GITHUB_REF_NAME" \
+              --notes-file "$RUNNER_TEMP/notes.md" \
+              --verify-tag
+          fi
+          echo "release: $(gh release view "$GITHUB_REF_NAME" --json url --jq .url)"
+

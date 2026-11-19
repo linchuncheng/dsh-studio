@@ -1,0 +1,74 @@
+name: backfill-releases
+
+# 补建历史 tag 的 GitHub Release。
+#
+# 为什么需要：仓库有 71 个 tag，但 Releases 页一直是空的（release.yml 以前只发 npm，
+# 从不建 release）。这个 workflow 是**手动触发**的补建工具：给还没有 release 的 tag
+# 各建一条，正文取 CHANGELOG 里对应那一段（没有就写一句"没写更新日志"）。
+#
+# 用法：Actions → backfill-releases → Run workflow
+#   limit:   15 = 只补最近 15 个 tag（默认）；all = 全部 71 个
+#   dry_run: true 只打印要建哪些，不真的建
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: '补最近多少个 tag（填 all 补全部）'
+        required: false
+        default: '15'
+      dry_run:
+        description: '只打印，不创建'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 给缺 release 的 tag 补建
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LIMIT="${{ inputs.limit }}"
+          DRY="${{ inputs.dry_run }}"
+          existing="$(gh release list --limit 1000 --json tagName --jq '.[].tagName' || true)"
+          echo "已有 release：$(echo "$existing" | grep -c . || true) 个"
+
+          if [ "$LIMIT" = "all" ]; then
+            tags="$(git tag --sort=-v:refname)"
+          else
+            tags="$(git tag --sort=-v:refname | head -n "$LIMIT")"
+          fi
+
+          created=0
+          skipped=0
+          for tag in $tags; do
+            if echo "$existing" | grep -qx "$tag"; then
+              skipped=$((skipped + 1))
+              continue
+            fi
+            ver="${tag#v}"
+            notes="$RUNNER_TEMP/notes.md"
+            node tools/changelog-section.mjs "$ver" > "$notes"
+            if [ "$DRY" = "true" ]; then
+              echo "[dry-run] 会建 $tag —— $(head -1 "$notes")"
+              continue
+            fi
+            echo "→ 建 $tag"
+            # 有的 tag 可能不是 annotated tag（git tag --sort 里有过），--verify-tag 会拦住；
+            # 失败不中断整轮，最后统一报数字。
+            if gh release create "$tag" --title "$tag" --notes-file "$notes" --verify-tag; then
+              created=$((created + 1))
+            else
+              echo "::warning::建 $tag 失败（可能是轻量 tag 或权限问题）"
+            fi
+          done
+          echo "created=$created skipped=$skipped"

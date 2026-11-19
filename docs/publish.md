@@ -217,6 +217,19 @@ token 只写进临时 npmrc（放在仓库外或 `tmp/` 且不提交），发完
 两条硬规矩，每次发版都过一遍：
 
 1. `npm run check` + `pnpm build` + `cmp -s dist/client.js client.js`（产物必须逐字节一致）；
+## 发完之后：GitHub Release 与 GitHub Packages
+
+- **GitHub Release 是自动的**：`release.yml` 在 npm 发布成功后会调 `gh release create`，
+  正文取 `CHANGELOG.md` 里这一版那一段（`tools/changelog-section.mjs`）。
+  所以 Releases 页能不能看到版本，取决于两件事：tag 推上去了、CHANGELOG 写了这一版。
+- **历史 tag 要补一次**：仓库有 71 个 tag，但 release 之前一个都没建过。补建走手动 workflow：
+  Actions → **backfill-releases** → Run workflow（`limit` 填 `15` 补最近 15 个，填 `all` 补全部；
+  `dry_run` 先看一眼要建哪些）。幂等的：已经有 release 的 tag 会跳过。
+- **不用 GitHub Packages**：它的 npm 源要求包 scope **等于仓库 owner**（这里是 `marsken88`），
+  而包名是 `@marsken/dsh-studio`。要发就得改名成 `@marsken88/dsh-studio`，
+  等于把 npm 上已有的历史版本和安装命令全部作废。分发渠道**只保留 npm**，
+  Releases 页只放版本说明，不放包本体。那条 "No packages published" 是有意留空的，不是漏了。
+
 2. 发完**在临时 profile 里装一遍**（`dsh plugin --profile <tmp> install @marsken/dsh-studio@<版本>`）并跑 `dsh --profile <tmp> --dump-config | grep dsh-studio`，确认宿主真认到了，然后把 profile 删掉。
    **这一步是硬门槛，不是可选项**：0.5.1 及以前 `cordis.patch.yml` 里写的是裸名 `dsh-studio`，
    从 npm 装完 `plugin.not-loaded` + `ERR_MODULE_NOT_FOUND`，而所有本地探针都打的是手工部署的那份，
