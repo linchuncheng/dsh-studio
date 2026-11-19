@@ -25,7 +25,12 @@ on:
         required: false
         type: string
         default: ''
+  # 打 tag 时自己跑：不再由 release.yml 用 workflow_call 调。
+  # 之前那样调，release.yml 的每次运行都在 48 秒左右被 CANCELLED（v0.7.0 / v0.7.1 连着三次），
+  # 拆成两个独立 workflow 之后，镜像再出问题也不会影响 npm 那条主链路。
   push:
+    tags:
+      - 'v*'
     paths:
       - '.github/workflows/publish-github-packages.yml'
   workflow_dispatch:
