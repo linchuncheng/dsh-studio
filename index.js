@@ -40,6 +40,7 @@ import { configureEventLedger } from './src/host/events.js'
 import { overrideSummary } from './src/host/override.js'
 import { toolAccessTable, toolLevel } from './src/host/tool-access.js'
 import { isStudioProfile } from './src/host/profile-detect.js'
+import { isStalled } from './src/host/dispatch-state.js'
 import { sanitizeLimits } from './src/host/limits.js'
 import { attachWebhooks, sanitizeWebhooks } from './src/host/webhooks.js'
 import { addAssertedCases, addDraftCases, buildDashboard, codingVerifyLine, commentTask, configureExecutor, ensureReqFolder, larkCliReady, invalidateLarkProbe, larkProbeCache, mutateReqDoc, probeEnv, pullFeishuDoc, requirementGate, requirementMatrix, requirementProgress, requirementRollup, runCommand, runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask, verifyCodingRecord } from './src/host/executor.js'
@@ -971,6 +972,10 @@ function publicState(store) {
       ...publicCases(task),
       ...publicChecklist(task),
       sla: bugSla(task, state.config),
+      /* 停摆：派单印记还在这一列但会话已经不在跑（崩过 / 被中断）。
+         这种卡不会自己恢复，也不再被自动派单——以前界面上和「排队中」一模一样，
+         2026-11-18 线上一次发现 5 张，最早卡了 8 天。 */
+      stalled: isStalled(task),
       // 正文太占地方，轮询只下发长度；抽屉点「阅读 / 正文」时走 /task/artifact 的 get 单独取。
       artifacts: (task.artifacts ?? []).map(publicArtifact),
     })),

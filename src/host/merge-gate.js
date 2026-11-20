@@ -102,3 +102,23 @@ export function mergeGateLine(gate) {
   if (gate.applicable !== true) return '这张卡没有代码改动，合并门禁不适用'
   return gate.ready ? '合并门禁通过：评审、用例、项目检查都过了' : `合并门禁没过：${gate.blockers.slice(0, 2).join('；')}${gate.blockers.length > 2 ? ` 等 ${gate.blockers.length} 条` : ''}`
 }
+
+/**
+ * 自动刷新要不要重新发一次提交状态。
+ *
+ * GitLab 的提交状态是挂在 commit 上的：推了新提交，旧结论就不代表现在这段代码了。
+ * 但每次同步（60 秒一轮）都发一条一模一样的会让 MR 页面刷屏，所以只在
+ * **头提交变了 / 结论变了 / 上次发失败了** 这三种情况下才重发。
+ *
+ * @param task 卡上的任务（读 mergeGate 历史）
+ * @param next { sha, ready } 这次算出来的结论
+ */
+export function mergeGateNeedsRefresh(task, next) {
+  const last = task?.mergeGate ?? null
+  if (last === null || last === undefined) return true
+  const sha = String(next?.sha ?? '')
+  const state = next?.ready === true ? 'success' : 'failed'
+  if (String(last.error ?? '') !== '') return true       // 上次没发出去：重试
+  if (String(last.sha ?? '') !== sha) return true         // 新提交
+  return String(last.state ?? '') !== state               // 结论变了（评审过了 / 用例挂了）
+}

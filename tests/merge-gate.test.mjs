@@ -8,8 +8,8 @@ import { join } from 'node:path'
 import test from 'node:test'
 
 import { SecretStore, StudioStore } from '../src/host/store.js'
-import { publishMergeGate } from '../src/host/integrations.js'
-import { MERGE_GATE_NAME, mergeGateFor } from '../src/host/merge-gate.js'
+import { gitlabSyncMergeRequests, publishMergeGate } from '../src/host/integrations.js'
+import { MERGE_GATE_NAME, mergeGateFor, mergeGateNeedsRefresh } from '../src/host/merge-gate.js'
 import { configureCodingRoutes, handleCodingRoute } from '../src/host/routes/coding.js'
 
 const baseTask = (overrides = {}) => ({
@@ -118,6 +118,73 @@ test('路由：publish=false 只出结论，没配 GitLab 也能用（自检脚�
     assert.equal(captured.body.gate.ready, true, JSON.stringify(captured.body.gate.blockers))
   } finally {
     store.db?.close?.()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('自动刷新：头提交变了 / 结论变了 / 上次没发出去才重发，其余情况别灌状态', () => {
+  assert.equal(mergeGateNeedsRefresh({ mergeGate: null }, { sha: 'a', ready: false }), true, '从没发过 → 要发')
+  const published = { sha: 'a', state: 'failed', error: '' }
+  assert.equal(mergeGateNeedsRefresh({ mergeGate: published }, { sha: 'a', ready: false }), false, '一模一样 → 不重发')
+  assert.equal(mergeGateNeedsRefresh({ mergeGate: published }, { sha: 'b', ready: false }), true, '换了头提交 → 重发')
+  assert.equal(mergeGateNeedsRefresh({ mergeGate: published }, { sha: 'a', ready: true }), true, '结论变了 → 重发')
+  assert.equal(mergeGateNeedsRefresh({ mergeGate: { ...published, error: 'HTTP 500' } }, { sha: 'a', ready: false }), true, '上次没发出去 → 重试')
+})
+
+test('同步会自动刷新门禁：换提交重发一次，没变化不重发', async () => {
+  const posted = []
+  let headSha = 'sha1111'
+  const server = createServer((req, res) => {
+    let body = ''
+    req.on('data', chunk => { body += chunk })
+    req.on('end', () => {
+      const send = (code, payload) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(payload)) }
+      if (req.method === 'GET' && req.url.includes('/merge_requests?state=opened')) {
+        return send(200, [{ iid: 7, sha: headSha, state: 'opened', source_branch: 'task/dev-001', target_branch: 'main', title: 'feat', web_url: 'http://x/7' }])
+      }
+      if (req.method === 'GET' && req.url.includes('/merge_requests/7/changes')) return send(200, { changes: [], commits_count: 0 })
+      if (req.method === 'GET' && req.url.includes('/merge_requests/7/pipelines')) return send(200, [])
+      if (req.method === 'GET' && req.url.includes('/merge_requests/7/commits')) return send(200, [])
+      if (req.method === 'GET' && req.url.includes('/merge_requests/7')) {
+        return send(200, { iid: 7, sha: headSha, state: 'opened', source_branch: 'task/dev-001', target_branch: 'main', title: 'feat', web_url: 'http://x/7' })
+      }
+      if (req.method === 'POST' && req.url.includes('/statuses/')) {
+        posted.push({ sha: req.url.split('/statuses/')[1], body: JSON.parse(body === '' ? '{}' : body) })
+        return send(201, { id: posted.length })
+      }
+      return send(404, {})
+    })
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  const port = server.address().port
+
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-gate-sync-'))
+  const store = new StudioStore(join(dir, 'state.json'), { dbFile: join(dir, 'state.db'), secrets: new SecretStore(join(dir, '.secrets.json')) })
+  try {
+    await store.ready
+    const project = { id: 'gl-1', name: 'demo', url: '', project: 'demo/order', group: '', token: '', syncEnabled: true, syncLabel: '', lastSyncAt: 0, lastSyncError: '' }
+    await store.mutate(state => {
+      state.config.gitlab = { ...state.config.gitlab, url: `http://127.0.0.1:${port}`, token: 't', projects: [project] }
+      state.tasks.push(baseTask({ coding: { ...baseTask().coding, review: { status: 'pending' } } }))
+    })
+
+    // 第一次同步：还没发过状态 → 发一条
+    await gitlabSyncMergeRequests(store, store.snapshot().config, project)
+    assert.equal(posted.length, 1, '第一次同步应该发一条状态')
+    assert.equal(posted[0].sha, 'sha1111')
+
+    // 第二次：一模一样 → 不重发
+    await gitlabSyncMergeRequests(store, store.snapshot().config, project)
+    assert.equal(posted.length, 1, '没有变化不该重复发')
+
+    // 推了新提交（换 sha）→ 重发，且挂在新提交上
+    headSha = 'sha2222'
+    await gitlabSyncMergeRequests(store, store.snapshot().config, project)
+    assert.equal(posted.length, 2, '换了头提交要重发')
+    assert.equal(posted[1].sha, 'sha2222')
+  } finally {
+    store.db?.close?.()
+    await new Promise(resolve => server.close(resolve))
     rmSync(dir, { recursive: true, force: true })
   }
 })

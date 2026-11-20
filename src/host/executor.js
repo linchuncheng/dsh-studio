@@ -1,7 +1,7 @@
 // -------------------------------------------------- 执行记录与接口测试执行器（P4）
 // 代码事实核对、用例执行、缺陷回流、健康检查。宿主级依赖通过 configureExecutor() 注入。
 
-import { coverageStrength, draftCasesFromCriteria, isExecutable } from './case-strength.js'
+import { COVERAGE_TARGET, coverageStrength, draftCasesFromCriteria, isExecutable } from './case-strength.js'
 import { isAiSignoff } from './intervention.js'
 import { overrideSummary } from './override.js'
 import { CASE_HTTP_METHODS, CODE_PREFIX, ROLE_IDS, STATUS_IDS, STATUSES, nextRequirementCode, nextTaskCode, normalizePatch, sanitizeBaseline, sanitizeCase, sanitizeReqDoc, sanitizeRequirement, sanitizeTestRun, text,
@@ -11,6 +11,7 @@ import { CASE_HTTP_METHODS, CODE_PREFIX, ROLE_IDS, STATUS_IDS, STATUSES, nextReq
 import { qualityTargetFor, sanitizeQuality } from './card-quality.js'
 import { casesOfTasks, impactSummary } from './impact.js'
 import { designGate } from './design.js'
+import { isStalled } from './dispatch-state.js'
 import { RUN_LOG, parseMentions } from './dispatcher.js'
 import { appendTeamMemory } from './team-memory.js'
 import { pickRunner, registerRunner } from './runners.js'
@@ -783,6 +784,18 @@ export function requirementGate(state, requirement) {
     }
   }
   if (unrun.length > 0) warnings.push(unrun.length + ' 条用例还没跑过：' + unrun.slice(0, 3).join('、') + (unrun.length > 3 ? ' 等' : ''))
+  /* 可执行用例占比（产品定义第 8 条，目标 60%）。
+     以前这把尺子只有单测在用：门禁只问「有没有跑过的用例」，不问「跑得起来的有几条」——
+     于是 12 条标题式用例 + 1 条真用例也算"验过"。这里把它读出来，数字给到人。
+     只提示不拦：存量需求里草稿居多，一刀切会把已经在交付的需求全卡住。 */
+  const allCases = tasks.flatMap(task => task.cases ?? [])
+  const strength = coverageStrength(allCases)
+  if (strength.rate !== null && strength.rate < COVERAGE_TARGET) {
+    warnings.push(
+      `可执行用例只有 ${strength.executable}/${strength.total}（${Math.round(strength.rate * 100)}%），低于 ${Math.round(COVERAGE_TARGET * 100)}% 的目标：` +
+      '只有标题的用例跑不起来，也不算验过——把它们改成带断言的（接口 / shell / 数据库 / 浏览器）',
+    )
+  }
   // 「通过」有两种来源：跑出来的（有 lastRun）和人手标的（没有）。后者不能当验证证据。
   const typed = []
   for (const task of tasks) {
@@ -1036,6 +1049,9 @@ export function buildDashboard(state) {
 
   const overdue = open.filter(task => task.dueAt > 0 && task.dueAt < now)
   const blocked = open.filter(task => task.blocked != null)
+  /* 停摆 = 派单印记还挂在这一列，但会话已经不在跑（崩过 / 被中断）。
+     这种卡不会自己恢复、也不会再被自动派单，界面上却和「排队中」长得一样 —— 必须单独数出来。 */
+  const stalled = open.filter(task => isStalled(task))
   const slaOverdue = open.filter(task => task.type === 'bug' && host.bugSla(task, state.config).state === 'overdue')
   // 强制放行是逃生舱，用得越来越顺就该被看一眼：30 天内超过上限算风险。
   const overrideWindow = overrideSummary(state, { since: Date.now() - 30 * 86_400_000, config: state.config })
@@ -1068,6 +1084,7 @@ export function buildDashboard(state) {
     risks: {
       overdue: overdue.length,
       blocked: blocked.length,
+      stalled: stalled.length,
       slaOverdue: slaOverdue.length,
       gateFailed: gateFailed.length,
       pipelineFailed: pipelineFailed.length,
@@ -1088,6 +1105,7 @@ export function buildDashboard(state) {
     list: {
       overdue: listOf(overdue),
       blocked: listOf(blocked),
+      stalled: listOf(stalled),
       slaOverdue: listOf(slaOverdue),
       gateFailed: listOf(gateFailed),
       pipelineFailed: listOf(pipelineFailed),

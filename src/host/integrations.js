@@ -3,7 +3,7 @@
 
 import { randomBytes } from 'node:crypto'
 import { STATUSES, mergeCoding } from './domain.js'
-import { MERGE_GATE_NAME, mergeGateFor, mergeGateLine, sanitizeMergeGate } from './merge-gate.js'
+import { MERGE_GATE_NAME, mergeGateFor, mergeGateLine, mergeGateNeedsRefresh, sanitizeMergeGate } from './merge-gate.js'
 
 let host = { newTaskId: () => '', serviceOf: () => null, getStore: () => null }
 
@@ -341,13 +341,18 @@ export async function gitlabSyncMergeRequests(store, config, project) {
       targetBranch: String(mr.target_branch ?? ''),
       updatedAt: Date.now(),
     }
+    const headSha = String(mr.sha ?? '')   // MR 的头提交：合并门禁的状态要挂在它上面
     const detail = await gitlabMergeRequestDetail(config, project, iid)
     if (detail.pipeline !== null) next.pipeline = detail.pipeline
     const same = (task.gitlabMR?.iid ?? 0) === iid
       && (task.gitlabMR?.state ?? '') === next.state
       && (task.gitlabMR?.pipeline?.id ?? 0) === (next.pipeline?.id ?? 0)
       && (task.gitlabMR?.pipeline?.status ?? '') === (next.pipeline?.status ?? '')
-    if (same) continue
+    if (same) {
+      // 状态/流水线都没动，但换了新提交：门禁要跟着走（只在真的变了时才会重发）
+      await refreshMergeGate(store, taskId, headSha)
+      continue
+    }
     await store.mutate(draft => {
       const target = draft.tasks.find(entry => entry.id === taskId)
       if (target === undefined) return
@@ -406,9 +411,28 @@ export async function gitlabSyncMergeRequests(store, config, project) {
         }]
       }
     })
+    await refreshMergeGate(store, taskId, headSha)
     matched += 1
   }
   return { matched }
+}
+
+/**
+ * 同步时顺手刷新合并门禁：GitLab 的提交状态挂在 commit 上，推了新提交旧结论就不代表这段代码。
+ * 只在「头提交变了 / 结论变了 / 上次发失败」时重发（见 mergeGateNeedsRefresh），否则每 60 秒
+ * 同步一轮会往 MR 页面灌一堆一模一样的状态。失败不打断同步。
+ */
+async function refreshMergeGate(store, taskId, sha) {
+  try {
+    const state = store.snapshot()
+    const task = state.tasks.find(entry => entry.id === taskId)
+    if (task === undefined) return
+    if (Number(task.gitlabMR?.iid ?? 0) <= 0) return
+    const gate = mergeGateFor(state, task)
+    if (gate.applicable !== true) return
+    if (mergeGateNeedsRefresh(task, { sha, ready: gate.ready }) !== true) return
+    await publishMergeGate(store, taskId, { by: 'GitLab 同步' })
+  } catch { /* 顺手发个状态而已，不能把整轮同步带红 */ }
 }
 
 /** 合并门禁的结果写回卡片（发布失败也写：面板要能区分「没发」和「发挂了」）。 */

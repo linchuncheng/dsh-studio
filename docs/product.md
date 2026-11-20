@@ -79,14 +79,14 @@ AI 是执行手，判定权在确定性规则和人手里。要变成 AI Native�
 
 | # | 能力 | 断言 | 今天 |
 | --- | --- | --- | --- |
-| 1 | 崩溃自愈 | `kill -9` 后重启，≤2 tick 内重派**恰好 1 次**；events 出现 `abandoned` + `dispatched` | ❌ 永久停摆 |
-| 2 | 停摆可测 | `dispatch.status===status && state!=='running'` 持续超过 2 tick 的卡数 **= 0** | 必然 ≥1 |
-| 3 | 写不丢 | 两进程各建一卡 → 重启后两张都在，或第二实例启动即被拒 | ❌ 只剩一张 |
+| 1 | 崩溃自愈 | `kill -9` 后重启，≤2 tick 内重派**恰好 1 次**；events 出现 `abandoned` + `dispatched` | ✅ 已做（0.9.10：`abandonedRetry` 把崩掉那轮计入 attempts 并发 `task/abandoned`；`reconcile` 清掉印记后下一个 tick 重派） |
+| 2 | 停摆可测 | `dispatch.status===status && state!=='running'` 持续超过 2 tick 的卡数 **= 0** | ✅ 已做（`dispatch-state.js` 的 `dispatchPhase`/`isStalled`/`countStalled`；2026-11-20 接进工作台与 `/state`） |
+| 3 | 写不丢 | 两进程各建一卡 → 重启后两张都在，或第二实例启动即被拒 | ✅ 已做（单写者：落盘前比对 revision，不一致就拒绝并重读；`tests/store-boot` + `tests/store-cas`） |
 | 4 | 失败不留半截 | 注入 persist 失败后，内存态 == 磁盘态 | ✅ 已做（`store.mutate` 落盘失败回滚内存，`tests/store-cas.test.mjs` 覆盖） |
 | 5 | 入站幂等 | 同 `Idempotency-Key` 连发 2 次评论 → 评论数 = 1 | ✅ 已做（0.6.0：POST 带 `Idempotency-Key`，同 key 回放第一次的响应并标 `x-idempotent-replay`；24h TTL、上限 200 条，存在 side 键不涨 revision） |
 | 6 | 冲突可见 | 两人带同一 version 改同一卡 → 一方 200、一方 **409 且返回当前卡** | ✅ 已做（0.6.0：卡有 `version`，`/task/update` 带 `ifVersion` 时后写方得 409 + 当前卡；不带 `ifVersion` 保持老行为） |
 | 7 | 无幻影事件 | webhook 收到的每个 seq 都能在 events 查到 | ✅ 已做（0.7.0：事件先写进账本拿到 seq 再投递，落账失败就**不投**；`GET /studio-api/events?since=` 可按 seq 查，保留最近 500 条） |
-| 8 | **用例覆盖强度** | 带可执行断言的用例 ÷ 全部 ≥ **60%** | ≈ 0 |
+| 8 | **用例覆盖强度** | 带可执行断言的用例 ÷ 全部 ≥ **60%** | 🟡 已测量（0.9.31：需求准出给出「可执行 1/4（25%），低于 60%」读数；**只提示不拦**——存量草稿一刀切会把在交付的需求全卡住） |
 | 9 | 门禁一次通过率 | 40–70%（<30% 说明上游澄清失效，>90% 说明门禁太松） | ✅ 已测量（0.8.0：到过「待验收」的卡里，第一次进待验收就直接完成的比例；效能页 KPI + 被打回的卡清单） |
 | 10 | 派单周活 | 有 ≥1 条专家评论的卡 / 周 ≥ 15 张 | ✅ 已测量（0.8.0：按 ISO 周分桶，只数带 AI 评论的卡；效能页给近 8 周序列 + 是否达标） |
 | 11 | AI 不可代签 | AI 会话调用签字接口 → 被拒，或标 `by=agent` 且**不满足人工签字条件** | ✅ 已做（0.3.9：工具签的字记 `agent`，准出直接拦；老记录按专家名册识别） |
