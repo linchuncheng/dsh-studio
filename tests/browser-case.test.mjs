@@ -38,6 +38,18 @@ test('形状：url / path 都认，步骤归一化，垃圾步骤丢掉，超时
   assert.equal(many.steps.length, 10, '最多 10 步，防止一条用例跑十分钟')
 })
 
+test('形状幂等：存库后再清洗一遍不能丢东西（真机就是因为这个丢光了步骤）', () => {
+  const once = sanitizeCaseBrowser({
+    url: '/',
+    steps: [{ click: '#b' }, { fill: '#q', text: 'abc' }, { wait: 300 }, { waitFor: '.toast' }],
+    expectText: '刷新了',
+  })
+  const twice = sanitizeCaseBrowser(once)
+  assert.deepEqual(twice, once, '第二次清洗必须与第一次完全一致')
+  assert.equal(twice.steps.length, 4, '步骤一条都不能丢')
+  assert.deepEqual(twice.steps.map(step => step.kind), ['click', 'fill', 'wait', 'waitFor'])
+})
+
 test('可执行判定：有地址才算能验（和接口用例同一把尺子）', () => {
   assert.equal(isExecutable({ browser: { url: '/x' } }), true)
   assert.equal(isExecutable({ browser: { url: '' } }), false)
@@ -110,14 +122,15 @@ test('真跑：打开页面、点按钮、填输入框，断言看得见的东�
   const port = server.address().port
   const config = { testing: { allowBrowser: true, allowHosts: ['127.0.0.1'], browserPath: executablePath, timeoutMs: 20000 } }
   try {
+    // 先过一遍 sanitizeCaseBrowser：真实路径里用例是「存库形状」，不是手写形状
     const ok = await runBrowserCase({
-      browser: {
+      browser: sanitizeCaseBrowser({
         url: `http://127.0.0.1:${port}/`,
         steps: [{ click: '#go' }, { fill: '#q', text: 'abc' }, { waitFor: '#out' }],
         expectText: '已点击',
         expectSelector: '#out',
         expectStatus: 200,
-      },
+      }),
     }, { baseUrl: '' }, config)
     assert.equal(ok.ok, true, ok.error)
     assert.equal(ok.status, 200)

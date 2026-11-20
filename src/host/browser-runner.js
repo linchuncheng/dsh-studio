@@ -36,20 +36,29 @@ export function sanitizeCaseBrowser(raw) {
   const steps = []
   for (const step of (Array.isArray(raw.steps) ? raw.steps : []).slice(0, MAX_STEPS)) {
     if (step === null || typeof step !== 'object') continue
-    if (String(step.click ?? '').trim() !== '') {
-      steps.push({ kind: 'click', selector: String(step.click).trim().slice(0, 200) })
+    const kind = String(step.kind ?? '').trim()
+    /* 认两种形状：手写的 `{click}` / `{fill,text}` / `{wait}` / `{waitFor}`，以及存库后的 `{kind,selector|ms}`。
+       **清洗必须幂等**：一条用例写库时过一遍 sanitizeCase，跑的时候 item.browser 已经是存库形状，
+       再清洗一遍如果只认手写形状，步骤会被静默丢光（2026-11-20 真机就是这么翻的车：点了没反应，
+       断言报"页面上没有…"，看起来像产品 bug）。 */
+    const clickSelector = kind === 'click' ? step.selector : step.click
+    if (String(clickSelector ?? '').trim() !== '') {
+      steps.push({ kind: 'click', selector: String(clickSelector).trim().slice(0, 200) })
       continue
     }
-    if (String(step.fill ?? '').trim() !== '') {
-      steps.push({ kind: 'fill', selector: String(step.fill).trim().slice(0, 200), text: String(step.text ?? '').slice(0, 1000) })
+    const fillSelector = kind === 'fill' ? step.selector : step.fill
+    if (String(fillSelector ?? '').trim() !== '') {
+      steps.push({ kind: 'fill', selector: String(fillSelector).trim().slice(0, 200), text: String(step.text ?? '').slice(0, 1000) })
       continue
     }
-    if (Number(step.wait) > 0) {
-      steps.push({ kind: 'wait', ms: Math.max(1, Math.min(10_000, Number(step.wait))) })
+    const waitMs = kind === 'wait' ? step.ms : step.wait
+    if (Number(waitMs) > 0) {
+      steps.push({ kind: 'wait', ms: Math.max(1, Math.min(10_000, Number(waitMs))) })
       continue
     }
-    if (String(step.waitFor ?? '').trim() !== '') {
-      steps.push({ kind: 'waitFor', selector: String(step.waitFor).trim().slice(0, 200) })
+    const waitSelector = kind === 'waitFor' ? step.selector : step.waitFor
+    if (String(waitSelector ?? '').trim() !== '') {
+      steps.push({ kind: 'waitFor', selector: String(waitSelector).trim().slice(0, 200) })
     }
   }
   if (url === '' && steps.length === 0 && expectText === '' && expectSelector === '' && expectUrl === '') return null
