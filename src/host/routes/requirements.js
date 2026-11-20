@@ -2,7 +2,7 @@ import { INTAKE_HTML, MINE_HTML, STATUS_HTML } from '../intake-pages.js'
 import { checklistFromAcceptance } from '../acceptance.js'
 import { resolveRequirement, requirementRefHint, reviewRequirement } from '../reviews.js'
 import { resolveSigner } from '../access.js'
-import { actorKind } from '../intervention.js'
+import { signoffActorKind } from '../intervention.js'
 import {
   REQ_STATUS_LABEL,
   cleanId,
@@ -75,6 +75,9 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     return true
   }
   if (method === 'POST' && route === '/requirement/matrix') {
+    /* 纯读：不写审计、不推 revision（否则 /state 的 ETag 被自己的读操作打穿 —— issue #17）。 */
+    req.__studioReadOnly = true
+
     const body = await host.readJsonBody(req)
     const requirement = store.snapshot().requirements.find(item => item.id === reqRef(store, body.id))
     if (requirement === undefined) throw new Error('需求不存在')
@@ -110,7 +113,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
       const target = state.requirements.find(item => item.id === id)
       if (target === undefined) throw new Error('需求不存在')
       if (action === 'sign') {
-        target.signoff = { by, at: Date.now(), note, actorKind: actorKind(by), source }
+        target.signoff = { by, at: Date.now(), note, actorKind: signoffActorKind(by, store.snapshot().config), source }
         // 带着 override 强签的，把「谁、为什么」留下来：以前只在这一次请求里生效，事后查不到。
         if (override !== '') target.override = { by, at: Date.now(), reason: override.slice(0, 300) }
         const open = state.tasks.filter(task => task.requirementId === id && task.status !== 'done').length
@@ -134,6 +137,9 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     return true
   }
   if (method === 'POST' && route === '/task/gate') {
+    /* 纯读：不写审计、不推 revision（否则 /state 的 ETag 被自己的读操作打穿 —— issue #17）。 */
+    req.__studioReadOnly = true
+
     const body = await host.readJsonBody(req)
     const task = store.snapshot().tasks.find(entry => entry.id === String(body.id ?? ''))
     if (task === undefined) throw new Error('任务不存在')
@@ -154,7 +160,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
         entry.history.push({ at: Date.now(), by, status: entry.status, note: 'signoff-cleared' })
       } else {
         if (note.length === 0) throw new Error('验收签字要写一句结论：验了什么、遗留什么')
-        entry.signoff = { by, at: Date.now(), note, actorKind: actorKind(by) }
+        entry.signoff = { by, at: Date.now(), note, actorKind: signoffActorKind(by, store.snapshot().config) }
         entry.history.push({ at: Date.now(), by, status: entry.status, note: `signoff：${note.slice(0, 80)}` })
       }
       entry.updatedAt = Date.now()
@@ -454,6 +460,9 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     return true
   }
   if (method === 'POST' && route === '/requirement/impact') {
+    /* 纯读：不写审计、不推 revision（否则 /state 的 ETag 被自己的读操作打穿 —— issue #17）。 */
+    req.__studioReadOnly = true
+
   // 需求一改，这条需求下面的卡和用例就要重看。这里只算、不改数据。
   const body = await host.readJsonBody(req)
   const id = reqRef(store, body.id)

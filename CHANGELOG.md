@@ -18,10 +18,6 @@
   用例自带的 `pointId` 优先，没填就沿用卡上的」——避免读者推成「一卡一点，覆盖率有天花板」
   （这正是 issue #9 里那位 agent 当时的误判）。
 
-### 测试
-新增 `tests/case-point.test.mjs`：不填 `pointId` 继承卡的功能点、填了不被覆盖、`acceptanceId` 一起存下来。
-`npm test` 269 条全绿（本地 + `TZ=UTC`），产物 `cmp` 一致，`release:check` 7 项通过。
-
 ### 闸门可见性收尾（issue #11 第二块）
 - **评审闸门进了配置白名单**：`config.reviewGate = { enabled, columns }`（默认 `{ enabled: true, columns: ['test'] }`），
   和 `design` 一样四处齐活（默认值 / mergeConfig 归一 / publicConfig 下发 / 运行时判据），
@@ -41,8 +37,38 @@
 - **边界说明**：HTTP 路由未做严格白名单（面板与老脚本会带整对象做部分更新，一刀切会打断它们）。
   「路由层严格化」留在 #11 里继续跟踪，等面板侧的调用全部改成显式字段后再收。
 
+### 一致性一批（issue #12–#19）
+- **#16 删除不再静默成功**：`/projects|experts|teams|suite|release/delete` 与 `task/artifact action=remove`
+  在目标不存在时直接报错。以前一律 `200 {"ok":true}`，调用方以为删干净了，实际库里还在。
+- **#13 代码评审入参统一**：工具与 HTTP 都认 `reviewStatus`（工具老写法）与 `status`（HTTP 老写法）；
+  两个都不给、或给了不认识的值 → 直接报错。根因是 `reviewDecision` 会把不认识的值回落成 `pending`，
+  于是「传错字段」变成「评审白写一次」，一直潜伏到准出闸才炸。
+- **#17 只读 POST 补齐**：`/task/gate`、`/requirement/matrix`、`/requirement/impact`、
+  `/task/worktree action=list` 打上只读标记，不再推 revision。`/task/coding/verify` **保留写入**：
+  它会把核对结果存进 `coding.verified`（准出要读），不是纯读。
+- **#15 签字口径收成一个函数**：新增 `signoffActorKind(name, config)`，写入口（需求签字、卡签字）与判据
+  （`isAiSignoff`）共用。以前写入口只认 `studio-*` 这类名字，闸门还额外认专家名册 ——
+  于是「产品经理」签的字记成 `human`、闸门判成 AI，记录与结论互相矛盾。
+- **#14 structuredClone 不再作废整次流转**：换成 `safeClone`（structuredClone 失败再 JSON 兜底），
+  展示用的快照克隆失败不该让换列整体失败。
+- **#18 幂等并发闸**：新增 `createIdempotencyGate()`，执行前先占住 key，同一 key 的并发请求直接
+  `409 {code:"idempotent_inflight"}`。以前两个并发请求都查空 → 都执行 → 写两条。
+- **#19 评论可改可删**：`POST /task/comment action=update|remove` 与 `studio_task_comment` 的
+  `action`/`commentId`；改删都写历史（谁、什么时候、原来是什么）。评论是 agent 读卡的主要输入，
+  以前只能增，写错/重复/过时的只能留着误导下一个人。
+
 ### 测试
-`tools-audit.test.mjs` 新增 2 条（未知字段全拒绝、写工具回读）；`gates.test.mjs` 加 `sanitizeReviewGate` 归一化、`tools-audit` 加「描述里说能传的字段必须真能传（pool）」、`repo.test.mjs` 加「reviewGate 四处齐活」的契约（真机翻车点：patch 白名单漏了它 → /config 返回 200 但没生效）。`npm test` 274 条全绿（本地 + `TZ=UTC`）。
+本版新增的断言：
+- `tests/case-point.test.mjs`：不填 `pointId` 继承卡的功能点、填了不被覆盖、`acceptanceId` 一起存下来；
+- `tests/consistency.test.mjs`（6 条）：改删评论留痕、签字口径统一、评审两种入参 + 写错要报错、
+  删除存在性校验与只读标记、幂等并发闸；
+- `tests/tools-audit.test.mjs`（+3 条）：每个工具都用 `{__bogus_field:1}` 调一遍必须拒绝、
+  写工具回读可解析、描述里说能传的 `pool` 真能传且分数 > 0；
+- `tests/gates.test.mjs`（+2 条）：`sanitizeReviewGate` 归一化（默认开、显式 false 才关）、评审闸门拦/放；
+- `tests/repo.test.mjs`（+2 条）：`reviewGate` 四处齐活（默认值 / mergeConfig / publicConfig / patch）、
+  计数回归锁（计数用原对象算）。
+
+`npm test` 280 条全绿（本地 + `TZ=UTC`），产物 `cmp` 一致，`release:check` 7 项通过。
 
 
 ## [0.9.34] — 2026-11-20

@@ -34,7 +34,10 @@ import { mirrorCards } from './src/host/bitable.js'
 import { bugSeverityFor } from './src/host/bugs.js'
 import { automationRate } from './src/host/intervention.js'
 import { dispatchWeekly, gateFirstPass, requirementDelivery } from './src/host/delivery.js'
-import { findIdempotent, normalizeIdempotencyKey, rememberIdempotent, IDEMPOTENCY_SIDE_KEY } from './src/host/idempotency.js'
+import { createIdempotencyGate, findIdempotent, normalizeIdempotencyKey, rememberIdempotent, IDEMPOTENCY_SIDE_KEY } from './src/host/idempotency.js'
+
+/* 同一个 Idempotency-Key 的并发闸：执行前先占住，后来的挡回（issue #18）。 */
+const IDEMPOTENCY_GATE = createIdempotencyGate()
 import { queryLedger, EVENT_LEDGER_SIDE_KEY } from './src/host/event-ledger.js'
 import { configureEventLedger } from './src/host/events.js'
 import { overrideSummary } from './src/host/override.js'
@@ -43,6 +46,7 @@ import { isStudioProfile } from './src/host/profile-detect.js'
 import { isStalled } from './src/host/dispatch-state.js'
 import { sanitizeLimits } from './src/host/limits.js'
 import { attachWebhooks, sanitizeWebhooks } from './src/host/webhooks.js'
+import { updateTaskComment, removeTaskComment } from './src/host/comments.js'
 import { addAssertedCases, addDraftCases, buildDashboard, codingVerifyLine, commentTask, configureExecutor, ensureReqFolder, larkCliReady, invalidateLarkProbe, larkProbeCache, mutateReqDoc, probeEnv, pullFeishuDoc, requirementGate, requirementMatrix, requirementProgress, requirementRollup, runCommand, runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask, verifyCodingRecord } from './src/host/executor.js'
 import { configureAuthRoutes, handleAuthRoute } from './src/host/routes/auth.js'
 import { configureExportRoutes, handleExportRoute } from './src/host/routes/exports.js'
@@ -2376,6 +2380,12 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
           return
         }
       } catch { /* 读不到 side 键就当没命中，宁可多执行一次也不让请求失败 */ }
+      if (IDEMPOTENCY_GATE.claim(scope) === false) {
+        /* 同一个 key 的另一个请求还在跑：不能重复执行（并发重试全部穿透就是这里漏了）。
+           让它稍后用同一个 key 再试，那会拿到第一次的响应。 */
+        sendJson(res, 409, { ok: false, code: 'idempotent_inflight', error: '同一个 Idempotency-Key 的请求正在处理中：稍后用同一个 key 重试会拿到第一次的结果' })
+        return
+      }
       res.__idemCapture = { scope, status: 0, body: null }
     }
     try {
@@ -2395,6 +2405,8 @@ function registerRoutes(webCtx, store, ctx, getDispatcher = () => undefined) {
         await store.writeSide(IDEMPOTENCY_SIDE_KEY, rememberIdempotent(record, res.__idemCapture.scope, { status: res.__idemCapture.status, body: res.__idemCapture.body }))
       } catch { /* 记不下不阻塞业务：下次重试会再执行一次，但至少这次是成功的 */ }
     }
+    // 无论成功还是失败都要放开：否则同一个 key 之后永远撞「正在处理中」。
+    if (res.__idemCapture !== undefined) IDEMPOTENCY_GATE.release(res.__idemCapture.scope)
     /* 只读的 POST（例如 /task/design 只带 id）不该留下写痕迹：审计写库会让 revision +1，
        而 /state 的 ETag 就是 revision —— 一次读请求会把所有客户端的 304 缓存全冲掉。 */
     /* 只读 POST 一律不记审计：审计是一次 store.mutate()，会把 revision +1，
@@ -2594,6 +2606,8 @@ export function apply(ctx) {
       createTask,
       updateTask,
       commentTask,
+      updateTaskComment,
+      removeTaskComment,
       runTaskCases,
       probeEnv,
       syncArtifact,

@@ -11,6 +11,7 @@ import {
 } from './executor.js'
 import { runSummary } from './dispatcher.js'
 import { mineSkillFromCard } from './skill-mine.js'
+import { removeTaskComment, updateTaskComment } from './comments.js'
 import { resolveRequirement, requirementRefHint, reviewRequirement, saveTaskDesign } from './reviews.js'
 import { skillUsage, skillUsageLine } from './skill-usage.js'
 import { mergeGateFor, mergeGateLine } from './merge-gate.js'
@@ -879,13 +880,25 @@ export function registerTools(ctx, store) {
 
   register(defineStudioTool({
     name: 'studio_task_comment',
-    description: 'Append a comment to a task: progress notes, review findings, hand-off details. Comments are the durable conversation between role agents and humans.',
+    description: 'Add / edit / remove a comment on a task. Comments are the durable conversation between role agents and humans.\n'
+      + 'action=add（默认）追加一条；action=update 改一条（要 commentId + 新的 body，改过的留历史）；action=remove 删一条（要 commentId，也留历史）。',
     parameters: {
       id: { type: 'string', required: true, description: 'Task id.' },
-      body: { type: 'string', required: true, description: 'Comment text (markdown).' },
+      body: { type: 'string', description: 'Comment text (markdown)。action=add / update 必填。' },
       author: { type: 'string', description: 'Author label, e.g. 研发 or 张三 (default agent).' },
+      action: { type: 'string', description: 'add | update | remove（默认 add）' },
+      commentId: { type: 'string', description: 'action=update / remove 时要改或删的那条评论 id' },
     },
     async execute(args) {
+      const action = String(args.action ?? 'add')
+      if (action === 'update') {
+        const out = await updateTaskComment(store, args.id, args.commentId, args.body, String(args.author ?? 'agent'))
+        return `已改评论 ${String(args.commentId)}（历史留痕）${readbackTask(String(args.id))}`
+      }
+      if (action === 'remove') {
+        await removeTaskComment(store, args.id, args.commentId, String(args.author ?? 'agent'))
+        return `已删评论 ${String(args.commentId)}（历史留痕）${readbackTask(String(args.id))}`
+      }
       const { task, mentions } = await commentTask(store, args.id, args.body, args.author, 'agent')
       const dispatched = []
       if (host.getActiveDispatcher() !== undefined) {
@@ -1162,6 +1175,7 @@ export function registerTools(ctx, store) {
       testsTotal: { type: 'string', description: 'How many unit tests ran.' },
       testsPassed: { type: 'string', description: 'How many passed.' },
       reviewStatus: { type: 'string', description: 'For action=review: approved | changes_requested | pending' },
+      status: { type: 'string', description: '与 reviewStatus 等价的别名（HTTP 侧一直叫 status，两个都认，省得记两套）' },
       reviewNote: { type: 'string', description: 'For action=review: what you checked and what still needs fixing.' },
       by: { type: 'string', description: 'Who changed it (your expert name).' },
     },
@@ -1177,7 +1191,14 @@ export function registerTools(ctx, store) {
           const base = sanitizeCoding(task.coding ?? {})
           /* 不传 reviewStatus 以前默认写成 approved —— 等于"看一眼就算通过"，评审形同虚设。
              现在默认 pending：要放行必须显式说 approved。 */
-          const status = reviewDecision(args.reviewStatus, CODING_REVIEW_STATUS)
+          const wanted = args.reviewStatus ?? args.status
+      if (wanted === undefined || String(wanted).trim() === '') {
+        throw new Error('评审要给结论：reviewStatus（或 status），approved / changes_requested / pending')
+      }
+      if (!CODING_REVIEW_STATUS.includes(String(wanted).trim())) {
+        throw new Error(`评审结论「${String(wanted)}」不认识：只认 ${CODING_REVIEW_STATUS.join(' / ')}`)
+      }
+      const status = reviewDecision(wanted, CODING_REVIEW_STATUS)
           /* 禁自评：谁写的代码，谁就不能给自己盖"通过"。同一张卡的 agent 与会话作者都算自评。 */
           const author = String(base.agent ?? '').trim()
           if (status === 'approved' && isSelfReview(author, by)) {

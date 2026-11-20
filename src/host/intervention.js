@@ -32,12 +32,13 @@ function listOf(one, many) {
 }
 
 /** 签字是谁签的：优先读写入时记下的 actorKind，没有才回落到按名字判断。 */
-function signKind(sign) {
+function signKind(sign, config = null) {
   const kind = String(sign?.actorKind ?? '')
   // 'ai' 是早期写法，统一按 agent 对待：签字只分「人签的」和「AI 签的」。
   if (kind === 'ai' || kind === 'agent') return 'agent'
   if (kind === 'human') return 'human'
-  return actorKind(sign?.by)
+  // 回落到名字判断时也走同一个函数（不再有第二套口径）
+  return signoffActorKind(sign?.by, config) === 'ai' ? 'agent' : 'human'
 }
 
 export function actorKind(name) {
@@ -59,14 +60,27 @@ export function expertNames(config) {
  *   3. **签字人名字在专家名册里** —— 兜住历史数据：早期按名字猜来源，
  *      「测试工程师」这种名字被误判成 human，AI 自助验收的记录一直挂着 human。
  */
+/**
+ * 一条签字是谁签的：**写入口与判据共用这一个函数**。
+ *
+ * 以前两套口径：写入口用 actorKind(name)（只认 studio-* 这类名字），闸门用
+ * expertNames(config).includes(by) —— 于是「产品经理」这类专家名被记成 human，
+ * 闸门却判 AI，记录与结论互相矛盾（issue #15）。
+ */
+export function signoffActorKind(name, config) {
+  const text = String(name ?? '').trim()
+  if (text === '') return 'unknown'
+  if (isAiActor(text)) return 'ai'
+  if (expertNames(config).includes(text)) return 'ai'
+  return 'human'
+}
+
 export function isAiSignoff(sign, config) {
   if (sign === null || sign === undefined) return false
   const kind = String(sign.actorKind ?? '')
   if (kind === 'agent' || kind === 'ai') return true
-  const by = String(sign.by ?? '').trim()
-  if (by === '') return false
-  if (isAiActor(by)) return true
-  return expertNames(config).includes(by)
+  // 名字兜底也走同一个函数：这样「记录里是什么」和「闸门怎么判」永远一致
+  return signoffActorKind(sign.by, config) === 'ai'
 }
 
 /** 一条记录是谁做的：显式 kind > 会话痕迹 > 专家名册 > 其余算人。

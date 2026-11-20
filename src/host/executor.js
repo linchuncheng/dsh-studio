@@ -954,6 +954,13 @@ export function qualitySummary(state, task) {
  * 卡能不能进「已完成」：验收清单全勾、没有失败用例、不处在阻塞中、并且有人签字。
  * 没过就抛错，除非显式带 override 理由（会记进状态历史）。
  */
+/** structuredClone 抛「Cannot clone object of unsupported type」时的兜底：
+ *  展示用的那份快照不该把整次状态流转作废（issue #14）。 */
+const safeClone = value => {
+  try { return structuredClone(value) } catch { /* 落到 JSON 兜底 */ }
+  try { return JSON.parse(JSON.stringify(value)) } catch { return null }
+}
+
 export function taskExitGate(state, task) {
   const blockers = []
   const warnings = []
@@ -1502,7 +1509,7 @@ export async function mutateReqDoc(store, body) {
       throw new Error(`unknown action ${action}`)
     }
     requirement.updatedAt = Date.now()
-    saved = structuredClone(requirement)
+    saved = safeClone(requirement)
   })
   return saved
 }
@@ -1635,7 +1642,7 @@ export async function updateTask(store, id, patch) {
         }
       }
       if (previous !== task.status) {
-        moved = { from: previous, to: task.status, task: structuredClone(task), by, expertBefore }
+        moved = { from: previous, to: task.status, task: safeClone(task), by, expertBefore }
         emitEvent('task/moved', { taskId: task.id, code: task.code ?? '', title: task.title, from: previous, to: task.status, by, expert: task.expert ?? '' })
       }
     }

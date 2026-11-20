@@ -192,6 +192,18 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
   }
   if (method === 'POST' && route === '/task/comment') {
     const body = await host.readJsonBody(req)
+    const action = String(body.action ?? 'add')
+    /* 评论以前只能增（issue #19）：写错/重复/过时的只能留着误导下一个人。 */
+    if (action === 'update') {
+      const out = await host.updateTaskComment(store, String(body.id ?? ''), body.commentId, body.body, String(body.by ?? body.author ?? '人'))
+      host.sendJson(res, 200, { ok: true, task: out.task, state: host.publicState(store) })
+      return true
+    }
+    if (action === 'remove') {
+      const out = await host.removeTaskComment(store, String(body.id ?? ''), body.commentId, String(body.by ?? body.author ?? '人'))
+      host.sendJson(res, 200, { ok: true, task: out.task, state: host.publicState(store) })
+      return true
+    }
     const { task, mentions } = await host.commentTask(store, String(body.id ?? ''), body.body, body.author, body.kind)
     const dispatcher = host.getDispatcher()
     const dispatched = []
@@ -229,7 +241,9 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
   if (method === 'POST' && route === '/experts/delete') {
     const body = await host.readJsonBody(req)
     const id = cleanId(body.id, 'expert')
-    await host.applyConfig(store, { experts: store.snapshot().config.experts.filter(expert => expert.id !== id) })
+    const existing = store.snapshot().config.experts
+    if (!existing.some(expert => expert.id === id)) throw new Error(`no expert ${id}`)
+    await host.applyConfig(store, { experts: existing.filter(expert => expert.id !== id) })
     host.sendJson(res, 200, { ok: true, state: host.publicState(store) })
     return true
   }
@@ -244,7 +258,9 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
   if (method === 'POST' && route === '/teams/delete') {
     const body = await host.readJsonBody(req)
     const id = cleanId(body.id, 'team')
-    await host.applyConfig(store, { teams: store.snapshot().config.teams.filter(team => team.id !== id) })
+    const existing = store.snapshot().config.teams
+    if (!existing.some(team => team.id === id)) throw new Error(`no team ${id}`)
+    await host.applyConfig(store, { teams: existing.filter(team => team.id !== id) })
     host.sendJson(res, 200, { ok: true, state: host.publicState(store) })
     return true
   }
@@ -334,7 +350,9 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
   if (method === 'POST' && route === '/suite/delete') {
     const body = await host.readJsonBody(req)
     const list = await loadSuites(store)
-    const next = list.filter(item => item.id !== String(body.id ?? ''))
+    const wanted = String(body.id ?? '')
+    if (!list.some(item => item.id === wanted)) throw new Error(`no suite ${wanted}`)
+    const next = list.filter(item => item.id !== wanted)
     host.sendJson(res, 200, { ok: true, suites: await saveSuites(store, next) })
     return true
   }
@@ -420,7 +438,9 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
         if (task.artifacts.length >= maxArtifacts) throw new Error(`一张卡最多 ${maxArtifacts} 个交付物：先删掉过期的再加`)
         task.artifacts = [...task.artifacts, created]
       } else if (action === 'remove') {
-        task.artifacts = task.artifacts.filter(item => item.id !== String(body.artifactId ?? ''))
+        const wantedArtifact = String(body.artifactId ?? '')
+        if (!(task.artifacts ?? []).some(item => item.id === wantedArtifact)) throw new Error(`找不到交付物「${wantedArtifact}」`)
+        task.artifacts = task.artifacts.filter(item => item.id !== wantedArtifact)
       } else if (action === 'update') {
         /* 顶层字段也认：以前把 content 放在顶层 → 200 但正文没变，什么都不说（issue #9 第 1 条）。
            找不到目标交付物也直接报错，不再静默返回 ok。 */

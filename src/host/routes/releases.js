@@ -82,6 +82,7 @@ export async function handleReleasesRoute({ method, route, req, res, store, url 
   if (method === 'POST' && route === '/release/delete') {
     const body = await host.readJsonBody(req)
     const id = String(body.id ?? '')
+    if (!store.snapshot().releases.some(item => item.id === id)) throw new Error(`no release ${id}`)
     await store.mutate(state => {
       state.releases = state.releases.filter(item => item.id !== id)
       for (const task of state.tasks) {

@@ -64,3 +64,34 @@ export function rememberIdempotent(record, key, response, now = Date.now()) {
   }
   return out
 }
+
+/**
+ * 并发闸：同一个 key 同一时刻只允许一个请求真正执行。
+ *
+ * 为什么需要：只有 findIdempotent（查记录）+ rememberIdempotent（事后落记录）时，
+ * 两个并发请求都会查空 → 都执行 → 写两条（issue #18：2 并发写 2 条、5 并发写 5 条）。
+ * 这个闸在**执行前**先把 key 占住，后来的直接挡回。
+ *
+ * 只在进程内有效：本插件是单写者（store 有单写者校验），不需要跨进程锁；
+ * 进程重启时正在处理的请求本来也一起没了。
+ */
+export function createIdempotencyGate() {
+  const inflight = new Set()
+  return {
+    /** 抢到了返回 true；别人正在处理返回 false。 */
+    claim(scope) {
+      const key = String(scope ?? '')
+      if (key === '') return true
+      if (inflight.has(key)) return false
+      inflight.add(key)
+      return true
+    },
+    release(scope) {
+      const key = String(scope ?? '')
+      if (key !== '') inflight.delete(key)
+    },
+    get size() {
+      return inflight.size
+    },
+  }
+}

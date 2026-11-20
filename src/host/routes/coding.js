@@ -63,7 +63,15 @@ if (method === 'POST' && route === '/task/coding') {
       const base = sanitizeCoding(task.coding ?? {})
       /* 与 studio_task_coding 工具同一套规则：不传结论 → pending；作者不能给自己盖"通过"。
          以前这里默认 approved，面板点一下"评审通过"就完事，评审形同虚设。 */
-      const status = reviewDecision(body.status, CODING_REVIEW_STATUS)
+      /* 两个入参都认：HTTP 一直用 status，工具用 reviewStatus；传错那个以前返回 200 但落库仍是 pending（issue #13）。 */
+    const wanted = body.status ?? body.reviewStatus
+    if (wanted === undefined || String(wanted).trim() === '') {
+      throw new Error('评审要给结论：status 或 reviewStatus（approved / changes_requested / pending）')
+    }
+    if (!CODING_REVIEW_STATUS.includes(String(wanted).trim())) {
+      throw new Error(`评审结论「${String(wanted)}」不认识：只认 ${CODING_REVIEW_STATUS.join(' / ')}`)
+    }
+    const status = reviewDecision(wanted, CODING_REVIEW_STATUS)
       const author = String(base.agent ?? '').trim()
       if (status === 'approved' && isSelfReview(author, by)) {
         throw new Error(`不能自评：这份执行记录的作者是「${author}」，评审人也是「${by}」。让另一个专家评审`)
@@ -158,6 +166,8 @@ if (method === 'POST' && route === '/task/worktree') {
     return true
   }
   if (action === 'list') {
+    // 纯读：列 worktree 不改库，不该推 revision（issue #17）
+    req.__studioReadOnly = true
     const service = host.serviceOf(snapshotNow.config, task)
     const project = host.workProjectOf(snapshotNow.config, task)
     const repo = String(service?.repoPath ?? project?.repoPath ?? '').trim()
@@ -240,7 +250,10 @@ if (method === 'POST' && route === '/projects/save') {
 if (method === 'POST' && route === '/projects/delete') {
   const body = await host.readJsonBody(req)
   const id = cleanId(body.id, 'proj')
-  await host.applyConfig(store, { projects: store.snapshot().config.projects.filter(entry => entry.id !== id) })
+  /* 不存在就报错：以前删不掉的也回 200 ok:true，调用方以为删了（issue #16）。 */
+  const existing = store.snapshot().config.projects
+  if (!existing.some(entry => entry.id === id)) throw new Error(`no project ${id}`)
+  await host.applyConfig(store, { projects: existing.filter(entry => entry.id !== id) })
   host.sendJson(res, 200, { ok: true, state: host.publicState(store) })
   return true
 }
