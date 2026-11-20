@@ -1246,3 +1246,15 @@ test('config: reviewGate 四处齐活（默认值 / mergeConfig / publicConfig /
   assert.match(index, /reviewGate: config\.reviewGate,/, 'publicConfig 要下发（否则面板看不到）')
   assert.match(index, /patch\.reviewGate !== undefined/, 'applyConfig 的 patch 白名单要认（否则 /config 返回 200 但什么都没改）')
 })
+
+test('governance 面板：评审闸门必须渲染在「列的负责人」里，不是别处（真机踩过）', () => {
+  const source = read('web/src/studio/panels/governance.js')
+  const columns = source.indexOf('export function ColumnsPanel')
+  const storage = source.indexOf('export function StoragePanel')
+  const review = source.indexOf("'data-review-gate'")
+  assert.ok(columns >= 0 && storage >= 0, '两个面板函数都应该存在')
+  assert.ok(columns < storage, 'ColumnsPanel 在前、StoragePanel 在后')
+  assert.ok(review > columns && review < storage,
+    `data-review-gate 应该落在 ColumnsPanel 里（${columns} < ${review} < ${storage}），`
+    + '误插到 StoragePanel 时视野里根本看不到它，而 reviewEnabled 在那里还不存在')
+})

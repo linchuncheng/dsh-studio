@@ -3,6 +3,13 @@
 
 ## [0.9.36] — 2026-11-20
 
+### 修复（自测渲染时抓到的）
+- **「评审闸门」开关被渲染到了「数据与备份」面板里**：上一版加这段 JSX 时锚点匹配错了，插进了 ，
+  而  在那里并不存在——设置页的「列的负责人」里根本看不到它（点进数据与备份才会炸）。
+  已移到  的设计闸门下方，并加回归锁：断言  落在 ColumnsPanel 与 StoragePanel 之间。
+- 同时补了一套**真实渲染探针**（假宿主 + 真  数据，见下方「测试」）：
+  这类「渲染在了别的地方 / 根本没渲染」的问题，接口测试和单元测试都抓不到。
+
 ### 新增（issue #11 剩下的「路由层严格化」）
 - **写路由也吃白名单了**：`src/host/route-contract.js` 提供 `declareRoute(route, fields)` 与
   `rejectUnknownFields(route, body)`。已启用的路由：
@@ -27,9 +34,9 @@
   默认值改不改是产品取舍（改了会卡住存量需求），但关着且没人知道不该发生——留在卡上是可查的。
 
 ### 测试
-`tests/route-contract.test.mjs` 4 条：未知字段拒绝并点名、面板真实 payload 全通过、
+`tests/repo.test.mjs` 加 1 条「评审闸门必须渲染在 ColumnsPanel 里」；`tests/route-contract.test.mjs` 4 条：未知字段拒绝并点名、面板真实 payload 全通过、
 未登记路由与非法 body 放过、登记表本身自洽（路由唯一、字段非空）。
-`npm test` 286 条全绿（本地 + `TZ=UTC`），产物 `cmp` 一致，`release:check` 7 项通过。
+`npm test` 287 条全绿（本地 + `TZ=UTC`），产物 `cmp` 一致，`release:check` 7 项通过。
 
 
 ## [0.9.35] — 2026-11-20

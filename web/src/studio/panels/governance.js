@@ -287,6 +287,22 @@ export function ColumnsPanel({ state, onChanged }) {
           onClick: () => toggleGateColumn(column.id),
         }, column.label ?? column.id)),
       ),
+      h('div', { className: 'ds-hint', style: { marginTop: 14 } },
+        '评审闸门：进「待测试」之前代码评审必须有结论（默认开启）。关掉意味着卡可以跳过评审直接进测试——',
+        '设置页这里会显示「已关闭」，看板顶部也会挂一条提示，避免看起来像有保护。'),
+      h('div', { className: 'ds-row', style: { gap: 8, flexWrap: 'wrap', marginTop: 6 } },
+        h('button', {
+          className: reviewEnabled ? 'ds-btn ds-btn-primary' : 'ds-btn',
+          disabled: busy, 'data-review-gate': reviewEnabled ? 'on' : 'off',
+          onClick: () => void saveReview({ enabled: !reviewEnabled }),
+        }, reviewEnabled ? '评审闸门：已开启' : '评审闸门：已关闭'),
+        statuses.map(column => h('button', {
+          key: 'rgate-' + column.id,
+          className: reviewColumns.includes(column.id) ? 'ds-btn ds-btn-primary' : 'ds-btn',
+          disabled: busy,
+          onClick: () => void saveReview({ columns: reviewColumns.includes(column.id) ? reviewColumns.filter(item => item !== column.id) : [...reviewColumns, column.id] }),
+        }, column.label ?? column.id)),
+      ),
       statuses.map(column => {
         const members = membersOf(column.id)
         const strategy = strategyOf(column.id)
@@ -383,22 +399,6 @@ export function StoragePanel({ state, onChanged }) {
       ),
     ),
 
-      h('div', { className: 'ds-hint', style: { marginTop: 14 } },
-        '评审闸门：进「待测试」之前代码评审必须有结论（默认开启）。关掉意味着卡可以跳过评审直接进测试——',
-        '设置页这里会显示「已关闭」，看板顶部也会挂一条提示，避免看起来像有保护。'),
-      h('div', { className: 'ds-row', style: { gap: 8, flexWrap: 'wrap', marginTop: 6 } },
-        h('button', {
-          className: reviewEnabled ? 'ds-btn ds-btn-primary' : 'ds-btn',
-          disabled: busy, 'data-review-gate': reviewEnabled ? 'on' : 'off',
-          onClick: () => void saveReview({ enabled: !reviewEnabled }),
-        }, reviewEnabled ? '评审闸门：已开启' : '评审闸门：已关闭'),
-        statuses.map(column => h('button', {
-          key: 'rgate-' + column.id,
-          className: reviewColumns.includes(column.id) ? 'ds-btn ds-btn-primary' : 'ds-btn',
-          disabled: busy,
-          onClick: () => void saveReview({ columns: reviewColumns.includes(column.id) ? reviewColumns.filter(item => item !== column.id) : [...reviewColumns, column.id] }),
-        }, column.label ?? column.id)),
-      ),
     h('div', { className: 'ds-panel' },
       h('div', { className: 'ds-panel-head' },
         '快照',
