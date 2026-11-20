@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 
 import { artifactFolderName, findFolder, projectFolderName, requirementFolderNameOf, safeFolderName } from '../src/host/drive-folders.js'
-import { deleteRequirementFolder, ensureKindFolder, ensureProjectFolder, ensureRequirementFolder } from '../src/host/drive-sync.js'
+import { deleteProjectFolder, deleteRequirementFolder, ensureKindFolder, ensureProjectFolder, ensureRequirementFolder } from '../src/host/drive-sync.js'
 import { larkUploadArgs } from '../src/host/lark-upload.js'
 import { commandArgs, quoteForCmd } from '../src/host/cmd-args.js'
 import { SecretStore, StudioStore } from '../src/host/store.js'
@@ -195,5 +195,21 @@ test('漏传 larkJson 要在调用点报清楚，而不是变成 "larkJson is no
     await assert.rejects(() => ensureKindFolder(store, 'req-1', 'design'), /ensureKindFolder 需要传入 larkJson/)
     await assert.rejects(() => ensureRequirementFolder(store, 'req-1'), /ensureRequirementFolder 需要传入 larkJson/)
     await assert.rejects(() => deleteRequirementFolder(store, 'req-1'), /deleteRequirementFolder 需要传入 larkJson/)
+  })
+})
+
+test('删项目目录：按项目 id 找缓存里的 token，删完清缓存；没有目录就跳过', async () => {
+  await withStore(async store => {
+    await store.mutate(state => { state.config.feishu.projectFolders = { ord: { token: 'PROJ', url: '', name: 'ORD 订单中心', at: 1, error: '' } } })
+    const { fn, calls } = stubLark([{ ok: true, data: {} }])
+    const out = await deleteProjectFolder(store, 'ord', fn)
+    assert.equal(out.ok, true)
+    assert.ok(calls[0].includes('--file-token PROJ') && calls[0].includes('--type folder'), calls[0])
+    assert.deepEqual(store.snapshot().config.feishu.projectFolders, {}, '删完要把缓存清掉')
+    // 没缓存的项目：跳过、不发请求
+    const { fn: fn2, calls: calls2 } = stubLark([])
+    assert.equal((await deleteProjectFolder(store, 'nope', fn2)).skipped, '这个项目没有云盘目录')
+    assert.equal(calls2.length, 0)
+    await assert.rejects(() => deleteProjectFolder(store, 'ord'), /deleteProjectFolder 需要传入 larkJson/)
   })
 })

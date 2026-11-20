@@ -1,6 +1,25 @@
 # 更新日志
 
 
+## [0.9.47] — 2026-11-20
+
+### 删项目也能连带删云盘目录（和删需求对称）
+
+之前删需求能连目录一起删（`deleteFolder: true`），删项目却只删台账——项目文件夹就永远留在云盘根下。
+这正是以前根目录攒出几百个文件夹的成因之一。
+
+- `POST /projects/delete { deleteFolder: true }`：删掉这个项目的云盘目录并清掉 `config.feishu.projectFolders`
+  里的缓存（默认不动，删台账和删文件是两件事）；
+- `config.feishu.projectFolders` 进 `applyConfig` 的补丁白名单（带 `sanitizeProjectFolders`）——
+  目录在云盘被手工删掉后，缓存也能跟着清，不会留一个指向回收站的 token。
+
+### 验证
+真云盘：建临时项目目录 → `deleteProjectFolder` 删除成功 → 缓存清空 → 再列该目录已是 not found。
+单元测试覆盖「按 id 找 token / 删完清缓存 / 没目录就跳过 / 漏传 larkJson 报清楚」。
+
+`npm test` 304 条全绿（本地 + `TZ=UTC`）。
+
+
 ## [0.9.46] — 2026-11-20
 
 ### 修复：产物没进「01 需求文档」子目录（漏传一个参数）

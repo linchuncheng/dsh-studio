@@ -140,3 +140,24 @@ export async function deleteRequirementFolder(store, requirementId, larkJson) {
   })
   return { ok: true, name: String(folder.name ?? '') }
 }
+
+/**
+ * 删掉一个项目的云盘目录（丢回收站）。删项目时不会自动调用，要显式传 deleteFolder。
+ *
+ * 为什么需要：项目目录不删就会一直留在根下 —— 这也是以前根目录攒出几百个同名文件夹的成因之一。
+ */
+export async function deleteProjectFolder(store, projectId, larkJson) {
+  needLark(larkJson, 'deleteProjectFolder')
+  const state = store.snapshot()
+  const folders = state.config.feishu.projectFolders ?? {}
+  const folder = folders[String(projectId)]
+  if (folder === undefined || String(folder.token ?? '').trim() === '') return { ok: true, skipped: '这个项目没有云盘目录' }
+  const removed = await larkJson(['drive', '+delete', '--file-token', String(folder.token), '--type', 'folder', '--yes'], 60000)
+  if (!removed.ok) return { ok: false, error: removed.error }
+  await store.mutate(draft => {
+    const next = { ...(draft.config.feishu.projectFolders ?? {}) }
+    delete next[String(projectId)]
+    draft.config.feishu.projectFolders = next
+  })
+  return { ok: true, name: String(folder.name ?? '') }
+}

@@ -1,5 +1,7 @@
 /** dsh-studio 的领域层：板列、卡片/需求/发布的数据形状与清洗、默认配置、编号生成。纯函数，可单测。 */
 import { sanitizeProjectFolders, sanitizeRequirementFolder } from './drive-folders.js'
+// 面板/配置补丁也要能清洗它（index.js 从 domain 取这批 sanitize*）
+export { sanitizeProjectFolders }
 import { sanitizeAcceptanceItem } from './acceptance.js'
 import { qualityFields } from './card-quality.js'
 import { resolveCaseResult } from './case-strength.js'

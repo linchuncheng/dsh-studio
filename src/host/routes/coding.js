@@ -5,9 +5,10 @@ import { codingVerifyLine, qualitySummary, runCommand, runTaskQuality, taskExitG
 import { compareCodingFacts } from '../gitlab-facts.js'
 import { mergeGateFor } from '../merge-gate.js'
 import { rejectUnknownFields } from '../route-contract.js'
-const INJECTED = ["applyConfig","ensureWorktree","mergeMergeRequest","publicState","publishMergeGate","readJsonBody","removeWorktree","sendJson","serviceOf","upsertById","workProjectOf"]
+const INJECTED = ["applyConfig","deleteProjectFolder","ensureWorktree","mergeMergeRequest","publicState","publishMergeGate","readJsonBody","removeWorktree","sendJson","serviceOf","upsertById","workProjectOf"]
 let host = {
   applyConfig: () => {},
+  deleteProjectFolder: async () => ({}),
   ensureWorktree: () => {},
   mergeMergeRequest: async () => ({}),
   publicState: () => {},
@@ -256,6 +257,8 @@ if (method === 'POST' && route === '/projects/delete') {
   /* 不存在就报错：以前删不掉的也回 200 ok:true，调用方以为删了（issue #16）。 */
   const existing = store.snapshot().config.projects
   if (!existing.some(entry => entry.id === id)) throw new Error(`no project ${id}`)
+  /* deleteFolder=true 时连带删掉这个项目的云盘目录。默认不动：删台账和删文件是两件事。 */
+  if (body.deleteFolder === true) await host.deleteProjectFolder(store, id).catch(() => {})
   await host.applyConfig(store, { projects: existing.filter(entry => entry.id !== id) })
   host.sendJson(res, 200, { ok: true, state: host.publicState(store) })
   return true
