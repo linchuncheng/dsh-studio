@@ -400,6 +400,7 @@ function publicConfig(config) {
     access: config.access,
     sla: config.sla,
     design: config.design,
+    reviewGate: config.reviewGate,
     limits: config.limits,
     webhooks: config.webhooks,
     costs: config.costs,

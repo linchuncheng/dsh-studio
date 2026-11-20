@@ -236,6 +236,17 @@ export function ColumnsPanel({ state, onChanged }) {
       await onChanged()
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
+
+  // 评审闸门：默认开（只有显式 false 才算关）。存 config.reviewGate，服务端 quality.js 的 reviewGate() 用它。
+  const reviewColumns = Array.isArray(config.reviewGate?.columns) && config.reviewGate.columns.length > 0 ? config.reviewGate.columns : ['test']
+  const reviewEnabled = config.reviewGate?.enabled !== false
+  const saveReview = async patch => {
+    setBusy(true); setError(null)
+    try {
+      await api('/config', { reviewGate: { ...(config.reviewGate ?? {}), ...patch } })
+      await onChanged()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
   const toggleGateColumn = id => {
     const next = gateColumns.includes(id) ? gateColumns.filter(item => item !== id) : [...gateColumns, id]
     void saveDesign({ columns: next })
@@ -371,6 +382,23 @@ export function StoragePanel({ state, onChanged }) {
         h('div', { className: 'ds-hint' }, '每次写操作都会在同一个事务里先存一份快照，再更新台账；多进程同时写会排队（busy_timeout 5s），不会互相覆盖。'),
       ),
     ),
+
+      h('div', { className: 'ds-hint', style: { marginTop: 14 } },
+        '评审闸门：进「待测试」之前代码评审必须有结论（默认开启）。关掉意味着卡可以跳过评审直接进测试——',
+        '设置页这里会显示「已关闭」，看板顶部也会挂一条提示，避免看起来像有保护。'),
+      h('div', { className: 'ds-row', style: { gap: 8, flexWrap: 'wrap', marginTop: 6 } },
+        h('button', {
+          className: reviewEnabled ? 'ds-btn ds-btn-primary' : 'ds-btn',
+          disabled: busy, 'data-review-gate': reviewEnabled ? 'on' : 'off',
+          onClick: () => void saveReview({ enabled: !reviewEnabled }),
+        }, reviewEnabled ? '评审闸门：已开启' : '评审闸门：已关闭'),
+        statuses.map(column => h('button', {
+          key: 'rgate-' + column.id,
+          className: reviewColumns.includes(column.id) ? 'ds-btn ds-btn-primary' : 'ds-btn',
+          disabled: busy,
+          onClick: () => void saveReview({ columns: reviewColumns.includes(column.id) ? reviewColumns.filter(item => item !== column.id) : [...reviewColumns, column.id] }),
+        }, column.label ?? column.id)),
+      ),
     h('div', { className: 'ds-panel' },
       h('div', { className: 'ds-panel-head' },
         '快照',

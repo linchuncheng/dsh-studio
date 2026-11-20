@@ -22,6 +22,28 @@
 新增 `tests/case-point.test.mjs`：不填 `pointId` 继承卡的功能点、填了不被覆盖、`acceptanceId` 一起存下来。
 `npm test` 269 条全绿（本地 + `TZ=UTC`），产物 `cmp` 一致，`release:check` 7 项通过。
 
+### 闸门可见性收尾（issue #11 第二块）
+- **评审闸门进了配置白名单**：`config.reviewGate = { enabled, columns }`（默认 `{ enabled: true, columns: ['test'] }`），
+  和 `design` 一样四处齐活（默认值 / mergeConfig 归一 / publicConfig 下发 / 运行时判据），
+  重启不会被 mergeConfig 抹掉。
+- **设置页能开关了**：「每一列由谁负责」面板里，设计闸门下面新增评审闸门开关 + 可勾选哪几列要拦，
+  关闭时按钮显示「评审闸门：已关闭」并附一句「关掉意味着卡可以跳过评审直接进测试」。
+- **看板顶部会挂提示**：`/state.gates` 里任一闸门关闭时，看板顶部出现
+  「⚠ 设计闸门 / 评审闸门 已关闭：卡可以跳过对应的评审直接推进」——不再出现「看起来有保护、其实裸奔」。
+
+### 写操作契约（issue #11 第三块）
+- **未知字段直接拒绝**（45 个工具全部受管，一处实现）：白名单就是工具自己声明的 `parameters`
+  （扁平写法与 JSON Schema 写法都认）。报错写明这个工具接受哪些字段，以及「以前多传的字段会被静默忽略，所以这里直接拒绝」。
+  契约测试：把每个已注册工具都用 `{__bogus_field:1}` 调一遍，全部必须拒绝。
+- **写工具回读库里那份**：`studio_task_create` / `studio_task_update` / `studio_requirement_save` /
+  `studio_task_artifact` 的返回值末尾带 `库里的记录：{...}`，内容来自 store 快照（不是回显入参）——
+  `pool` 有没有生效、`content` 有没有落库、需求的 `code/status` 是什么，一眼可对账。
+- **边界说明**：HTTP 路由未做严格白名单（面板与老脚本会带整对象做部分更新，一刀切会打断它们）。
+  「路由层严格化」留在 #11 里继续跟踪，等面板侧的调用全部改成显式字段后再收。
+
+### 测试
+`tools-audit.test.mjs` 新增 2 条（未知字段全拒绝、写工具回读）。`npm test` 271 条全绿（本地 + `TZ=UTC`）。
+
 
 ## [0.9.34] — 2026-11-20
 

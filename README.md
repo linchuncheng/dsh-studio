@@ -245,7 +245,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | --- | --- | --- |
 | 澄清 | 三问必答（有没有服务端 / 鉴权谁做 / 交付边界） | **拦**：答不完拆不了卡 |
 | 设计 | 评审通过但**没定案**（多稿里没指认哪一稿），或一稿都没有 | **拦**：先把稿放进去、指认一稿（`override` 可强推） |
-| **评审** | 进「待测试」时代码评审还没结论（**默认开**，`config.reviewGate.enabled=false` 才关） | **拦**：改完先让评审人用 `studio_task_coding action=review` 给结论（`override` 可强推） |
+| **评审** | 进「待测试」时代码评审还没结论（**默认开**，`config.reviewGate.enabled=false` 才关；关了会在看板顶部挂提示、设置页显示「已关闭」） | **拦**：改完先让评审人用 `studio_task_coding action=review` 给结论（`override` 可强推） |
 | 拆卡 | 说有后端，但功能点没有一条讲接口 / 数据表 / 鉴权 | 提示 |
 | 拆卡 | 说没有后端，功能点却要建表 / 写接口 | 提示 |
 | 拆卡 | 功能点没有验收标准（长不出用例） | 提示 |

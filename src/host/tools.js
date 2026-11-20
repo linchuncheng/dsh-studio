@@ -54,6 +54,36 @@ export function configureToolHost(services) {
 /** 注册 40 个 studio_* 工具。 */
 export function registerTools(ctx, store) {
   const disposers = []
+  /* 写操作的返回值要能对账：读回**库里那份**，而不是回显入参。
+     issue #9 第 1 条：以前 pool 传了不生效、content 放顶层不生效，调用方只能再去读一遍库才知道。 */
+  const readbackTask = id => {
+    const task = store.snapshot().tasks.find(item => item.id === id)
+    if (task === undefined) return ''
+    const 摘要 = {
+      id: task.id, status: task.status, role: task.role, priority: task.priority,
+      requirementId: task.requirementId, pointId: task.pointId,
+      comments: (task.comments ?? []).length, checklist: (task.checklist ?? []).length,
+      cases: (task.cases ?? []).length, artifacts: (task.artifacts ?? []).length,
+    }
+    return '\n库里的记录：' + JSON.stringify(摘要)
+  }
+  /** 交付物：id / 标题 / 正文长度 —— 只回"已更新"看不出正文到底进没进去（issue #9 第 1 条）。 */
+  const readbackArtifacts = id => {
+    const task = store.snapshot().tasks.find(item => item.id === id)
+    if (task === undefined) return ''
+    const list = (task.artifacts ?? []).map(item => ({ id: item.id, title: item.title, contentLength: String(item.content ?? '').length }))
+    return '\n库里的记录：' + JSON.stringify(list)
+  }
+  const readbackRequirement = id => {
+    const item = store.snapshot().requirements.find(entry => entry.id === id)
+    if (item === undefined) return ''
+    const 摘要 = {
+      id: item.id, code: item.code, status: item.status,
+      review: item.review?.status ?? '', points: (item.points ?? []).length,
+      pool: item.pool?.score ?? 0, links: item.links ?? {},
+    }
+    return '\n库里的记录：' + JSON.stringify(摘要)
+  }
   const register = tool => {
     const body = tool.execute
     disposers.push(ctx.tools.register({
@@ -74,6 +104,21 @@ export function registerTools(ctx, store) {
           throw new Error(`权限不足：${denial}`)
         }
         try {
+          /* 写操作契约的第一步：**未知字段直接拒**。
+             以前多传的键被静默忽略——调用方以为写进去了（issue #9 第 1 条：
+             pool 传了不生效、content 放顶层不生效、prd 传相对路径变空串）。
+             白名单就是这个工具自己声明的 parameters，一处实现，全部工具都受管。 */
+          /* 工具的 parameters 有两种写法：扁平 {key: {...}}（大多数）与 JSON Schema
+             {type:'object', properties:{...}}（少数老工具，如 studio_task_artifact）。两种都要认。 */
+          const schema = tool.parameters
+          const accepted = schema !== null && typeof schema === 'object' && schema.properties !== null && typeof schema.properties === 'object'
+            ? Object.keys(schema.properties)
+            : Object.keys(schema ?? {})
+          const given = args !== null && typeof args === 'object' ? Object.keys(args) : []
+          const unknown = given.filter(key => !accepted.includes(key))
+          if (unknown.length > 0) {
+            throw new Error(`未知字段「${unknown.join('、')}」：${tool.name} 只接受 ${accepted.length === 0 ? '（无参数）' : accepted.join(' / ')}。以前多传的字段会被静默忽略，所以这里直接拒绝 —— 要么改用接受的字段名，要么先提 issue 加参数`)
+          }
           const value = await body(args, exec)
           // 只给写操作留痕，读太多会把审计刷成流水账。
           if (operator !== null && level !== 'read') {
@@ -241,7 +286,7 @@ export function registerTools(ctx, store) {
         input.links = { prd: args.prd ?? '', proto: args.proto ?? '', acceptance: args.acceptance ?? '' }
       }
       const requirement = await saveRequirement(store, input)
-      return `已保存需求 ${requirement.code}（${REQ_STATUS_LABEL[requirement.status] ?? requirement.status}）：${requirement.title}`
+      return `已保存需求 ${requirement.code}（${REQ_STATUS_LABEL[requirement.status] ?? requirement.status}）：${requirement.title}${readbackRequirement(requirement.id)}`
     },
   }))
 
@@ -384,7 +429,7 @@ export function registerTools(ctx, store) {
         input.requirementId = target.id
       }
       const task = await host.createTask(store, input)
-      return `已创建 ${task.id}：${task.title}（${task.status}，${task.role}）`
+      return `已创建 ${task.id}：${task.title}（${task.status}，${task.role}）${readbackTask(task.id)}`
     },
   }))
 
@@ -421,7 +466,7 @@ export function registerTools(ctx, store) {
         rest.requirementId = target.id
       }
       const task = await updateTask(store, id, { ...rest, by: rest.by })
-      return `已更新 ${task.id}：${task.status}｜${task.title}`
+      return `已更新 ${task.id}：${task.status}｜${task.title}${readbackTask(task.id)}`
     },
   }))
 
@@ -1029,9 +1074,9 @@ export function registerTools(ctx, store) {
             notes.push(`归档失败：${String(error?.message ?? error).slice(0, 160)}`)
           }
         }
-        return [`已更新 ${task.id} 的交付物，当前 ${task.artifacts.length} 件。`, ...notes].join('\n')
+        return [`已更新 ${task.id} 的交付物，当前 ${task.artifacts.length} 件。`, ...notes, readbackArtifacts(task.id)].filter(Boolean).join('\n')
       }
-      return `已更新 ${task.id} 的交付物，当前 ${task.artifacts.length} 件。`
+      return `已更新 ${task.id} 的交付物，当前 ${task.artifacts.length} 件。${readbackArtifacts(task.id)}`
     },
   }))
 

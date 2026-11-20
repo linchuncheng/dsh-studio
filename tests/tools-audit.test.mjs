@@ -85,3 +85,62 @@ test('tools.js：每个已注册工具都能执行，且不抛 ReferenceError / 
     rmSync(dir, { recursive: true, force: true })
   }
 })
+
+test('tools.js：未知字段直接拒绝（issue #9 第 1 条：写操作不能静默忽略）', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-studio-unknown-'))
+  const store = new StudioStore(join(dir, 'state.json'), { dbFile: join(dir, 'state.db'), secrets: new SecretStore(join(dir, '.secrets.json')) })
+  try {
+    await store.ready
+    const registered = []
+    const ctx = { tools: { register: tool => { registered.push(tool); return () => {} } }, effect: () => () => {} }
+    configureToolHost({
+      toolOperator: () => '自检', toolLevel: () => 'write',
+      checkToolAccess: () => ({ level: 'write', denial: null }), recordAudit: async () => {},
+      publicConfig: config => config, getActiveDispatcher: () => undefined, getActiveSkills: () => undefined,
+    })
+    registerTools(ctx, store)
+    assert.ok(registered.length >= 45, `应该注册出 45 个工具，实际 ${registered.length}`)
+
+    const misses = []
+    for (const tool of registered) {
+      try {
+        await tool.execute({ __bogus_field: 1 }, {})
+        misses.push(`${tool.name}：没拒绝`)
+      } catch (error) {
+        const message = String(error?.message ?? error)
+        if (!message.includes('未知字段')) misses.push(`${tool.name}：${message.slice(0, 80)}`)
+      }
+    }
+    assert.deepEqual(misses, [], `这些工具没有拒绝未知字段：\n${misses.join('\n')}`)
+  } finally {
+    store.db?.close?.()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('tools.js：写工具返回「库里那份」，不是回显入参（issue #9 第 1 条）', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-studio-readback-'))
+  const store = new StudioStore(join(dir, 'state.json'), { dbFile: join(dir, 'state.db'), secrets: new SecretStore(join(dir, '.secrets.json')) })
+  try {
+    await store.ready
+    const registered = []
+    const ctx = { tools: { register: tool => { registered.push(tool); return () => {} } }, effect: () => () => {} }
+    configureToolHost({
+      toolOperator: () => '自检', toolLevel: () => 'write',
+      checkToolAccess: () => ({ level: 'write', denial: null }), recordAudit: async () => {},
+      publicConfig: config => config, getActiveDispatcher: () => undefined, getActiveSkills: () => undefined,
+    })
+    registerTools(ctx, store)
+    const save = registered.find(tool => tool.name === 'studio_requirement_save')
+    const text = await save.execute({ title: '（自检）读回对账' }, {})
+    assert.match(String(text), /已保存需求/, '原有读数不能丢')
+    assert.match(String(text), /库里的记录：/, '要附带库里那份')
+    const json = JSON.parse(String(text).slice(String(text).indexOf('库里的记录：') + '库里的记录：'.length))
+    assert.equal(json.status, 'draft')
+    assert.equal(typeof json.pool, 'number', 'pool 要能被核对（以前传了也看不出生效没）')
+    assert.ok(String(json.code).startsWith('REQ-'), 'code 是库里生成的，不是入参')
+  } finally {
+    store.db?.close?.()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})

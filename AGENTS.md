@@ -142,6 +142,8 @@ STUDIO_TOKEN=$(sudo journalctl -u dsh-web -n 50 | grep -o 'token=[A-Za-z0-9_-]*'
 
 ## 6. 后端约定（`index.js`）
 
+- **工具入参严格**：`studio_*` 工具多传未知字段会被直接拒绝（白名单 = 工具自己声明的 `parameters`，两种写法都认），不再静默忽略。新增工具时把字段写进 `parameters`，否则调用方传了会被拒。
+- **写工具要回读**：`studio_task_create/update`、`studio_requirement_save`、`studio_task_artifact` 的返回值末尾带 `库里的记录：{...}`，是从 store 快照读的，不是回显入参。新增写工具照这个来。
 - **白名单四处**（原来写的三件套少算了一处，2026-11-13 因此丢过 `config.design`）：`defaultConfig()`、**`mergeConfig(saved)`——重启加载时按显式键列表重建配置，没列进去的键会被静默抹掉**、`mergeConfig(patch)`/`publicConfig()`（可写 / 对外可见）、`sanitizeX()`（每个对象）。契约测试 `config: every default key survives a merge round trip` 会拦住漏掉的那处。
 - `StudioStore.mutate(fn)` **返回整份 state**，不是 `fn` 的返回值；要拿某张卡用 `store.snapshot().tasks.find(...)`。
 - 所有对外状态走 `publicState()`：`{ revision, config, tasks, requirements, releases, experts, … }`。

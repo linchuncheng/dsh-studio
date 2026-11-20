@@ -74,6 +74,16 @@ function Board({ state, onOpen, onMove, onWip, onCreate }) {
   const filtering = query !== '' || expertFilter !== '' || typeFilter !== '' || onlyBlocked || onlyNoBody || projectFilter !== '' || iterationFilter !== '' || serviceFilter !== '' || requirementFilter !== ''
   const boardEmpty = (state.tasks ?? []).length === 0 && filtering === false
   return h('div', { style: { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } },
+    /* 闸门关掉时要一眼看见：数据来自 /state.gates（服务端算好的按钮态），不是前端猜配置 */
+    (() => {
+      const gates = state.gates ?? {}
+      const off = []
+      if (gates.design !== undefined && gates.design.enabled !== true) off.push('设计闸门')
+      if (gates.review !== undefined && gates.review.enabled === false) off.push('评审闸门')
+      if (off.length === 0) return null
+      return h('div', { className: 'ds-hint', 'data-gate-off': '1', style: { padding: '4px 20px 0' } },
+        '⚠ ' + off.join(' / ') + ' 已关闭：卡可以跳过对应的评审直接推进。要打开在「设置 → 每一列由谁负责」。')
+    })(),
     boardEmpty && typeof onCreate === 'function'
       ? h('div', { className: 'ds-empty', style: { margin: '16px 20px 0' } },
         h('div', null, '还没有任何卡。先建一张卡，再把需求、用例、版本挂上去。'),
