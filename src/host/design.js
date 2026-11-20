@@ -149,7 +149,7 @@ export function applySpecItem(checklist, spec) {
 export function designGate(config, task, nextStatus) {
   const design = config?.design ?? {}
   const columns = Array.isArray(design.columns) && design.columns.length > 0 ? design.columns : ['dev']
-  const needed = design.enabled === true && columns.includes(String(nextStatus ?? ''))
+  const needed = design.enabled !== false && columns.includes(String(nextStatus ?? ''))
   if (needed !== true) return { needed: false, ready: true, blockers: [] }
   const state = String(task?.design?.status ?? '')
   if (state === 'approved') {

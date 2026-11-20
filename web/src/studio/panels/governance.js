@@ -276,10 +276,10 @@ export function ColumnsPanel({ state, onChanged }) {
         '设计闸门：打开后，卡片进下面选中的列之前设计必须评审通过（验收时可 override 强推）。'),
       h('div', { className: 'ds-row', style: { gap: 8, flexWrap: 'wrap', marginTop: 6 } },
         h('button', {
-          className: config.design?.enabled === true ? 'ds-btn ds-btn-primary' : 'ds-btn',
-          disabled: busy, 'data-design-gate': config.design?.enabled === true ? 'on' : 'off',
-          onClick: () => void saveDesign({ enabled: config.design?.enabled !== true }),
-        }, config.design?.enabled === true ? '设计闸门：已开启' : '设计闸门：已关闭'),
+          className: config.design?.enabled !== false ? 'ds-btn ds-btn-primary' : 'ds-btn',
+          disabled: busy, 'data-design-gate': config.design?.enabled !== false ? 'on' : 'off',
+          onClick: () => void saveDesign({ enabled: config.design?.enabled === false }),
+        }, config.design?.enabled !== false ? '设计闸门：已开启' : '设计闸门：已关闭'),
         statuses.map(column => h('button', {
           key: 'gate-' + column.id,
           className: gateColumns.includes(column.id) ? 'ds-btn ds-btn-primary' : 'ds-btn',

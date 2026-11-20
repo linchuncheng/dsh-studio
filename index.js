@@ -973,7 +973,7 @@ function publicState(store) {
        而不是靠 agent 读源码才知道（issue #9 第 3 条）。 */
     gates: {
       design: {
-        enabled: state.config.design?.enabled === true,
+        enabled: state.config.design?.enabled !== false,
         columns: Array.isArray(state.config.design?.columns) && state.config.design.columns.length > 0 ? state.config.design.columns : ['dev'],
       },
       review: {
@@ -1115,7 +1115,7 @@ async function applyConfig(store, patch) {
     if (patch.design !== undefined) {
       const next = { ...config.design, ...(patch.design ?? {}) }
       config.design = {
-        enabled: next.enabled === true,
+        enabled: next.enabled !== false,
         columns: (Array.isArray(next.columns) ? next.columns : ['dev']).map(String).slice(0, 8),
       }
     }

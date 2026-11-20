@@ -219,8 +219,8 @@ export function defaultConfig() {
     webhooks: [],
     /** 数量上限：以前是硬编码在路由里的 60/60/40，超了静默丢。 */
     limits: { ...LIMIT_DEFAULTS },
-    /** 设计评审闸门：打开后，卡进 columns 里的列之前设计必须 approved。默认关（改默认会卡住存量需求）。 */
-    design: { enabled: false, columns: ['dev'] },
+    /** 设计评审闸门：打开后，卡进 columns 里的列之前设计必须 approved。**默认开**（显式 enabled:false 才关）。 */
+    design: { enabled: true, columns: ['dev'] },
     /** 代码评审闸门：进 columns（默认「待测试」）之前 coding.review 必须 approved。**默认开**。 */
     reviewGate: { enabled: true, columns: ['test'] },
     /** 成本闸门：只统计「跑了多少次、花了多少机上时间」，宿主没把 token 用量回传给插件。 */
@@ -452,7 +452,7 @@ export function mergeConfig(saved) {
     // 设计闸门：加了这个键就必须在这里也列一遍，否则重启一次配置就被 mergeConfig 抹掉。
     design: (() => {
       const merged = { ...base.design, ...(saved.design !== null && typeof saved.design === 'object' ? saved.design : {}) }
-      return { enabled: merged.enabled === true, columns: (Array.isArray(merged.columns) ? merged.columns : ['dev']).map(String).slice(0, 8) }
+      return { enabled: merged.enabled !== false, columns: (Array.isArray(merged.columns) ? merged.columns : ['dev']).map(String).slice(0, 8) }
     })(),
     // 评审闸门：默认开，只有显式 false 才算关（和 quality.js 的 reviewGate 判据保持一致）。
     reviewGate: sanitizeReviewGate({ ...base.reviewGate, ...(saved.reviewGate !== null && typeof saved.reviewGate === 'object' ? saved.reviewGate : {}) }),
