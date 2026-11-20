@@ -1211,7 +1211,9 @@ test('tooling: Release 正文的判据（空 / 占位 / 太短都算没写）', 
   const { releaseBodyIssue, RELEASE_BODY_PLACEHOLDER } = await import('../tools/lib/release-notes.mjs')
   assert.match(String(releaseBodyIssue('')), /空的/)
   assert.match(String(releaseBodyIssue('   \n  ')), /空的/)
-  assert.match(String(releaseBodyIssue('这一版没写更新日志')), /占位/)
+  assert.match(String(releaseBodyIssue('这一版没有写更新日志，下面是它包含的提交（完成后对比完整 diff）：')), /占位/)
+  // 正文里正常引用这句话，不该被判成占位（0.9.29 的真身就是这么被误伤的）
+  assert.equal(releaseBodyIssue('### 修复\n- 说明里提到「没写更新日志」这四个字，但正文是完整的更新日志，够长了'), null)
   assert.ok(String(releaseBodyIssue('没写更新日志')).includes(RELEASE_BODY_PLACEHOLDER) === false, '判据里不该把常量本身当正文')
   assert.match(String(releaseBodyIssue('短')), /只有 1 字/)
   assert.equal(releaseBodyIssue('## [0.9.29] — 2026-11-20\n\n### 修复\n- 修了点东西，够长了'), null)

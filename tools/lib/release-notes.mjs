@@ -4,8 +4,10 @@
 // CHANGELOG 少了这一版时，Release 会带着一句占位（"没写更新日志"）发出去——
 // 之前 verify:release 只比 Latest 的 tag 名，这种"发了个没有说明的版本"是看不出来的。
 
-/** Release 正文的占位句：出现了就等于"没写更新日志"。 */
-export const RELEASE_BODY_PLACEHOLDER = '没写更新日志'
+/** 回退生成器真正打出来的那句（见 tools/changelog-section.mjs 的 else 分支）。
+ *  只匹配整句，不匹配「没写更新日志」四个字：CHANGELOG 里正常引用这句话不该被判红
+ *  （0.9.29 的正文就引用了它，第一次真跑就把自己误伤了）。 */
+export const RELEASE_BODY_PLACEHOLDER = '这一版没有写更新日志'
 
 /**
  * @returns {string|null} null = 正文没问题；否则是给人看的原因。
