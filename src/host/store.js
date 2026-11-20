@@ -25,6 +25,7 @@ import {
   sanitizeTestRuns,
   text,
 } from './domain.js'
+import { sanitizeQuality } from './card-quality.js'
 
 /** 持久化层：SQLite 台账（单写者 + 快照）与 0600 密钥文件。 */
 
@@ -232,6 +233,8 @@ export class StudioStore {
       task.cases = sanitizeCases(task.cases)
       task.testRuns = sanitizeTestRuns(task.testRuns)
       task.coding = sanitizeCoding(task.coding)
+      // 项目检查（本地质量命令）的结果：老库没有这个字段，补 null 而不是 undefined。
+      task.quality = sanitizeQuality(task.quality)
       if (task.bugSource === undefined) task.bugSource = null
       else task.bugSource = sanitizeBugSource(task.bugSource)
       if (task.reqBaseline === undefined) task.reqBaseline = null

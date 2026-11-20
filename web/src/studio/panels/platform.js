@@ -452,6 +452,16 @@ export function BusinessPanel({ config, onChanged }) {
             }),
           ),
         ),
+        h('div', { className: 'ds-row', style: { gap: 12 } },
+          h('div', { className: 'ds-field', style: { flex: 1 } },
+            h('div', { className: 'ds-label' }, '项目检查命令（服务没配时用它）'),
+            h(TextField, {
+              className: 'ds-input', value: draft.qualityCmd ?? '', placeholder: 'npm run check',
+              onChange: e => set('qualityCmd', e.target.value),
+            }),
+          ),
+        ),
+        h('div', { className: 'ds-hint', style: { margin: '-6px 0 4px' } }, '配了以后，改过代码的卡在收口前必须跑过这条命令（卡片「执行记录」里有「跑一次」）。默认超时 120 秒。'),
         h('div', { className: 'ds-hint', style: { margin: '-6px 0 4px' } }, '配了代码目录且「代码隔离」选 worktree 时，每张卡会切一条 task/<编号> 分支，互不干扰。项目里有多个服务时，用下面的服务列表分开配。'),
         h('div', { className: 'ds-field' },
           h('div', { className: 'ds-label' }, `服务（${services.length}）· 一个服务一个 git 路径，卡片可以指定改哪个`),
@@ -499,6 +509,12 @@ export function BusinessPanel({ config, onChanged }) {
                 others.length === 0
                   ? null
                   : h('div', { className: 'ds-row', style: { gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' } },
+                    h('span', { className: 'ds-hint' }, '检查命令'),
+                    h(TextField, {
+                      className: 'ds-input', value: service.qualityCmd ?? '', placeholder: '留空用项目级',
+                      style: { flex: '0 0 220px', height: 28 },
+                      onChange: e => setService(index, 'qualityCmd', e.target.value),
+                    }),
                     h('span', { className: 'ds-hint' }, '依赖'),
                     h('span', { className: 'ds-hint', style: { marginRight: 2 } }, '（勾上的服务要先完成，本服务的卡才能收口）'),
                     others.map(other => h('span', {

@@ -1,7 +1,7 @@
 import { CODING_REVIEW_STATUS, cleanId, mergeCoding, sanitizeCoding } from '../domain.js'
 import { isSelfReview, reviewDecision } from '../quality.js'
 import { clearAgentFailure, noteAgentFailure } from '../dispatcher.js'
-import { codingVerifyLine, runCommand, taskExitGate, verifyCodingRecord } from '../executor.js'
+import { codingVerifyLine, qualitySummary, runCommand, runTaskQuality, taskExitGate, verifyCodingRecord } from '../executor.js'
 import { compareCodingFacts } from '../gitlab-facts.js'
 const INJECTED = ["applyConfig","ensureWorktree","publicState","readJsonBody","removeWorktree","sendJson","serviceOf","upsertById","workProjectOf"]
 let host = {
@@ -166,6 +166,22 @@ if (method === 'POST' && route === '/task/worktree') {
     ok: info?.path !== undefined,
     worktree: info ?? null,
     skipped: info?.skipped ?? '',
+    state: host.publicState(store),
+  })
+  return true
+}
+if (method === 'POST' && route === '/task/quality') {
+  // 项目检查：在这个项目/服务的代码目录（有 worktree 就用 worktree）里跑一次质量命令，
+  // 结果写回卡片，准出会按它拦。触发方式：卡片抽屉的「跑一次」，或专家调 studio_task_quality。
+  const body = await host.readJsonBody(req)
+  const id = String(body.id ?? '')
+  const result = await runTaskQuality(store, id, { by: String(body.by ?? '人').slice(0, 40) })
+  const snapshot = store.snapshot()
+  host.sendJson(res, 200, {
+    ok: true,
+    quality: result.quality,
+    summary: qualitySummary(snapshot, result.task),
+    gate: taskExitGate(snapshot, result.task),
     state: host.publicState(store),
   })
   return true

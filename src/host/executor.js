@@ -8,6 +8,7 @@ import { CASE_HTTP_METHODS, CODE_PREFIX, ROLE_IDS, STATUS_IDS, STATUSES, nextReq
   canonicalAuthor,
   sanitizeCoding,
 } from './domain.js'
+import { qualityTargetFor, sanitizeQuality } from './card-quality.js'
 import { casesOfTasks, impactSummary } from './impact.js'
 import { designGate } from './design.js'
 import { RUN_LOG, parseMentions } from './dispatcher.js'
@@ -16,6 +17,7 @@ import { pickRunner, registerRunner } from './runners.js'
 import { runDbCase } from './db-runner.js'
 import { emitEvent } from './events.js'
 import { runShellCase } from './shell-runner.js'
+import { runQualityCommand } from './quality-runner.js'
 import { parseFeishuDocFetch } from './lark-doc.js'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -887,6 +889,60 @@ export function requirementProgress(state, requirement) {
   }
 }
 
+// ------------------------------------------------------------ 项目检查（本地质量命令）
+
+/**
+ * 跑一次项目检查，把结果记到卡上（task.quality），并在 history 留一行。
+ * 命令配在服务的 qualityCmd（项目级兜底）；没配就明确报错，不要假装跑过了。
+ * cwd 优先卡的 worktree：检查的是这次要交的代码，不是主目录上的代码。
+ */
+export async function runTaskQuality(store, taskId, { by = 'agent' } = {}) {
+  const state = store.snapshot()
+  const task = state.tasks.find(entry => entry.id === taskId)
+  if (task === undefined) throw new Error(`no task ${taskId}`)
+  const target = qualityTargetFor(state.config, task, state.requirements ?? [])
+  if (target === null) {
+    throw new Error('这张卡所在的项目/服务还没配项目检查命令（设置 → 项目 → 项目检查，如 `npm run check`）')
+  }
+  if (target.cwd === '') {
+    throw new Error(`配了项目检查命令（${target.cmd}），但没有代码目录：请给服务或项目填本机 git 路径`)
+  }
+  const result = await runQualityCommand(target)
+  const quality = sanitizeQuality({ ...result, cmd: target.cmd, cwd: target.cwd, by, at: Date.now() })
+  await store.mutate(draft => {
+    const card = draft.tasks.find(entry => entry.id === taskId)
+    if (card === undefined) return
+    card.quality = quality
+    const detail = quality.ok
+      ? `项目检查通过：${target.cmd}（${(quality.ms / 1000).toFixed(1)}s）`
+      : `项目检查不通过：${target.cmd}（${quality.timedOut ? '超时' : `退出码 ${quality.exitCode}`}，${(quality.ms / 1000).toFixed(1)}s）`
+    card.history = [...(card.history ?? []), { at: Date.now(), by, status: card.status, note: detail }]
+  })
+  return { task: store.snapshot().tasks.find(entry => entry.id === taskId), target, quality }
+}
+
+/**
+ * 卡上的项目检查结果（给面板用）：配了什么、跑过没有、通过没有。
+ * 只读，方便抽屉和守卫共用同一份判断。
+ */
+export function qualitySummary(state, task) {
+  const target = qualityTargetFor(state?.config ?? {}, task, state?.requirements ?? [])
+  const quality = task?.quality ?? null
+  return {
+    configured: target !== null,
+    cmd: target?.cmd ?? '',
+    cwd: target?.cwd ?? '',
+    service: target?.service ?? '',
+    ran: quality !== null,
+    ok: quality?.ok === true,
+    at: quality?.at ?? 0,
+    exitCode: quality?.exitCode ?? null,
+    timedOut: quality?.timedOut === true,
+    ms: quality?.ms ?? 0,
+    stale: quality !== null && task?.coding !== null && task?.coding !== undefined && quality.at < (task.coding.updatedAt ?? 0),
+  }
+}
+
 /**
  * 卡能不能进「已完成」：验收清单全勾、没有失败用例、不处在阻塞中、并且有人签字。
  * 没过就抛错，除非显式带 override 理由（会记进状态历史）。
@@ -932,6 +988,17 @@ export function taskExitGate(state, task) {
     const reviewStatus = String(coding.review?.status ?? '')
     if (reviewStatus === '' || reviewStatus === 'pending') blockers.push('代码评审还没给出结论：让评审人用 studio_task_coding action=review 写 approved / changes_requested')
     else if (reviewStatus === 'changes_requested') blockers.push(`代码评审要改：${String(coding.review?.note ?? '').slice(0, 80) || '评审人要求修改'}`)
+  }
+  /* 项目检查（本地质量命令，如 `npm run check`）：配了就必须跑过。
+     只对「有代码改动」的卡要求（coding !== null）—— 产品卡、设计卡不该被代码命令拦住。
+     跑过但不通过一律拦：这是唯一一处「机器跑出来的证据」参与准出。 */
+  const quality = qualitySummary(state, task)
+  if (quality.configured === true) {
+    if (quality.ran !== true) {
+      if (coding !== null) blockers.push(`项目配了检查命令（${quality.cmd}），这张卡还没跑过：用 studio_task_quality 跑一次`)
+    } else if (quality.ok !== true) {
+      blockers.push(`项目检查不通过：${quality.cmd}（${quality.timedOut ? '超时' : `退出码 ${quality.exitCode}`}）`)
+    }
   }
   if (coding?.verified !== null && coding?.verified !== undefined && coding.verified.ok !== true) {
     warnings.push('代码事实核对不通过：' + String((coding.verified.missingCommits ?? []).length) + ' 个提交 / ' + String((coding.verified.missingFiles ?? []).length) + ' 个文件在仓库里找不到')

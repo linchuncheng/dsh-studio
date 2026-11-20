@@ -1,6 +1,24 @@
 # 更新日志
 
 
+## [0.9.20] — 2026-11-20
+
+### 新增
+- **项目检查（本地质量命令）进准出**：项目或服务上配一条 `qualityCmd`（如 `npm run check`），
+  卡片抽屉的「执行记录 → 项目检查」点「跑一次」，平台就在这个服务的代码目录（**有 worktree 就用 worktree**）
+  真跑这条命令，退出码、耗时、输出尾部写回卡片。配了命令的项目里，**改过代码的卡没跑过或跑挂了不许收口**。
+  这是准出里第一条「机器跑出来的证据」——在此之前，单测通过数只能靠专家自报。
+  新工具 `studio_task_quality`（第 41 个），路由 `POST /studio-api/task/quality`；
+  默认超时 120 秒，可配（夹在 10 秒 ~ 10 分钟），输出只留尾部 4000 字，不撑大轮询与快照。
+
+### 修复
+- **`studio_config_get` / `studio_config_set` 一调就崩**：`ReferenceError: publicConfig is not defined`。
+  `publicConfig` 定义在 `index.js`，`tools.js` 却裸调用且没登记进 `INJECTED` —— 专家连读一眼配置都做不到。
+- **`studio_bug_duplicate` 一调就崩**：同一类问题（`markDuplicate` 裸调用）。两个都是「把代码搬出去忘了接线」。
+- **契约测试只执行了一个写工具**，所以上面两个 bug 一直没被拦住。现在会把**每一个**已注册工具都用空参数跑一遍：
+  只放过「任务不存在」这类业务错误，`is not defined` / `Cannot access ... before initialization` 一律红。
+
+
 ## [0.9.19-next.0] — 2026-11-20（预发布，npm 通道 next）
 
 ### 说明

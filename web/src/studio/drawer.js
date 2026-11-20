@@ -83,6 +83,9 @@ function Drawer({ task, state, onClose, onChanged }) {
   const worktree = task.worktree ?? null
   const [worktreeMsg, setWorktreeMsg] = React.useState('')
   const [verify, setVerify] = React.useState({ busy: false, line: '', ok: null })
+  // 项目检查：跑本地质量命令（npm run check 之类），结果由服务端写回卡片。
+  const [qualityRun, setQualityRun] = React.useState({ busy: false, line: '' })
+  const quality = task.quality ?? null
   const caseSum = caseSummaryOf(task)
   const checkSum = checkSummaryOf(task)
   const cases = parts !== null && Array.isArray(parts.cases) ? parts.cases : (Array.isArray(task.cases) ? task.cases : [])
@@ -547,8 +550,23 @@ function Drawer({ task, state, onClose, onChanged }) {
       setVerify({ busy: false, line: cause instanceof Error ? cause.message : String(cause), ok: false })
     }
   }
-  // 从 GitLab 核对：拉 MR 的 changes 与流水线，和卡上自报的值比一遍（没配 GitLab 会直接提示）。
-  // 设计评审：两步录入（链接 + 状态），存完刷新卡片。闸门在服务端，这里只管填。
+  // 项目检查：在项目目录（有 worktree 就用它）里跑一次本地质量命令，结果写回卡片并参与准出。
+  const runQuality = async () => {
+    setQualityRun({ busy: true, line: '' })
+    try {
+      const result = await api('/task/quality', { id: task.id, by: '人' })
+      const last = result.quality ?? {}
+      const exit = last.exitCode === null || last.exitCode === undefined ? '' : ` · 退出码 ${last.exitCode}`
+      setQualityRun({
+        busy: false,
+        line: `${last.ok === true ? '✅ 通过' : '❌ 不通过'}${last.timedOut === true ? '（超时）' : ''}${exit} · ${Math.round((Number(last.ms) || 0) / 100) / 10}s`,
+      })
+      await onChanged()
+    } catch (cause) {
+      setQualityRun({ busy: false, line: cause instanceof Error ? cause.message : String(cause) })
+    }
+  }
+  // 从 GitLab 核对：拉 MR 的 changes 与流水线，和卡上自报的值比一遍（没配 GitLab 会直接提示）。  // 设计评审：两步录入（链接 + 状态），存完刷新卡片。闸门在服务端，这里只管填。
   const editDesign = async () => {
     const link = await promptDialog('设计稿链接（Figma / 蓝湖 / 图片都行）', { title: '设计评审', defaultValue: task.design?.link ?? '' })
     if (link === null) return
@@ -953,6 +971,51 @@ function Drawer({ task, state, onClose, onChanged }) {
               ),
             ),
           worktreeMsg && worktree === null ? h('div', { className: 'ds-hint' }, worktreeMsg) : null,
+        ),
+      ),
+      h('div', { className: 'ds-sec', style: hideWhen('coding') },
+        h('div', { className: 'ds-sec-head' }, '项目检查',
+          h('span', { className: 'ds-hint' }, '在这个项目的代码目录（有 worktree 就用它）里跑一条本地质量命令')),
+        h('div', { className: 'ds-sec-body' },
+          (() => {
+            const project = (state.config?.projects ?? []).find(item => item.id === task.project)
+            const services = project?.services ?? []
+            const service = services.find(item => item.id === task.service) ?? (services.length === 1 ? services[0] : undefined)
+            const cmd = String(service?.qualityCmd ?? '').trim() || String(project?.qualityCmd ?? '').trim()
+            if (cmd === '') {
+              return h('div', { className: 'ds-empty' }, '这个项目还没配检查命令。到「设置 → 平台 → 项目」填一条（如 npm run check）；配了以后，改过代码的卡要跑过它才能收口。')
+            }
+            return h('div', { className: 'ds-code-box' },
+              h('div', { className: 'ds-code-head' },
+                h(ChipField, {
+                  className: 'ds-chip',
+                  'data-review': quality === null ? 'pending' : (quality.ok === true ? 'approved' : 'changes_requested'),
+                }, quality === null ? '没跑过' : (quality.ok === true ? '通过' : '不通过')),
+                h('div', { className: 'ds-grow' },
+                  h('div', { className: 'ds-code-line' }, cmd),
+                  quality === null
+                    ? null
+                    : h('div', { className: 'ds-hint' },
+                      `${fmtTime(quality.at)} · ${quality.by || '人'} · ${(Number(quality.ms) || 0) / 1000}s` +
+                      (quality.exitCode === null ? '' : ` · 退出码 ${quality.exitCode}`) +
+                      (quality.timedOut === true ? ' · 超时' : '') +
+                      (quality.cwd ? ` · ${quality.cwd}` : '')),
+                ),
+                h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy || qualityRun.busy, onClick: () => void runQuality() },
+                  qualityRun.busy ? '跑检查中…' : (quality === null ? '跑一次' : '再跑一次')),
+              ),
+              qualityRun.line === ''
+                ? null
+                : h('div', { className: 'ds-hint', 'data-quality': quality?.ok === true ? 'ok' : 'bad', style: { marginTop: 6 } }, qualityRun.line),
+              quality === null || quality.output === ''
+                ? null
+                : h('pre', {
+                  className: 'ds-hint',
+                  'data-quality': quality.ok === true ? 'ok' : 'bad',
+                  style: { whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 180, overflow: 'auto', margin: '6px 0 0' },
+                }, String(quality.output).slice(-1500)),
+            )
+          })(),
         ),
       ),
       h('div', { className: 'ds-sec', style: hideWhen('coding') },

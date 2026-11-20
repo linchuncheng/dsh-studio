@@ -7,7 +7,7 @@ import {
 } from './domain.js'
 import {
   buildDashboard, commentTask, ensureReqFolder, requirementMatrix, requirementProgress, requirementRollup,
-  runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask,
+  runSuite, runTaskCases, runTaskQuality, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask,
 } from './executor.js'
 import { runSummary } from './dispatcher.js'
 const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","markDuplicate","publicConfig","recordAudit","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
@@ -1080,6 +1080,27 @@ export function registerTools(ctx, store) {
       const task = snapshot.tasks.find(entry => entry.id === args.id)
       const summary = codingSummary(task.coding)
       return `${task.id} 执行记录：${summary === '' ? '（空）' : summary}`
+    },
+  }))
+
+  register(defineStudioTool({
+    name: 'studio_task_quality',
+    description: 'Run the project quality command on a task (e.g. `npm run check`) inside its worktree, record the exit code and output tail on the card. This is the only machine-produced evidence in the exit gate: a project with a configured command cannot be signed off while it fails or has never been run. Call it after coding, before review.',
+    parameters: {
+      id: { type: 'string', required: true, description: 'Task id.' },
+      by: { type: 'string', description: 'Who triggered the run (your expert name).' },
+    },
+    async execute(args) {
+      const by = String(args.by ?? 'agent').slice(0, 40)
+      const { target, quality } = await runTaskQuality(store, String(args.id ?? ''), { by })
+      const lines = [
+        `${quality.ok ? '✅ 通过' : '❌ 不通过'}：${target.cmd}`,
+        `目录：${target.cwd === '' ? '(没有配代码目录)' : target.cwd}${target.service === '' ? '' : ` · 服务 ${target.service}`} · 命令来自${target.source === 'service' ? '服务' : '项目'}配置`,
+        `耗时 ${(quality.ms / 1000).toFixed(1)}s${quality.timedOut ? '（超时被终止）' : ''}${quality.exitCode === null ? '' : ` · 退出码 ${quality.exitCode}`}`,
+      ]
+      if (quality.output !== '') lines.push('输出尾部：\n```\n' + quality.output.slice(-1500) + '\n```')
+      if (!quality.ok) lines.push('准出会一直拦到它通过；修完再跑一次 studio_task_quality。')
+      return lines.join('\n')
     },
   }))
 

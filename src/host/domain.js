@@ -1,5 +1,6 @@
 /** dsh-studio 的领域层：板列、卡片/需求/发布的数据形状与清洗、默认配置、编号生成。纯函数，可单测。 */
 import { sanitizeAcceptanceItem } from './acceptance.js'
+import { qualityFields } from './card-quality.js'
 import { resolveCaseResult } from './case-strength.js'
 import { createHash, randomBytes } from 'node:crypto'
 import { sanitizeDbCase } from './db-runner.js'
@@ -712,6 +713,8 @@ export function sanitizeServices(raw, legacyPath) {
       repoId: String(item.repoId ?? '').trim().slice(0, 60),
       repoPath: String(item.repoPath ?? '').trim().slice(0, 400),
       baseBranch: String(item.baseBranch ?? '').trim().slice(0, 120) || 'main',
+      // 项目检查命令（服务优先、项目兜底）与超时：形状在 card-quality.js，别在这里抄第二份。
+      ...qualityFields(item),
       /** 本服务依赖哪些服务先完成（同一项目里的服务 id，不跨项目）。 */
       dependsOn: (Array.isArray(item.dependsOn) ? item.dependsOn : [])
         .map(dep => String(dep ?? '').trim().slice(0, 60))
@@ -771,6 +774,8 @@ export function sanitizeWorkProjects(input) {
       /** 这个项目的代码在本机哪个目录（worktree 隔离从这里切分支）。 */
       repoPath: String(raw.repoPath ?? '').trim().slice(0, 400),
       baseBranch: String(raw.baseBranch ?? '').trim().slice(0, 120) || 'main',
+      // 项目级兜底：服务没配时用这条（单仓库项目一般只配这一个）。
+      ...qualityFields(raw),
     })
   }
   return out
@@ -1137,7 +1142,6 @@ export function publicArtifact(artifact) {
   const content = String(artifact?.content ?? '')
   return { ...artifact, content: '', contentLength: content.length }
 }
-
 
 /** 交付物：老数据可能是纯字符串，统一升级成一条记录。 */
 export function sanitizeArtifact(raw, index) {

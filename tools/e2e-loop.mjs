@@ -62,6 +62,30 @@ async function runOnce(round) {
       { title: 'pnpm test', expected: '没有失败', shell: { command: 'pnpm test', expectExit: 0, expectContains: 'fail 0', timeoutMs: 180000 } },
       { title: 'pnpm build', expected: 'built in', shell: { command: 'pnpm build', expectExit: 0, expectContains: 'built in', timeoutMs: 180000 } },
     ] })
+    /* 项目检查（本地质量命令）参与准出：配一条能过的命令 → 跑过；换成会挂的 → 准出被拦；最后还原。
+       cwd 走这张卡的 worktree，所以必须在 ensureWorktree 之后跑。
+       这一步是「唯一一处机器跑出来的证据」进准出的回归——它坏了说明门禁又退化成自报了。 */
+    if (card === cards[0]) {
+      const project = (await state()).config.projects.find(item => item.id === PROJECT)
+      if (project === undefined) {
+        step('项目检查', false, '项目 ' + PROJECT + ' 不存在，没法配检查命令')
+      } else {
+        const saveCmd = cmd => post('/projects/save', { project: { ...project, qualityCmd: cmd, qualityTimeoutMs: 60000 } })
+        await saveCmd('node --version')
+        const qualityOk = await post('/task/quality', { id: card.id, by: '产品' })
+        step('项目检查：跑过了', qualityOk.body.quality?.ok === true && String(qualityOk.body.quality?.cmd ?? '') === 'node --version',
+          '退出码 ' + String(qualityOk.body.quality?.exitCode) + ' · ' + String(qualityOk.body.quality?.ms ?? '?') + 'ms')
+        await saveCmd('node -e "process.exit(3)"')
+        const qualityBad = await post('/task/quality', { id: card.id, by: '产品' })
+        const gateBlocked = (qualityBad.body.gate?.blockers ?? []).some(text => String(text).includes('项目检查不通过'))
+        step('项目检查：跑挂了拦准出', qualityBad.body.quality?.ok === false && gateBlocked,
+          JSON.stringify((qualityBad.body.gate?.blockers ?? []).slice(0, 2)))
+        // 还原成能过的状态：这张卡后面还要推到「已完成」
+        await saveCmd('node --version')
+        await post('/task/quality', { id: card.id, by: '产品' })
+        await saveCmd(String(project.qualityCmd ?? ''))
+      }
+    }
     for (const status of ['design', 'dev_ready', 'dev', 'review']) await post('/task/update', { id: card.id, status })
     await new Promise(r => setTimeout(r, 2500))
     const reviewed = (await state()).tasks.find(t => t.id === card.id)

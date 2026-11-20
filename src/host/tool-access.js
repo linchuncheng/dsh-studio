@@ -33,6 +33,7 @@ export const TOOL_ACCESS = {
   studio_task_generate_cases: 'write',
   studio_task_artifact: 'write',
   studio_task_coding: 'write',
+  studio_task_quality: 'write',
   studio_task_signoff: 'write',
   studio_requirement_save: 'write',
   studio_requirement_signoff: 'write',
