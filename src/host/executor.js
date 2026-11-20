@@ -1345,11 +1345,16 @@ export async function syncArtifact(store, taskId, artifactId) {
   if (String(folder.token ?? '').trim() === '') throw new Error(folder.error ?? '创建云盘文件夹失败')
   // 按产物类型落到子文件夹（01 需求文档 / 02 设计文档 …）；子文件夹没建好就退回需求根目录
   let target = folder
+  let kindError = ''
   if (requirement !== undefined && String(artifact.kind ?? '') !== '') {
     try {
-      const kindFolder = await ensureKindFolder(store, requirement.id, artifact.kind)
+      const kindFolder = await ensureKindFolder(store, requirement.id, artifact.kind, larkJson)
       if (String(kindFolder.token ?? '').trim() !== '') target = { ...folder, ...kindFolder }
-    } catch { /* 建子目录失败不该让整条交付物同步失败：退回需求根目录 */ }
+    } catch (error) {
+      // 建子目录失败不该让整条交付物同步失败（退回需求根目录），但**原因必须留下**：
+      // 以前这里是个空 catch，真机上「产物没进 01 需求文档」查了半天没头绪。
+      kindError = String(error?.message ?? error).slice(0, 200)
+    }
   }
   const prefix = task.code.length > 0 ? `${task.code}-` : `${task.id}-`
   const name = safeFileName(`${prefix}${ARTIFACT_FILE_LABEL[artifact.kind] ?? '交付物'}-${artifact.title}.md`)
@@ -1380,7 +1385,7 @@ export async function syncArtifact(store, taskId, artifactId) {
       url: String(result.data.url ?? artifact.doc?.url ?? ''),
       name: String(result.data.file_name ?? artifact.doc?.name ?? name),
       at: Date.now(),
-      error: '',
+      error: kindError,
     }
     await store.mutate(draft => {
       const target = draft.tasks.find(item => item.id === taskId)?.artifacts?.find(item => item.id === artifactId)

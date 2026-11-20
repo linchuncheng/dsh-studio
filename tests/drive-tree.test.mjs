@@ -184,3 +184,16 @@ test('cmd 参数引号：| & 空格 都要包起来（否则 cmd.exe 把 & | 当
   assert.equal(win.file, 'cmd.exe')
   assert.deepEqual(win.argv, ['/c', 'lark-cli', '--name', '"a b"'])
 })
+
+test('漏传 larkJson 要在调用点报清楚，而不是变成 "larkJson is not a function" 被上层吞掉', async () => {
+  // 2026-11-20 真机：syncArtifact 漏传第四个参数 → TypeError 被 catch 当成"云盘不可用"，
+  // 交付物就一直落在需求根目录，查了两轮才定位。
+  await withStore(async store => {
+    await store.mutate(state => {
+      state.requirements[0].folder = { token: 'REQ', url: '', name: 'x', at: 1, error: '', kinds: {} }
+    })
+    await assert.rejects(() => ensureKindFolder(store, 'req-1', 'design'), /ensureKindFolder 需要传入 larkJson/)
+    await assert.rejects(() => ensureRequirementFolder(store, 'req-1'), /ensureRequirementFolder 需要传入 larkJson/)
+    await assert.rejects(() => deleteRequirementFolder(store, 'req-1'), /deleteRequirementFolder 需要传入 larkJson/)
+  })
+})

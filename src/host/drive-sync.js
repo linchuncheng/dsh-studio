@@ -5,12 +5,22 @@
 import { artifactFolderName, findFolder, projectFolderName, requirementFolderNameOf } from './drive-folders.js'
 
 const itemsOf = data => data?.items ?? data?.files ?? []
+
+/**
+ * larkJson 由调用方传入（避免与 executor 成环）。**漏传就会在调用点炸成
+ * 「larkJson is not a function」并被上层 catch 误当成"云盘暂时不可用"** ——
+ * 2026-11-20 真机上交付物就一直没进「01 需求文档」子目录，查了两轮才定位到是漏传参数。
+ */
+function needLark(larkJson, name) {
+  if (typeof larkJson !== 'function') throw new Error(`${name} 需要传入 larkJson（云盘调用入口），当前是 ${typeof larkJson}`)
+}
 // 不要加 --page-all：它会把『[page 1] fetching...』打到 stdout，和 JSON 混在一起导致解析失败（真机踩过）。
 // 一个父目录下 200 条足够；真超了也只是复用不上、会多建一个目录，不会出错。
 const driveArgs = parent => ['drive', 'files', 'list', '--folder-token', parent, '--page-size', '200']
 
 /** 项目级文件夹：缓存在 config.feishu.projectFolders[projectId]，没挂项目落「未归属项目」。 */
 export async function ensureProjectFolder(store, requirement, larkJson) {
+  needLark(larkJson, 'ensureProjectFolder')
   const state = store.snapshot()
   const root = String(state.config.feishu.driveFolder ?? '').trim()
   if (root === '') throw new Error('还没配置飞书云盘根文件夹（设置 → 飞书 · 云盘根文件夹）')
@@ -40,6 +50,7 @@ export async function ensureProjectFolder(store, requirement, larkJson) {
 
 /** 需求文件夹（建在项目文件夹下面）。已建过就直接返回缓存的。 */
 export async function ensureRequirementFolder(store, requirementId, larkJson) {
+  needLark(larkJson, 'ensureRequirementFolder')
   const state = store.snapshot()
   const requirement = state.requirements.find(item => item.id === requirementId)
   if (requirement === undefined) throw new Error(`no requirement ${requirementId}`)
@@ -79,6 +90,7 @@ export async function ensureRequirementFolder(store, requirementId, larkJson) {
 
 /** 需求文件夹里按产物类型分的子目录（01 需求文档 / 02 设计文档 …），按需创建并缓存。 */
 export async function ensureKindFolder(store, requirementId, kind, larkJson) {
+  needLark(larkJson, 'ensureKindFolder')
   const name = artifactFolderName(kind)
   const state = store.snapshot()
   const requirement = state.requirements.find(item => item.id === requirementId)
@@ -113,6 +125,7 @@ export async function ensureKindFolder(store, requirementId, kind, larkJson) {
  * 200 个同名文件夹就是这么攒出来的。删需求时带上 deleteFolder 才动云盘（默认不动，避免误删）。
  */
 export async function deleteRequirementFolder(store, requirementId, larkJson) {
+  needLark(larkJson, 'deleteRequirementFolder')
   const state = store.snapshot()
   const requirement = state.requirements.find(item => item.id === requirementId)
   const folder = requirement?.folder ?? {}
