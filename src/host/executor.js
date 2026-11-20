@@ -371,6 +371,9 @@ export async function runTaskCases(store, taskId, options = {}) {
   }
 
   const by = String(options.by ?? '系统').slice(0, 40)
+  /* shell / db 用例不需要测试环境：env 可能是 undefined，落库时读 env.id 会直接 TypeError
+     （整卡跑 shell 用例报 Cannot read properties of undefined (reading 'id')）。 */
+  const envId = env === undefined ? '' : String(env.id ?? '')
   const results = []
   // 串行跑，环境不稳时并发只会让失败更难归因。
   for (const item of targets) {
@@ -393,7 +396,7 @@ export async function runTaskCases(store, taskId, options = {}) {
           note: note.slice(0, 400),
           by,
           at: Date.now(),
-          lastRun: { at: Date.now(), ok: outcome.ok, status: outcome.status, ms: outcome.ms, error: outcome.error, preview: outcome.preview, response: outcome.response ?? '', env: env.id, steps: outcome.steps ?? [] },
+          lastRun: { at: Date.now(), ok: outcome.ok, status: outcome.status, ms: outcome.ms, error: outcome.error, preview: outcome.preview, response: outcome.response ?? '', env: envId, steps: outcome.steps ?? [] },
         }
       })
       card.updatedAt = Date.now()
@@ -404,7 +407,7 @@ export async function runTaskCases(store, taskId, options = {}) {
     id: `run-${randomBytes(3).toString('hex')}`,
     at: Date.now(),
     by,
-    env: env.id,
+    env: envId,
     results,
   })
   await store.mutate(draft => {
@@ -438,12 +441,13 @@ export async function runTaskCases(store, taskId, options = {}) {
   await commentTask(
     store,
     task.id,
-    `接口测试已在环境「${env.name}」跑完：${results.length} 条，通过 ${passed}，不通过 ${results.length - passed}。`
+    `接口测试已在环境「${env === undefined ? '（未配置测试环境）' : (env.name || env.id)}」跑完：${results.length} 条，通过 ${passed}，不通过 ${results.length - passed}。`
       + (results.length - passed > 0 ? `\n\n不通过的：\n${results.filter(item => !item.ok).map(item => `- ${item.title}：${item.error}`).join('\n')}` : ''),
     by,
     'agent',
   )
-  return { run, env: { id: env.id, name: env.name, baseUrl: env.baseUrl }, bugs, state: host.publicState(store) }
+  const envSummary = env === undefined ? { id: '', name: '', baseUrl: '' } : { id: env.id, name: env.name, baseUrl: env.baseUrl }
+  return { run, env: envSummary, bugs, state: host.publicState(store) }
 }
 
 /**
