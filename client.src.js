@@ -582,7 +582,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-span-12 { grid-column:span 12; }
 @media (max-width:1180px) { .ds-span-3, .ds-span-4, .ds-span-5 { grid-column:span 6; } .ds-span-7, .ds-span-8, .ds-span-9 { grid-column:span 12; } }
 @media (max-width:760px) { .ds-an-grid > .ds-panel { grid-column:span 12; } }
-.ds-an-sec { display:flex; align-items:baseline; gap:10px; margin:6px 0 -2px; padding-bottom:2px; font-size:12px; font-weight:600; letter-spacing:.02em; opacity:.8; }
+.ds-an-sec { display:flex; align-items:baseline; gap:10px; margin:14px 0 8px; padding-bottom:2px; font-size:12px; font-weight:600; letter-spacing:.02em; opacity:.8; }
 .ds-an-sec .ds-hint { margin-left:auto; font-weight:400; opacity:.75; }
 /* 栅格里已由 gap 控制间距，panel 自带的 margin-bottom 会把行高顶歪 */
 .ds-an-grid > .ds-panel { margin-bottom:0; }

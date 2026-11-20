@@ -2112,6 +2112,10 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+  /* 这一节自己没有下边距、面板只有 margin-bottom，于是「整体情况」的底边和紧跟的「流程与产出」
+     面板是 0 距离：落单的那张 KPI 卡直接压在面板上边线上（真机 2414px 宽量到 gap=0）。
+     统一成和面板间距相同的 14px，几组块之间就有了同一套节奏。 */
+  margin-bottom: 14px;
 }
 [data-dsh-studio] .ds-kpi-title {
   font-size: 12px;
@@ -2124,18 +2128,33 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
   font-size: 24px;
   line-height: 1.15;
 }
-[data-dsh-studio] .ds-kpi-primary {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+/* KPI 不写死 4 列：工作台这两组各 5 张卡（逾期/阻塞/停摆/缺陷超时/准出被拦、在办卡/流水线失败/
+   集成异常/强制放行/AI 在跑），固定 4 列必然落单一张；落单那张在第二节末尾，底边正好压在
+   下面的「流程与产出」面板上（真机 2414px 宽量到 gap=0）。
+   宽屏一行 5 张，窄屏退成 3 列 → 2 列，不留孤零零的第 5 张。效能页的 7 张卡不受影响。 */
+[data-dsh-studio] .ds-kpi-section .ds-kpi-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
-@media (max-width: 980px) {
-  [data-dsh-studio] .ds-kpi-primary {
+@media (max-width: 1200px) {
+  [data-dsh-studio] .ds-kpi-section .ds-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  [data-dsh-studio] .ds-kpi-section .ds-kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+@media (max-width: 480px) {
+  [data-dsh-studio] .ds-kpi-section .ds-kpi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 
-/* 两个 KPI 区块之间给一点呼吸：8px 的 gap 只够管区内，区间会贴在一起 */
+/* 两个 KPI 区块之间靠上面那条 margin-bottom 撑开；这里只把历史上那条 6px 归零，
+   免得两处分间距叠出 20px。 */
 [data-dsh-studio] .ds-kpi-section + .ds-kpi-section {
-  margin-top: 6px;
+  margin-top: 0;
 }
 
 /* ---------------------------------------------------- 顶栏「⋯」菜单 --- */
