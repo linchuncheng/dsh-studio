@@ -9,6 +9,7 @@ import test from 'node:test'
 import { artifactFolderName, findFolder, projectFolderName, requirementFolderNameOf, safeFolderName } from '../src/host/drive-folders.js'
 import { deleteRequirementFolder, ensureKindFolder, ensureProjectFolder, ensureRequirementFolder } from '../src/host/drive-sync.js'
 import { larkUploadArgs } from '../src/host/lark-upload.js'
+import { commandArgs, quoteForCmd } from '../src/host/cmd-args.js'
 import { SecretStore, StudioStore } from '../src/host/store.js'
 
 test('项目文件夹名：KEY + 名称，没项目落「未归属项目」，非法字符替换', () => {
@@ -167,4 +168,19 @@ test('上传参数：--file 只给文件名（绝对路径会被 lark-cli 判 un
   // 传进来的名字带目录时也只取文件名
   assert.equal(larkUploadArgs({ dir: 'C:/tmp/y', name: 'C:/tmp/y/b.md', existing: 'T' }).args.at(-1), 'b.md')
   assert.throws(() => larkUploadArgs({ dir: '', name: 'a.md' }), /临时目录/)
+})
+
+test('cmd 参数引号：| & 空格 都要包起来（否则 cmd.exe 把 & | 当语法截断命令）', () => {
+  // 真机两次踩到：page-token 带 |、交付物标题带 &，命令都在那里断掉
+  assert.deepEqual(quoteForCmd(['--page-size', '200']), ['--page-size', '200'], '普通参数不加引号')
+  assert.deepEqual(quoteForCmd(['--page-token', 'v3|McKxW']), ['--page-token', '"v3|McKxW"'])
+  assert.deepEqual(quoteForCmd(['--file', '退款&对账.md']), ['--file', '"退款&对账.md"'])
+  assert.deepEqual(quoteForCmd(['--name', 'REQ-001 积分抵扣']), ['--name', '"REQ-001 积分抵扣"'], '带空格也要加（verbatim 模式）')
+  assert.deepEqual(quoteForCmd(['']), ['""'], '空参数要保住，别被 cmd 吞掉')
+  // 非 Windows 不加 shell，也不加引号
+  const posix = commandArgs('lark-cli', ['--name', 'a b'], 'darwin')
+  assert.deepEqual(posix, { file: 'lark-cli', argv: ['--name', 'a b'] })
+  const win = commandArgs('lark-cli', ['--name', 'a b'], 'win32', 'cmd.exe')
+  assert.equal(win.file, 'cmd.exe')
+  assert.deepEqual(win.argv, ['/c', 'lark-cli', '--name', '"a b"'])
 })

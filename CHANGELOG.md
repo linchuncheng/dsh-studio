@@ -1,6 +1,30 @@
 # 更新日志
 
 
+## [0.9.45] — 2026-11-20
+
+### 修复：Windows 上命令参数里的 `&` `|` 会把外部命令截断
+
+经 `cmd.exe` 调 lark-cli 时（npm 装的 CLI 是 `.cmd` 壳，只能这么调），cmd 会把
+`& | < > ^ %` 当语法字符。真机两次踩到：
+
+1. 云盘列表的 `--page-token` 里带 `|` → cmd 当成管道，命令直接废掉；
+2. 交付物标题带 `&`（「退款&对账」）→ 上传命令在 `&` 处断掉。
+
+- 新增 `src/host/cmd-args.js`：`quoteForCmd` / `commandArgs` —— 含空白或 cmd 语法字符的参数逐个加引号，
+  空参数用 `""` 保住；
+- `runCommand` 在 cmd 路径上开启 `windowsVerbatimArguments`（否则 Node 自己的转义会和引号打架，
+  实测 `|` 仍会断），非 Windows 路径行为不变。
+
+### 数据维护
+把云盘根目录里历次测试残留的 `REQ-*` 文件夹清掉了（共 283 个，都在飞书回收站可恢复）；
+根目录现在只剩新结构的「未归属项目」。清理清单见 `tmp/drive-cleanup-manifest.json`（未入库）。
+
+### 测试
+`tests/drive-tree.test.mjs` 增加一条：`|`、`&`、空格、空参数各自的引号结果，以及
+`commandArgs` 在 win32 / 非 win32 下的差异。`npm test` 302 条全绿（本地 + `TZ=UTC`）。
+
+
 ## [0.9.44] — 2026-11-20
 
 ### 修复：交付物同步到云盘全线失败（lark-cli 路径白名单）

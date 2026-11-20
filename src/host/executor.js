@@ -14,6 +14,7 @@ import { casesOfTasks, impactSummary } from './impact.js'
 import { designGate, designGateOffNote } from './design.js'
 import { requirementFolderNameOf } from './drive-folders.js'
 import { larkUploadArgs } from './lark-upload.js'
+import { commandArgs } from './cmd-args.js'
 import { ensureKindFolder, ensureRequirementFolder } from './drive-sync.js'
 import { isStalled } from './dispatch-state.js'
 import { RUN_LOG, parseMentions } from './dispatcher.js'
@@ -1152,13 +1153,14 @@ export function buildDashboard(state) {
 export function runCommand(command, args, timeoutMs = 20000, options = {}) {
   return new Promise(resolvePromise => {
     let child
-    // Windows 上 npm 装的 CLI（lark-cli）是 .cmd 壳，spawn 直接执行会 ENOENT——
-    // 本地开发环境会一直报「服务器上没有可用的 lark-cli」。交给 cmd.exe 转一手，参数里没有空格依赖。
+    // Windows 上 npm 装的 CLI（lark-cli）是 .cmd 壳，spawn 直接执行会 ENOENT，必须经 cmd.exe；
+    // 而 cmd.exe 会把 & | < > ^ % 当语法字符，所以参数要逐个加引号（见 cmd-args.js，真机两次踩过）。
     const viaCmd = process.platform === 'win32' && command === 'lark-cli'
     try {
-      child = viaCmd
-        ? spawn(process.env.ComSpec ?? 'cmd.exe', ['/c', command, ...args], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], cwd: options.cwd })
-        : spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'], cwd: options.cwd })
+      const plan = viaCmd ? commandArgs(command, args) : { file: command, argv: args }
+      // windowsVerbatimArguments：由我们自己给参数加引号（否则 Node 的转义会和 cmd 的语法打架，
+      // 实测 `|` 仍然会被当管道 → 命令被截断）。非 cmd 路径保持默认。
+      child = spawn(plan.file, plan.argv, { windowsHide: viaCmd, windowsVerbatimArguments: viaCmd, stdio: ['ignore', 'pipe', 'pipe'], cwd: options.cwd })
     } catch (error) {
       resolvePromise({ ok: false, code: -1, stdout: '', stderr: String(error?.message ?? error) })
       return
