@@ -79,3 +79,13 @@ test('评审闸门：进待测试之前代码评审必须有结论（默认开�
   assert.equal(reviewGate({ reviewGate: { enabled: false } }, pending, 'test').needed, false, '显式关掉才不拦')
   assert.equal(reviewGate({ reviewGate: { enabled: true, columns: ['accept'] } }, pending, 'test').needed, false, '换列也认')
 })
+
+test('评审闸门配置：默认开、显式 false 才关、columns 回落 test', async () => {
+  const { sanitizeReviewGate } = await import('../src/host/domain.js')
+  assert.deepEqual(sanitizeReviewGate(undefined), { enabled: true, columns: ['test'] })
+  assert.deepEqual(sanitizeReviewGate(null), { enabled: true, columns: ['test'] })
+  assert.equal(sanitizeReviewGate({ enabled: false }).enabled, false, '只有显式 false 才算关')
+  assert.equal(sanitizeReviewGate({ enabled: 'false' }).enabled, true, '字符串不算关，免得配错静默关掉闸门')
+  assert.deepEqual(sanitizeReviewGate({ columns: [] }).columns, ['test'], '空数组回落到默认列')
+  assert.deepEqual(sanitizeReviewGate({ columns: ['accept', 'done'] }).columns, ['accept', 'done'])
+})

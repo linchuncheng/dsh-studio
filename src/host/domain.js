@@ -455,10 +455,7 @@ export function mergeConfig(saved) {
       return { enabled: merged.enabled === true, columns: (Array.isArray(merged.columns) ? merged.columns : ['dev']).map(String).slice(0, 8) }
     })(),
     // 评审闸门：默认开，只有显式 false 才算关（和 quality.js 的 reviewGate 判据保持一致）。
-    reviewGate: (() => {
-      const merged = { ...base.reviewGate, ...(saved.reviewGate !== null && typeof saved.reviewGate === 'object' ? saved.reviewGate : {}) }
-      return { enabled: merged.enabled !== false, columns: (Array.isArray(merged.columns) && merged.columns.length > 0 ? merged.columns : ['test']).map(String).slice(0, 8) }
-    })(),
+    reviewGate: sanitizeReviewGate({ ...base.reviewGate, ...(saved.reviewGate !== null && typeof saved.reviewGate === 'object' ? saved.reviewGate : {}) }),
     environments: (() => {
       const list = sanitizeDeployEnvs(saved.environments)
       return list.length > 0 ? list : defaultDeployEnvs()
@@ -467,6 +464,15 @@ export function mergeConfig(saved) {
     ldap: sanitizeLdap(saved.ldap),
     localAuth: sanitizeLocalAuth(saved.localAuth),
     users: sanitizeUsers(saved.users),
+  }
+}
+
+/** 评审闸门：默认开（只有显式 false 才算关）。默认值 / mergeConfig / applyConfig / 运行时判据共用这一份。 */
+export function sanitizeReviewGate(raw) {
+  const input = raw !== null && typeof raw === 'object' ? raw : {}
+  return {
+    enabled: input.enabled !== false,
+    columns: (Array.isArray(input.columns) && input.columns.length > 0 ? input.columns : ['test']).map(String).slice(0, 8),
   }
 }
 

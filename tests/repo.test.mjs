@@ -1237,3 +1237,12 @@ test('state: 计数用原对象算，不许传给剥掉数组的 rest（issue #1
   assert.ok(!/\.\.\.publicComments\(rest\)/.test(source), '不能把 rest 传给统计函数')
   assert.ok(!/\.\.\.publicChecklist\(rest\)/.test(source), '不能把 rest 传给统计函数')
 })
+
+test('config: reviewGate 四处齐活（默认值 / mergeConfig / publicConfig / applyConfig patch）', () => {
+  const domain = read('src/host/domain.js')
+  const index = read('index.js')
+  assert.match(domain, /reviewGate: \{ enabled: true, columns: \['test'\] \}/, '默认配置里要有（否则默认关）')
+  assert.match(domain, /reviewGate: sanitizeReviewGate\(/, 'mergeConfig 里要归一（否则重启被抹掉）')
+  assert.match(index, /reviewGate: config\.reviewGate,/, 'publicConfig 要下发（否则面板看不到）')
+  assert.match(index, /patch\.reviewGate !== undefined/, 'applyConfig 的 patch 白名单要认（否则 /config 返回 200 但什么都没改）')
+})
