@@ -89,8 +89,15 @@ AGENTS.md 列出每个 host 模块、config 白名单不漏键）每一条都对
 | 4 | **审核完成** | 自查清单 + 证据贴进 PR 正文；有第二个人时由他 approve。**评审没过不许提 PR** |
 | 5 | **提 PR** | `gh pr create`，正文写现象/根因/验证方式 + 检查清单结果 |
 | 6 | **合并主干 → 构建与发布** | **合并要用户确认**（agent 只提 PR，不自作主张 merge）；合并后 CI 必须绿；再打 tag `vX.Y.Z` 触发 `release.yml` 与镜像流水线，最后 `npm run verify:release` 必须「发版一致」 |
+| 7 | **合并完立刻清理** | 分支已进 `main` 就删干净：远程分支、本地分支、工作树三者都要清（见下） |
 
 - **不许直接往 `main` 推代码**：改了就在 worktree 分支上提交、开 PR。
+- **合并即清理**（PR 一合并就做，不要攒）：
+  · 合并时带 `--delete-branch`：`gh pr merge <n> --merge --delete-branch`（远程 + 本地一起删）；
+  · 工作树先摘再删：`git worktree remove .agents/worktrees/<name> --force`，然后 `git worktree prune`；
+  · 本地分支若还在：`git branch -d <branch>`（用 `-d` 而不是 `-D`，它拒绝删未合并的分支）；
+  · 落单的远程分支：`git push origin --delete <branch>`；
+  · **删之前先证明它已合并**：`git merge-base --is-ancestor <sha> origin/main`（`backup/*` 这类备份分支通常**未合并**，不要当合并残留删掉）。
 - **会话级隔离**：每开一个会话，开发就在它自己的工作树里做（会话一开始先 `create_worktree` 或 `git worktree add`），不要在主检出上改。
 - **功能级隔离**：同一个会话里做**不同功能**时，各自开一个工作树（分支名按功能取，如 `feat/x`、`docs/y`），别把两个功能塞进同一个分支。
   同一个功能的连续小改（修笔误、补一行测试）继续用**当前那个**工作树，不必每句话都新开——隔离的单位是「功能」，不是「消息」。

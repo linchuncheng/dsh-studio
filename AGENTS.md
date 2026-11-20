@@ -203,6 +203,9 @@ GIT_SSH_COMMAND="ssh -p 443" git push
 - **提 PR 之前必须先完成评审**（自查清单 + 证据贴进 PR 正文；有第二个人时由他 approve）。评审没完成就提 PR，等于把评审推迟到合并前一刻。
 - 分支上改完就推分支（`git push -u origin <branch>`），PR 合并由人（或 `gh pr merge`）完成，**合并前 CI 必须绿**。
 - **合并进 `main` 之后才打 tag**：`vX.Y.Z` 触发 `release.yml`（npm 发布 + GitHub Release）与 `publish-github-packages.yml`，发完用 `npm run verify:release` 核对「发版一致」。
+- **合并即清理分支与工作树**：`gh pr merge <n> --merge --delete-branch`；然后 `git worktree remove .agents/worktrees/<name> --force && git worktree prune`；
+  本地残留用 `git branch -d`（不用 `-D`），远端残留用 `git push origin --delete`。删之前先 `git merge-base --is-ancestor <sha> origin/main` 证明已合并 ——
+  `backup/*` 这类备份分支**未合并**，按「备份」对待，不要当合并残留删掉。
 - 提交前确保根 `client.js` 与 `dist/client.js` 一致（clone 下来即可安装靠的就是这一点）。
 - 版本号在 `package.json`；发布标签 `vX.Y.Z`。
 
