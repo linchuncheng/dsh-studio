@@ -20,6 +20,9 @@
 - **评审闸门默认生效（第 3 条）**：进「待测试」之前 `coding.review.status` 必须是 `approved`，
   与设计闸门同构；要关得显式 `config.reviewGate.enabled = false`。
   `/state` 新增 `gates`，把两道闸门当前是否生效直接下发——关掉时不再"看起来有保护"。
+- **路由层同样归一（真机验证时抓到的）**：`/requirement/get|matrix|save|signoff|split|doc|sync` 只用内部 id，
+  传编号直接 400。现在全部走 `reqRef()`；同时补上路由里缺的「顶层 `prd/proto/acceptance` → `links`」映射
+  —— 以前这两个字段在路由上被静默忽略，只有工具才认。
 - **静默失真收口（第 1 条）**：
   - 需求链接写坏（相对路径 / ftp 等）现在直接报错并说明合法格式，不再存成空串；
   - `POST /task/artifact action=update` 认顶层 `content` 等字段，找不到目标交付物直接报错，
@@ -28,9 +31,9 @@
   本次复核后一并回复在 issue 里。
 
 ### 测试
-新增 `tests/reviews.test.mjs` 5 条（引用归一化 / 找不到时的提示 / 三段评审 / 设计部分更新不抹多稿 / 链接校验）、
+新增 `tests/reviews.test.mjs` 5 条、`tests/requirement-routes.test.mjs` 2 条（引用归一化 / 找不到时的提示 / 三段评审 / 设计部分更新不抹多稿 / 链接校验）、
 `tests/gates.test.mjs` 加 1 条评审闸门、`tests/repo.test.mjs` 加 1 条计数回归锁。
-`npm test` 266 条全绿（本地 + `TZ=UTC`），产物 `cmp` 一致，`release:check` 7 项通过。
+`npm test` 268 条全绿（本地 + `TZ=UTC`），产物 `cmp` 一致，`release:check` 7 项通过。
 
 
 ## [0.9.33] — 2026-11-20

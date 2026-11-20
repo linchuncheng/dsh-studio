@@ -38,6 +38,14 @@ const INTAKE_QUERY_FAILS = new Map()
 export function configureRequirementRoutes(services) {
   host = { ...host, ...(services ?? {}) }
 }
+/** 需求引用 → 内部 id：编号（REQ-2026-001）和 id 都认；找不到时给出可用的引用。 */
+const reqRef = (store, ref) => {
+  const snapshot = store.snapshot()
+  const found = resolveRequirement(snapshot, ref)
+  if (found === undefined) throw new Error(requirementRefHint(snapshot, ref))
+  return found.id
+}
+
 export async function handleRequirementRoute({ method, route, req, res, store, url }) {
   if (method === 'GET' && route === '/requirements') {
     const state = store.snapshot()
@@ -59,7 +67,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   }
   if (method === 'POST' && route === '/requirement/get') {
     const body = await host.readJsonBody(req)
-    const rollup = requirementRollup(store.snapshot(), String(body.id ?? ''))
+    const rollup = requirementRollup(store.snapshot(), reqRef(store, body.id))
     if (rollup === undefined) throw new Error('需求不存在')
     const matrix = requirementMatrix(store.snapshot(), rollup.requirement)
     const progress = requirementProgress(store.snapshot(), rollup.requirement)
@@ -68,14 +76,14 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   }
   if (method === 'POST' && route === '/requirement/matrix') {
     const body = await host.readJsonBody(req)
-    const requirement = store.snapshot().requirements.find(item => item.id === String(body.id ?? ''))
+    const requirement = store.snapshot().requirements.find(item => item.id === reqRef(store, body.id))
     if (requirement === undefined) throw new Error('需求不存在')
     host.sendJson(res, 200, { ok: true, requirement: { id: requirement.id, code: requirement.code, title: requirement.title }, matrix: requirementMatrix(store.snapshot(), requirement) })
     return true
   }
   if (method === 'POST' && route === '/requirement/signoff') {
     const body = await host.readJsonBody(req)
-    const id = String(body.id ?? '')
+    const id = reqRef(store, body.id)
     const action = body.action === 'clear' ? 'clear' : 'sign'
     const note = String(body.note ?? '').trim().slice(0, 600)
     /* 签字人必须是服务端认定的身份：会话 > 反代注入头 > 请求体（免登录单机模式才轮到自报）。 */
@@ -134,7 +142,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   }
   if (method === 'POST' && route === '/task/signoff') {
     const body = await host.readJsonBody(req)
-    const id = String(body.id ?? '')
+    const id = reqRef(store, body.id)
     const action = String(body.action ?? 'sign')
     const by = text(body.by, 40) ?? '人'
     const note = text(body.note, 600) ?? ''
@@ -158,7 +166,13 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   }
   if (method === 'POST' && route === '/requirement/save') {
     const body = await host.readJsonBody(req)
-    const incoming = body.requirement ?? body
+    const incoming = { ...(body.requirement ?? body) }
+    /* 顶层 prd / proto / acceptance 映射成 links：以前这两个字段被静默忽略，
+       调用方以为存进去了（issue #9 第 1 条）。工具里早有这段映射，路由缺。 */
+    if (incoming.prd !== undefined || incoming.proto !== undefined || incoming.acceptance !== undefined) {
+      incoming.links = { ...(incoming.links ?? {}), prd: incoming.prd ?? incoming.links?.prd ?? '', proto: incoming.proto ?? incoming.links?.proto ?? '', acceptance: incoming.acceptance ?? incoming.links?.acceptance ?? '' }
+    }
+    if (incoming.id !== undefined && String(incoming.id).trim() !== '') incoming.id = reqRef(store, incoming.id)
     const beforeRecord = typeof incoming.id === 'string' ? store.snapshot().requirements.find(item => item.id === incoming.id) : undefined
     const watch = ['title', 'description', 'priority', 'status', 'owner', 'project', 'iteration']
     const before = beforeRecord === undefined ? null : Object.fromEntries(watch.map(key => [key, String(beforeRecord[key] ?? '')]))
@@ -197,7 +211,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   }
   if (method === 'POST' && route === '/requirement/split') {
     const body = await host.readJsonBody(req)
-    const id = String(body.id ?? '')
+    const id = reqRef(store, body.id)
     const requested = (Array.isArray(body.pointIds) ? body.pointIds : []).map(item => String(item))
     const column = String(body.status ?? 'clarify')
     const before = store.snapshot()
@@ -363,7 +377,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
 
   if (method === 'POST' && route === '/requirement/request-prd') {
     const body = await host.readJsonBody(req)
-    const id = String(body.id ?? '').trim()
+    const id = reqRef(store, body.id).trim()
     const by = String(body.by ?? body.operator ?? '').trim() || '人'
     if (id.length === 0) throw new Error('缺少需求 id')
     const now = Date.now()
@@ -418,7 +432,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
 
   if (method === 'POST' && route === '/requirement/delete') {
     const body = await host.readJsonBody(req)
-    const id = String(body.id ?? '')
+    const id = reqRef(store, body.id)
     await store.mutate(state => {
       state.requirements = state.requirements.filter(item => item.id !== id)
       // 卡不删，只是脱离需求；人可以看到它们变成「未归属」。
@@ -442,7 +456,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   if (method === 'POST' && route === '/requirement/impact') {
   // 需求一改，这条需求下面的卡和用例就要重看。这里只算、不改数据。
   const body = await host.readJsonBody(req)
-  const id = String(body.id ?? '')
+  const id = reqRef(store, body.id)
   const snapshot = store.snapshot()
   const requirement = (snapshot.requirements ?? []).find(item => item.id === id)
   if (requirement === undefined) throw new Error(`no requirement ${id}`)
@@ -465,7 +479,7 @@ if (method === 'POST' && route === '/requirement/pull') {
   }
   if (method === 'POST' && route === '/requirement/folder') {
     const body = await host.readJsonBody(req)
-    const id = String(body.id ?? '')
+    const id = reqRef(store, body.id)
     const folder = await ensureReqFolder(store, id)
     const requirement = store.snapshot().requirements.find(item => item.id === id)
     host.sendJson(res, 200, { ok: String(folder.token ?? '').length > 0, folder, requirement, error: folder.error ?? '', state: host.publicState(store) })
@@ -473,7 +487,7 @@ if (method === 'POST' && route === '/requirement/pull') {
   }
   if (method === 'POST' && route === '/requirement/sync') {
     const body = await host.readJsonBody(req)
-    const id = String(body.id ?? '')
+    const id = reqRef(store, body.id)
     const report = await syncRequirementArtifacts(store, id)
     host.sendJson(res, 200, { ok: report.failed === 0, report, state: host.publicState(store) })
     return true
