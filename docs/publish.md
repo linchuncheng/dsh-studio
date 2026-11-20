@@ -85,6 +85,19 @@ npm deprecate @marsken/dsh-studio@0.9.1 "recordAudit 裸引用，写工具会报
 npm deprecate "@marsken/dsh-studio@<=0.5.1" "cordis.patch.yml 写的是裸名 dsh-studio，装完不加载，请装 @marsken/dsh-studio@latest"
 ```
 
+**2026-11-20 执行结果**（`npm view @marsken/dsh-studio versions` + registry packument 逐条核对）：
+
+| 处理 | 版本 | 状态 |
+| --- | --- | --- |
+| `unpublish` | `0.2.2-rc.1` / `rc.2` / `rc.3` | ✅ 已从 registry 消失（版本数 103 → 100） |
+| `deprecate` | `0.9.0` / `0.9.1` | ✅ 文案：侧栏不注册 / `recordAudit` 裸引用 → 升 `latest` |
+| `deprecate` | `<=0.5.1` 共 **71 个**（`0.0.0-stage`、`0.1.0`–`0.1.47`、`0.2.0`–`0.2.8`、`0.3.0`–`0.3.9`、`0.4.0`、`0.5.0`、`0.5.1`） | ✅ 文案：`cordis.patch.yml` 裸名 → 升 `latest` |
+| 待定 | `0.9.19-next.0`（占着 `next`，72h 窗口到 2026-11-22T19:33Z） | ⬜ 不要预发布通道：`npm dist-tag rm @marsken/dsh-studio next` + `npm unpublish @marsken/dsh-studio@0.9.19-next.0` |
+| 不动 | `0.5.2` – `0.9.18` | 能正常加载的版本；`0.9.12` 及更早只有桌面版抽屉被窗口按钮盖住这种小毛病（0.9.13 起修复），不值得弃用 |
+
+> 判据只有一条：**这个版本装上去会不会坏**。会坏（加载失败 / 侧栏没入口 / 工具报错）→ 删或弃用；
+> 只是旧 → 不动，弃用太多会把「别装这个」的信号稀释成噪音。
+
 ## 2. 收录：投 awesome-dsh-plugin，不是给 dsh-m 提 PR
 
 dsh-m 的市场数据来自两处，**入口完全不同**：
