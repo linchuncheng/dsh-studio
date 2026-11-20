@@ -1,6 +1,21 @@
 # 更新日志
 
 
+## [0.9.25] — 2026-11-20
+
+### 修复
+- **「改了代码、也重启了，却没生效」的根因**：desktop profile 里的 `@marsken/dsh-studio` 是一份**拷贝**
+  （版本停在 0.9.14），而 profile 的 `package.json` 里写的是 `link:` —— Windows 上那个 link 没真正建成。
+  于是宿主半边（`index.js` / `src/host`）一直加载旧代码，重启多少次都没用；面板也是旧 bundle。
+- 新增 `npm run sync:profile`（`tools/sync-profile.mjs`）：先把「仓库版本 → profile 版本」打出来，
+  备份到 `~/.dsh/backups/dsh-studio-<时间>` 后整体替换运行时文件，再校验版本与 `client.js` 一致，
+  最后提醒重启。目录整体替换（不是逐文件覆盖），避免删掉的模块以旧文件的形式留在 profile 里。
+
+### 说明
+- 远程部署有 `tools/deploy.mjs`，本地 profile 之前只有文档里的手工 `cp` —— 两边现在都有脚本，且都会先打印版本。
+- `AGENTS.md` 的排障表把「改了没生效」的第一条改成「先跑 `npm run sync:profile` 看版本」。
+
+
 ## [0.9.24] — 2026-11-20
 
 ### 新增

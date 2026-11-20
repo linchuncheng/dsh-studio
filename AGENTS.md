@@ -64,7 +64,9 @@ STUDIO_TOKEN=$(sudo journalctl -u dsh-web -n 50 | grep -o 'token=[A-Za-z0-9_-]*'
 > **本地开发挂进 profile 要两处都写**：`package.json` 的 `dependencies`（`link:<repo>`）**和** `dsh.profile.bundles` 数组。
 > 只在 dependencies 里出现不会加载 —— profile 的插件树按 bundles 逐层合成，2026-11-19 我就这么白重启了一次。
 > 装完还要把 `index.js client.js package.json cordis.patch.yml locale src` 放进 `node_modules/@marsken/dsh-studio`
-> （Windows 无管理员权限建不了符号链接时直接拷），然后重启。
+> （Windows 无管理员权限建不了符号链接时直接拷），然后重启。**日常用 `npm run sync:profile` 做这一步**：
+> 它先把「仓库版本 → profile 版本」打出来再拷（2026-11-20 就是靠这一行才发现 desktop profile 里躺着 0.9.14 的拷贝，
+> `link:` 根本没建成链接，白重启了一次），目录整体替换，不会把删掉的模块留成旧文件。
 >
 > 目标机上那个老的 `deploy-all.sh` 只作兜底（它拷 `/tmp/` 下的两个文件和 `src/`）。日常用 `tools/deploy.mjs`，别再手工 scp 拼路径。改了 `package.json`（包头、`engines`、`dsh.*`、`files`）、`cordis.patch.yml`、`locale/*.json` 时必须单独上传到插件目录（`~/dsh-studio/` 或 profile 的 `node_modules` 下）再重启，否则改了个寂寞。改动前先 `cp package.json /tmp/package.json.bak` 留退路。
 >
@@ -207,7 +209,7 @@ README 里还写着旧行为（"安全边界"、"发版流程"、"探针清单"�
 | --- | --- |
 | 页面白屏 | 浏览器 console 的 `ReferenceError`（`node --check` 抓不到）；派生变量必须 null 兜底 |
 | 面板里一行「渲染失败：xxx is not defined」 | 组件里引用了当前作用域没有的变量（典型：把 `state.tasks` 写成 `tasks`）。`pageerror` 不会有记录，只能靠截图或 `innerText` 里找「渲染失败」 |
-| 改了没生效 | 是否改了 `client.src.js` 却没跑 `make-legacy`；`cmp` 确认产物；浏览器强刷 |
+| 改了没生效 | 先跑 `npm run sync:profile` 看 profile 里的版本对不对（本地加载的是 profile 里的**拷贝**，不是仓库）；再查是否改了 `client.src.js` 却没跑 `make-legacy`；`cmp` 确认产物；浏览器强刷 |
 | 主按钮只剩文字 | 是否又用了 `hsl(var(--primary))`；改实色 |
 | 弹窗/抽屉看不见 | Portal 容器是否缺 `data-dsh-studio` 属性 |
 | 拖拽没反应 | 卡片是否有 `draggable`、列上是否有 `onDragOver/onDrop`、路由是否是 `/task/update` |
