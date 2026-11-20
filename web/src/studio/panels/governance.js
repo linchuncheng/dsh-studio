@@ -523,10 +523,15 @@ export function HealthPanel({ state, config, onChanged }) {
           h('dd', {}, lock === null
             ? '还没抢到过（可能是内存模式）'
             : `${lock.mine === true ? '本进程持有' : '其他实例持有'} · ${Math.round(lockAge / 1000)} 秒前续租`),
-          h('dt', {}, '并发占用'), h('dd', {}, `${(agents.running ?? []).length} / ${agents.maxConcurrent ?? '—'}`),
+          h('dt', {}, '并发占用'),
+          h('dd', {}, String(agents.isolationWarning ?? '') === ''
+            ? `${(agents.running ?? []).length} / ${agents.maxConcurrent ?? '—'}`
+            : `${(agents.running ?? []).length} / ${agents.effectiveMaxConcurrent ?? 1}（配置 ${agents.maxConcurrent ?? '—'}，已降级）`),
           h('dt', {}, '最近一轮'), h('dd', {}, when(agents.lastTickAt)),
           h('dt', {}, '最近错误'), h('dd', {}, String(agents.lastError ?? '') === '' ? '无' : String(agents.lastError)),
         ),
+        String(agents.isolationWarning ?? '') === '' ? null : h('div', { className: 'ds-row ds-row-wrap' },
+          h('div', { className: 'ds-hint', 'data-isolation-warning': '1' }, String(agents.isolationWarning))),
         (agents.log ?? []).length === 0
           ? h('div', { className: 'ds-empty' }, '还没有派单日志。卡进入自动列后，这里会出现派单、空闲、失败记录。')
           : logShown.length === 0

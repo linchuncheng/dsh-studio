@@ -1,5 +1,6 @@
 // ------------------------------------------------------------------ dispatcher
 import { DEFAULT_ROLES, FALLBACK_AGENT_MODEL, ROLE_IDS, SANDBOX_MODES, STATUSES, codingSummary, normalizeStrategy, worktreeRoot } from './domain.js'
+import { effectiveConcurrency } from './parallel-guard.js'
 import { abandonedRetry } from './dispatch-state.js'
 import { emitEvent } from './events.js'
 import { loadTeamMemory, teamMemoryBlock } from './team-memory.js'
@@ -555,6 +556,9 @@ export class Dispatcher {
     return {
       enabled: cfg.enabled,
       maxConcurrent: cfg.maxConcurrent,
+      // 实际生效的并发（隔离不足时会低于 maxConcurrent），面板据此给出提示
+      effectiveMaxConcurrent: effectiveConcurrency(cfg).limit,
+      isolationWarning: effectiveConcurrency(cfg).reason,
       autoStatuses: cfg.autoStatuses,
       workspaceDir: cfg.workspaceDir,
       agentPreset: cfg.agentPreset,
@@ -589,7 +593,14 @@ export class Dispatcher {
         this.abortTask(info.taskId, info.expert)
       }
     }
-    const limit = Math.max(1, Math.min(8, Number(cfg.maxConcurrent) || 2))
+    // 并发只有在「每张卡一个 worktree」时才安全：隔离是 none 时多张卡会在同一目录互相覆盖。
+    // effectiveConcurrency 会把这种组合的有效并发降到 1，并把原因留在状态里（不静默）。
+    const concurrency = effectiveConcurrency(cfg)
+    const limit = concurrency.limit
+    if (concurrency.capped === true && this.lastConcurrencyWarning !== concurrency.reason) {
+      this.lastConcurrencyWarning = concurrency.reason
+      this.note(concurrency.reason)
+    }
     const auto = new Set(Array.isArray(cfg.autoStatuses) ? cfg.autoStatuses : [])
     // 完成的卡按策略回收它的 worktree（manual 就留着等人看 diff）。
     if (String(cfg.cleanupWorktree ?? 'manual') === 'on_done') {

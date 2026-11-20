@@ -1,6 +1,28 @@
 # 更新日志
 
 
+## [0.9.54] — 2026-11-21
+
+### 并发派单加隔离护栏：并发 > 1 必须配 worktree
+
+并发派单（`config.agents.maxConcurrent`）本来就有，但**它和隔离模式之间没有任何约束**：
+隔离设成 `none` 时，`maxConcurrent=2` 会让两张卡在**同一个目录**里并行改代码 —— 后写的覆盖先写的，
+git 事后也说不清谁覆盖了谁。面板上「并发 2/2」看起来一切正常，实际在打架。
+
+- 新增 `src/host/parallel-guard.js`：`effectiveConcurrency(config)` 在隔离不是 `worktree` 时
+  把**有效并发降到 1**，并返回 `{ limit, configured, isolated, capped, reason }`（上限 8）；
+- 派单引擎用它决定真实并发，降级原因写进派单日志（**不静默**）；`/state` 的 `agents` 多两个字段：
+  `effectiveMaxConcurrent` 与 `isolationWarning`；
+- 面板「并发占用」显示成 `2 / 1（配置 2，已降级）`，下面一行写明原因；
+- 手册新增对应设置说明与排障条目：要并行就把「隔离」切成 worktree。
+
+**为什么降级而不是拒绝派单**：拒绝会让正在跑的部署突然停摆；降级只损失并行度，且原因在面板与日志里都看得见。
+默认配置（`maxConcurrent=2` + `isolation=none`）因此生效并发是 1 —— 安全优先。
+
+### 测试
+`tests/parallel-guard.test.mjs` 4 条（worktree 放行 / none 与垃圾值降级 / 本来就是 1 不告警 / 非法值与上限边界）；
+`npm test` 317 条全绿（本地 + `TZ=UTC`），面板渲染探针 16/16 无 pageerror。
+
 ## [0.9.53] — 2026-11-20
 
 ### 修掉工作台「卡片压在面板上」：KPI 不该落单，块与块之间不该是 0 距离
