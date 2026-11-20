@@ -2,12 +2,62 @@
 
 export const DESIGN_STATUS = ['pending', 'approved', 'changes_requested']
 
-/** 设计区：链接、评审状态、评审意见。没填过就是 null。 */
+/** 一张卡最多放这么多稿：再多就不是"对比"，是没人看得完的清单。 */
+export const DESIGN_DRAFT_LIMIT = 8
+
+/** 一稿：名字 + 链接（或封面图）+ 一句说明。没名字按序号兜底，没链接也没图就不算一稿。 */
+function sanitizeDraft(raw, index) {
+  if (raw === null || typeof raw !== 'object') return undefined
+  const link = String(raw.link ?? raw.url ?? '').trim().slice(0, 500)
+  const image = String(raw.image ?? '').trim().slice(0, 500)
+  if (link === '' && image === '') return undefined
+  return {
+    id: String(raw.id ?? '').trim().slice(0, 24) || `d${index + 1}`,
+    name: String(raw.name ?? '').trim().slice(0, 60) || `第 ${index + 1} 稿`,
+    link,
+    image,
+    note: String(raw.note ?? '').slice(0, 300),
+    by: String(raw.by ?? '').slice(0, 40),
+    at: Number(raw.at) || 0,
+  }
+}
+
+/**
+ * 多稿列表。
+ * 老数据只有 `design.link`：升级时把它当成唯一的「原稿」，否则一升级所有已通过评审的卡
+ * 都会因为「没稿可定」被挡在开发之外。只在 **drafts 字段根本不存在** 时才合成——
+ * 人手动清空成 [] 就是清空，不该被复活。
+ */
+export function sanitizeDrafts(input, legacyLink) {
+  const list = Array.isArray(input) ? input.slice(0, DESIGN_DRAFT_LIMIT) : []
+  const out = []
+  for (const [index, raw] of list.entries()) {
+    const draft = sanitizeDraft(raw, index)
+    if (draft === undefined || out.some(item => item.id === draft.id)) continue
+    out.push(draft)
+  }
+  if (out.length === 0 && Array.isArray(input) !== true && String(legacyLink ?? '').trim() !== '') {
+    out.push({ id: 'd1', name: '原稿', link: String(legacyLink).trim().slice(0, 500), image: '', note: '', by: '', at: 0 })
+  }
+  return out
+}
+
+/** 设计区：多稿、定案、评审状态、评审意见。没填过就是 null。 */
 export function sanitizeDesign(raw) {
   if (raw === null || raw === undefined || typeof raw !== 'object') return null
   const status = DESIGN_STATUS.includes(String(raw.status ?? '')) ? String(raw.status) : 'pending'
+  const link = String(raw.link ?? '').trim().slice(0, 500)
+  const drafts = sanitizeDrafts(raw.drafts, link)
+  const wanted = String(raw.chosenId ?? '').trim()
+  // 定案必须指向真实存在的一稿；只有一稿时不用再点一次「选为定案」（哪怕传了过期的 id）。
+  const chosenId = drafts.some(item => item.id === wanted)
+    ? wanted
+    : (drafts.length === 1 ? drafts[0].id : '')
   return {
-    link: String(raw.link ?? '').trim().slice(0, 500),
+    link,
+    /** 多稿对比：每稿一条，`chosenId` 指向定案的那一稿。 */
+    drafts,
+    chosenId,
     status,
     note: String(raw.note ?? '').slice(0, 500),
     by: String(raw.by ?? '').slice(0, 40),
@@ -102,7 +152,17 @@ export function designGate(config, task, nextStatus) {
   const needed = design.enabled === true && columns.includes(String(nextStatus ?? ''))
   if (needed !== true) return { needed: false, ready: true, blockers: [] }
   const state = String(task?.design?.status ?? '')
-  if (state === 'approved') return { needed: true, ready: true, blockers: [] }
+  if (state === 'approved') {
+    /* 「评审通过」不等于「定案」：多稿的项目里最常见的翻车是评审说"这几稿都行"，
+       结果研发照着错的那稿做。所以通过之后还必须指认一稿。 */
+    const drafts = Array.isArray(task?.design?.drafts) ? task.design.drafts : []
+    const chosenId = String(task?.design?.chosenId ?? '')
+    if (drafts.length === 0) return { needed: true, ready: false, blockers: ['设计评审通过了，但卡上一稿都没有：先放一稿（或填 override 说明原因）'] }
+    if (!drafts.some(item => item.id === chosenId)) {
+      return { needed: true, ready: false, blockers: [`设计有 ${drafts.length} 稿但没定案：先选定哪一稿再进开发（或填 override 说明原因）`] }
+    }
+    return { needed: true, ready: true, blockers: [] }
+  }
   const label = { pending: '还没评审', changes_requested: '评审要求修改' }[state] ?? '还没有设计记录'
   return { needed: true, ready: false, blockers: [`设计${label}：先把设计稿放进卡片并让评审通过（或填 override 说明原因）`] }
 }
@@ -115,7 +175,7 @@ export function designGate(config, task, nextStatus) {
 export function designPatchFrom(body) {
   const source = body !== null && typeof body === 'object' ? body : {}
   const design = source.design !== null && typeof source.design === 'object' ? source.design : null
-  const fields = [ 'link', 'status', 'note', 'diff', 'spec' ]
+  const fields = [ 'link', 'status', 'note', 'diff', 'spec', 'drafts', 'chosenId' ]
   const fromDesign = design !== null && fields.some(key => design[key] !== undefined && design[key] !== null)
   const fromTop = fields.some(key => source[key] !== undefined && source[key] !== null)
   if (!fromDesign && !fromTop) return null

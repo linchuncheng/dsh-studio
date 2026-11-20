@@ -80,6 +80,10 @@ function Drawer({ task, state, onClose, onChanged }) {
   const [codingDraft, setCodingDraft] = React.useState(null)
   const [reviewNote, setReviewNote] = React.useState('')
   const coding = task.coding ?? null
+  // 设计多稿：定案（chosenId）与评审（status）分开——"这几稿都行"不等于"选了哪一稿"。
+  // 必须在 tabs 之前定义：上面那个页签的 count 要读它（放后面就是 TDZ）。
+  const designDrafts = Array.isArray(task.design?.drafts) ? task.design.drafts : []
+  const chosenDraft = designDrafts.find(item => item.id === task.design?.chosenId) ?? null
   const worktree = task.worktree ?? null
   const [worktreeMsg, setWorktreeMsg] = React.useState('')
   const [verify, setVerify] = React.useState({ busy: false, line: '', ok: null })
@@ -171,6 +175,7 @@ function Drawer({ task, state, onClose, onChanged }) {
     { id: 'overview', label: '概览', hint: '标题、状态、负责人、阻塞原因与关键时间' },
     { id: 'content', label: '内容', hint: '需求正文与验收标准，支持 Markdown' },
     { id: 'plan', label: '计划', hint: '项目、迭代、服务、挂哪条需求、优先级' },
+    { id: 'design', label: '设计', count: designDrafts.length > 0 ? designDrafts.length : '', hint: '多稿对比与定案' },
     { id: 'deliver', label: '交付物', count: artifacts.length > 0 ? artifacts.length : '', hint: '文档 / MR / 用例 / 报告；空的交付物会被准出拦下' },
     { id: 'test', label: '测试', count: caseSum.total > 0 ? `${casePass}/${caseSum.total}` : (checkSum.total > 0 ? `☑${doneCount}/${checkSum.total}` : ''), hint: '验收清单、用例执行记录；失败的用例会自动开缺陷' },
     { id: 'coding', label: '执行记录', count: coding === null ? '' : (coding.review?.status === 'approved' ? '✓ 已评审' : ''), hint: 'AI 的分支、提交、改动文件；可以「核对代码事实」' },
@@ -621,31 +626,52 @@ function Drawer({ task, state, onClose, onChanged }) {
       setMergeRun({ busy: false, line: cause instanceof Error ? cause.message : String(cause) })
     }
   }
-  // 从 GitLab 核对：拉 MR 的 changes 与流水线，和卡上自报的值比一遍（没配 GitLab 会直接提示）。
-  // 设计评审：两步录入（链接 + 状态），存完刷新卡片。闸门在服务端，这里只管填。
-  const editDesign = async () => {
-    const link = await promptDialog('设计稿链接（Figma / 蓝湖 / 图片都行）', { title: '设计评审', defaultValue: task.design?.link ?? '' })
-    if (link === null) return
-    const status = await promptDialog('状态：pending 待评审 / changes_requested 要改 / approved 通过', { title: '设计评审', defaultValue: task.design?.status ?? 'pending' })
-    if (status === null) return
-    // 两个数字来自 tools/visual 的 design-diff / design-audit（要在装了 Chrome 的机器上跑），
-    // 这里让人把结果录进来，卡片上才看得到还原度和规范野值。
+  // 设计多稿的读写（定案与评审的变量在文件上方、tabs 之前定义）
+  const saveDesignPatch = async patch => {
+    setBusy(true); setError(null); setNotice(null)
+    try {
+      const out = await api('/task/design', { id: task.id, design: { ...(task.design ?? {}), ...patch } })
+      setNotice(out?.design?.status === 'approved'
+        ? `设计评审通过${out.design.chosenId === '' ? '（还没定案：进开发前要选一稿）' : ''}`
+        : `设计已保存：${DESIGN_LABEL[out?.design?.status] ?? out?.design?.status ?? ''}`)
+      await onChanged()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+  const addDesignDraft = async () => {
+    const name = await promptDialog('这一稿的名字（如「方案 A：卡片流」）', { title: '加一稿', defaultValue: `方案 ${String.fromCharCode(65 + designDrafts.length)}` })
+    if (name === null) return
+    const link = await promptDialog('稿子链接（Figma / 蓝湖 / 图片 / HTML 预览都行）', { title: '加一稿', defaultValue: '' })
+    if (link === null || String(link).trim() === '') return
+    const note = await promptDialog('一句话说明这一稿的思路（可留空）', { title: '加一稿', defaultValue: '' })
+    if (note === null) return
+    const draft = { id: 'd' + Date.now().toString(36), name: String(name).trim(), link: String(link).trim(), note: String(note).trim() }
+    await saveDesignPatch({ drafts: [...designDrafts, draft], status: task.design?.status ?? 'pending' })
+  }
+  const designAction = async (action, draftId) => {
+    if (action === 'choose') return saveDesignPatch({ chosenId: draftId })
+    if (action === 'remove') {
+      const rest = designDrafts.filter(item => item.id !== draftId)
+      return saveDesignPatch({ drafts: rest, chosenId: task.design?.chosenId === draftId ? '' : (task.design?.chosenId ?? '') })
+    }
+    if (action === 'approve') return saveDesignPatch({ status: 'approved' })
+    if (action === 'changes') return saveDesignPatch({ status: 'changes_requested' })
+  }
+  // 还原度与规范体检：数字来自 tools/visual 的 design-diff / design-audit（要在装了 Chrome 的机器上跑），
+  // 这里让人把结果录进来，卡片上才看得到还原度和规范野值。
+  const editDesignMetrics = async () => {
     const diffText = await promptDialog('还原度差异百分比（design-diff 输出，留空跳过）', { title: '设计还原度', defaultValue: task.design?.diff == null ? '' : String(task.design.diff.percent) })
     if (diffText === null) return
     const violationsText = await promptDialog('规范体检野值数（design-audit 输出，留空跳过）', { title: '设计规范体检', defaultValue: task.design?.spec == null ? '' : String(task.design.spec.violations) })
     if (violationsText === null) return
-    setBusy(true); setError(null); setNotice(null)
-    try {
-      const design = { link, status, note: task.design?.note ?? '' }
-      const diffNumber = Number(String(diffText).trim())
-      if (String(diffText).trim() !== '' && Number.isFinite(diffNumber)) design.diff = { percent: diffNumber, url: String(task.design?.diff?.url ?? '') }
-      const violations = Number(String(violationsText).trim())
-      if (String(violationsText).trim() !== '' && Number.isFinite(violations)) design.spec = { checked: task.design?.spec?.checked ?? 0, violations, top: task.design?.spec?.top ?? [] }
-      const out = await api('/task/design', { id: task.id, design })
-      setNotice('设计已保存：' + String(out?.design?.status ?? status))
-      await onChanged()
-    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+    const patch = {}
+    const diffNumber = Number(String(diffText).trim())
+    if (String(diffText).trim() !== '' && Number.isFinite(diffNumber)) patch.diff = { percent: diffNumber, url: String(task.design?.diff?.url ?? '') }
+    const violations = Number(String(violationsText).trim())
+    if (String(violationsText).trim() !== '' && Number.isFinite(violations)) patch.spec = { checked: task.design?.spec?.checked ?? 0, violations, top: task.design?.spec?.top ?? [] }
+    if (Object.keys(patch).length === 0) return
+    await saveDesignPatch(patch)
   }
+  // 从 GitLab 核对：拉 MR 的 changes 与流水线，和卡上自报的值比一遍（没配 GitLab 会直接提示）。
   const verifyGitlab = async () => {
     setBusy(true); setError(null); setNotice(null)
     try {
@@ -674,7 +700,7 @@ function Drawer({ task, state, onClose, onChanged }) {
           h('div', { className: 'ds-dw-title' }, task.title),
           h('div', { className: 'ds-dw-sub' }, `${task.id} · ${columnLabel}${assignee === '' ? '' : ` · ${assignee}`} · 更新 ${fmtTime(task.updatedAt)}`),
         ),
-        h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, title: '设计稿链接 + 评审状态；被配置成设计闸门的列，评审不通过进不去', onClick: () => void editDesign() }, '设计：' + (DESIGN_LABEL[task.design?.status] ?? '未登记')),
+        h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, title: '定案 + 评审通过才能进开发', onClick: () => setPane('design') }, '设计：' + (DESIGN_LABEL[task.design?.status] ?? '未登记') + (designDrafts.length > 0 ? `（${designDrafts.length} 稿）` : '')),
         h('button', { className: 'ds-btn', onClick: onClose }, '关闭'),
         (Number(task.agentFailures) || 0) > 0
           ? tipOf(
@@ -1027,6 +1053,39 @@ function Drawer({ task, state, onClose, onChanged }) {
               ),
             ),
           worktreeMsg && worktree === null ? h('div', { className: 'ds-hint' }, worktreeMsg) : null,
+        ),
+      ),
+      h('div', { className: 'ds-sec', style: hideWhen('design') },
+        h('div', { className: 'ds-sec-head' }, '设计多稿与定案',
+          h('span', { className: 'ds-hint' }, `${DESIGN_LABEL[task.design?.status] ?? '未登记'}${chosenDraft === null ? '' : ` · 定案「${chosenDraft.name}」`}`)),
+        h('div', { className: 'ds-sec-body' },
+          designDrafts.length === 0
+            ? h('div', { className: 'ds-empty' }, '还没有设计稿：加两稿以上才好比较')
+            : h('div', null, designDrafts.map(item => h('div', { key: item.id, className: 'ds-listrow', style: { marginBottom: 6 } },
+              h('div', { className: 'ds-listrow-main' },
+                h('div', null,
+                  h(ChipField, { className: 'ds-chip', 'data-on': item.id === task.design?.chosenId ? '1' : '0' }, item.id === task.design?.chosenId ? '已定案' : '待选'),
+                  h('span', { style: { marginLeft: 6 } }, item.name),
+                ),
+                item.link === '' ? null : h('a', { className: 'ds-art-ref', href: item.link, target: '_blank', rel: 'noreferrer' }, item.link),
+                item.note === '' ? null : h('div', { className: 'ds-hint' }, item.note),
+              ),
+              h('div', { className: 'ds-listrow-actions' },
+                item.id === task.design?.chosenId
+                  ? null
+                  : h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, onClick: () => void designAction('choose', item.id) }, '选为定案'),
+                h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, 'data-danger': '1', onClick: () => void designAction('remove', item.id) }, '删除'),
+              ),
+            ))),
+          h('div', { className: 'ds-row', style: { gap: 8, marginTop: 8, flexWrap: 'wrap' } },
+            h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, onClick: () => void addDesignDraft() }, '＋ 加一稿'),
+            h('button', { className: 'ds-btn ds-btn-primary', disabled: busy || designDrafts.length === 0, onClick: () => void designAction('approve') }, '评审通过'),
+            h('button', { className: 'ds-btn', disabled: busy, onClick: () => void designAction('changes') }, '要求修改'),
+            h('button', { className: 'ds-btn', disabled: busy, onClick: () => void editDesignMetrics() }, '还原度/规范体检'),
+          ),
+          task.design?.note ? h('div', { className: 'ds-hint', style: { marginTop: 6 } }, `评审意见：${task.design.note}`) : null,
+          task.design?.diff == null ? null : h('div', { className: 'ds-hint', style: { marginTop: 6 } }, `还原度差异 ${task.design.diff.percent}%（越高越不还原）`),
+          task.design?.spec == null ? null : h('div', { className: 'ds-hint', style: { marginTop: 6 } }, `规范体检：查了 ${task.design.spec.checked} 个元素，${task.design.spec.violations} 处野值`),
         ),
       ),
       h('div', { className: 'ds-sec', style: hideWhen('coding') },

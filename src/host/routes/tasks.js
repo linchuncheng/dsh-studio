@@ -131,11 +131,17 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
       // 合并而不是覆盖：只带 diff 的调用不该把 link/status/spec 抹掉，顺带记一条历史。
       const merged = sanitizeDesign({ ...(task.design ?? {}), ...incoming, by, at: Date.now() })
       if (merged !== null && merged.diff !== null) merged.diffHistory = pushDiffHistory(task.design?.diffHistory ?? [], merged.diff)
+      const chosenBefore = String(task.design?.chosenId ?? '')
       design = merged
       task.design = design
       // 还原度顺手写进验收清单：验收时不用再回抽屉里找数字。
       if (design !== null && design.diff !== null) task.checklist = applyFidelityItem(task.checklist, design.diff.percent)
       if (design !== null && design.spec !== null) task.checklist = applySpecItem(task.checklist, design.spec)
+      // 定案是一次决定，不只是改个字段：谁在哪天选了哪一稿要能查。
+      if (design !== null && design.chosenId !== '' && design.chosenId !== chosenBefore) {
+        const picked = (design.drafts ?? []).find(item => item.id === design.chosenId)
+        task.history.push({ at: Date.now(), by, status: task.status, note: `设计定案：${picked?.name ?? design.chosenId}` })
+      }
       task.updatedAt = Date.now()
       task.history.push({ at: task.updatedAt, by, status: task.status, note: `设计评审：${design.status}` })
     })

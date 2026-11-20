@@ -27,6 +27,7 @@ import {
 } from './domain.js'
 import { sanitizeQuality } from './card-quality.js'
 import { sanitizeMergeGate } from './merge-gate.js'
+import { sanitizeDesign } from './design.js'
 
 /** 持久化层：SQLite 台账（单写者 + 快照）与 0600 密钥文件。 */
 
@@ -236,6 +237,9 @@ export class StudioStore {
       task.coding = sanitizeCoding(task.coding)
       // 项目检查（本地质量命令）的结果：老库没有这个字段，补 null 而不是 undefined。
       task.quality = sanitizeQuality(task.quality)
+      /* 设计：老库里只有 design.link（没有 drafts）。不在这里归一的话，升级后所有
+         「评审已通过」的老卡都会因为「一稿都没有」被设计闸门拦在开发之外。 */
+      task.design = sanitizeDesign(task.design)
       // 合并门禁结果（发布到 GitLab 的提交状态）：老库没有，补 null。
       task.mergeGate = sanitizeMergeGate(task.mergeGate)
       if (task.bugSource === undefined) task.bugSource = null

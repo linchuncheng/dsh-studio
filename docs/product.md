@@ -97,6 +97,7 @@ AI 是执行手，判定权在确定性规则和人手里。要变成 AI Native�
 | 16 | **技能沉淀闭环** | 做完的卡能沉淀成技能草稿，且**只搬卡上真发生过的事**：验收锚点 / 跑过的命令 / 踩过的坑；没有证据的卡拒绝沉淀，不留 TODO；草稿默认停用，人启用后才落盘并注入派单；声明了项目范围的技能只在对应项目注入 | ✅ 已做（0.9.21：`skill-mine.js` + `studio_skill_mine` + `POST /skill/mine`；`tests/skill-mine.test.mjs` 5 条，其中一条断言正文里不出现 TODO/建议这类空话） |
 | 17 | **合并门禁** | 能不能合只看证据（评审 / 可执行用例 / 项目检查 / 执行记录与代码事实 / 流水线），**不看验收签字**；结论发成 GitLab 提交状态 `studio/merge-gate`，挂在 MR 头提交上；卡上记「已合并」前也要过这一关 | ✅ 已做（0.9.22：`merge-gate.js` + `publishMergeGate` + `studio_merge_gate` + `POST /task/merge-gate`；`tests/merge-gate.test.mjs` 6 条，含本地 GitLab 桩。**真 GitLab 上的拦截效果未验**：需要仓库打开「状态检查必须通过」） |
 | 18 | **浏览器用例** | 一条用例能真开浏览器：跳转、点击、填表、等待，断言页面文字 / 元素 / 地址 / 状态码；默认关闭；没装浏览器或没装 puppeteer 时给可照做的提示 | ✅ 已做（0.9.23：`browser-runner.js` + `url-guard.js`；`tests/browser-case.test.mjs` 5 条，其中一条真开浏览器跑完整链路。CI 上没有 Chrome/Edge 时该条自动跳过） |
+| 19 | **多稿并定案** | 一卡多稿可对比；被配成设计闸门的列要「评审通过 **且** 已定案」才进开发；定案稿写进研发的派单提示词；老数据只有 `link` 时加载期归一成一稿，不许把已通过的卡挡回去 | ✅ 已做（0.9.24：`design.js` 的 `drafts` / `chosenId` + 抽屉「设计」页签；`tests/design-drafts.test.mjs` 8 条，含「重开 store 后迁移生效」与「派单提示词带上定案稿」） |
 
 ## 5. 落地顺序
 

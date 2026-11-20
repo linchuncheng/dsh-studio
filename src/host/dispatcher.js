@@ -924,6 +924,21 @@ export function buildExpertPrompt(task, expert, column, config, team, instructio
       return `\n你可以使用的技能：${usable.join('、')}。需要时调用 skill 工具加载对应技能，再按其说明操作。${tail}`
     })() : '',
     team !== undefined ? `\n你在「${team.name}」专家团里协作，本团成员：\n${members}` : '',
+    /* 图里「选中交互稿与 PRD 交给研发」那根箭头：定案的那一稿要真的进派单提示词，
+       否则研发只能照自己的理解做，设计评审就白评了。 */
+    (() => {
+      const design = task.design ?? null
+      if (design === null) return ''
+      const drafts = Array.isArray(design.drafts) ? design.drafts : []
+      const picked = drafts.find(item => item.id === design.chosenId)
+      if (picked !== undefined) {
+        const others = drafts.length - 1
+        return `\n设计定案（按这一稿实现，别按自己的理解改版）：${picked.name}${picked.link === '' ? '' : ` ${picked.link}`}${picked.note === '' ? '' : `（${picked.note}）`}${others > 0 ? `；另有 ${others} 稿未采用` : ''}`
+      }
+      if (design.link !== '') return `\n设计稿：${design.link}（还没定案，实现前先确认是哪一稿）`
+      if (drafts.length > 0) return `\n设计有 ${drafts.length} 稿但还没定案：先确认用哪一稿，再动手`
+      return ''
+    })(),
     teamMemoryBlock(teamMemory),
     '',
     `任务号：${task.id}${task.code ? `（${task.code}）` : ''}`,

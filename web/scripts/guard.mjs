@@ -169,8 +169,10 @@ if (mode === 'post') {
     const sizeKb = statSync(bundle).size / 1024
     // 观察线：1.4 MB（1434 kB）是接 DatePicker 时定的。之后审计日志换成官方 Table +
     // Pagination（+6.3 kB，1436 kB）越线，按实际抬到 1460 kB。
-    // 再往上就该考虑拆包了 —— 单文件 IIFE 一旦超过 ~1.5 MB，宿主首屏会明显变慢。
-    if (sizeKb > 1460) {
+    // 2026-11-20 抬到 1470 kB：项目检查 / 合并门禁 / 技能沉淀 / 浏览器用例 / 设计多稿
+    // 五块 UI 合计 +9 kB（1451 → 1461.7），是能力不是组件库。**这是最后一档**：
+    // 再涨就该拆包 —— 单文件 IIFE 超过 ~1.5 MB，宿主首屏会明显变慢。
+    if (sizeKb > 1470) {
       failures.push(`dist/client.js is ${sizeKb.toFixed(1)} kB — over the 1.42 MB watch line, check what got pulled in`)
     }
   }

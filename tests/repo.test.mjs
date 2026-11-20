@@ -634,7 +634,14 @@ test('host: the design gate only blocks when it is switched on', async () => {
   assert.equal(gate.needed, true)
   assert.equal(gate.ready, false)
   assert.match(gate.blockers[0], /设计/)
-  assert.equal(designGate(on, { design: { status: 'approved' } }, 'dev').ready, true)
+  // 2026-11-20：闸门从「评审通过」升级为「评审通过 + 定案」。评审说"都行"但没指认一稿，
+  // 研发很可能照错的那稿做，所以 approved 不再等于放行。
+  assert.equal(designGate(on, { design: { status: 'approved' } }, 'dev').ready, false, 'approved 但一稿都没有：拦')
+  assert.equal(
+    designGate(on, { design: { status: 'approved', drafts: [{ id: 'a', link: 'https://x/a' }], chosenId: 'a' } }, 'dev').ready,
+    true,
+    '通过且定案：放行',
+  )
   assert.equal(designGate(on, {}, 'review').needed, false, 'other columns are not gated')
   assert.equal(designGate(on, {}, 'dev').ready, false, 'no design record blocks too')
   assert.equal(sanitizeDesign(null), null)
