@@ -51,6 +51,8 @@ test('provider=weknora：只写知识库，台账落在 artifact.docs.weknora', 
     assert.equal(out.provider, 'weknora')
     assert.equal(out.primary, 'weknora')
     assert.equal(out.sinks.weknora.ok, true)
+    assert.match(String(out.url), /\/knowledge\/k-9$/, '只写知识库时也要给消费方一个链接')
+    assert.equal(out.token, '', 'token 空串，与老形状兼容')
     assert.deepEqual(calls.map(url => url.split('/').slice(-1)[0]), ['manual', 'reparse'])
     const card = store.snapshot().tasks.find(item => item.id === 't1')
     assert.equal(card.artifacts[0].docs.weknora.knowledgeId, 'k-9')

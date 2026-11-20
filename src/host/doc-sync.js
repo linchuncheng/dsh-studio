@@ -50,5 +50,15 @@ export async function syncArtifact(store, taskId, artifactId, io = {}) {
     return { ...doc, provider: plan.provider, primary: plan.primary, sinks: { ...sinks, feishu: doc } }
   }
 
-  return { provider: plan.provider, primary: plan.primary, sinks }
+  // 只写知识库时也要给消费方一个能打印的链接（工具/路由都读 url）+ 与老形状兼容的空 token。
+  const first = sinks.weknora ?? {}
+  return {
+    provider: plan.provider,
+    primary: plan.primary,
+    sinks,
+    token: '',
+    url: String(first.url ?? ''),
+    name: `${task.code || task.id} ${artifact.title}`.trim(),
+    error: String(first.error ?? ''),
+  }
 }
