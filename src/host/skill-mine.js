@@ -81,7 +81,10 @@ function pitfalls(task) {
 export function mineSkillFromCard(state, task, { name, projects } = {}) {
   if (task === undefined || task === null) return { ok: false, reason: '找不到这张卡' }
   const requirement = (state?.requirements ?? []).find(item => item.id === String(task.requirementId ?? ''))
-  const project = (state?.config?.projects ?? []).find(item => item.id === String(task.project ?? ''))
+  /* 项目可能只写在需求上（拆卡时项目字段常常是空的）：范围要跟着需求走，
+     否则一条只属于某个项目的做法会被当成全局技能，注入到所有项目里。 */
+  const projectId = String(task.project ?? '').trim() || String(requirement?.project ?? '').trim()
+  const project = (state?.config?.projects ?? []).find(item => item.id === projectId)
   const service = (project?.services ?? []).find(item => item.id === String(task.service ?? ''))
   const cases = Array.isArray(task.cases) ? task.cases : []
   const verifications = cases.map(verificationLine).filter(line => line !== null).slice(0, 12)
@@ -114,7 +117,7 @@ export function mineSkillFromCard(state, task, { name, projects } = {}) {
   ].filter(Boolean).join('')
   const scope = Array.isArray(projects) && projects.length > 0
     ? projects.map(String).filter(Boolean).slice(0, 6)
-    : (task.project === undefined || String(task.project) === '' ? [] : [String(task.project)])
+    : (projectId === '' ? [] : [projectId])
 
   const lines = [`# ${title}`, '']
   lines.push('## 什么时候用', whenToUse === '' ? `做「${title}」这类改动、或要在同一模块再动一次时。` : whenToUse, '')

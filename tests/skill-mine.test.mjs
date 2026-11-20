@@ -75,6 +75,10 @@ test('矿工：把卡上真实的证据搬进技能，没证据的段落不写',
   assert.ok(!/TODO|待补充|建议/.test(body), '不许留待办或泛泛的建议')
   assert.equal(mined.skill.enabled, false, '沉淀出来的必须是草稿')
   assert.deepEqual(mined.skill.projects, ['proj-1'], '默认按卡的项目限定范围')
+
+  // 卡上项目是空的、项目只写在需求上（拆卡后常见）：范围要跟着需求走，不能退化成全局技能
+  const inherited = mineSkillFromCard(state(), { ...richCard(), project: '', service: '' })
+  assert.deepEqual(inherited.skill.projects, ['proj-1'], '项目只写在需求上时，技能范围也要限定到那个项目')
   assert.equal(mined.evidence.verifications, 3)
   assert.equal(mined.evidence.anchors, 1)
 })
