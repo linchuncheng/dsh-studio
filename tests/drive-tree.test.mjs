@@ -8,6 +8,7 @@ import test from 'node:test'
 
 import { artifactFolderName, findFolder, projectFolderName, requirementFolderNameOf, safeFolderName } from '../src/host/drive-folders.js'
 import { deleteRequirementFolder, ensureKindFolder, ensureProjectFolder, ensureRequirementFolder } from '../src/host/drive-sync.js'
+import { larkUploadArgs } from '../src/host/lark-upload.js'
 import { SecretStore, StudioStore } from '../src/host/store.js'
 
 test('项目文件夹名：KEY + 名称，没项目落「未归属项目」，非法字符替换', () => {
@@ -152,4 +153,18 @@ test('删需求目录：调 +delete 并把 folder 清空；没有目录就跳过
     assert.equal(out.ok, true)
     assert.equal(calls.length, 0, '没有目录时不该发请求')
   })
+})
+
+test('上传参数：--file 只给文件名（绝对路径会被 lark-cli 判 unsafe），cwd 指到临时目录', () => {
+  const create = larkUploadArgs({ dir: 'C:/Users/x/.dsh/tmp/artifact-a1', name: 'REQ-001-需求-说明.md', folderToken: 'F1' })
+  assert.equal(create.cwd, 'C:/Users/x/.dsh/tmp/artifact-a1')
+  assert.equal(create.args[create.args.indexOf('--file') + 1], 'REQ-001-需求-说明.md', '不能带目录')
+  assert.equal(create.args.includes('C:/Users/x/.dsh/tmp/artifact-a1/REQ-001-需求-说明.md'), false, '整条命令里都不该出现绝对路径')
+  assert.equal(create.args[create.args.indexOf('--folder-token') + 1], 'F1')
+  // 覆盖已有文档：不需要 folder-token，也不需要 --name
+  const over = larkUploadArgs({ dir: 'C:/tmp/y', name: 'a.md', existing: 'TOK' })
+  assert.deepEqual(over.args, ['markdown', '+overwrite', '--file-token', 'TOK', '--file', 'a.md'])
+  // 传进来的名字带目录时也只取文件名
+  assert.equal(larkUploadArgs({ dir: 'C:/tmp/y', name: 'C:/tmp/y/b.md', existing: 'T' }).args.at(-1), 'b.md')
+  assert.throws(() => larkUploadArgs({ dir: '', name: 'a.md' }), /临时目录/)
 })

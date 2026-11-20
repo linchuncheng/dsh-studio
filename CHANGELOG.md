@@ -1,6 +1,33 @@
 # 更新日志
 
 
+## [0.9.44] — 2026-11-20
+
+### 修复：交付物同步到云盘全线失败（lark-cli 路径白名单）
+
+真机上点「同步到云盘」没有任何文档产出，`artifact.doc.error` 里是：
+
+```
+unsafe file path: --file "C:\Users\…\.dsh\tmp\artifact-a1-…\REQ-001-需求-说明.md"
+is outside the built-in allowlist
+```
+
+**lark-cli 只允许读写「当前工作目录子树」里的文件**，而我们一直把临时 Markdown 写在
+`~/.dsh/tmp/...` 再用绝对路径传给 `--file` —— 直接被判越界。因为错误只落在交付物的 `doc.error`
+里，看板上表现为「点了同步，但没有文档」，很难注意到。
+
+- `runCommand` 支持 `cwd`，`larkJson` 透传；
+- 上传时 **cwd 指到临时目录，`--file` 只给文件名**（相对路径落在白名单里）；
+- 参数形状抽成 `src/host/lark-upload.js` 并用测试锁住，防止再退回绝对路径。
+
+### 测试
+`tests/drive-tree.test.mjs` 增加一条：`--file` 必须是纯文件名、整条命令里不许出现绝对路径、
+覆盖已有文档时不带 `--folder-token`。另在真机上验证：旧写法复现 `unsafe file path`，
+新写法上传成功（token 拿到后已清理）。
+
+`npm test` 301 条全绿（本地 + `TZ=UTC`）。
+
+
 ## [0.9.43] — 2026-11-20
 
 ### 工具层补齐「会话里聊完需求 → 拆成卡」（issue #21）

@@ -13,6 +13,7 @@ import { qualityTargetFor, sanitizeQuality } from './card-quality.js'
 import { casesOfTasks, impactSummary } from './impact.js'
 import { designGate, designGateOffNote } from './design.js'
 import { requirementFolderNameOf } from './drive-folders.js'
+import { larkUploadArgs } from './lark-upload.js'
 import { ensureKindFolder, ensureRequirementFolder } from './drive-sync.js'
 import { isStalled } from './dispatch-state.js'
 import { RUN_LOG, parseMentions } from './dispatcher.js'
@@ -1148,7 +1149,7 @@ export function buildDashboard(state) {
 }
 
 /** 跑一个外部命令，有超时、不抛异常；lark-cli 之类没有时返回 ok:false。 */
-export function runCommand(command, args, timeoutMs = 20000) {
+export function runCommand(command, args, timeoutMs = 20000, options = {}) {
   return new Promise(resolvePromise => {
     let child
     // Windows 上 npm 装的 CLI（lark-cli）是 .cmd 壳，spawn 直接执行会 ENOENT——
@@ -1156,8 +1157,8 @@ export function runCommand(command, args, timeoutMs = 20000) {
     const viaCmd = process.platform === 'win32' && command === 'lark-cli'
     try {
       child = viaCmd
-        ? spawn(process.env.ComSpec ?? 'cmd.exe', ['/c', command, ...args], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
-        : spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+        ? spawn(process.env.ComSpec ?? 'cmd.exe', ['/c', command, ...args], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], cwd: options.cwd })
+        : spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'], cwd: options.cwd })
     } catch (error) {
       resolvePromise({ ok: false, code: -1, stdout: '', stderr: String(error?.message ?? error) })
       return
@@ -1222,13 +1223,13 @@ export async function larkCliReady() {
 }
 
 /** 以「用户身份」跑一条 lark-cli，返回解析后的 data；失败给一句人话。 */
-export async function larkJson(args, timeoutMs = 45000) {
+export async function larkJson(args, timeoutMs = 45000, options = {}) {
   const probe = await larkCliReady()
   if (!probe.ok) {
     host.markHealth('drive', 'fail', `服务器上没有可用的 lark-cli（${probe.hint}）`)
     return { ok: false, error: `服务器上没有可用的 lark-cli（${probe.hint}）` }
   }
-  const result = await runCommand('lark-cli', [...args, '--as', 'user', '--json'], timeoutMs)
+  const result = await runCommand('lark-cli', [...args, '--as', 'user', '--json'], timeoutMs, options)
   const raw = String(result.stdout || '').trim()
   if (raw === '') {
     const message = (result.stderr || 'lark-cli 没有输出').slice(0, 300)
@@ -1358,11 +1359,13 @@ export async function syncArtifact(store, taskId, artifactId) {
   // 所以这里把临时文件直接命名成最终文档名。
   const tmpFile = join(tmpDir, name)
   await writeFile(tmpFile, body, 'utf8')
+  // lark-cli 只允许读写「当前工作目录子树」里的文件；传入绝对路径会被判成 unsafe file path。
+  // 参数形状由 lark-upload.js 统一生成（cwd = 临时目录，--file 只给文件名）。
+  const uploadFor = existing => larkUploadArgs({ dir: tmpDir, name, existing, folderToken: target.token })
   try {
     const existing = String(artifact.doc?.token ?? '').trim()
-    const result = existing.length > 0
-      ? await larkJson(['markdown', '+overwrite', '--file-token', existing, '--file', tmpFile], 45000)
-      : await larkJson(['markdown', '+create', '--folder-token', target.token, '--file', tmpFile, '--name', name], 45000)
+    const upload = uploadFor(existing)
+    const result = await larkJson(upload.args, 45000, { cwd: upload.cwd })
     if (!result.ok) {
       await store.mutate(draft => {
         const target = draft.tasks.find(item => item.id === taskId)?.artifacts?.find(item => item.id === artifactId)
