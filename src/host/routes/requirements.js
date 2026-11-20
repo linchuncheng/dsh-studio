@@ -1,6 +1,7 @@
 import { INTAKE_HTML, MINE_HTML, STATUS_HTML } from '../intake-pages.js'
 import { checklistFromAcceptance } from '../acceptance.js'
 import { resolveRequirement, requirementRefHint, reviewRequirement } from '../reviews.js'
+import { splitRequirement } from '../split.js'
 import { resolveSigner } from '../access.js'
 import { rejectUnknownFields } from '../route-contract.js'
 import { signoffActorKind } from '../intervention.js'
@@ -221,42 +222,8 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   }
   if (method === 'POST' && route === '/requirement/split') {
     const body = await host.readJsonBody(req)
-    const id = reqRef(store, body.id)
-    const requested = (Array.isArray(body.pointIds) ? body.pointIds : []).map(item => String(item))
-    const column = String(body.status ?? 'clarify')
-    const before = store.snapshot()
-    const requirement = before.requirements.find(item => item.id === id)
-    if (requirement === undefined) throw new Error(`no requirement ${id}`)
-    const approved = (requirement.review ?? null)?.status === 'approved'
-    const started = ['active', 'delivered', 'closed'].includes(requirement.status)
-    if (!approved && !started) throw new Error('需求还没评审通过，先过评审再拆卡')
-    const gaps = discoveryGaps(requirement)
-    if (gaps.length > 0) throw new Error('拆卡前先把澄清答完：' + gaps.join('；'))
-    const points = (requirement.points ?? []).filter(point => requested.length === 0 || requested.includes(point.id))
-    const uncovered = points.filter(point => !before.tasks.some(task => task.requirementId === id && task.pointId === point.id))
-    if (uncovered.length === 0) throw new Error('这些功能点都已经有卡了')
-    const created = []
-    for (const point of uncovered) {
-      const task = await host.createTask(store, {
-        title: `${point.id} ${point.title}`.slice(0, 200),
-        type: 'requirement',
-        requirementId: id,
-        pointId: point.id,
-        project: requirement.project,
-        iteration: requirement.iteration,
-        priority: requirement.priority,
-        status: column,
-        requirement: point.description ?? point.title,
-        /* 卡的验收清单 = 这个功能点的验收条件，一行一条。
-           以前这里是按类型铺的 3 条通用模板（"需求已确认"之类），勾完跟这条需求的验收毫无关系。 */
-        // 功能点没写验收条件时才退回按类型的通用模板（那是兜底，不是常态）
-        checklist: checklistFromAcceptance(point.acceptance).length > 0 ? checklistFromAcceptance(point.acceptance) : undefined,
-      })
-      created.push(task)
-    }
-    // 说了有后端却没有后端功能点：给个提示，不拦（后端可能确实在别的需求里）
-    // 两个方向的体检：说了有后端却没覆盖，和说了没后端却要动接口/表
-    const warnings = [backendCoverageWarning(requirement), frontendOnlyWarning(requirement), vaguePointsWarning(requirement)].filter(item => item !== null)
+    // 逻辑与 studio_requirement_split 共用（src/host/split.js），免得工具与路由行为漂移
+    const { created, warnings } = await splitRequirement(store, body, host.createTask)
     host.sendJson(res, 200, { ok: true, created, warnings, state: host.publicState(store) })
     return true
   }

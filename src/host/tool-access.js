@@ -39,6 +39,7 @@ export const TOOL_ACCESS = {
   studio_task_design: 'write',
   studio_requirement_save: 'write',
   studio_requirement_review: 'write',
+  studio_requirement_split: 'write',
   studio_requirement_signoff: 'write',
   studio_requirement_folder: 'write',
   studio_project_save: 'write',

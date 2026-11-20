@@ -13,6 +13,7 @@ import { runSummary } from './dispatcher.js'
 import { mineSkillFromCard } from './skill-mine.js'
 import { removeTaskComment, updateTaskComment } from './comments.js'
 import { resolveRequirement, requirementRefHint, reviewRequirement, saveTaskDesign } from './reviews.js'
+import { splitRequirement } from './split.js'
 import { skillUsage, skillUsageLine } from './skill-usage.js'
 import { mergeGateFor, mergeGateLine } from './merge-gate.js'
 const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","markDuplicate","mergeMergeRequest","publicConfig","publishMergeGate","recordAudit","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
@@ -214,6 +215,27 @@ export function registerTools(ctx, store) {
   }))
 
   register(defineStudioTool({
+    name: 'studio_requirement_split',
+    description: '把需求的功能点拆成卡（一个功能点一张卡，卡的验收清单 = 功能点的 acceptance）。'
+      + '前置门禁：需求评审通过（studio_requirement_review decision=approve）且澄清三问答完（discovery）。'
+      + '返回 created（新建的卡）与 warnings（说了有后端却没覆盖、说了没后端却要动接口、功能点太空 —— 只提示不拦）。'
+      + '已经建过卡的功能点会跳过；全部建过会报错。',
+    parameters: {
+      id: { type: 'string', required: true, description: '需求 id（req-xxx）或编号（REQ-YYYY-NNN）。' },
+      pointIds: { type: 'array', items: { type: 'string' }, description: '只拆这几个功能点（省略 = 全部没建卡的）' },
+      status: { type: 'string', description: '新卡落在哪一列，默认 clarify（待澄清）' },
+    },
+    async execute(args) {
+      const { created, warnings, requirement } = await splitRequirement(store, args, host.createTask)
+      const lines = [
+        `需求 ${requirement.code || requirement.id} 拆出 ${created.length} 张卡：${created.map(task => `${task.id}（${task.pointId}）`).join('、')}`,
+      ]
+      if (warnings.length > 0) lines.push('提示：' + warnings.join('；'))
+      return lines.join('\n')
+    },
+  }))
+
+  register(defineStudioTool({
     name: 'studio_requirement_list',
     description: 'List product requirements (REQ-...). A requirement is the anchor of the whole delivery chain: every task, artifact, test case, bug and MR hangs under it. Filter by project or status.',
     parameters: {
@@ -273,6 +295,16 @@ export function registerTools(ctx, store) {
       prd: { type: 'string', description: 'PRD 文档链接（如飞书云文档）。' },
       proto: { type: 'string', description: '原型链接。' },
       acceptance: { type: 'string', description: '验收标准链接。' },
+      discovery: {
+        type: 'object',
+        additionalProperties: true,
+        description: '澄清三问（拆卡前的必答项）：{server:"有|没有服务端", auth:"谁做鉴权", boundary:"交付边界"}；缺项时拆卡会被拒',
+      },
+      points: {
+        type: 'array',
+        items: { type: 'object', additionalProperties: true },
+        description: '功能点：[{id:"p1", title:"…", description?, acceptance:[{id,text}] 或 ["一句话"]}]；拆卡时一个功能点变一张卡，卡的验收清单 = 这里的 acceptance',
+      },
       pool: {
         type: 'object',
         additionalProperties: true,

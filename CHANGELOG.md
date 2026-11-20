@@ -1,6 +1,31 @@
 # 更新日志
 
 
+## [0.9.43] — 2026-11-20
+
+### 工具层补齐「会话里聊完需求 → 拆成卡」（issue #21）
+
+这条链路平台早就设计好了门禁，但**工具层三步全缺**——agent 只能绕 HTTP、还得自己想办法知道端口。
+现在三步都能用工具走完：
+
+| 要做的事 | 之前 | 现在 |
+| --- | --- | --- |
+| 写澄清三问 `discovery` | 只有 HTTP 认 | `studio_requirement_save` 的 `discovery: {server, auth, boundary}` |
+| 写功能点 `points`（带 acceptance） | 只有 HTTP 认 | `studio_requirement_save` 的 `points: [{id, title, acceptance}]` |
+| 把功能点拆成卡 | **完全没有** | **新工具 `studio_requirement_split`**（46 个） |
+
+- 拆卡逻辑抽成 `src/host/split.js`，**HTTP 路由与工具共用一份**，行为不会漂：
+  一个功能点一张卡，卡的验收清单 = 该功能点的 `acceptance`；已建过卡的功能点跳过；
+  门禁照旧（评审通过 + 澄清答完才让拆），错误文案直接给下一步该做什么。
+- `warnings`（说了有后端却没覆盖 / 说了没后端却要动接口 / 功能点太空）一并回给工具层，
+  以前只出现在 HTTP 响应的 `body.warnings` 里，agent 拿到就丢。
+- `/requirement/split` 与 `/requirement/pool` 进 `route-contract.js` 的未知字段白名单。
+
+### 测试
+`tests/split.test.mjs` 4 条：验收条件进清单、已建卡跳过、两道门禁、工具层全链路（save 带
+discovery/points → review → split 出卡）。`npm test` 300 条全绿（本地 + `TZ=UTC`）。
+
+
 ## [0.9.42] — 2026-11-20
 
 ### 文档：README 截图全部重拍（12 张）

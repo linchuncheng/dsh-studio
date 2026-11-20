@@ -35,6 +35,8 @@ declareRoute('/requirement/review', ['id', 'decision', 'note', 'by', 'operator']
 declareRoute('/requirement/signoff', ['id', 'action', 'note', 'by', 'override', 'operator'])
 declareRoute('/task/merge-gate', ['id', 'by', 'publish', 'action'])
 declareRoute('/task/merge', ['id', 'by'])
+declareRoute('/requirement/split', ['id', 'pointIds', 'status'])
+declareRoute('/requirement/pool', ['id', 'pool'])
 
 /** 诊断用：当前登记了哪些路由。 */
 export function declaredRoutes() {
