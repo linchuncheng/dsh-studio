@@ -239,6 +239,52 @@ try {
   check('⑤ 技能行有使用读数', skillText.includes('用上') || skillText.includes('还没被用上'))
   await page.screenshot({ path: join(outDir, 'skills.png') })
 
+  // ⑥ 工作台排版：块与块之间不许压在一起，KPI 不许落单（2026-11-20 真机踩过）
+  //    真机症状：两组 KPI 各 5 张卡按 4 列排，第 5 张落到第二行，「整体情况」那一节的底边
+  //    又是 0 距离，于是落单的「AI 在跑」卡片直接压在「流程与产出」面板上边线上。
+  //    这里量的是几何：正文直接子块的垂直间距，以及 KPI 最后一行的张数。
+  await clickExact('工作台')
+  await new Promise(resolve => setTimeout(resolve, 900))
+  const layout = await page.evaluate(() => {
+    const root = document.querySelector('[data-dsh-studio]')
+    if (root === null) return { gaps: [], orphan: [] }
+    const body = root.querySelector('.ds-body')
+    const gaps = []
+    if (body !== null) {
+      const kids = [...body.children].filter(el => {
+        const cs = getComputedStyle(el)
+        if (cs.display === 'none' || cs.position === 'absolute' || cs.visibility === 'hidden') return false
+        const r = el.getBoundingClientRect()
+        return r.width > 8 && r.height > 8
+      })
+      let prev = null
+      for (const el of kids) {
+        const r = el.getBoundingClientRect()
+        if (prev !== null) {
+          const pr = prev.getBoundingClientRect()
+          if (!(r.left >= pr.right - 2 || pr.left >= r.right - 2)) {
+            const gap = Math.round(r.top - pr.bottom)
+            if (gap < 8) gaps.push(`${prev.className.split(' ')[0]} → ${el.className.split(' ')[0]} = ${gap}px`)
+          }
+        }
+        prev = el
+      }
+    }
+    const orphan = []
+    for (const grid of root.querySelectorAll('.ds-kpi-grid')) {
+      const rects = [...grid.children].map(el => el.getBoundingClientRect()).filter(r => r.width > 0)
+      if (rects.length < 2) continue
+      const byTop = new Map()
+      for (const r of rects) byTop.set(Math.round(r.top), (byTop.get(Math.round(r.top)) ?? 0) + 1)
+      const counts = [...byTop.values()]
+      if (counts.length > 1 && counts[counts.length - 1] === 1) orphan.push(`${rects.length} 张卡排成 ${counts.join('+')}`)
+    }
+    return { gaps, orphan }
+  })
+  check('⑥ 工作台块与块之间不贴在一起（间距 ≥ 8px）', layout.gaps.length === 0, layout.gaps.slice(0, 3).join(' / '))
+  check('⑥ 工作台 KPI 不落单（没有一行只剩一张卡）', layout.orphan.length === 0, layout.orphan.join(' / '))
+  await page.screenshot({ path: join(outDir, 'dashboard-layout.png') })
+
   check('全程没有 pageerror / console 错误', errors.length === 0, errors.slice(0, 3).join(' | '))
 } finally {
   if (browser !== undefined) await browser.close()
