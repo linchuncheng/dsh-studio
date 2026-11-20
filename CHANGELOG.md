@@ -1,6 +1,16 @@
 # 更新日志
 
 
+## [0.9.27] — 2026-11-20
+
+### 修复
+- **CI 从 0.9.23 起一直是红的**：`ci.yml` 在跑 `npm test` 之前**不装依赖**（契约测试本来就不该依赖
+  node_modules），而浏览器用例那条「真跑」测试只判了「有没有 Chrome/Edge」，没判「装没装 puppeteer-core」。
+  于是 GitHub 上每次都红在 `Repository contract`，构建步骤被跳过。
+- 真跑那条测试的跳过条件补上依赖检查：没有 `puppeteer-core` 就 skip，并打印原因。
+  按 CI 条件本地复现：**245 passed / 1 skipped / 0 failed**（修之前是 1 failed）。
+
+
 ## [0.9.26] — 2026-11-20
 
 ### 修复

@@ -9,7 +9,15 @@ import { isExecutable, coverageStrength, resolveCaseResult } from '../src/host/c
 import { resolveBrowserExecutable, runBrowserCase, sanitizeCaseBrowser } from '../src/host/browser-runner.js'
 
 const executablePath = resolveBrowserExecutable({ testing: {} }, existsSync)
-const skip = executablePath === null ? '这台机器上没有 Chrome / Edge' : false
+/* 真跑那条要两个条件：这台机器有 Chrome/Edge，**并且**装得上 puppeteer-core。
+   CI 在跑 `npm test` 之前不装依赖（契约测试本来就不该依赖 node_modules），
+   所以那里必然没有 puppeteer-core —— 之前只判了「有没有浏览器」，CI 上就红在真跑那条。 */
+const puppeteerReady = await (async () => {
+  try { await import('puppeteer-core'); return true } catch { return false }
+})()
+const skip = executablePath === null
+  ? '这台机器上没有 Chrome / Edge'
+  : (puppeteerReady ? false : '没装 puppeteer-core（devDependency 只在本地装）')
 
 test('形状：url / path 都认，步骤归一化，垃圾步骤丢掉，超时夹紧', () => {
   assert.equal(sanitizeCaseBrowser(null), null)
