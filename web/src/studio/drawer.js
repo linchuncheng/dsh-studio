@@ -86,6 +86,8 @@ function Drawer({ task, state, onClose, onChanged }) {
   // 项目检查：跑本地质量命令（npm run check 之类），结果由服务端写回卡片。
   const [qualityRun, setQualityRun] = React.useState({ busy: false, line: '' })
   const quality = task.quality ?? null
+  // 技能沉淀：把这张卡的证据汇总成一条技能草稿（默认停用，人看过再启用）。
+  const [mine, setMine] = React.useState({ busy: false, line: '' })
   const caseSum = caseSummaryOf(task)
   const checkSum = checkSummaryOf(task)
   const cases = parts !== null && Array.isArray(parts.cases) ? parts.cases : (Array.isArray(task.cases) ? task.cases : [])
@@ -566,7 +568,23 @@ function Drawer({ task, state, onClose, onChanged }) {
       setQualityRun({ busy: false, line: cause instanceof Error ? cause.message : String(cause) })
     }
   }
-  // 从 GitLab 核对：拉 MR 的 changes 与流水线，和卡上自报的值比一遍（没配 GitLab 会直接提示）。  // 设计评审：两步录入（链接 + 状态），存完刷新卡片。闸门在服务端，这里只管填。
+  // 技能沉淀：把这张卡上的证据汇总成技能草稿（服务端只搬事实，不推断）。
+  const mineSkill = async () => {
+    setMine({ busy: true, line: '' })
+    try {
+      const result = await api('/skill/mine', { taskId: task.id })
+      const e = result.evidence ?? {}
+      setMine({
+        busy: false,
+        line: `已存为草稿「${result.skill?.name ?? '?'}」：验收锚点 ${e.anchors ?? 0} 条 · 能跑的用例 ${e.verifications ?? 0} 条 · 踩坑 ${e.pitfalls ?? 0} 条。到 设置 → 技能库 启用后才会被派单注入。`,
+      })
+      await onChanged()
+    } catch (cause) {
+      setMine({ busy: false, line: cause instanceof Error ? cause.message : String(cause) })
+    }
+  }
+  // 从 GitLab 核对：拉 MR 的 changes 与流水线，和卡上自报的值比一遍（没配 GitLab 会直接提示）。
+  // 设计评审：两步录入（链接 + 状态），存完刷新卡片。闸门在服务端，这里只管填。
   const editDesign = async () => {
     const link = await promptDialog('设计稿链接（Figma / 蓝湖 / 图片都行）', { title: '设计评审', defaultValue: task.design?.link ?? '' })
     if (link === null) return
@@ -971,6 +989,18 @@ function Drawer({ task, state, onClose, onChanged }) {
               ),
             ),
           worktreeMsg && worktree === null ? h('div', { className: 'ds-hint' }, worktreeMsg) : null,
+        ),
+      ),
+      h('div', { className: 'ds-sec', style: hideWhen('coding') },
+        h('div', { className: 'ds-sec-head' }, '技能沉淀',
+          h('span', { className: 'ds-hint' }, '把这张卡上真实发生过的证据汇总成一条技能草稿（默认停用）')),
+        h('div', { className: 'ds-sec-body' },
+          h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', flexWrap: 'wrap' } },
+            h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy || mine.busy, onClick: () => void mineSkill() },
+              mine.busy ? '汇总中…' : '把这张卡沉淀成技能'),
+            h('span', { className: 'ds-hint' }, '只搬已有的验收锚点、跑过的命令、踩过的坑，不做推断；没有证据的卡不给沉淀。'),
+          ),
+          mine.line === '' ? null : h('div', { className: 'ds-hint', style: { marginTop: 6 } }, mine.line),
         ),
       ),
       h('div', { className: 'ds-sec', style: hideWhen('coding') },

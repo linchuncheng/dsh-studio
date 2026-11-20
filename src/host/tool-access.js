@@ -40,6 +40,7 @@ export const TOOL_ACCESS = {
   studio_requirement_folder: 'write',
   studio_project_save: 'write',
   studio_skill_save: 'write',
+  studio_skill_mine: 'write',
   studio_bug_duplicate: 'write',
   studio_test_run: 'write',
   studio_test_suite: 'write',

@@ -10,6 +10,7 @@ import {
   runSuite, runTaskCases, runTaskQuality, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask,
 } from './executor.js'
 import { runSummary } from './dispatcher.js'
+import { mineSkillFromCard } from './skill-mine.js'
 const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","markDuplicate","publicConfig","recordAudit","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
 let host = {
   activeDispatcher: () => {},
@@ -1276,11 +1277,40 @@ export function registerTools(ctx, store) {
       content: { type: 'string', required: true, description: 'Markdown body: the actual procedure, commands and pitfalls.' },
       whenToUse: { type: 'string', description: 'Extra routing guidance, e.g. 收到 MR 评审任务时。' },
       tags: { type: 'array', items: { type: 'string' }, description: 'A few tags: gitlab / review / feishu …' },
+      projects: { type: 'array', items: { type: 'string' }, description: 'Project scope (ids). Empty = global; set it when the procedure only applies to one project.' },
+      enabled: { type: 'boolean', description: 'Default true. false = keep it as a draft: stored in the library but NOT written to ~/.dsh/skills and NOT injected into dispatches.' },
     },
     async execute(args) {
       if (host.getActiveSkills() === undefined) throw new Error('技能库尚未就绪')
       const { skill, file } = await host.getActiveSkills().save(args)
       return `已保存技能 ${skill.name}${file === undefined ? '（已停用，未落盘）' : `，已写入 ${file}`}`
+    },
+  }))
+
+  register(defineStudioTool({
+    name: 'studio_skill_mine',
+    description: 'Mine one finished task into a skill draft: the acceptance anchors, the commands that actually verified it, the pitfalls that actually happened, and the files touched. Nothing is inferred — sections without evidence are left out. The draft is saved DISABLED, so a human decides whether it becomes a real skill.',
+    parameters: {
+      taskId: { type: 'string', required: true, description: 'Task id to mine.' },
+      name: { type: 'string', description: 'Kebab-case skill name; defaults to from-<card code>.' },
+      projects: { type: 'array', items: { type: 'string' }, description: 'Project scope; defaults to the card project (empty = global).' },
+      save: { type: 'boolean', description: 'Default true: save as a disabled draft. false = preview only.' },
+    },
+    async execute(args) {
+      if (host.getActiveSkills() === undefined) throw new Error('技能库尚未就绪')
+      const state = store.snapshot()
+      const task = state.tasks.find(entry => entry.id === String(args.taskId ?? ''))
+      const mined = mineSkillFromCard(state, task, { name: args.name, projects: args.projects })
+      if (mined.ok !== true) throw new Error(mined.reason)
+      const body = mined.skill.content.length > 2500 ? `${mined.skill.content.slice(0, 2500)}\n…（正文共 ${mined.skill.content.length} 字，` + '完整内容见技能库）' : mined.skill.content
+      const head = [
+        `技能名：${mined.skill.name}`,
+        `适用范围：${mined.skill.projects.length === 0 ? '全局' : mined.skill.projects.join('、')}`,
+        `证据：验收锚点 ${mined.evidence.anchors} 条 · 能跑的用例 ${mined.evidence.verifications} 条 · 踩坑 ${mined.evidence.pitfalls} 条 · 改动文件 ${mined.evidence.files} 个 · 评论 ${mined.evidence.comments} 条`,
+      ].join('\n')
+      if (args.save === false) return `${head}\n\n--- 草稿（未保存）---\n${body}`
+      const { skill, file } = await host.getActiveSkills().save(mined.skill)
+      return `${head}\n\n已存为草稿「${skill.name}」，**默认停用**（没写盘、也不会注入派单）${file === undefined ? '' : `，写入 ${file}`}。\n人确认后启用：studio_skill_save 带上同样的正文并传 enabled=true，或在 设置 → 技能库 里启用。\n\n--- 草稿 ---\n${body}`
     },
   }))
 

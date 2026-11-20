@@ -50,6 +50,7 @@ import { configureRequirementRoutes, handleRequirementRoute } from './src/host/r
 import { configureReleasesRoutes, handleReleasesRoute } from './src/host/routes/releases.js'
 import { configureAgentsRoutes, handleAgentsRoute } from './src/host/routes/agents.js'
 import { configureCodingRoutes, handleCodingRoute } from './src/host/routes/coding.js'
+import { isSkillName, sanitizeSkill, sanitizeSkills, skillFromMarkdown, skillMarkdown } from './src/host/skill-shape.js'
 import { configureToolHost, registerTools } from './src/host/tools.js'
 import { configureConnectRoutes, handleConnectRoute } from './src/host/routes/connect.js'
 import { configureInsightsRoutes, handleInsightsRoute } from './src/host/routes/insights.js'
@@ -88,112 +89,6 @@ function skillsRoot() {
   return dshHomePath('skills')
 }
 
-/** The skill-name grammar the DSH registry validates against (kebab-case). */
-function isSkillName(value) {
-  const name = String(value ?? '')
-  return name.length > 0 && name.length <= 64 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name)
-}
-
-/** Coerce whatever the caller sent into a storable skill row. */
-function sanitizeSkill(raw) {
-  if (raw === null || typeof raw !== 'object') return undefined
-  const name = String(raw.name ?? '').trim().toLowerCase()
-  if (!isSkillName(name)) return undefined
-  const content = String(raw.content ?? '')
-  const description = (String(raw.description ?? '').trim() || content.trim().split('\n')[0] || name).slice(0, 300)
-  const tags = (Array.isArray(raw.tags) ? raw.tags : String(raw.tags ?? '').split(/[,，\s]+/))
-    .map(tag => String(tag ?? '').trim().slice(0, 30))
-    .filter(tag => tag.length > 0)
-    .filter((tag, index, all) => all.indexOf(tag) === index)
-    .slice(0, 8)
-  return {
-    name,
-    description,
-    whenToUse: String(raw.whenToUse ?? '').trim().slice(0, 400),
-    content: content.slice(0, 60_000),
-    tags,
-    enabled: raw.enabled !== false,
-    updatedAt: typeof raw.updatedAt === 'string' && raw.updatedAt.length > 0 ? raw.updatedAt : new Date().toISOString(),
-  }
-}
-
-/** Coerce a saved library file into skill rows. */
-function sanitizeSkills(input) {
-  if (!Array.isArray(input)) return []
-  const seen = new Set()
-  const out = []
-  for (const raw of input.slice(0, 200)) {
-    const skill = sanitizeSkill(raw)
-    if (skill === undefined || seen.has(skill.name)) continue
-    seen.add(skill.name)
-    out.push(skill)
-  }
-  return out
-}
-
-/** The SKILL.md text (YAML frontmatter + body) for one library row. */
-function skillMarkdown(skill) {
-  const lines = ['---', `name: ${skill.name}`, `description: ${skill.description.replace(/\n/g, ' ')}`]
-  if (skill.whenToUse.length > 0) lines.push(`whenToUse: ${skill.whenToUse.replace(/\n/g, ' ')}`)
-  if (skill.tags.length > 0) lines.push(`tags: ${skill.tags.join(', ')}`)
-  lines.push('---', '', skill.content.trim(), '')
-  return lines.join('\n')
-}
-
-/** Split `---` frontmatter into `{fields, body}`; no frontmatter → all body. */
-function splitFrontmatter(source) {
-  const text = String(source ?? '').replace(/\r\n/g, '\n')
-  const match = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(text)
-  if (match === null) return { fields: {}, body: text }
-  const fields = {}
-  for (const line of match[1].split('\n')) {
-    const colon = line.indexOf(':')
-    if (colon <= 0) continue
-    const key = line.slice(0, colon).trim()
-    let value = line.slice(colon + 1).trim()
-    if (value.length >= 2) {
-      const first = value[0]
-      const last = value[value.length - 1]
-      if ((first === '"' && last === '"') || (first === "'" && last === "'")) value = value.slice(1, -1)
-    }
-    if (key.length > 0) fields[key] = value
-  }
-  return { fields, body: match[2] }
-}
-
-/** kebab-case slug from arbitrary text; non-ASCII text falls back to a hash. */
-function slugifySkill(value) {
-  const ascii = String(value ?? '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48)
-  if (ascii.length >= 2) return ascii
-  return `skill-${createHash('sha1').update(String(value ?? '')).digest('hex').slice(0, 6)}`
-}
-
-/**
- * Turn an uploaded `SKILL.md` into a library row.
- *
- * Precedence for the name: frontmatter `name` → filename → heading → hash, so
- * a skill exported by another tool keeps its identity on the way in.
- */
-function skillFromMarkdown(fileName, source) {
-  const { fields, body } = splitFrontmatter(source)
-  const base = String(fileName ?? '').split('/').pop().replace(/\.(md|markdown|txt)$/i, '')
-  const declared = String(fields.name ?? '').trim().toLowerCase()
-  const name = isSkillName(declared) ? declared : slugifySkill(declared || base)
-  const heading = (body.match(/^#\s+(.+)$/m) ?? [])[1] ?? ''
-  const description = String(fields.description ?? '').trim() || heading.trim() || name
-  return {
-    name,
-    description,
-    whenToUse: String(fields.whenToUse ?? fields.when_to_use ?? '').trim(),
-    content: body.trim(),
-    tags: String(fields.tags ?? '').replace(/[[\]]/g, '').split(/[,，\s]+/).filter(Boolean),
-    enabled: true,
-  }
-}
 
 /**
  * Pull `SKILL.md` out of an uploaded `.zip`.

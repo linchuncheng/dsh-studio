@@ -120,6 +120,11 @@ async function runOnce(round) {
   step('需求交付', (fin.body.requirement?.status ?? after?.status) === 'delivered', String(fin.body.requirement?.status ?? after?.status))
 
   const cardsNow = (await state()).tasks.filter(t => t.requirementId === req.id)
+  /* 技能沉淀：拿一张做完的卡挖一条草稿（预览模式，不落库）。
+     判据是「只搬证据」：有出处段、草稿是停用的、名字是 kebab-case。 */
+  const mined = await post('/skill/mine', { taskId: cardsNow[0]?.id, save: false })
+  step('技能沉淀（预览）', mined.status === 200 && mined.body?.skill?.enabled === false && String(mined.body?.skill?.content ?? '').includes('## 出处'),
+    String(mined.body?.skill?.name ?? mined.body?.error ?? '').slice(0, 80))
   const rel = await post('/release/save', { release: { name: '全闭环自检版本 ' + stamp, version: '0.0.0-' + stamp.replace(/[^0-9]/g, ''), project: PROJECT, tagName: 'e2e-' + stamp.replace(/[^0-9]/g, ''), smoke: [{ text: '自检脚本跑通', done: true }] } })
   const release = rel.body.release ?? {}
   await post('/release/link', { id: release.id, taskIds: cardsNow.map(c => c.id) })

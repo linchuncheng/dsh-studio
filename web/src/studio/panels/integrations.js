@@ -293,6 +293,8 @@ export function SkillsPanel({ config, onChanged }) {
         skill: {
           name: draft.name, description: draft.description, whenToUse: draft.whenToUse,
           tags: draft.tags, content: draft.content, enabled: draft.enabled !== false,
+          // 项目范围：空 = 全局技能；填了项目 id 就只在那些项目的派单里注入。
+          projects: String(draft.projects ?? '').split(/[,，\s]+/).map(item => item.trim()).filter(Boolean),
         },
       })
       setDraft(null)
@@ -340,7 +342,8 @@ export function SkillsPanel({ config, onChanged }) {
       h('div', {},
         h('code', {}, skill.name),
         (skill.tags ?? []).map(tag => h(ChipField, { className: 'ds-chip', key: tag }, tag)),
-        skill.enabled === false ? h('span', { className: 'ds-hint' }, ' （已停用）') : null,
+        skill.enabled === false ? h('span', { className: 'ds-hint' }, ' （草稿/已停用）') : null,
+        (skill.projects ?? []).length > 0 ? h('span', { className: 'ds-hint' }, ` 仅限项目：${skill.projects.join('、')}`) : null,
         onDisk.includes(skill.name) ? null : h('span', { className: 'ds-err' }, ' 未落盘'),
       ),
       h('div', { className: 'ds-hint' }, skill.description),
@@ -350,7 +353,7 @@ export function SkillsPanel({ config, onChanged }) {
         : h('div', { className: 'ds-empty' }, '还没有专家挂这个技能'),
     ),
     h('div', { className: 'ds-listrow-actions' },
-      h('button', { className: 'ds-btn', disabled: busy, onClick: () => { setNote(null); setDraft({ ...skill, editing: true, tags: (skill.tags ?? []).join(', ') }) } }, '编辑'),
+      h('button', { className: 'ds-btn', disabled: busy, onClick: () => { setNote(null); setDraft({ ...skill, editing: true, tags: (skill.tags ?? []).join(', '), projects: (skill.projects ?? []).join(', ') }) } }, '编辑'),
       h('button', { className: 'ds-btn', disabled: busy, onClick: () => void remove(skill), 'data-danger': '1' }, '删除'),
     ),
   ))
@@ -362,7 +365,7 @@ export function SkillsPanel({ config, onChanged }) {
       title: '技能库（skills-manager）',
       hint: data === null ? '读取中…' : `保存在 ${data.root}/<名字>/SKILL.md，所有专家都能用 skill 工具加载；专家也可以自己用 studio_skill_save 往这里加技能。支持上传 SKILL.md 或包含 SKILL.md 的 .zip 技能包。`,
       rows, addLabel: '新建技能',
-      onAdd: () => { setNote(null); setDraft({ name: '', description: '', whenToUse: '', tags: '', content: '# 什么时候用\n\n# 步骤\n\n1. \n', enabled: true, editing: false }) },
+      onAdd: () => { setNote(null); setDraft({ name: '', description: '', whenToUse: '', tags: '', projects: '', content: '# 什么时候用\n\n# 步骤\n\n1. \n', enabled: true, editing: false }) },
       render: row => row,
       empty: '还没有技能。把一次摸索出来的做法写成第一条，下次就不用重新摸索。',
     }),
@@ -433,6 +436,10 @@ export function SkillsPanel({ config, onChanged }) {
             h('div', { className: 'ds-label' }, '标签（逗号分隔）'),
             h(TextField, { className: 'ds-input', value: draft.tags, placeholder: 'gitlab, review', onChange: e => set('tags', e.target.value) }),
           ),
+        ),
+        h('div', { className: 'ds-field' },
+          h('div', { className: 'ds-label' }, '项目范围（选填，项目 id 逗号分隔）'),
+          h(TextField, { className: 'ds-input', value: draft.projects ?? '', placeholder: '留空 = 全局技能；填了只在那些项目的派单里注入', onChange: e => set('projects', e.target.value) }),
         ),
         h('div', { className: 'ds-field' },
           h('div', { className: 'ds-label' }, '技能正文（Markdown：什么情况用、步骤、命令、坑）'),

@@ -1,3 +1,5 @@
+import { mineSkillFromCard } from '../skill-mine.js'
+
 const INJECTED = ["isSkillName","readJsonBody","sendJson","skillFromMarkdown","skillFromZip","skillsRoot","getSkills"]
 let host = {
   isSkillName: () => {},
@@ -14,6 +16,33 @@ export function configureSkillsRoutes(services) {
 }
 
 export async function handleSkillsRoute({ method, route, req, res, store, url }) {
+if (method === 'POST' && route === '/skill/mine') {
+  // 技能沉淀：把一张卡上真实发生过的证据汇总成一条技能草稿（默认停用，人看过再启用）。
+  if (host.getSkills() === undefined) throw new Error('技能库尚未就绪')
+  const body = await host.readJsonBody(req)
+  const state = store.snapshot()
+  const task = state.tasks.find(entry => entry.id === String(body.taskId ?? body.id ?? ''))
+  const mined = mineSkillFromCard(state, task, { name: body.name, projects: body.projects })
+  if (mined.ok !== true) {
+    host.sendJson(res, 400, { ok: false, error: mined.reason })
+    return true
+  }
+  if (body.save === false) {
+    host.sendJson(res, 200, { ok: true, skill: mined.skill, evidence: mined.evidence, saved: false })
+    return true
+  }
+  const { skill, file, warning } = await host.getSkills().save(mined.skill)
+  host.sendJson(res, 200, {
+    ok: true,
+    skill,
+    evidence: mined.evidence,
+    saved: true,
+    file: file ?? null,
+    warning: warning ?? null,
+    skills: host.getSkills().list(),
+  })
+  return true
+}
 if (route.startsWith('/skills')) {
   if (host.getSkills() === undefined) throw new Error('技能库尚未就绪')
   if (method === 'GET' && route === '/skills') {

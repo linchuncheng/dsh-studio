@@ -893,11 +893,36 @@ export function buildExpertPrompt(task, expert, column, config, team, instructio
     `你是「${expert.emoji} ${expert.name}」，需求&任务工作空间里的一名专家。现在接手工作看板上的一张卡。`,
     expert.description ? `\n你的定位：${expert.description}` : '',
     expert.domain ? `\n业务领域：${expert.domain}（判断与取舍以这个领域的规范和风险偏好为准）` : '',
-    (expert.skills ?? []).length > 0 ? `\n你可以使用的技能：${(expert.skills ?? []).map(name => {
-      // 注入可能还没就绪：这里必须容忍没有技能库（以前写成裸 activeSkills，一派单就 ReferenceError）
-      const known = host.getActiveSkills?.()?.get?.(name)
-      return known === undefined ? name : `${name}（${known.description}）`
-    }).join('、')}。需要时调用 skill 工具加载对应技能，再按其说明操作。` : '',
+    (expert.skills ?? []).length > 0 ? (() => {
+      /* 技能注入按「这个项目用得上吗」过滤：
+         - 停用的技能不注入（它也没落成 SKILL.md，注入只会让 agent 去加载一个不存在的东西）；
+         - 声明了 projects 的技能只在这些项目里注入，其余情况给一句「这个项目用不上」，避免救命技能被静默吞掉。
+         注入还没就绪时必须容忍没有技能库（以前写成裸 activeSkills，一派单就 ReferenceError）。 */
+      const library = host.getActiveSkills?.()
+      const projectId = String(task.project ?? '').trim()
+      const usable = []
+      const skipped = []
+      for (const name of expert.skills ?? []) {
+        const known = library?.get?.(name)
+        if (known === undefined) {
+          usable.push(name)
+          continue
+        }
+        if (known.enabled === false) {
+          skipped.push(`${name}（已停用）`)
+          continue
+        }
+        const scope = Array.isArray(known.projects) ? known.projects : []
+        if (scope.length > 0 && !scope.includes(projectId)) {
+          skipped.push(`${name}（只用于 ${scope.join(' / ')}）`)
+          continue
+        }
+        usable.push(`${name}（${known.description}）`)
+      }
+      if (usable.length === 0) return skipped.length === 0 ? '' : `\n这个项目用不上的技能：${skipped.join('、')}`
+      const tail = skipped.length === 0 ? '' : `\n这个项目用不上的技能：${skipped.join('、')}`
+      return `\n你可以使用的技能：${usable.join('、')}。需要时调用 skill 工具加载对应技能，再按其说明操作。${tail}`
+    })() : '',
     team !== undefined ? `\n你在「${team.name}」专家团里协作，本团成员：\n${members}` : '',
     teamMemoryBlock(teamMemory),
     '',

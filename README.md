@@ -29,6 +29,7 @@
 | 发布 | 版本 tag、灰度与部署记录、冒烟清单、发布门禁 |
 | 观测 | 工作台（在办/逾期/阻塞/缺陷/**强制放行超限**）、效能（周期分布/返工/AI 成本/**强制放行明细**/**自动化率**/**门禁一次通过率 · 派单周活 · 需求交付时长**）、燃尽 |
 | 集成 | GitLab（MR 事实对账）、飞书（云文档/多维表格/webhook）、内部市场 |
+| 技能 | 技能库（落成 `SKILL.md`）；**做完的卡可以一键沉淀成技能草稿**——只搬卡上真实发生过的验收锚点/跑过的命令/踩过的坑/改动面，没有证据的卡直接拒绝；草稿默认停用，人启用后才注入派单；技能可限定项目范围 |
 
 ## 界面与组件
 
@@ -45,7 +46,7 @@
 ```mermaid
 flowchart LR
   UI["浏览器<br/>client.js + web/src<br/>看板 · 需求 · 用例 · 版本 · 效能 · 设置"]
-  API["index.js<br/>apply(ctx) · 41 个 studio_* 工具 · /studio-api 前缀路由"]
+  API["index.js<br/>apply(ctx) · 42 个 studio_* 工具 · /studio-api 前缀路由"]
   HOST["src/host/*<br/>domain · dispatcher · executor · integrations · routes"]
   DB[("SQLite<br/>state · 快照 · side 键")]
   AGENT["专家会话<br/>studio-任务-专家"]
