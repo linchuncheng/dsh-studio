@@ -144,3 +144,26 @@ test('tools.js：写工具返回「库里那份」，不是回显入参（issue 
     rmSync(dir, { recursive: true, force: true })
   }
 })
+
+test('tools.js：描述里说能传的字段必须真能传（pool）', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-studio-pool-'))
+  const store = new StudioStore(join(dir, 'state.json'), { dbFile: join(dir, 'state.db'), secrets: new SecretStore(join(dir, '.secrets.json')) })
+  try {
+    await store.ready
+    const registered = []
+    const ctx = { tools: { register: tool => { registered.push(tool); return () => {} } }, effect: () => () => {} }
+    configureToolHost({
+      toolOperator: () => '自检', toolLevel: () => 'write',
+      checkToolAccess: () => ({ level: 'write', denial: null }), recordAudit: async () => {},
+      publicConfig: config => config, getActiveDispatcher: () => undefined, getActiveSkills: () => undefined,
+    })
+    registerTools(ctx, store)
+    const save = registered.find(tool => tool.name === 'studio_requirement_save')
+    const text = await save.execute({ title: '（自检）带 pool', pool: { reach: 100, impact: 3, confidence: 80, effort: 3 } }, {})
+    const json = JSON.parse(String(text).slice(String(text).indexOf('库里的记录：') + '库里的记录：'.length))
+    assert.ok(json.pool > 0, `pool 要真的算出来（否则描述与参数表不一致，调用方白传）：${text}`)
+  } finally {
+    store.db?.close?.()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})

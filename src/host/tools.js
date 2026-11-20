@@ -272,6 +272,11 @@ export function registerTools(ctx, store) {
       prd: { type: 'string', description: 'PRD 文档链接（如飞书云文档）。' },
       proto: { type: 'string', description: '原型链接。' },
       acceptance: { type: 'string', description: '验收标准链接。' },
+      pool: {
+        type: 'object',
+        additionalProperties: true,
+        description: 'RICE 需求池打分：{reach, impact, confidence, effort}（四条都填才会算分）',
+      },
     },
     async execute(args) {
       const input = { ...args }

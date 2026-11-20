@@ -42,7 +42,7 @@
   「路由层严格化」留在 #11 里继续跟踪，等面板侧的调用全部改成显式字段后再收。
 
 ### 测试
-`tools-audit.test.mjs` 新增 2 条（未知字段全拒绝、写工具回读）；`gates.test.mjs` 加 `sanitizeReviewGate` 归一化、`repo.test.mjs` 加「reviewGate 四处齐活」的契约（真机翻车点：patch 白名单漏了它 → /config 返回 200 但没生效）。`npm test` 273 条全绿（本地 + `TZ=UTC`）。
+`tools-audit.test.mjs` 新增 2 条（未知字段全拒绝、写工具回读）；`gates.test.mjs` 加 `sanitizeReviewGate` 归一化、`tools-audit` 加「描述里说能传的字段必须真能传（pool）」、`repo.test.mjs` 加「reviewGate 四处齐活」的契约（真机翻车点：patch 白名单漏了它 → /config 返回 200 但没生效）。`npm test` 274 条全绿（本地 + `TZ=UTC`）。
 
 
 ## [0.9.34] — 2026-11-20
