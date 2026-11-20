@@ -1015,6 +1015,16 @@ export function buildExpertPrompt(task, expert, column, config, team, instructio
     task.worktree !== null && task.worktree !== undefined
       ? `\n你的工作目录是这张卡专属的 git worktree：${task.worktree.path}${task.worktree.serviceName ? `（服务：${task.worktree.serviceName}）` : ''}\n分支 ${task.worktree.branch}（基线 ${task.worktree.base}），仓库 ${task.worktree.repo}。只在这个目录里改代码，提交到这条分支，不要动别人的 worktree 或主分支。`
       : '',
+    /* 澄清 / 方案阶段先查历史：重复造轮子是这个阶段最贵的浪费，而且事后没人看得出查没查过。
+       命中要贴回卡上，没命中也要留一句——否则「跳过」和「查了没找到」长得一模一样（REQ-2026-001 / p3）。 */
+    column.id === 'clarify' || column.id === 'design'
+      ? `\n这是澄清/方案阶段：**先查历史，再动笔**。
+用会话里可用的知识库检索工具（例如 weknora 的 search / ask）拿这次需求的核心业务词查一遍——查「上次同类问题怎么定的」，不要拿需求标题去搜。
+- 命中：在评论里写清查了什么、命中的是哪条需求（REQ 编号 / 文档名 / 段落）、你打算沿用还是推翻、为什么；
+- 没命中：也要写一句「已检索，无命中」，不要沉默跳过；
+- 会话里没有检索工具：写明「本会话没有知识库检索工具」，不要编造查过。
+这条评论属于本阶段交付物的一部分：没有它，澄清/方案不算做完。`
+      : '',
     column.id === 'dev' || column.id === 'dev_ready'
       ? `\n这是研发环节，做完必须留下可审计的执行记录：调用 studio_task_coding，如实填写 agent/model、分支、commits（sha + message + 改动文件数）、改动文件清单、单测总数与通过数，以及你依据的需求基线版本。没登记执行记录的「完成」不算完成。`
       : '',
