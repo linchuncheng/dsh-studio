@@ -79,6 +79,18 @@ AGENTS.md 列出每个 host 模块、config 白名单不漏键）每一条都对
 
 ## 4. 提交信息与分支
 
+**开发工作流（必须按这个顺序，不许跳步）**
+
+| 步 | 做什么 | 完成的判据 |
+| --- | --- | --- |
+| 1 | **在 git worktree 里开发**：从 `main` 拉一条 `fix/…`、`feat/…`、`docs/…` 分支并开独立 worktree | `git worktree list` 能看到；改动不落在主检出上 |
+| 2 | 写代码 + 写测试 | 改动带测试；没有测试要在 PR 里说明为什么不需要 |
+| 3 | **测试通过** | `npm test` 与 `TZ=UTC npm test` 全绿、`node --check`、`npm run verify:tdz`；改前端再加 `cd web && pnpm build` 与 `cmp dist/client.js client.js` |
+| 4 | **审核完成** | 自查清单 + 证据贴进 PR 正文；有第二个人时由他 approve。**评审没过不许提 PR** |
+| 5 | **提 PR** | `gh pr create`，正文写现象/根因/验证方式 + 检查清单结果 |
+| 6 | **合并主干 → 构建与发布** | PR 合并后 CI 必须绿；再打 tag `vX.Y.Z` 触发 `release.yml` 与镜像流水线，最后 `npm run verify:release` 必须「发版一致」 |
+
+- **不许直接往 `main` 推代码**：改了就在 worktree 分支上提交、开 PR。
 - 分支：`fix/…`、`feat/…`、`docs/…`、`ci/…`，一个 PR 只做一件事。
 - 提交标题一句话说清做了什么，与既有历史保持同一风格（中文/英文都行，本项目主要用中文）。
   正文写**为什么**：现象、根因、你验证的方式。
