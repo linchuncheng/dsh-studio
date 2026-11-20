@@ -96,6 +96,11 @@ STUDIO_TOKEN=$(sudo journalctl -u dsh-web -n 50 | grep -o 'token=[A-Za-z0-9_-]*'
     **默认跑完自动删除自己建的数据**（看结果加 `--keep`）。周检用 `npm run selfcheck`（= `--k 3`，连跑三轮看成功率）；定时任务在 2026-11-16 被用户主动删除，不要自动重建，需要时给一条 crontab：`0 9 * * 1 cd <repo> && npm run selfcheck`。
 12. 提示词 A/B：`node tools/prompt-ab.mjs --task <卡 id> --variant '一段追加提示词'` 先看计划（免费），`--setup-only` 验建/删专家通路（免费），`--run` 才真派两次单（花 token）。判据是用例通过数 / 代码事实 / 评论数 / 耗时。
 13. CI 在 `.github/workflows/ci.yml`：语法 → 契约 → `web/` 里 `pnpm install --frozen-lockfile && pnpm build` → `cmp dist/client.js client.js` → `git diff --exit-code`（产物必须可复现，改了前端忘记构建会直接红）
+    **推完就等这一提交的结论：`npm run ci:watch`**（= `gh run watch --exit-status`，本机已登录 gh）。
+    它阻塞到流水线结束，绿了返回 0；红了自动打印 `--log-failed` 的尾巴，不用去网页翻。
+    别再 `sleep` 轮询：以前那样每次多等 1~2 分钟，而且失败时拿不到日志（未认证的日志接口 403）——
+    2026-11-20 连推 5 个提交全红就是这么漏掉的。指定别的提交：`npm run ci:watch -- --sha <sha>`。
+    注意 `ci.yml` 在跑 `npm test` 之前**不装依赖**：契约测试里不能 `import` devDependency（浏览器用例那条就是踩在这上面红的）。
 
 ## 4.5 需求澄清（比代码更靠前的一道门）
 
