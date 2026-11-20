@@ -10,6 +10,8 @@ const IID = Number(process.env.MOCK_GITLAB_IID ?? 7)
 
 const MR = {
   iid: IID,
+  // 合并门禁的提交状态挂在头提交上：桩里给一个固定 sha
+  sha: 'c3d4e5f60718293a4b5c6d7e8f90123456789012',
   title: 'feat: 库存预占（打桩）',
   state: 'opened',
   web_url: 'http://gitlab.local/demo/order/-/merge_requests/' + IID,
@@ -36,11 +38,25 @@ const TEST_REPORT = {
   test_suites: [{ name: 'inventory', total_count: 12, success_count: 11, failed_count: 1 }],
 }
 
+// 发布过来的提交状态（/statuses/:sha），用 GET /__statuses 取回来看
+const STATUSES = []
 const server = createServer((req, res) => {
   const url = decodeURIComponent(req.url ?? '')
   const send = (code, body) => {
     res.writeHead(code, { 'content-type': 'application/json' })
     res.end(JSON.stringify(body))
+  }
+  if (url.endsWith('/__statuses')) return send(200, STATUSES)
+  if (req.method === 'POST' && url.includes('/statuses/')) {
+    let body = ''
+    req.on('data', chunk => { body += chunk })
+    req.on('end', () => {
+      let parsed = {}
+      try { parsed = JSON.parse(body === '' ? '{}' : body) } catch { parsed = { raw: body } }
+      STATUSES.push({ url, ...parsed })
+      send(201, { id: STATUSES.length, status: parsed.state ?? '' })
+    })
+    return
   }
   if (url.includes('/pipelines/101/test_report')) return send(200, TEST_REPORT)
   if (url.includes('/merge_requests/' + IID + '/pipelines')) return send(200, PIPELINES)

@@ -89,8 +89,16 @@ async function runOnce(round) {
     for (const status of ['design', 'dev_ready', 'dev', 'review']) await post('/task/update', { id: card.id, status })
     await new Promise(r => setTimeout(r, 2500))
     const reviewed = (await state()).tasks.find(t => t.id === card.id)
+    /* 评审：以前这条链从「待评审」直接跳到「待测试」，没人写下评审结论。
+       现在合并门禁要求 review=approved，所以这里补上——真实流程也应该是这样。 */
+    await post('/task/coding', { id: card.id, action: 'review', status: 'approved', by: '架构师', reviewNote: '自检：改的是本卡范围' })
     await post('/task/update', { id: card.id, status: 'test' })
     const run = await post('/task/case/run', { id: card.id })
+    /* 合并门禁（只算不发）：评审、用例、项目检查、代码事实都齐了才该放行。
+       需要 GitLab 的那一步（发提交状态）在单测里用本地桩验过，自检环境不一定配了 GitLab。 */
+    const mergeGate = await post('/task/merge-gate', { id: card.id, publish: false })
+    step('卡 ' + card.code + ' 合并门禁', mergeGate.body?.gate?.applicable === true && mergeGate.body?.gate?.ready === true,
+      JSON.stringify((mergeGate.body?.gate?.blockers ?? []).slice(0, 3)))
     const parts = (await post('/task/parts', { id: card.id })).body
     for (const item of (parts.checklist ?? [])) await post('/task/checklist', { id: card.id, action: 'check', itemId: item.id, by: '产品' })
     await post('/task/update', { id: card.id, status: 'accept' })

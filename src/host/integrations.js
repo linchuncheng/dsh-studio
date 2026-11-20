@@ -3,6 +3,7 @@
 
 import { randomBytes } from 'node:crypto'
 import { STATUSES, mergeCoding } from './domain.js'
+import { MERGE_GATE_NAME, mergeGateFor, mergeGateLine, sanitizeMergeGate } from './merge-gate.js'
 
 let host = { newTaskId: () => '', serviceOf: () => null, getStore: () => null }
 
@@ -408,6 +409,76 @@ export async function gitlabSyncMergeRequests(store, config, project) {
     matched += 1
   }
   return { matched }
+}
+
+/** 合并门禁的结果写回卡片（发布失败也写：面板要能区分「没发」和「发挂了」）。 */
+async function writeMergeGate(store, taskId, record) {
+  await store.mutate(state => {
+    const target = state.tasks.find(entry => entry.id === taskId)
+    if (target === undefined) return
+    target.mergeGate = record
+    target.updatedAt = Date.now()
+  })
+}
+
+/**
+ * 把这张卡的合并门禁发布成 GitLab 的提交状态（`studio/merge-gate`）。
+ *
+ * 为什么发提交状态而不是只在自己这边拦：真正的合并动作发生在 GitLab 上。
+ * 仓库开了「状态检查必须通过（Status checks must succeed）」时，这条状态就是合并按钮上的灯——
+ * failed 就是红的、合不了。没开那个设置时它至少是一条可核对的记录，比只写在评论里强。
+ *
+ * 状态必须挂在 **MR 的头提交** sha 上：挂在旧提交上，合并按钮显示的是上一次的结论。
+ * 拿不到 sha 就明确报错，不发一个「挂在错地方」的状态。
+ */
+export async function publishMergeGate(store, taskId, { by = 'agent' } = {}) {
+  const state = store.snapshot()
+  const task = state.tasks.find(entry => entry.id === taskId)
+  if (task === undefined) throw new Error(`no task ${taskId}`)
+  const iid = Number(task.gitlabMR?.iid ?? 0)
+  if (iid <= 0) throw new Error('这张卡还没关联 MR：先把 !iid 填进卡片的 GitLab 区块')
+  const config = state.config
+  const projects = config.gitlab?.projects ?? []
+  const project = projects.find(item => item.id === task.gitlabProject) ?? projects[0]
+  if (project === undefined) throw new Error('还没配 GitLab 项目（设置 → 代码仓库）')
+  const gate = mergeGateFor(state, task)
+  const description = mergeGateLine(gate).slice(0, 200)
+  let mr = null
+  try {
+    mr = await gitlabRequest(config, project, `/merge_requests/${iid}`)
+  } catch { /* MR 拉不到不致命：卡上可能已经有提交记录，用它兜底 */ }
+  const sha = String(mr?.sha ?? '')
+    || String(task.coding?.gitlab?.commitList?.[0]?.sha ?? '')
+    || String((task.coding?.commits ?? []).at(-1)?.sha ?? '')
+  const base = {
+    at: Date.now(),
+    by: String(by ?? 'agent').slice(0, 40),
+    state: gate.ready ? 'success' : 'failed',
+    name: MERGE_GATE_NAME,
+    sha,
+    iid,
+    description,
+    blockers: gate.blockers,
+    error: '',
+  }
+  if (sha === '') {
+    const record = sanitizeMergeGate({ ...base, state: 'failed', error: '拿不到 MR 的头提交 sha' })
+    await writeMergeGate(store, taskId, record)
+    throw new Error('拿不到 MR 的头提交 sha：GitLab 没返回 sha，卡上也还没有提交记录（先提交代码并推到 MR 分支）')
+  }
+  try {
+    await gitlabRequest(config, project, `/statuses/${sha}`, {
+      method: 'POST',
+      body: JSON.stringify({ state: base.state, name: MERGE_GATE_NAME, description }),
+    })
+  } catch (error) {
+    const record = sanitizeMergeGate({ ...base, state: 'failed', error: String(error?.message ?? error) })
+    await writeMergeGate(store, taskId, record)
+    throw error
+  }
+  const record = sanitizeMergeGate(base)
+  await writeMergeGate(store, taskId, record)
+  return { gate, status: record }
 }
 
 export async function gitlabSync(store, projectId) {

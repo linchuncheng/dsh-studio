@@ -11,7 +11,8 @@ import {
 } from './executor.js'
 import { runSummary } from './dispatcher.js'
 import { mineSkillFromCard } from './skill-mine.js'
-const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","markDuplicate","publicConfig","recordAudit","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
+import { mergeGateFor, mergeGateLine } from './merge-gate.js'
+const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","markDuplicate","publicConfig","publishMergeGate","recordAudit","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
 let host = {
   activeDispatcher: () => {},
   activeSkills: () => {},
@@ -28,6 +29,8 @@ let host = {
   markDuplicate: async () => {},
   /** 配置的对外形状（密钥换成 presence 标记）。**必须注入**：定义在 index.js，裸调用会 ReferenceError。 */
   publicConfig: () => ({}),
+  /** 把合并门禁发成 GitLab 提交状态：定义在 integrations.js（要发请求），注入。 */
+  publishMergeGate: async () => ({}),
   recordAudit: () => {},
   releaseGate: () => {},
   releaseNotes: () => {},
@@ -1061,6 +1064,10 @@ export function registerTools(ctx, store) {
             },
           })
         } else if (action === 'merge') {
+          /* 记「已合并」之前先过合并门禁：以前这一步只写 mergedBy/mergedAt，
+             等于让 agent 自己宣布合并成功——门禁形同虚设。 */
+          const gate = mergeGateFor(state, task)
+          if (gate.ready !== true) throw new Error(`合并门禁没过：${gate.blockers.join('；')}`)
           const base = sanitizeCoding(task.coding ?? {})
           task.coding = sanitizeCoding({ ...base, mergedBy: by, mergedAt: Date.now() })
         } else {
@@ -1102,6 +1109,32 @@ export function registerTools(ctx, store) {
       if (quality.output !== '') lines.push('输出尾部：\n```\n' + quality.output.slice(-1500) + '\n```')
       if (!quality.ok) lines.push('准出会一直拦到它通过；修完再跑一次 studio_task_quality。')
       return lines.join('\n')
+    },
+  }))
+
+  register(defineStudioTool({
+    name: 'studio_merge_gate',
+    description: 'Check whether this card may be merged, and publish the verdict as a GitLab commit status (studio/merge-gate). success only when the code review is approved, the runnable cases pass, the project check passed and the recorded commits match the branch. Where the project requires status checks, a failed status blocks the merge button — this is the only gate that reaches GitLab itself.',
+    parameters: {
+      id: { type: 'string', required: true, description: 'Task id.' },
+      by: { type: 'string', description: 'Who triggered it (your expert name).' },
+      publish: { type: 'boolean', description: 'Default true: also post the commit status to GitLab. false = only compute the verdict (works without GitLab configured).' },
+    },
+    async execute(args) {
+      const state = store.snapshot()
+      const task = state.tasks.find(entry => entry.id === String(args.id ?? ''))
+      if (task === undefined) throw new Error(`no task ${args.id}`)
+      if (args.publish === false) {
+        const gate = mergeGateFor(state, task)
+        return [mergeGateLine(gate), ...gate.blockers.map(item => `- ${item}`)].join('\n')
+      }
+      const { gate, status } = await host.publishMergeGate(store, String(args.id ?? ''), { by: String(args.by ?? 'agent').slice(0, 40) })
+      return [
+        mergeGateLine(gate),
+        ...gate.blockers.map(item => `- ${item}`),
+        `已发布 ${status.name} = ${status.state}（sha ${status.sha.slice(0, 12)}，MR !${status.iid}）`,
+        gate.ready === true ? '现在可以合并了；合完记得 studio_task_coding action=merge 记一笔。' : '修完再跑一次，GitLab 上的状态会跟着更新。',
+      ].join('\n')
     },
   }))
 

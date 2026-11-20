@@ -26,6 +26,7 @@ import {
   text,
 } from './domain.js'
 import { sanitizeQuality } from './card-quality.js'
+import { sanitizeMergeGate } from './merge-gate.js'
 
 /** 持久化层：SQLite 台账（单写者 + 快照）与 0600 密钥文件。 */
 
@@ -235,6 +236,8 @@ export class StudioStore {
       task.coding = sanitizeCoding(task.coding)
       // 项目检查（本地质量命令）的结果：老库没有这个字段，补 null 而不是 undefined。
       task.quality = sanitizeQuality(task.quality)
+      // 合并门禁结果（发布到 GitLab 的提交状态）：老库没有，补 null。
+      task.mergeGate = sanitizeMergeGate(task.mergeGate)
       if (task.bugSource === undefined) task.bugSource = null
       else task.bugSource = sanitizeBugSource(task.bugSource)
       if (task.reqBaseline === undefined) task.reqBaseline = null

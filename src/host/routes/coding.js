@@ -3,11 +3,13 @@ import { isSelfReview, reviewDecision } from '../quality.js'
 import { clearAgentFailure, noteAgentFailure } from '../dispatcher.js'
 import { codingVerifyLine, qualitySummary, runCommand, runTaskQuality, taskExitGate, verifyCodingRecord } from '../executor.js'
 import { compareCodingFacts } from '../gitlab-facts.js'
-const INJECTED = ["applyConfig","ensureWorktree","publicState","readJsonBody","removeWorktree","sendJson","serviceOf","upsertById","workProjectOf"]
+import { mergeGateFor } from '../merge-gate.js'
+const INJECTED = ["applyConfig","ensureWorktree","publicState","publishMergeGate","readJsonBody","removeWorktree","sendJson","serviceOf","upsertById","workProjectOf"]
 let host = {
   applyConfig: () => {},
   ensureWorktree: () => {},
   publicState: () => {},
+  publishMergeGate: async () => ({}),
   readJsonBody: () => {},
   removeWorktree: () => {},
   sendJson: () => {},
@@ -70,6 +72,9 @@ if (method === 'POST' && route === '/task/coding') {
         review: { status, by, at: Date.now(), note: String(body.note ?? '').slice(0, 600) },
       })
     } else if (action === 'merge') {
+      // 与工具同一条判据：门禁没过不许自报「已合并」。
+      const gate = mergeGateFor(state, task)
+      if (gate.ready !== true) throw new Error(`合并门禁没过：${gate.blockers.join('；')}`)
       const base = sanitizeCoding(task.coding ?? {})
       task.coding = sanitizeCoding({ ...base, mergedBy: by, mergedAt: Date.now() })
     } else {
@@ -168,6 +173,27 @@ if (method === 'POST' && route === '/task/worktree') {
     skipped: info?.skipped ?? '',
     state: host.publicState(store),
   })
+  return true
+}
+if (method === 'POST' && route === '/task/merge-gate') {
+  // 合并门禁：算一次「能不能合」，并把结论发成 GitLab 提交状态（仓库开了「状态检查必须通过」时这就是合并按钮）。
+  const body = await host.readJsonBody(req)
+  const id = String(body.id ?? '')
+  if (body.publish === false) {
+    // 只出结论不发状态：没配 GitLab 的机器也能验门禁本身（自检脚本走这条路）。
+    const snapshot = store.snapshot()
+    const task = snapshot.tasks.find(entry => entry.id === id)
+    if (task === undefined) throw new Error(`no task ${id}`)
+    host.sendJson(res, 200, { ok: true, gate: mergeGateFor(snapshot, task), mergeGate: task.mergeGate ?? null, published: false })
+    return true
+  }
+  try {
+    const result = await host.publishMergeGate(store, id, { by: String(body.by ?? '人').slice(0, 40) })
+    host.sendJson(res, 200, { ok: true, gate: result.gate, mergeGate: result.status, published: true, state: host.publicState(store) })
+  } catch (error) {
+    // 没配 GitLab / 没有 MR / 发不出去：都是「做不了」，用 400 说清原因，别让面板只看到 500
+    host.sendJson(res, 400, { ok: false, error: String(error?.message ?? error).slice(0, 300) })
+  }
   return true
 }
 if (method === 'POST' && route === '/task/quality') {

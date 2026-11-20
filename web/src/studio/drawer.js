@@ -88,6 +88,9 @@ function Drawer({ task, state, onClose, onChanged }) {
   const quality = task.quality ?? null
   // 技能沉淀：把这张卡的证据汇总成一条技能草稿（默认停用，人看过再启用）。
   const [mine, setMine] = React.useState({ busy: false, line: '' })
+  // 合并门禁：把「能不能合」发布成 GitLab 提交状态。
+  const [mergeRun, setMergeRun] = React.useState({ busy: false, line: '' })
+  const mergeGate = task.mergeGate ?? null
   const caseSum = caseSummaryOf(task)
   const checkSum = checkSummaryOf(task)
   const cases = parts !== null && Array.isArray(parts.cases) ? parts.cases : (Array.isArray(task.cases) ? task.cases : [])
@@ -583,6 +586,21 @@ function Drawer({ task, state, onClose, onChanged }) {
       setMine({ busy: false, line: cause instanceof Error ? cause.message : String(cause) })
     }
   }
+  // 合并门禁：算一次「能不能合」，并把这个结论发布成 GitLab 提交状态。
+  const syncMergeGate = async () => {
+    setMergeRun({ busy: true, line: '' })
+    try {
+      const result = await api('/task/merge-gate', { id: task.id, by: '人' })
+      const status = result.mergeGate ?? {}
+      setMergeRun({
+        busy: false,
+        line: `${status.state === 'success' ? '✅ 已发布：通过' : '❌ 已发布：不通过'}${status.sha ? `（sha ${String(status.sha).slice(0, 8)}）` : ''}`,
+      })
+      await onChanged()
+    } catch (cause) {
+      setMergeRun({ busy: false, line: cause instanceof Error ? cause.message : String(cause) })
+    }
+  }
   // 从 GitLab 核对：拉 MR 的 changes 与流水线，和卡上自报的值比一遍（没配 GitLab 会直接提示）。
   // 设计评审：两步录入（链接 + 状态），存完刷新卡片。闸门在服务端，这里只管填。
   const editDesign = async () => {
@@ -1046,6 +1064,37 @@ function Drawer({ task, state, onClose, onChanged }) {
                 }, String(quality.output).slice(-1500)),
             )
           })(),
+        ),
+      ),
+      h('div', { className: 'ds-sec', style: hideWhen('coding') },
+        h('div', { className: 'ds-sec-head' }, '合并门禁',
+          h('span', { className: 'ds-hint' }, '把「能不能合」发成 GitLab 的 studio/merge-gate 提交状态；仓库要求状态检查时必须通过，合并按钮才会放行')),
+        h('div', { className: 'ds-sec-body' },
+          mergeGate === null
+            ? null
+            : h('div', { className: 'ds-code-box' },
+              h('div', { className: 'ds-code-head' },
+                h(ChipField, {
+                  className: 'ds-chip',
+                  'data-review': mergeGate.state === 'success' ? 'approved' : 'changes_requested',
+                }, mergeGate.state === 'success' ? '通过' : '不通过'),
+                h('div', { className: 'ds-grow' },
+                  h('div', { className: 'ds-code-line' }, `${mergeGate.name} @ ${String(mergeGate.sha ?? '').slice(0, 8)}`),
+                  h('div', { className: 'ds-hint' }, `${fmtTime(mergeGate.at)} · ${mergeGate.by || '人'}${mergeGate.error === '' ? '' : ` · ${mergeGate.error}`}`),
+                ),
+                h('span', { className: 'ds-hint' }, `MR !${mergeGate.iid}`),
+              ),
+              (mergeGate.blockers ?? []).length === 0
+                ? null
+                : h('div', { className: 'ds-hint', 'data-warn': '1', style: { marginTop: 6 } },
+                  mergeGate.blockers.slice(0, 5).map((item, index) => h('div', { key: 'mg-' + index }, `· ${item}`))),
+            ),
+          h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' } },
+            h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy || mergeRun.busy, onClick: () => void syncMergeGate() },
+              mergeRun.busy ? '发布中…' : '同步合并门禁'),
+            h('span', { className: 'ds-hint' }, '需要卡片关联 MR、且配了 GitLab 项目。'),
+          ),
+          mergeRun.line === '' ? null : h('div', { className: 'ds-hint', style: { marginTop: 6 } }, mergeRun.line),
         ),
       ),
       h('div', { className: 'ds-sec', style: hideWhen('coding') },

@@ -95,6 +95,7 @@ AI 是执行手，判定权在确定性规则和人手里。要变成 AI Native�
 | 14 | 平均交付时长 | 需求创建 → 发布的中位数（按需求，不按卡） | ✅ 已测量（0.8.0：需求创建 → **验收签字**的间隔，取中位数；「发布」这一步还没有可靠时间戳，所以用签字时间代替，口径写在 `src/host/delivery.js` 里） |
 | 15 | **项目检查进准出** | 项目配了 `qualityCmd` 时：卡有代码改动却没跑过、或跑挂了 → 准出被拦；跑过且退出码 0 → 放行；命令、退出码、耗时、输出尾部都留在卡上 | ✅ 已做（0.9.20：`studio_task_quality` 工具 + `POST /task/quality`，cwd 优先卡的 worktree；`tests/task-quality.test.mjs` 5 条 + 全闭环自检里的「跑过了 / 跑挂了拦准出」两步） |
 | 16 | **技能沉淀闭环** | 做完的卡能沉淀成技能草稿，且**只搬卡上真发生过的事**：验收锚点 / 跑过的命令 / 踩过的坑；没有证据的卡拒绝沉淀，不留 TODO；草稿默认停用，人启用后才落盘并注入派单；声明了项目范围的技能只在对应项目注入 | ✅ 已做（0.9.21：`skill-mine.js` + `studio_skill_mine` + `POST /skill/mine`；`tests/skill-mine.test.mjs` 5 条，其中一条断言正文里不出现 TODO/建议这类空话） |
+| 17 | **合并门禁** | 能不能合只看证据（评审 / 可执行用例 / 项目检查 / 执行记录与代码事实 / 流水线），**不看验收签字**；结论发成 GitLab 提交状态 `studio/merge-gate`，挂在 MR 头提交上；卡上记「已合并」前也要过这一关 | ✅ 已做（0.9.22：`merge-gate.js` + `publishMergeGate` + `studio_merge_gate` + `POST /task/merge-gate`；`tests/merge-gate.test.mjs` 6 条，含本地 GitLab 桩。**真 GitLab 上的拦截效果未验**：需要仓库打开「状态检查必须通过」） |
 
 ## 5. 落地顺序
 
