@@ -29,7 +29,7 @@ test('tools.js：宿主能力必须经由 host.* 调用（裸引用 = 运行时 
   assert.deepEqual(bare, [], `这些宿主能力被裸调用了，运行时会 ReferenceError：${bare.join('、')}`)
 })
 
-test('tools.js：注册后执行一个写工具不会抛 ReferenceError', async () => {
+test('tools.js：每个已注册工具都能执行，且不抛 ReferenceError / 初始化顺序错误', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'dsh-studio-tools-'))
   const store = new StudioStore(join(dir, 'state.json'), { dbFile: join(dir, 'state.db'), secrets: new SecretStore(join(dir, '.secrets.json')) })
   try {
@@ -42,6 +42,7 @@ test('tools.js：注册后执行一个写工具不会抛 ReferenceError', async 
       toolLevel: () => 'write',
       checkToolAccess: () => ({ level: 'write', denial: null }),
       recordAudit: async () => {},
+      publicConfig: config => config,
       getActiveDispatcher: () => undefined,
       getActiveSkills: () => undefined,
     })
@@ -63,6 +64,22 @@ test('tools.js：注册后执行一个写工具不会抛 ReferenceError', async 
     await comment.execute({ id: 't-self-1', body: '写工具能跑' }, {})
     const card = store.snapshot().tasks.find(item => item.id === 't-self-1')
     assert.equal((card?.comments ?? []).length, 1, '评论应该落在卡上')
+
+    /* 全量冒烟：每个工具都用空参数执行一次。
+       报「任务不存在」「需求不存在」是正常业务错误，不算问题；只有
+       ReferenceError / TDZ（is not defined / Cannot access ... before initialization）
+       才是接线坏了。studio_config_get 曾经裸调 index.js 里的 publicConfig，
+       上一版这条测试只跑了一个写工具，所以没拦住。 */
+    const broken = []
+    for (const tool of registered) {
+      try {
+        await tool.execute({}, {})
+      } catch (error) {
+        const message = String(error?.message ?? error)
+        if (/is not defined|before initialization|Cannot access/.test(message)) broken.push(`${tool.name}：${message}`)
+      }
+    }
+    assert.deepEqual(broken, [], `这些工具的宿主能力没接好：\n${broken.join('\n')}`)
   } finally {
     store.db?.close?.()
     rmSync(dir, { recursive: true, force: true })

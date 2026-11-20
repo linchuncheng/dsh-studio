@@ -10,7 +10,7 @@ import {
   runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask,
 } from './executor.js'
 import { runSummary } from './dispatcher.js'
-const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","recordAudit","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
+const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","markDuplicate","publicConfig","recordAudit","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
 let host = {
   activeDispatcher: () => {},
   activeSkills: () => {},
@@ -23,6 +23,10 @@ let host = {
   burndownReport: () => {},
   checkToolAccess: () => {},
   createTask: () => {},
+  /** 缺陷「重复」标记：定义在 index.js（要读全板卡），裸调用会 ReferenceError。 */
+  markDuplicate: async () => {},
+  /** 配置的对外形状（密钥换成 presence 标记）。**必须注入**：定义在 index.js，裸调用会 ReferenceError。 */
+  publicConfig: () => ({}),
   recordAudit: () => {},
   releaseGate: () => {},
   releaseNotes: () => {},
@@ -95,7 +99,7 @@ export function registerTools(ctx, store) {
     parameters: {},
     async execute() {
       await store.ready
-      return { ok: true, config: publicConfig(store.snapshot().config), statuses: STATUSES, roles: ROLE_IDS }
+      return { ok: true, config: host.publicConfig(store.snapshot().config), statuses: STATUSES, roles: ROLE_IDS }
     },
   }))
 
@@ -131,7 +135,7 @@ export function registerTools(ctx, store) {
         }
       }
       await host.applyConfig(store, patch)
-      return { ok: true, config: publicConfig(store.snapshot().config) }
+      return { ok: true, config: host.publicConfig(store.snapshot().config) }
     },
   }))
 
@@ -459,7 +463,7 @@ export function registerTools(ctx, store) {
       by: { type: 'string', description: '谁判断的。' },
     },
     async execute(args) {
-      const task = await markDuplicate(store, String(args.id ?? ''), String(args.targetId ?? ''), String(args.by ?? '人').slice(0, 40))
+      const task = await host.markDuplicate(store, String(args.id ?? ''), String(args.targetId ?? ''), String(args.by ?? '人').slice(0, 40))
       return task.duplicateOf === '' ? `${task.code || task.id} 已取消重复标记。` : `${task.code || task.id} 标为重复，主缺陷是 ${task.duplicateOf}。`
     },
   }))
