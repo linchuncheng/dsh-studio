@@ -10,7 +10,7 @@
 //
 // 宿主代码（index.js / src）与 client.js 都换掉；重启 dsh 后才会加载。
 import { cp, mkdir, readFile, rm, stat } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -55,6 +55,22 @@ if (dryRun) {
 // 备份：出问题能一眼回滚，且不会只剩"我记得之前是什么样"。
 const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
 const backup = join(homedir(), '.dsh', 'backups', `dsh-studio-${stamp}`)
+
+/* profile 里的插件目录可能已经不是拷贝，而是**指向仓库的符号链接/目录联接**（2026-11-20 就变成这样了）。
+   那种情况下 src 和 dest 是同一个路径，cp 会抛 ERR_FS_CP_EINVAL("src and dest cannot be the same")。
+   这时不需要同步——重启就够了；直接说清楚，别让人对着一堆堆栈猜。 */
+const linked = (() => {
+  try {
+    return realpathSync(target) === realpathSync(root)
+  } catch {
+    return false
+  }
+})()
+if (linked) {
+  console.log('  ✓ profile 里是**指向仓库的链接**，不需要同步：改完重启 dsh 即可生效。')
+  process.exit(0)
+}
+
 await mkdir(backup, { recursive: true })
 for (const item of ITEMS) {
   const source = join(target, item)
