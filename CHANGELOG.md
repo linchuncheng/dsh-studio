@@ -1,6 +1,15 @@
 # 更新日志
 
 
+## [0.9.29] — 2026-11-20
+
+### 开发体验
+- **发版一致性多了「Release 正文」这一条**：以前 `verify:release` 只比 Latest 的 tag 名，
+  `release.yml` 的正文是从 CHANGELOG 摘的，**CHANGELOG 少了这一版时 Release 里只剩一句「没写更新日志」，
+  而检查是绿的**。现在用 `gh release view` 读正文（已登录 → 不受匿名 API 限流），
+  空正文 / 占位句 / 少于 20 字都判红；本机没 gh 或这个版本还没打 tag 时只跳过、不判红。
+- 判据抽成 `tools/lib/release-notes.mjs`（纯函数），配 `tests/repo.test.mjs` 里的 1 条断言。
+
 ## [0.9.28] — 2026-11-20
 
 ### 开发体验

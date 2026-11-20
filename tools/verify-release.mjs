@@ -6,6 +6,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { cmpSemver } from './lib/semver.mjs'
+import { releaseBodyIssue } from './lib/release-notes.mjs'
 
 const PKG = '@marsken/dsh-studio'
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
@@ -98,6 +99,32 @@ try {
   )
 } catch (e) {
   add('能读 npm registry', false, String(e.message).slice(0, 120))
+}
+
+/* GitHub Release 正文：release.yml 从 CHANGELOG 摘这一版当正文，CHANGELOG 少了它，
+   Release 就只剩一句「没写更新日志」——发出去的东西没有说明，而只比 tag 名是看不出来的。
+   有 gh（已登录）就走 CLI：不受匿名 API 限流，还能读到正文。
+   没有 gh、或这个版本还没打 tag 时只跳过、不判红（发版前跑一次不该因为工具缺失而红）。 */
+{
+  const tagged = rows.find(row => row.name === '本地有 tag ' + tag)?.ok === true
+  const ghReady = (() => {
+    try { execFileSync('gh', ['auth', 'status'], { stdio: 'ignore', env }); return true } catch { return false }
+  })()
+  if (!tagged) {
+    add('GitHub Release 正文（跳过）', true, '这个版本还没打 tag')
+  } else if (!ghReady) {
+    add('GitHub Release 正文（跳过）', true, '本机没有可用的 gh：登录 gh 之后这条会真的检查正文')
+  } else {
+    try {
+      const view = JSON.parse(execFileSync('gh', ['release', 'view', tag, '--json', 'tagName,isDraft,body,url'], { encoding: 'utf8', env }))
+      add('GitHub Release ' + tag + ' 已建且不是草稿', view.isDraft !== true, String(view.url ?? ''))
+      const issue = releaseBodyIssue(view.body)
+      add('Release 正文写的是这一版', issue === null, issue ?? String(view.body ?? '').trim().split('\n')[0].slice(0, 80))
+    } catch (error) {
+      add('GitHub Release ' + tag + ' 已建且不是草稿', false,
+        'gh 查不到这个 release：' + String(error?.message ?? error).slice(0, 100) + '（tag 推了但 release.yml 没跑成功？）')
+    }
+  }
 }
 
 /* GitHub Releases 的 Latest 必须指向当前版本。

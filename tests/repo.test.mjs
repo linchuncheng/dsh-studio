@@ -1206,3 +1206,13 @@ test('host: index.js 能被真的 import 起来（模块搬走后导入断裂，
   assert.equal(typeof module.apply, 'function', 'index.js 必须导出 apply')
   assert.ok(Array.isArray(module.inject), 'index.js 必须导出 inject 数组')
 })
+
+test('tooling: Release 正文的判据（空 / 占位 / 太短都算没写）', async () => {
+  const { releaseBodyIssue, RELEASE_BODY_PLACEHOLDER } = await import('../tools/lib/release-notes.mjs')
+  assert.match(String(releaseBodyIssue('')), /空的/)
+  assert.match(String(releaseBodyIssue('   \n  ')), /空的/)
+  assert.match(String(releaseBodyIssue('这一版没写更新日志')), /占位/)
+  assert.ok(String(releaseBodyIssue('没写更新日志')).includes(RELEASE_BODY_PLACEHOLDER) === false, '判据里不该把常量本身当正文')
+  assert.match(String(releaseBodyIssue('短')), /只有 1 字/)
+  assert.equal(releaseBodyIssue('## [0.9.29] — 2026-11-20\n\n### 修复\n- 修了点东西，够长了'), null)
+})
