@@ -7,7 +7,10 @@ import { join } from 'node:path'
 import test from 'node:test'
 
 import { configureRequirementRoutes, handleRequirementRoute } from '../src/host/routes/requirements.js'
+import { configureExecutor } from '../src/host/executor.js'
 import { SecretStore, StudioStore } from '../src/host/store.js'
+
+configureExecutor(new Proxy({ serviceDependencies: () => [], serviceConflicts: () => undefined }, { get: (target, key) => (key in target ? target[key] : () => undefined) }))
 
 configureRequirementRoutes({
   readJsonBody: async req => req.body ?? {},
@@ -55,6 +58,29 @@ test('需求路由：坏链接直接拒绝，好链接落到 links 上（顶层 
     const saved = await call(store, '/requirement/save', { requirement: { title: '好链接', prd: 'https://example.com/prd' } })
     assert.equal(saved.res.status, 200)
     assert.equal(saved.res.body.requirement.links.prd, 'https://example.com/prd', '顶层 prd 要映射进 links')
+  } finally {
+    store.db?.close?.()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('/task/signoff 用的是卡 id，不是需求引用（批量归一化误伤过）', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-task-signoff-'))
+  const store = new StudioStore(join(dir, 'state.json'), { dbFile: join(dir, 'state.db'), secrets: new SecretStore(join(dir, '.secrets.json')) })
+  try {
+    await store.ready
+    await store.mutate(state => {
+      state.config.experts.push({ id: 'pm', name: '产品经理', emoji: '📋', role: 'product', skills: [], enabled: true })
+      state.tasks.push({
+        id: 't-1', code: 'DEV-001', title: '签字卡', status: 'accept', role: 'product',
+        requirementId: '', checklist: [], artifacts: [], comments: [], history: [], cases: [], blocked: null,
+      })
+    })
+    const out = await call(store, '/task/signoff', { id: 't-1', by: '产品经理', note: '人看过' })
+    assert.equal(out.res.status, 200, JSON.stringify(out.res.body?.error ?? ''))
+    const task = store.snapshot().tasks.find(item => item.id === 't-1')
+    assert.equal(task.signoff?.by, '产品经理')
+    assert.equal(task.signoff?.actorKind, 'ai', '专家名册里的名字 = AI（与闸门同一口径）')
   } finally {
     store.db?.close?.()
     rmSync(dir, { recursive: true, force: true })

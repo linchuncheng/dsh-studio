@@ -148,7 +148,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   }
   if (method === 'POST' && route === '/task/signoff') {
     const body = await host.readJsonBody(req)
-    const id = reqRef(store, body.id)
+    const id = String(body.id ?? '')   // 卡 id，不是需求引用（批量归一化时误伤过）
     const action = String(body.action ?? 'sign')
     const by = text(body.by, 40) ?? '人'
     const note = text(body.note, 600) ?? ''
