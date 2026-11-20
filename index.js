@@ -47,7 +47,8 @@ import { isStalled } from './src/host/dispatch-state.js'
 import { sanitizeLimits } from './src/host/limits.js'
 import { attachWebhooks, sanitizeWebhooks } from './src/host/webhooks.js'
 import { updateTaskComment, removeTaskComment } from './src/host/comments.js'
-import { addAssertedCases, addDraftCases, buildDashboard, codingVerifyLine, commentTask, configureExecutor, ensureReqFolder, larkCliReady, invalidateLarkProbe, larkProbeCache, mutateReqDoc, probeEnv, pullFeishuDoc, requirementGate, requirementMatrix, requirementProgress, requirementRollup, runCommand, runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask, verifyCodingRecord } from './src/host/executor.js'
+import { deleteRequirementFolder } from './src/host/drive-sync.js'
+import { addAssertedCases, addDraftCases, buildDashboard, codingVerifyLine, commentTask, configureExecutor, larkJson, ensureReqFolder, larkCliReady, invalidateLarkProbe, larkProbeCache, mutateReqDoc, probeEnv, pullFeishuDoc, requirementGate, requirementMatrix, requirementProgress, requirementRollup, runCommand, runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask, verifyCodingRecord } from './src/host/executor.js'
 import { configureAuthRoutes, handleAuthRoute } from './src/host/routes/auth.js'
 import { configureExportRoutes, handleExportRoute } from './src/host/routes/exports.js'
 import { INTAKE_HTML, MINE_HTML, STATUS_HTML } from './src/host/intake-pages.js'
@@ -381,6 +382,8 @@ function publicConfig(config) {
       notifyOnChange: config.feishu.notifyOnChange,
       driveFolder: config.feishu.driveFolder,
       autoSyncArtifacts: config.feishu.autoSyncArtifacts,
+      // 项目级云盘文件夹（只读缓存，供面板显示「项目 / 需求」路径）
+      projectFolders: config.feishu.projectFolders ?? {},
       escalateWebhookSet: String(config.feishu.escalateWebhook ?? '').length > 0,
       escalateAfter: config.feishu.escalateAfter,
       larkReady: larkProbeCache.ok,
@@ -2599,7 +2602,8 @@ export function apply(ctx) {
     configureSkillsRoutes({ isSkillName, readJsonBody, sendJson, skillFromMarkdown, skillFromZip, skillsRoot, getSkills: () => activeSkills })
     configureInsightsRoutes({ readJsonBody, getDispatcher: () => activeDispatcher, sendJson, buildMetrics, buildAnalytics, workloadReport, burndownReport })
     configureReleasesRoutes({ sendJson, readJsonBody, publicState, releaseGate, releaseNotes, releaseRequirements, releaseRuleViolations, releaseDeploys })
-    configureRequirementRoutes({ sendJson, readJsonBody, createTask, publicState })
+    configureRequirementRoutes({
+      deleteRequirementFolder: (store, requirementId) => deleteRequirementFolder(store, requirementId, larkJson), sendJson, readJsonBody, createTask, publicState })
     configureTaskRoutes({
       sendJson,
       readJsonBody,

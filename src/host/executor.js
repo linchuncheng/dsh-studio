@@ -12,6 +12,8 @@ import { CASE_HTTP_METHODS, CODE_PREFIX, ROLE_IDS, STATUS_IDS, STATUSES, nextReq
 import { qualityTargetFor, sanitizeQuality } from './card-quality.js'
 import { casesOfTasks, impactSummary } from './impact.js'
 import { designGate, designGateOffNote } from './design.js'
+import { requirementFolderNameOf } from './drive-folders.js'
+import { ensureKindFolder, ensureRequirementFolder } from './drive-sync.js'
 import { isStalled } from './dispatch-state.js'
 import { RUN_LOG, parseMentions } from './dispatcher.js'
 import { appendTeamMemory } from './team-memory.js'
@@ -1260,40 +1262,12 @@ export function safeFileName(text) {
 
 /** 需求在云盘里的文件夹名：`REQ-2026-001 会员积分抵扣`。 */
 export function requirementFolderName(requirement) {
-  const code = String(requirement.code ?? '').trim()
-  return safeFileName(`${code.length > 0 ? code : requirement.id} ${requirement.title}`.trim())
+  return requirementFolderNameOf(requirement)
 }
 
 /** 给需求建一个云盘文件夹；已经建过就直接返回。 */
 export async function ensureReqFolder(store, requirementId) {
-  const state = store.snapshot()
-  const requirement = state.requirements.find(item => item.id === requirementId)
-  if (requirement === undefined) throw new Error(`no requirement ${requirementId}`)
-  const current = requirement.folder ?? {}
-  if (String(current.token ?? '').trim().length > 0) return current
-  const parent = String(state.config.feishu.driveFolder ?? '').trim()
-  if (parent === '') throw new Error('还没配置飞书云盘根文件夹（设置 → 飞书 · 云盘根文件夹）')
-  const name = requirementFolderName(requirement)
-  const created = await larkJson(['drive', '+create-folder', '--folder-token', parent, '--name', name], 45000)
-  if (!created.ok) {
-    await store.mutate(draft => {
-      const target = draft.requirements.find(item => item.id === requirementId)
-      if (target !== undefined) target.folder = { ...(target.folder ?? {}), error: created.error.slice(0, 300) }
-    })
-    return { token: '', url: '', name, at: 0, error: created.error.slice(0, 300) }
-  }
-  const folder = {
-    token: String(created.data.folder_token ?? ''),
-    url: String(created.data.url ?? ''),
-    name: String(created.data.name ?? name),
-    at: Date.now(),
-    error: '',
-  }
-  await store.mutate(draft => {
-    const target = draft.requirements.find(item => item.id === requirementId)
-    if (target !== undefined) target.folder = folder
-  })
-  return folder
+  return ensureRequirementFolder(store, requirementId, larkJson)
 }
 
 /** 把一条交付物渲染成 Markdown：谁、在哪个需求下、哪张卡、什么内容。 */
@@ -1366,6 +1340,14 @@ export async function syncArtifact(store, taskId, artifactId) {
   if (artifact === undefined) throw new Error(`no artifact ${artifactId}`)
   const { folder, requirement } = await ensureArtifactFolder(store, task)
   if (String(folder.token ?? '').trim() === '') throw new Error(folder.error ?? '创建云盘文件夹失败')
+  // 按产物类型落到子文件夹（01 需求文档 / 02 设计文档 …）；子文件夹没建好就退回需求根目录
+  let target = folder
+  if (requirement !== undefined && String(artifact.kind ?? '') !== '') {
+    try {
+      const kindFolder = await ensureKindFolder(store, requirement.id, artifact.kind)
+      if (String(kindFolder.token ?? '').trim() !== '') target = { ...folder, ...kindFolder }
+    } catch { /* 建子目录失败不该让整条交付物同步失败：退回需求根目录 */ }
+  }
   const prefix = task.code.length > 0 ? `${task.code}-` : `${task.id}-`
   const name = safeFileName(`${prefix}${ARTIFACT_FILE_LABEL[artifact.kind] ?? '交付物'}-${artifact.title}.md`)
   const filled = { ...artifact, content: await artifactBody(task, artifact, state.config) }
@@ -1380,7 +1362,7 @@ export async function syncArtifact(store, taskId, artifactId) {
     const existing = String(artifact.doc?.token ?? '').trim()
     const result = existing.length > 0
       ? await larkJson(['markdown', '+overwrite', '--file-token', existing, '--file', tmpFile], 45000)
-      : await larkJson(['markdown', '+create', '--folder-token', folder.token, '--file', tmpFile, '--name', name], 45000)
+      : await larkJson(['markdown', '+create', '--folder-token', target.token, '--file', tmpFile, '--name', name], 45000)
     if (!result.ok) {
       await store.mutate(draft => {
         const target = draft.tasks.find(item => item.id === taskId)?.artifacts?.find(item => item.id === artifactId)

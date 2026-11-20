@@ -246,7 +246,8 @@ try {
   if (keep !== true) {
     try {
       if (taskId !== '') await api('/task/delete', { id: taskId, confirm: 'DELETE' })
-      if (requirementId !== '') await api('/requirement/delete', { id: requirementId, confirm: 'DELETE' })
+      // 连云盘目录一起删：不删的话每跑一次探针就在云盘根下多一个同名文件夹（真的发生过 200 个）
+      if (requirementId !== '') await api('/requirement/delete', { id: requirementId, confirm: 'DELETE', deleteFolder: true })
     } catch { /* 清理失败不影响结论 */ }
   }
   const left = keep === true ? '' : ` 清理：${taskId === '' ? '' : '卡片已删 '}${requirementId === '' ? '' : '需求已删'}`

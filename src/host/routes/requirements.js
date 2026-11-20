@@ -25,9 +25,10 @@ import {
   taskExitGate,
 } from '../executor.js'
 import { randomBytes } from 'node:crypto'
-const INJECTED = ["createTask","publicState","readJsonBody","sendJson"]
+const INJECTED = ["createTask","deleteRequirementFolder","publicState","readJsonBody","sendJson"]
 let host = {
   createTask: () => {},
+  deleteRequirementFolder: async () => ({}),
   publicState: () => {},
   readJsonBody: () => {},
   sendJson: () => {},
@@ -442,6 +443,8 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   if (method === 'POST' && route === '/requirement/delete') {
     const body = await host.readJsonBody(req)
     const id = reqRef(store, body.id)
+    /* deleteFolder=true 时连带删掉云盘目录。默认不动：删台账和删文件是两件事，不能顺手把别人的文档删了。 */
+    if (body.deleteFolder === true) await host.deleteRequirementFolder(store, id).catch(() => {})
     await store.mutate(state => {
       state.requirements = state.requirements.filter(item => item.id !== id)
       // 卡不删，只是脱离需求；人可以看到它们变成「未归属」。

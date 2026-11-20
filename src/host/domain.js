@@ -1,4 +1,5 @@
 /** dsh-studio 的领域层：板列、卡片/需求/发布的数据形状与清洗、默认配置、编号生成。纯函数，可单测。 */
+import { sanitizeProjectFolders, sanitizeRequirementFolder } from './drive-folders.js'
 import { sanitizeAcceptanceItem } from './acceptance.js'
 import { qualityFields } from './card-quality.js'
 import { resolveCaseResult } from './case-strength.js'
@@ -214,7 +215,9 @@ export function defaultConfig() {
     /** 每种卡片的默认验收清单模板。 */
     templates: defaultTemplates(),
     gitlab: { url: '', token: '', group: '', project: '', syncEnabled: false, syncLabel: '', lastSyncAt: 0, lastSyncError: '', projects: [] },
-    feishu: { appId: '', appSecret: '', chatId: '', baseToken: '', tableId: '', webhook: '', notifyOnChange: true, bots: [], driveFolder: 'IuJPfTCtWlDrzwdCFmLc71aynbg', autoSyncArtifacts: true, escalateWebhook: '', escalateAfter: 3 },
+    feishu: { appId: '', appSecret: '', chatId: '', baseToken: '', tableId: '', webhook: '', notifyOnChange: true, bots: [], driveFolder: 'IuJPfTCtWlDrzwdCFmLc71aynbg', autoSyncArtifacts: true,
+    /** 项目级云盘文件夹缓存：{ [项目 id 或 __unassigned__]: { token, url, name, at } }。 */
+    projectFolders: {}, escalateWebhook: '', escalateAfter: 3 },
     /** 出站 webhook：卡片流转/用例失败/派单失败推给外部系统。 */
     webhooks: [],
     /** 数量上限：以前是硬编码在路由里的 60/60/40，超了静默丢。 */
@@ -410,7 +413,7 @@ export function mergeConfig(saved) {
   const experts = sanitizeExperts(saved.experts)
   const roster = experts.length > 0 ? experts : base.experts
   const gitlab = { ...mergeSection(base.gitlab, saved.gitlab), projects: sanitizeProjects(saved.gitlab?.projects) }
-  const feishu = { ...mergeSection(base.feishu, saved.feishu), bots: sanitizeBots(saved.feishu?.bots) }
+  const feishu = { ...mergeSection(base.feishu, saved.feishu), bots: sanitizeBots(saved.feishu?.bots), projectFolders: sanitizeProjectFolders(saved.feishu?.projectFolders) }
   // A settings file written before multi-project/multi-bot support carries the
   // single connection in the legacy fields; fold it into the new lists once.
   if (gitlab.projects.length === 0 && gitlab.project.length > 0) {
@@ -992,13 +995,7 @@ export function sanitizeRequirement(raw) {
       proto: sanitizeUrl(links.proto),
       acceptance: sanitizeUrl(links.acceptance),
     },
-    folder: {
-      token: String(folderRaw.token ?? '').trim().slice(0, 80),
-      url: sanitizeUrl(folderRaw.url),
-      name: String(folderRaw.name ?? '').trim().slice(0, 200),
-      at: Number(folderRaw.at) || 0,
-      error: String(folderRaw.error ?? '').slice(0, 300),
-    },
+    folder: sanitizeRequirementFolder(folderRaw),
     docs: sanitizeReqDocs(raw.docs),
     points: sanitizeRequirementPoints(raw.points),
     baseline: sanitizeBaseline(raw.baseline),
