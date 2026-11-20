@@ -8,8 +8,9 @@
 // gauge larger than the rest of the page reads as "misaligned".
 import * as React from 'react'
 import { Eye, EyeOff } from 'lucide-react'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, Label, Button, Tabs, TabsList, TabsTrigger } from './ui.jsx'
-import { Input as BoarduiInput } from '../boardui/index'
+import { Input as BoarduiInput, Button as BoarduiButton } from '../boardui/index'
+import { Label } from './base/input/label'
+import { PillTabList, PillTab } from './base/tabs/pill-tab'
 
 const SESSION_KEY = 'dsh-studio:session'
 const AUTH_USER_KEY = 'dsh-studio:auth-user'
@@ -95,8 +96,8 @@ export function ShadcnLoginGate({ config, theme, message, onDone, onClose, overl
   const ldapHint = /LDAP|域|目录|连不上/.test(error)
 
   const card = (
-    <Card className="w-[380px] shrink-0 py-0 shadow-md">
-      <CardHeader className="gap-2 px-5 pb-4 pt-5">
+    <div className="w-[380px] shrink-0 overflow-hidden rounded-2xl border border-separator-border bg-background-primary-default py-0 shadow-dropdown">
+      <div className="flex flex-col gap-2 px-5 pb-4 pt-5">
         <div className="flex items-center gap-2">
           <span
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-[13px] leading-none text-primary-foreground"
@@ -105,23 +106,25 @@ export function ShadcnLoginGate({ config, theme, message, onDone, onClose, overl
             ◈
           </span>
           <div className="min-w-0">
-            <CardTitle className="truncate text-[15px] leading-tight">{title}</CardTitle>
+            <div className="truncate text-[15px] font-semibold leading-tight text-text-primary">{title}</div>
             <div className="text-[11px] leading-tight text-muted-foreground">需求与任务工作空间</div>
           </div>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="px-5 pb-0">
-        <Tabs value={mode} onValueChange={switchMode}>
-          <TabsList className="w-full">
-            <TabsTrigger value="ldap" disabled={!ldapReady} className="flex-1 text-[13px]">
+      <div className="px-5 pb-0">
+        <PillTabList className="w-full">
+          {ldapReady ? (
+            <PillTab isSelected={mode === 'ldap'} onSelect={() => switchMode('ldap')}>
               LDAP 账号
-            </TabsTrigger>
-            <TabsTrigger value="local" disabled={!localReady} className="flex-1 text-[13px]">
+            </PillTab>
+          ) : null}
+          {localReady ? (
+            <PillTab isSelected={mode === 'local'} onSelect={() => switchMode('local')}>
               本地超管
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+            </PillTab>
+          ) : null}
+        </PillTabList>
 
         <p className="mb-3 mt-3 text-[12px] leading-relaxed text-muted-foreground">
           {mode === 'ldap'
@@ -183,13 +186,13 @@ export function ShadcnLoginGate({ config, theme, message, onDone, onClose, overl
             </div>
           ) : null}
 
-          <Button type="submit" disabled={busy} className="h-9 w-full text-[13px]">
+          <BoarduiButton type="submit" disabled={busy} className="w-full">
             {busy ? '登录中…' : (mode === 'local' ? '登录（本地超管）' : '登录（LDAP）')}
-          </Button>
+          </BoarduiButton>
         </form>
-      </CardContent>
+      </div>
 
-      <CardFooter className="mt-4 flex flex-col items-stretch gap-2 border-t border-border px-5 py-3">
+      <div className="mt-4 flex flex-col items-stretch gap-2 border-t border-separator-border px-5 py-3">
         <div className="truncate text-[11px] leading-relaxed text-muted-foreground" title={
           mode === 'ldap' ? `${config?.ldap?.url ?? '—'} · BASE ${config?.ldap?.baseDN ?? '—'}` : ''
         }>
@@ -202,13 +205,13 @@ export function ShadcnLoginGate({ config, theme, message, onDone, onClose, overl
             {mode === 'local' ? '回车即登录' : '账号是域账号，不是邮箱'}
           </span>
           {typeof onClose === 'function' ? (
-            <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-[12px]" onClick={() => onClose()}>
+            <BoarduiButton type="button" variant="ghost" size="sm" onClick={() => onClose()}>
               先不登录
-            </Button>
+            </BoarduiButton>
           ) : null}
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   )
 
   if (overlay === true) {

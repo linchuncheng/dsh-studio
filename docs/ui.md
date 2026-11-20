@@ -1,4 +1,8 @@
 # 界面：样式与构建链
+- **shadcn 全部退场**（2026-11-20）：`components/ui.jsx` 删除，`studio-ui.jsx` 的五个再导出改走 BoardUI，
+  `login-gate.jsx` 的 Card/Tabs/Label/Button 换成 BoardUI（PillTab 切登录方式）。同时删掉 10 个无引用的
+  `@radix-ui/*`。产物 1,453 → 1,368 kB，构建守卫的 Radix 门户计数 2 → 0。
+  **新组件一律从 `web/src/components/base/**`（BoardUI 源码）或 `web/src/boardui/**`（自研补位）取，不要再引入 Radix。**
 - **设置页左栏跟随页签语言**（2026-11-20）：左栏原来用「实心强调色 + 白字」，与顶部 shadcn 页签的
   「灰底轨道 + 选中浮起」两套视觉。现改为同一套：轨道 `color-mix(前景 6%, 背景)`、选中项 `--card` + `--ds-shadow`、
   未选中 `--muted-foreground`。**这类规则要写在 `web/src/index.css`（带 `!important`）**——构建会压平 legacy 里的 `[data-dsh-studio]` 前缀并合并同名规则；

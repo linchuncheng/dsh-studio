@@ -1,24 +1,21 @@
 // Adapters that let the legacy panel (client.js, plain React.createElement) use
-import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group'
 // real shadcn/ui primitives without rewriting its markup.
 //
 // Every adapter keeps the legacy prop contract, so client.js can do:
 //     const Sheet = UIKIT?.SheetDrawer ?? LegacySideDrawer
 // and fall back safely when the kit is missing.
 import * as React from 'react'
-import * as DialogPrimitive from '@radix-ui/react-dialog'
-import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import { cn } from '../lib/utils.js'
-import { portalRoot } from '../lib/portal.js'
-import { Button, Input, Label, Textarea, Badge, Tabs, TabsList, TabsTrigger } from './ui.jsx'
+// 这五个原来来自 shadcn 的 ui.jsx，现在统一走 BoardUI（组件源码 + 适配层）。
+import { Button, Input, Textarea } from '../boardui/index'
+import { Label } from '../components/base/input/label'
+import { Badge } from '../components/base/badges/badge'
 import { SegmentedControl as BoarduiSegmented, SegmentedControlItem as BoarduiSegmentedItem } from '../components/base/segmented-control/segmented-control'
 import { Tooltip as BoarduiTooltip, TooltipTrigger as BoarduiTooltipTrigger } from '../components/base/tooltip/tooltip'
 import { Meter as BoarduiMeter } from '../components/base/meter/meter'
 import { ProgressBar as BoarduiProgressBar } from '../components/base/progress/progress'
 import { Drawer as BoarduiDrawer } from '../boardui/drawer'
 import { ConfirmDialog as BoarduiConfirmDialog } from '../boardui/dialog'
-
-const TooltipProvider = TooltipPrimitive.Provider
 
 
 /* ------------------------------------------------------------------ Sheet ---
@@ -39,25 +36,6 @@ export function SheetDrawer({ title, hint, onClose, footer, children }) {
    { items: [{ id, label }], value, onChange }  → shadcn Tabs (Radix) */
 /* --------------------------------------------------------------- Tabs ----
    { items: [{ id, label, count?, hint? }], value, onChange } */
-
-function Hint({ label, children }) {
-  if (label === undefined || label === null || label === '') return children
-  return (
-    <TooltipProvider delayDuration={260}>
-      <TooltipPrimitive.Root>
-        <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
-        <TooltipPrimitive.Portal container={portalRoot()}>
-          <TooltipPrimitive.Content
-            sideOffset={6}
-            className="z-[120] max-w-[240px] rounded-md border border-border bg-card px-2 py-1 text-[11.5px] leading-[1.45] text-foreground shadow-md"
-          >
-            {label}
-          </TooltipPrimitive.Content>
-        </TooltipPrimitive.Portal>
-      </TooltipPrimitive.Root>
-    </TooltipProvider>
-  )
-}
 
 export { TabsBar } from './tabs-bar.jsx'
 

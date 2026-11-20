@@ -1,6 +1,30 @@
 # 更新日志
 
 
+## [0.9.40] — 2026-11-20
+
+### 界面组件：shadcn 全部换成 BoardUI
+
+面板里最后三处 shadcn/Radix 实现清理完毕：
+
+| 原来 | 现在 |
+| --- | --- |
+| `components/ui.jsx`（shadcn：Button/Input/Textarea/Label/Card/Badge/Tabs/Dialog/Checkbox + 6 个 Radix 包） | **删除**；用到的地方改 BoardUI |
+| `studio-ui.jsx` 里给 legacy 面板的 `Button/Input/Textarea/Label/Badge` 再导出 | 改从 `boardui/index`、`components/base/input/label`、`components/base/badges/badge` 取 |
+| `studio-ui.jsx` 里遗留的 Radix Tooltip 包装 `Hint`（已无引用） | 删除 |
+| `login-gate.jsx` 的 Card/Tabs/Label/Button（shadcn） | BoardUI：`PillTabList + PillTab` 切换登录方式、BoardUI Input/Button、卡片用 BoardUI token 拼 |
+
+顺带把 `web/package.json` 里已无引用的 **10 个 `@radix-ui/*`** 删掉（锁文件同步）。
+
+**体积与依赖**：产物 1,453 → **1,368 kB**（-85 kB），gzip 422 → 398 kB；
+构建守卫报告的 Radix 门户 **2 → 0**（面板里不再有 Radix Portal）。
+
+### 验证
+- 面板渲染探针 `npm run probe:panel` **16/16**（看板/抽屉/需求/设置/技能库，全程无 pageerror）
+- 登录门单独渲染验证：点开「登录」→ BoardUI pill 页签 + 账号框 + 密码框 + 蓝主按钮，无报错
+- `npm test` 287 条全绿（本地 + `TZ=UTC`）；CI 绿
+
+
 ## [0.9.39] — 2026-11-20
 
 ### 界面
