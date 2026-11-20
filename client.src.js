@@ -1100,6 +1100,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 [data-dsh-studio] .ds-dw-tabs { border-bottom:1px solid var(--border); gap:2px; }
 [data-dsh-studio] .ds-dw-tab { border-radius:10px; }
 [data-dsh-studio] .ds-dw-tab[data-on="1"] { background:var(--muted); border-bottom:2px solid var(--foreground); }
+}
 
 /* 看板列 */
 [data-dsh-studio] .ds-col { background:color-mix(in srgb, var(--muted) 55%, transparent); border:1px solid var(--border);

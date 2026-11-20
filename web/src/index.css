@@ -1208,6 +1208,25 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 }
 [data-dsh-studio] .ds-nav-item + .ds-nav-item { margin-top: 2px }
 
+/* 设置左栏：跟随看板页签的语言（灰底轨道 + 选中浮起）。
+   以前 active 是「实心强调色 + 白字」，和顶部 shadcn 页签是两套视觉，放进同一屏像两个产品。
+   放在这里（而不是 legacy）是因为构建会压平 legacy 的 [data-dsh-studio] 前缀并合并同名规则；
+   这里带 !important 才压得住组件类。 */
+[data-dsh-studio] .ds-settings-nav {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--background)) !important;
+  border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--background)) !important;
+  border-radius: 10px !important; padding: 6px !important; gap: 2px !important;
+}
+[data-dsh-studio] .ds-settings-nav-group { color: var(--muted-foreground) !important; opacity: 1 !important }
+[data-dsh-studio] .ds-nav-item { color: var(--muted-foreground) !important; font-weight: 500 !important }
+[data-dsh-studio] .ds-nav-item:hover { background: color-mix(in srgb, var(--card) 60%, transparent) !important; color: var(--foreground) !important }
+[data-dsh-studio] .ds-nav-item[data-active="1"] {
+  background: var(--card) !important; color: var(--foreground) !important;
+  font-weight: 600 !important; box-shadow: var(--ds-shadow, 0 1px 2px rgb(0 0 0 / 0.06)) !important;
+}
+[data-dsh-studio] .ds-nav-count { color: var(--muted-foreground) !important; opacity: 1 !important }
+[data-dsh-studio] .ds-nav-item[data-active="1"] .ds-nav-count { color: var(--foreground) !important; opacity: .72 !important }
+
 /* 设置页列表行：提示词/技能预览只占一行，超出省略，动作按钮不被挤压 */
 [data-dsh-studio] .ds-listrow { display: flex; align-items: center; gap: 12px; padding: 8px 12px}
 [data-dsh-studio] .ds-listrow-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto }

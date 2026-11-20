@@ -209,7 +209,8 @@ try {
   await page.screenshot({ path: join(outDir, 'drawer.png') })
 
   // ③ 需求页：覆盖率口径
-  await page.evaluate(() => { const close = [...document.querySelectorAll('button')].find(node => String(node.textContent ?? '').trim() === '×' || String(node.getAttribute('aria-label') ?? '') === '关闭'); if (close !== undefined) close.click() })
+  // 先关掉抽屉：不关的话设置页截图会被挡住一半，看不出左栏的样式
+  await clickExact('关闭')
   await new Promise(resolve => setTimeout(resolve, 400))
   await clickExact('需求')
   check('③ 需求页矩阵渲染', await waitText('功能点与可追溯矩阵'))

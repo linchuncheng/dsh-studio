@@ -1,4 +1,8 @@
 # 界面：样式与构建链
+- **设置页左栏跟随页签语言**（2026-11-20）：左栏原来用「实心强调色 + 白字」，与顶部 shadcn 页签的
+  「灰底轨道 + 选中浮起」两套视觉。现改为同一套：轨道 `color-mix(前景 6%, 背景)`、选中项 `--card` + `--ds-shadow`、
+  未选中 `--muted-foreground`。**这类规则要写在 `web/src/index.css`（带 `!important`）**——构建会压平 legacy 里的 `[data-dsh-studio]` 前缀并合并同名规则；
+  而 `client.src.js` 有「只许变小」的棘轮，别往里加样式。
 
 从 README 拆出来的界面实现记录。要看界面长什么样，回 [README](../README.md) 看图。
 
