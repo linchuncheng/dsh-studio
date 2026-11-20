@@ -135,6 +135,15 @@ jobs:
           echo "::error::npm publish 返回成功，但 registry 上查不到 $VER"
           exit 1
 
+      # 正式版发出去之后，上一次预发布留在 next 上的那个版本就落后了，而 npm 不会自动挪它 ——
+      # 0.2.2-rc.3 就是这么在 next 上挂了一整代。CI 只有 publish 权限、动不了 dist-tag，
+      # 所以这里只把该敲的命令喊成 ::warning::，绝不阻塞发版。
+      # 本机的硬断言在 tools/verify-release.mjs（npm run verify:release 会 FAIL）。
+      - name: 检查 next 通道有没有悬空
+        if: success() && github.event_name == 'push'
+        continue-on-error: true
+        run: node tools/dist-tag-lint.mjs
+
       - name: 发布后核对（仅正式版）
         if: success() && !contains(github.ref_name, '-')
         run: |

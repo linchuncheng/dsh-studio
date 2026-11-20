@@ -53,6 +53,10 @@ git tag v0.2.0 && git push origin v0.2.0
   `release.yml` 发预发布时会打 `::warning::` 提醒。正式版一发，同号 `-next.0` 立刻变旧 → 守卫变红 →
   这时必须二选一：`npm dist-tag rm @marsken/dsh-studio next`（不要预发布通道了）或
   `npm dist-tag add @marsken/dsh-studio@<新版> next`。
+- **流水线每次发布后都会自己查一遍**：`release.yml` 在 publish 之后跑 `tools/dist-tag-lint.mjs`，
+  只要 `next` 比这次发的版本旧，Actions 日志里就有一条 `::warning::` 并附上可直接复制的
+  `npm dist-tag rm …` —— 它**不阻塞发版**（CI 没有 dist-tag 权限），本机的 `npm run verify:release`
+  才是硬拦。想在本机先看一眼：`node tools/dist-tag-lint.mjs`（加 `--strict` 变成非零退出）。
 
 ### 1.2 删除 / 弃用单个版本（npm 的 72 小时规则）
 

@@ -48,6 +48,42 @@ test('预发布占住 next 时 release.yml 必须给出提醒', () => {
   assert.match(release, /::warning::[^\n]*next/, '要提醒维护者在正式版之后清掉 next（CI 没有 dist-tag 令牌）')
 })
 
+// 正式版发完，上一次预发布留在 next 上的版本就落后了，npm 不会自动挪它。
+// 流水线要在发布之后把它喊出来（CI 没权限改 tag，只能提示），本机则由 verify:release 硬拦。
+test('发布之后流水线会检查 next 有没有悬空（只提示不阻塞）', () => {
+  const release = read('.github/workflows/release.yml')
+  assert.match(release, /tools\/dist-tag-lint\.mjs/, '发版后要跑 dist-tag-lint')
+  assert.match(release, /continue-on-error:\s*true/, '这条只提示，不能阻塞发版')
+  assert.ok(release.indexOf('dist-tag-lint.mjs') > release.indexOf('npm publish'), '必须排在 publish 之后')
+})
+
+test('cmpSemver：同号预发布小于正式版，号大的更新', async () => {
+  const { cmpSemver, isVersion } = await import('../tools/lib/semver.mjs')
+  assert.equal(cmpSemver('0.2.2-rc.3', '0.9.15'), -1)
+  assert.equal(cmpSemver('0.9.16', '0.9.15'), 1)
+  assert.equal(cmpSemver('0.9.15', '0.9.15'), 0)
+  assert.equal(cmpSemver('0.2.2', '0.2.2-rc.3'), 1, '正式版 > 同号预发布')
+  assert.equal(cmpSemver('0.2.2-rc.1', '0.2.2-rc.3'), -1)
+  assert.equal(cmpSemver('0.10.0', '0.9.18'), 1, '0.10 比 0.9 新（按数字比，不按字符串）')
+  assert.equal(isVersion('0.9.19-next.0'), true)
+  assert.equal(isVersion('(无)'), false, '脏值不能被拿去比较')
+})
+
+test('lintNext：next 落后才报警，且必须给出能直接敲的命令', async () => {
+  const { lintNext } = await import('../tools/dist-tag-lint.mjs')
+  // 没有 next 通道 —— 通过
+  assert.equal(lintNext({ latest: '0.9.18' }, '0.9.18').ok, true)
+  // next 比最新版新 —— 通过（预发布通道正常）
+  assert.equal(lintNext({ latest: '0.9.18', next: '0.9.19-next.0' }, '0.9.18').ok, true)
+  // 正式版发完，next 还停在同号预发布 —— 必须报
+  const stale = lintNext({ latest: '0.9.20', next: '0.9.19-next.0' }, '0.9.20')
+  assert.equal(stale.ok, false)
+  assert.match(stale.fix, /npm dist-tag rm @marsken\/dsh-studio next/, '要给出可以直接敲的命令')
+  assert.match(stale.message, /0\.9\.19-next\.0/)
+  // 脏值不参与比较
+  assert.equal(lintNext({ latest: '0.9.18', next: '(无)' }, '0.9.18').ok, true)
+})
+
 // 预发布约定：*-* 的 tag 走 npm next 通道，不抢 GitHub Latest
 
 test('预发布 tag（含 -）走 next 通道', () => {
