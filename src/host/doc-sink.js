@@ -76,6 +76,7 @@ export function sanitizeArtifactDocs(raw) {
   return {
     weknora: {
       knowledgeId: String(wk.knowledgeId ?? '').trim().slice(0, 80),
+      replaced: wk.replaced === true,
       url: String(wk.url ?? '').trim().slice(0, 500),
       at: Number(wk.at) || 0,
       error: String(wk.error ?? '').slice(0, 300),

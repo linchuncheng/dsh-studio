@@ -78,3 +78,77 @@ test('没配全 / 连不上：回 error，不抛', async () => {
   assert.equal(down.ok, false)
   assert.match(down.error, /建文档失败/)
 })
+test('幂等：给 previousKnowledgeId 时先删旧再建新，并回报 replaced', async () => {
+  const seen = []
+  const server = createServer((req, res) => {
+    req.resume()
+    req.on('end', () => {
+      seen.push(req.method + ' ' + req.url)
+      res.setHeader('Content-Type', 'application/json')
+      if (req.method === 'DELETE') return res.end('{}')
+      if (req.url.endsWith('/knowledge/manual')) return res.end(JSON.stringify({ data: { id: 'k-new' } }))
+      if (req.url.endsWith('/reparse')) return res.end('{}')
+      res.statusCode = 404
+      res.end('{}')
+    })
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address()
+  try {
+    const result = await uploadToWeknora({
+      sink: { ...sink, baseUrl: `http://127.0.0.1:${port}` },
+      title: 't', markdown: 'm', previousKnowledgeId: 'k-old',
+    })
+    assert.equal(result.ok, true)
+    assert.equal(result.replaced, true)
+    assert.equal(seen[0], 'DELETE /knowledge/k-old', '先删旧文档')
+    assert.equal(seen[1], 'POST /knowledge-bases/kb1/knowledge/manual')
+    assert.equal(seen[2], 'POST /knowledge/k-new/reparse')
+  } finally {
+    await new Promise(resolve => server.close(resolve))
+  }
+})
+
+test('幂等：旧文档已经不在了（404）也算删成功，继续建新的', async () => {
+  const server = createServer((req, res) => {
+    req.resume()
+    req.on('end', () => {
+      res.setHeader('Content-Type', 'application/json')
+      if (req.method === 'DELETE') { res.statusCode = 404; return res.end('{}') }
+      if (req.url.endsWith('/knowledge/manual')) return res.end(JSON.stringify({ data: { id: 'k-2' } }))
+      res.end('{}')
+    })
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address()
+  try {
+    const result = await uploadToWeknora({ sink: { ...sink, baseUrl: `http://127.0.0.1:${port}` }, title: 't', markdown: 'm', previousKnowledgeId: 'gone' })
+    assert.equal(result.ok, true)
+    assert.equal(result.replaced, true)
+    assert.equal(result.warning, '')
+  } finally {
+    await new Promise(resolve => server.close(resolve))
+  }
+})
+
+test('幂等：旧文档删不掉（500）时仍继续建新，但把原因写进 warning', async () => {
+  const server = createServer((req, res) => {
+    req.resume()
+    req.on('end', () => {
+      res.setHeader('Content-Type', 'application/json')
+      if (req.method === 'DELETE') { res.statusCode = 500; return res.end(JSON.stringify({ message: 'nope' })) }
+      if (req.url.endsWith('/knowledge/manual')) return res.end(JSON.stringify({ data: { id: 'k-3' } }))
+      res.end('{}')
+    })
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address()
+  try {
+    const result = await uploadToWeknora({ sink: { ...sink, baseUrl: `http://127.0.0.1:${port}` }, title: 't', markdown: 'm', previousKnowledgeId: 'stuck' })
+    assert.equal(result.ok, true)
+    assert.equal(result.replaced, false)
+    assert.match(result.warning, /旧文档没删掉/)
+  } finally {
+    await new Promise(resolve => server.close(resolve))
+  }
+})

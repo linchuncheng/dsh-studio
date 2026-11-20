@@ -25,11 +25,13 @@ export async function syncArtifact(store, taskId, artifactId, io = {}) {
     if (typeof buildMarkdown !== 'function') throw new Error('WeKnora 出口需要 buildMarkdown')
     const markdown = await buildMarkdown(task, artifact, state.config, requirement)
     const title = `${task.code || task.id} ${artifact.title}`.trim()
-    const result = await uploadToWeknora({ sink: state.config?.docs?.weknora, title, markdown })
+    const previousKnowledgeId = String(artifact.docs?.weknora?.knowledgeId ?? '')
+    const result = await uploadToWeknora({ sink: state.config?.docs?.weknora, title, markdown, previousKnowledgeId })
     const record = {
       knowledgeId: String(result.knowledgeId ?? ''),
       url: String(result.url ?? ''),
       at: Date.now(),
+      replaced: result.replaced === true,
       // 入库成功但 reparse 失败：文档在库里，可检索不到——把 warning 留在 error 位，别让人以为已经好了。
       error: result.ok === true ? String(result.warning ?? '') : String(result.error ?? '入库失败'),
     }

@@ -249,6 +249,38 @@ try {
   check('④b 文档出口写清了主从关系', docsPane.text.includes('WeKnora 失败只记 error'))
   await page.screenshot({ path: join(outDir, 'docs-sink.png') })
 
+  // ④c 面板写路径：改出口 → 点保存 → 切走再切回 → 回读属性（渲染对了不等于存得进去）
+  const saveOnce = async value => page.evaluate(async next => {
+    const root = document.querySelector('[data-docs-sink]')
+    if (root === null) return { ok: false, reason: 'no-panel' }
+    const select = root.querySelector('select')
+    if (select === null) return { ok: false, reason: 'no-select' }
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set
+    setter.call(select, next)
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+    await new Promise(resolve => setTimeout(resolve, 300))
+    const button = [...document.querySelectorAll('button')].find(node => (node.textContent ?? '').includes('保存'))
+    if (button === undefined) return { ok: false, reason: 'no-save-button' }
+    button.click()
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    return { ok: true }
+  }, value)
+  const providerBefore = docsPane.provider
+  const providerTarget = providerBefore === 'weknora' ? 'feishu' : 'weknora'
+  const writeAttempt = await saveOnce(providerTarget)
+  await clickExact('集成健康')
+  const backOk = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('button, [role="button"], a')].find(node => (node.textContent ?? '').trim().startsWith('文档出口'))
+    if (el === undefined || el === null) return false
+    el.click()
+    return true
+  })
+  await new Promise(resolve => setTimeout(resolve, 1200))
+  const providerAfter = await page.evaluate(() => document.querySelector('[data-docs-sink]')?.getAttribute('data-docs-sink') ?? null)
+  check('④c 文档出口「保存」真的写进 config.docs', writeAttempt.ok === true && backOk === true && providerAfter === providerTarget, `期望 ${providerTarget}，回读 ${providerAfter}${writeAttempt.ok === true ? '' : '（' + writeAttempt.reason + '）'}`)
+  await saveOnce(providerBefore)
+  await new Promise(resolve => setTimeout(resolve, 800))
+
   // ⑤ 设置 → 技能库：使用读数
   const skillsNav = await clickExact('技能库')
   if (skillsNav === true) await new Promise(resolve => setTimeout(resolve, 800))

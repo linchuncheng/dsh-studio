@@ -41,7 +41,7 @@ async function callJson(doFetch, url, init, timeoutMs) {
  * 写一份交付物进知识库。返回 `{ ok, knowledgeId, url, error, warning }` 这类可落库的结论，从不抛。
  * 解析（reparse）失败只记 warning：文档已经在库上了，分块可以由人补跑。
  */
-export async function uploadToWeknora({ sink, title, markdown, fetchImpl, timeoutMs = 30000 } = {}) {
+export async function uploadToWeknora({ sink, title, markdown, previousKnowledgeId = '', fetchImpl, timeoutMs = 30000 } = {}) {
   const ready = weknoraReady(sink)
   if (!ready.ok) return { ok: false, error: `WeKnora 出口没配全：缺 ${ready.missing.join(' / ')}` }
   const doFetch = typeof fetchImpl === 'function' ? fetchImpl : globalThis.fetch
@@ -51,6 +51,18 @@ export async function uploadToWeknora({ sink, title, markdown, fetchImpl, timeou
   const headers = { 'Content-Type': 'application/json', 'X-API-Key': trim(sink.apiKey, 200) }
   const tenantId = trim(sink.tenantId, 40)
   if (tenantId !== '') headers['X-Tenant-ID'] = tenantId
+
+  /* 幂等：WeKnora 没有「覆盖同名文档」的语义，重复同步只会堆出多份切片污染检索。
+     所以拿台账里的 knowledgeId 先删旧再建新；旧文档已经不在了（404）也算删成功。
+     注意：WeKnora 的删除是**异步任务**（202 + `Delete task submitted`），刚删完立刻 GET 仍可能 200，别拿它判成败。 */
+  const previous = trim(previousKnowledgeId, 80)
+  let replaced = false
+  let replaceWarning = ''
+  if (previous !== '') {
+    const removed = await callJson(doFetch, `${base}/knowledge/${encodeURIComponent(previous)}`, { method: 'DELETE', headers }, timeoutMs)
+    replaced = removed.ok === true || removed.status === 404
+    if (replaced !== true) replaceWarning = `旧文档没删掉（${removed.error}）`
+  }
 
   const created = await callJson(doFetch, `${base}/knowledge-bases/${encodeURIComponent(kb)}/knowledge/manual`, {
     method: 'POST',
@@ -70,7 +82,8 @@ export async function uploadToWeknora({ sink, title, markdown, fetchImpl, timeou
   return {
     ok: true,
     knowledgeId,
+    replaced,
     url: `${base}/knowledge/${knowledgeId}`,
-    warning: reparsed.ok === true ? '' : `已入库但触发解析失败（${reparsed.error}），需要人工 reparse`,
+    warning: [replaceWarning, reparsed.ok === true ? '' : `已入库但触发解析失败（${reparsed.error}），需要人工 reparse`].filter(Boolean).join('；'),
   }
 }
