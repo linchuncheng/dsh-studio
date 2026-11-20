@@ -1,6 +1,26 @@
 # 更新日志
 
 
+## [0.9.51] — 2026-11-20
+
+### 开发流程写死：worktree → 测试 → 评审 → PR → 合并 → 构建发布
+
+以前仓库的口径是「改完即推 main」，实测代价是：**没人评审就进主干**，以及「远端、目标机、仓库三处不一致」。
+现在这条规矩写进了 [`CONTRIBUTING.md`](CONTRIBUTING.md) §4 与 [`AGENTS.md`](AGENTS.md) §10：
+
+| 步 | 判据 |
+| --- | --- |
+| 1 在 **git worktree** 的分支上开发 | `git worktree list` 能看到；改动不落在主检出上 |
+| 2 写代码 + 写测试 | 没有测试要在 PR 里说明为什么不需要 |
+| 3 **测试通过** | `npm test` + `TZ=UTC npm test` 全绿、`node --check`、`verify:tdz`；改前端再加 `pnpm build` + `cmp` |
+| 4 **审核完成** | 自查清单 + 证据贴进 PR 正文；有第二个人时由他 approve。**评审没过不许提 PR** |
+| 5 **提 PR** | `gh pr create`，正文写现象/根因/验证方式 |
+| 6 **合并主干 → 打 tag → 构建发布** | PR 合并后 CI 绿；`vX.Y.Z` 触发 npm 发布 + GitHub Release + 镜像；`npm run verify:release` 必须一致 |
+
+另记下两个 worktree 实操细节（都踩过）：新建的 worktree 里没有 `node_modules`（链主检出的进来，或只跑不依赖 devDeps 的测试）；
+worktree 首次 checkout 可能因行尾设置把几十个文件显示成「已修改」，对齐 `core.autocrlf` 后 `git checkout -- .` 即可。
+
+
 ## [0.9.50] — 2026-11-20
 
 ### 新增：`docs/manual.md` —— 人与 AI 共用的使用说明
