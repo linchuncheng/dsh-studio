@@ -350,11 +350,13 @@ export async function runTaskCases(store, taskId, options = {}) {
     ? new Set(options.caseIds.map(id => String(id)))
     : null
   const targets = (Array.isArray(task.cases) ? task.cases : [])
-    .filter(item => (wanted === null ? item.http != null || item.shell != null : wanted.has(item.id)))
-  if (targets.length === 0) throw new Error('没有可执行的用例：接口用例要填 method + url（相对地址拼环境 baseUrl），shell / 数据库用例要填 command / sql')
+    /* 「哪些用例能跑」只有一个判据：isExecutable。以前这里手写 http/shell 两个条件——
+       db 和浏览器用例建得出来、抽屉里也有 ▶ 了，却永远进不了这一层（AGENTS.md 记过的坑）。 */
+    .filter(item => (wanted === null ? isExecutable(item) : wanted.has(item.id)))
+  if (targets.length === 0) throw new Error('没有可执行的用例：接口用例要填 method + url，shell 要填 command，数据库要填 file + sql，浏览器要填 url（相对地址会拼测试环境 baseUrl）')
 
-  // 只有接口用例才需要测试环境；纯 shell / 数据库用例不该被「环境不可达」挡住。
-  if (targets.some(item => item.http != null)) {
+  // 需要测试环境的是「要打地址」的那两种；纯 shell / 数据库用例不该被「环境不可达」挡住。
+  if (targets.some(item => item.http != null || (item.browser != null && /^https?:\/\//i.test(String(item.browser.url ?? '')) !== true))) {
     if (env === undefined) throw new Error('还没有配置测试环境（设置 → 测试执行）：加一个环境，或从面板里跑（会回退到宿主自身地址）')
     const probe = env.inline === true ? { ok: true } : await probeEnv(env, config)
     if (probe.ok !== true) {

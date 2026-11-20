@@ -66,6 +66,36 @@ test('没有浏览器：给出可照做的提示，不是崩一个堆栈', async
   assert.match(result.error, /没找到可用的浏览器/)
 })
 
+test('执行链：▶ 跑（runTaskCases）真的会挑到浏览器用例，不是「没有可执行的用例」', async () => {
+  const { mkdtempSync, rmSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const { SecretStore, StudioStore } = await import('../src/host/store.js')
+  const { configureExecutor, runTaskCases } = await import('../src/host/executor.js')
+  configureExecutor(new Proxy({}, { get: () => () => undefined }))
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-browser-run-'))
+  const store = new StudioStore(join(dir, 'state.json'), { dbFile: join(dir, 'state.db'), secrets: new SecretStore(join(dir, '.secrets.json')) })
+  try {
+    await store.ready
+    await store.mutate(state => {
+      state.config.testing = { ...state.config.testing, allowBrowser: false, allowHosts: ['127.0.0.1'], envs: [{ id: 'e1', name: '本地', baseUrl: 'http://127.0.0.1:1', headers: {} }], defaultEnv: 'e1' }
+      state.tasks.push({
+        id: 't-b2', code: 'TEST-002', title: '（自检）浏览器用例执行链', type: 'test', status: 'test', role: 'qa',
+        requirementId: '', checklist: [], artifacts: [], comments: [], history: [], blocked: null,
+        cases: [{ id: 'c-b1', title: '页面能打开', expected: '能打开', result: 'pending', browser: { url: 'http://127.0.0.1:1/', expectText: 'x' } }],
+      })
+    })
+    // allowBrowser 关着：用例照样要进清单（否则就是「没有可执行的用例」那个老坑），跑出来是一条带原因的失败
+    const result = await runTaskCases(store, 't-b2', { by: '测试' })
+    assert.equal(result.run.total, 1, '浏览器用例要进执行清单')
+    assert.equal(result.run.failed, 1)
+    assert.match(String(result.run.results[0].error), /没开浏览器用例/)
+  } finally {
+    store.db?.close?.()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('真跑：打开页面、点按钮、填输入框，断言看得见的东西', { skip }, async () => {
   const server = createServer((req, res) => {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })

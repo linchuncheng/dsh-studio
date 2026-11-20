@@ -52,7 +52,7 @@ export function collectCases(state) {
     shell: item.shell !== null && item.shell !== undefined,
     db: item.db !== null && item.db !== undefined,
     // 能跑的三种：接口 / shell / 数据库。以前界面只认 http，另外两种建得出来却跑不了。
-    runnable: item.http != null || item.shell != null || item.db != null,
+    runnable: item.http != null || item.shell != null || item.db != null || item.browser != null,
     // 草稿 = 生成器留下的、没有可执行断言的用例。旧数据没有这个标记，前端退一步按「无断言」显示。
     draft: item.draft === true,
         lastRunAt: item.lastRun?.at ?? 0,
