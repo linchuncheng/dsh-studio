@@ -48,6 +48,7 @@ import { sanitizeLimits } from './src/host/limits.js'
 import { attachWebhooks, sanitizeWebhooks } from './src/host/webhooks.js'
 import { updateTaskComment, removeTaskComment } from './src/host/comments.js'
 import { deleteProjectFolder, deleteRequirementFolder } from './src/host/drive-sync.js'
+import { sanitizeDocsConfig } from './src/host/doc-sink.js'
 import { addAssertedCases, addDraftCases, buildDashboard, codingVerifyLine, commentTask, configureExecutor, larkJson, ensureReqFolder, larkCliReady, invalidateLarkProbe, larkProbeCache, mutateReqDoc, probeEnv, pullFeishuDoc, requirementGate, requirementMatrix, requirementProgress, requirementRollup, runCommand, runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask, verifyCodingRecord } from './src/host/executor.js'
 import { configureAuthRoutes, handleAuthRoute } from './src/host/routes/auth.js'
 import { configureExportRoutes, handleExportRoute } from './src/host/routes/exports.js'
@@ -408,6 +409,7 @@ function publicConfig(config) {
     sla: config.sla,
     design: config.design,
     reviewGate: config.reviewGate,
+    docs: config.docs,
     limits: config.limits,
     webhooks: config.webhooks,
     costs: config.costs,
@@ -1127,6 +1129,10 @@ async function applyConfig(store, patch) {
     /* 评审闸门：patch 白名单里必须也列一遍 —— 只写进 defaultConfig/mergeConfig/publicConfig 的话，
        /config 会返回 200 但什么也没改（这次真机就是这么翻车的）。 */
     if (patch.reviewGate !== undefined) config.reviewGate = sanitizeReviewGate({ ...config.reviewGate, ...(patch.reviewGate ?? {}) })
+    /* 文档出口：同样四处齐活，少一处就是「/config 返回 200 但什么都没改」。 */
+    if (patch.docs !== undefined && patch.docs !== null && typeof patch.docs === 'object') {
+      config.docs = sanitizeDocsConfig({ ...(config.docs ?? {}), ...patch.docs }, config.docs)
+    }
     if (patch.costs !== undefined) config.costs = sanitizeCosts({ ...config.costs, ...patch.costs })
     if (patch.ldap !== undefined && typeof patch.ldap === 'object') {
       const ld = patch.ldap

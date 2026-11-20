@@ -20,6 +20,7 @@ import { isStalled } from './dispatch-state.js'
 import { RUN_LOG, parseMentions } from './dispatcher.js'
 import { appendTeamMemory } from './team-memory.js'
 import { pickRunner, registerRunner } from './runners.js'
+import { syncArtifact as syncArtifactImpl } from './doc-sync.js'
 import { runDbCase } from './db-runner.js'
 import { emitEvent } from './events.js'
 import { runShellCase } from './shell-runner.js'
@@ -1339,7 +1340,7 @@ export async function ensureArtifactFolder(store, task) {
 }
 
 /** 把一条交付物写进需求的云盘文件夹（首次创建、之后覆盖）。 */
-export async function syncArtifact(store, taskId, artifactId) {
+async function syncArtifactToFeishu(store, taskId, artifactId) {
   const state = store.snapshot()
   const task = state.tasks.find(item => item.id === taskId)
   if (task === undefined) throw new Error(`no task ${taskId}`)
@@ -1407,7 +1408,11 @@ export async function syncArtifact(store, taskId, artifactId) {
     await rm(tmpDir, { recursive: true, force: true })
   }
 }
-
+/** 按出口配置投递一条交付物：分发在 doc-sync.js，这里只注入本地能力（默认 feishu，返回值与老版本一致）。 */
+export function syncArtifact(store, taskId, artifactId) {
+  const buildMarkdown = async (t, a, c, r) => artifactMarkdown(t, { ...a, content: await artifactBody(t, a, c) }, r)
+  return syncArtifactImpl(store, taskId, artifactId, { writeFeishu: syncArtifactToFeishu, buildMarkdown })
+}
 /** 一条需求下所有没归档（或归档失败的）交付物，批量写进云盘。 */
 export async function syncRequirementArtifacts(store, requirementId) {
   const state = store.snapshot()

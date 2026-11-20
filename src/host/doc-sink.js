@@ -69,3 +69,16 @@ export function artifactDocKey(task, artifact) {
   const head = String(task?.code ?? '').trim() || String(task?.id ?? '').trim()
   return `${head}::${String(artifact?.id ?? '').trim()}`
 }
+/** 交付物在每个出口上的台账。形状很小，但要能在重启后活下来（换出口不丢历史）。 */
+export function sanitizeArtifactDocs(raw) {
+  const src = raw !== null && typeof raw === 'object' ? raw : {}
+  const wk = src.weknora !== null && typeof src.weknora === 'object' ? src.weknora : {}
+  return {
+    weknora: {
+      knowledgeId: String(wk.knowledgeId ?? '').trim().slice(0, 80),
+      url: String(wk.url ?? '').trim().slice(0, 500),
+      at: Number(wk.at) || 0,
+      error: String(wk.error ?? '').slice(0, 300),
+    },
+  }
+}
