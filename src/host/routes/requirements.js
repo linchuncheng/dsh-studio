@@ -2,6 +2,7 @@ import { INTAKE_HTML, MINE_HTML, STATUS_HTML } from '../intake-pages.js'
 import { checklistFromAcceptance } from '../acceptance.js'
 import { resolveRequirement, requirementRefHint, reviewRequirement } from '../reviews.js'
 import { resolveSigner } from '../access.js'
+import { rejectUnknownFields } from '../route-contract.js'
 import { signoffActorKind } from '../intervention.js'
 import {
   REQ_STATUS_LABEL,
@@ -86,6 +87,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   }
   if (method === 'POST' && route === '/requirement/signoff') {
     const body = await host.readJsonBody(req)
+    rejectUnknownFields('/requirement/signoff', body)
     const id = reqRef(store, body.id)
     const action = body.action === 'clear' ? 'clear' : 'sign'
     const note = String(body.note ?? '').trim().slice(0, 600)
@@ -204,6 +206,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   }
   if (method === 'POST' && route === '/requirement/review') {
     const body = await host.readJsonBody(req)
+    rejectUnknownFields('/requirement/review', body)
     // 逻辑与 studio_requirement_review 工具共用一份（src/host/reviews.js），编号/内部 id 都认
     const requirement = await reviewRequirement(store, {
       id: body.id,

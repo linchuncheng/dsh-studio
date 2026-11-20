@@ -4,6 +4,7 @@ import { clearAgentFailure, noteAgentFailure } from '../dispatcher.js'
 import { codingVerifyLine, qualitySummary, runCommand, runTaskQuality, taskExitGate, verifyCodingRecord } from '../executor.js'
 import { compareCodingFacts } from '../gitlab-facts.js'
 import { mergeGateFor } from '../merge-gate.js'
+import { rejectUnknownFields } from '../route-contract.js'
 const INJECTED = ["applyConfig","ensureWorktree","mergeMergeRequest","publicState","publishMergeGate","readJsonBody","removeWorktree","sendJson","serviceOf","upsertById","workProjectOf"]
 let host = {
   applyConfig: () => {},
@@ -190,6 +191,7 @@ if (method === 'POST' && route === '/task/merge') {
   /* 真的去 GitLab 合并：门禁在服务端判，没过就拒绝。
      GitLab CE 没有「外部状态检查」，提交状态只是可见记录 —— 要让门禁生效，合并必须由平台执行。 */
   const body = await host.readJsonBody(req)
+  rejectUnknownFields('/task/merge', body)
   try {
     const merged = await host.mergeMergeRequest(store, String(body.id ?? ''), { by: String(body.by ?? '人').slice(0, 40) })
     host.sendJson(res, 200, { ok: true, merge: merged, state: host.publicState(store) })
@@ -201,6 +203,7 @@ if (method === 'POST' && route === '/task/merge') {
 if (method === 'POST' && route === '/task/merge-gate') {
   // 合并门禁：算一次「能不能合」，并把结论发成 GitLab 提交状态（仓库开了「状态检查必须通过」时这就是合并按钮）。
   const body = await host.readJsonBody(req)
+  rejectUnknownFields('/task/merge-gate', body)
   const id = String(body.id ?? '')
   if (body.publish === false) {
     // 只出结论不发状态：没配 GitLab 的机器也能验门禁本身（自检脚本走这条路）。

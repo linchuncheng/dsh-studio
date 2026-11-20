@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { readArtifactImage } from '../artifact-image.js'
 import { designPatchFrom } from '../design.js'
+import { rejectUnknownFields } from '../route-contract.js'
 import { resolveRequirement, requirementRefHint, saveTaskDesign } from '../reviews.js'
 import { emitEvent } from '../events.js'
 import { collectCases, groupCaseKeys, loadSuites, resolveSuiteKeys, sanitizeSuite, saveSuites, summarizeRun } from '../cases.js'
@@ -192,6 +193,7 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
   }
   if (method === 'POST' && route === '/task/comment') {
     const body = await host.readJsonBody(req)
+    rejectUnknownFields('/task/comment', body)
     const action = String(body.action ?? 'add')
     /* 评论以前只能增（issue #19）：写错/重复/过时的只能留着误导下一个人。 */
     if (action === 'update') {
@@ -501,6 +503,7 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
   }
   if (method === 'POST' && route === '/task/checklist') {
     const body = await host.readJsonBody(req)
+    rejectUnknownFields('/task/checklist', body)
     const id = String(body.id ?? '')
     const action = String(body.action ?? 'toggle')
     const by = String(body.by ?? '人').slice(0, 40)

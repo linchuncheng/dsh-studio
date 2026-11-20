@@ -1,6 +1,33 @@
 # 更新日志
 
 
+## [0.9.36] — 2026-11-20
+
+### 新增（issue #11 剩下的「路由层严格化」）
+- **写路由也吃白名单了**：`src/host/route-contract.js` 提供 `declareRoute(route, fields)` 与
+  `rejectUnknownFields(route, body)`。已启用的路由：
+
+  ```
+  /task/comment        id body author kind action commentId by
+  /task/checklist      id action text itemId done note by
+  /requirement/review  id decision note by operator
+  /requirement/signoff id action note by override operator
+  /task/merge-gate     id by publish action
+  /task/merge          id by
+  ```
+
+  多传未知字段直接 400 并列出可接受字段。选这几条的判断标准是**字段少、形状明确**，
+  且面板的 payload 已逐条 grep 对齐（`tests/route-contract.test.mjs` 里把这些 payload 原样跑一遍，
+  保证不误伤自家调用方）。
+- **边界如实写在这里**：`/task/update` 这类**收整张卡**做部分更新的路由仍是宽松的。
+  收紧它需要先把面板与脚本的调用全部改成显式字段，是另一件事——不做「看起来严了」的半成品。
+
+### 测试
+`tests/route-contract.test.mjs` 4 条：未知字段拒绝并点名、面板真实 payload 全通过、
+未登记路由与非法 body 放过、登记表本身自洽（路由唯一、字段非空）。
+`npm test` 285 条全绿（本地 + `TZ=UTC`），产物 `cmp` 一致，`release:check` 7 项通过。
+
+
 ## [0.9.35] — 2026-11-20
 
 ### 新增（issue #11 的可发现性部分）
