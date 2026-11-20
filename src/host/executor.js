@@ -1882,7 +1882,8 @@ export async function addAssertedCases(store, taskId, rawCases, options = {}) {
       prepared.push({
         title,
         expected,
-        pointId: '',
+        pointId: String(item.pointId ?? '').slice(0, 24),
+        acceptanceId: String(item.acceptanceId ?? '').slice(0, 24),
         shell: {
           command: command.slice(0, 2000),
           cwd: String(item.cwd ?? '').slice(0, 300),
@@ -1902,6 +1903,12 @@ export async function addAssertedCases(store, taskId, rawCases, options = {}) {
   }
 
   const existing = new Set((task.cases ?? []).map(item => item.title))
+  /* 没写 pointId 就继承卡的功能点：一个功能点通常多条用例，让调用方每条都重复写一遍纯属噪音。
+     想看「这条用例到底覆盖哪个功能点」的人，读到的就是卡上的那个（issue #11）。 */
+  for (const item of prepared) {
+    if (String(item.pointId ?? '') === '') item.pointId = String(task.pointId ?? '')
+  }
+
   const fresh = prepared.filter(item => !existing.has(item.title))
   if (fresh.length === 0) {
     return { added: 0, skipped: prepared.length, total: (task.cases ?? []).length, verified: null, env: null }

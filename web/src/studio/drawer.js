@@ -74,7 +74,8 @@ function Drawer({ task, state, onClose, onChanged }) {
   // 用例与验收清单的正文同样按需取，轮询只给计数。
   const [parts, setParts] = React.useState(null)
   React.useEffect(() => { setArtBodies({}); setArtRead(null); setArtEdit(null) }, [task.id])
-  const [newCase, setNewCase] = React.useState({ title: '', expected: '', steps: '', stepsText: '', type: 'functional', priority: 'p2', preconditions: '' })
+  // 新用例的 pointId 默认跟卡走：一个功能点通常多条用例，别让人每条都选一次（issue #11 可发现性）
+  const [newCase, setNewCase] = React.useState({ title: '', expected: '', steps: '', stepsText: '', type: 'functional', priority: 'p2', preconditions: '', pointId: task.pointId ?? '' })
   const [caseRun, setCaseRun] = React.useState({ busy: false, note: '' })
   const [caseGen, setCaseGen] = React.useState({ busy: false, note: '' })
   const [codingDraft, setCodingDraft] = React.useState(null)
@@ -388,6 +389,7 @@ function Drawer({ task, state, onClose, onChanged }) {
     try {
       const steps = parseSteps(newCase.steps)
       const item = { title, expected: newCase.expected.trim() }
+      if (String(newCase.pointId ?? '').trim() !== '') item.pointId = String(newCase.pointId).trim()
       if (steps.length > 0) item.http = { steps }
       if (newCase.type !== undefined && newCase.type !== 'functional') item.type = newCase.type
       if (newCase.priority !== undefined && newCase.priority !== 'p2') item.priority = newCase.priority
@@ -396,7 +398,7 @@ function Drawer({ task, state, onClose, onChanged }) {
         item.steps = String(newCase.stepsText).split('\n').map(line => line.trim()).filter(line => line !== '')
       }
       await api('/task/case', { id: task.id, action: 'add', cases: [item] })
-      setNewCase({ title: '', expected: '', steps: '', stepsText: '', type: 'functional', priority: 'p2', preconditions: '' })
+      setNewCase({ title: '', expected: '', steps: '', stepsText: '', type: 'functional', priority: 'p2', preconditions: '', pointId: newCase.pointId ?? task.pointId ?? '' })
       await onChanged()
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
@@ -1564,6 +1566,21 @@ function Drawer({ task, state, onClose, onChanged }) {
             h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, title: '加一条浏览器用例：真开 Chrome/Edge 打开页面，断言看得见的东西（需要先在设置里打开 allowBrowser）', onClick: () => void addBrowserCase() }, '＋ 浏览器'),
             h('button', { className: 'ds-btn', disabled: busy || newCase.title.trim() === '', onClick: () => void addCase() }, '＋ 加用例'),
           ),
+          (() => {
+            const points = (state.requirements ?? []).find(entry => entry.id === task.requirementId)?.points ?? []
+            if (points.length === 0) return null
+            return h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', marginTop: 6 } },
+              h('span', { className: 'ds-hint' }, '这条用例算在'),
+              h(SelectField, {
+                className: 'ds-select', style: { width: 240, height: 28 }, value: newCase.pointId ?? '',
+                onChange: event => setNewCase({ ...newCase, pointId: event.target.value }),
+              },
+                h('option', { value: '' }, '不归功能点'),
+                points.map(point => h('option', { key: point.id, value: point.id }, point.id + '｜' + point.title)),
+              ),
+              h('span', { className: 'ds-hint' }, '默认跟卡上的功能点；改这里只影响新加的这条'),
+            )
+          })(),
           h('div', { className: 'ds-row', style: { gap: 8, flexWrap: 'wrap', marginTop: 6 } },
             h(SelectField, {
               className: 'ds-select', style: { width: 96 }, value: newCase.type ?? 'functional',

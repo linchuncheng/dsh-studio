@@ -211,7 +211,9 @@ export function registerTools(ctx, store) {
 
   register(defineStudioTool({
     name: 'studio_requirement_save',
-    description: 'Create or update a requirement (PRD anchor). Omit id to create one; its code REQ-YYYY-NNN is assigned automatically.',
+    description: 'Create or update a requirement (PRD anchor). Omit id to create one; its code REQ-YYYY-NNN is assigned automatically. id 也可传编号（REQ-2026-001）。\n'
+      + '链接字段 prd / proto / acceptance 只认 http(s)://、mailto:、# 锚点或以 / 开头的站内路径——写别的会直接报错（不会静默存成空串）。\n'
+      + 'RICE 需求池打分可以直接带 pool: {reach, impact, confidence, effort}（四条都填才会算分），也可以走 POST /requirement/pool 单独更新。',
     parameters: {
       id: { type: 'string', description: '需求 id（省略则新建）。' },
       title: { type: 'string', description: '需求标题。' },
@@ -497,7 +499,10 @@ export function registerTools(ctx, store) {
 
   register(defineStudioTool({
     name: 'studio_task_add_cases',
-    description: '把**带可执行断言**的测试用例写进这张卡，并当场试跑第一条：跑不通就不算生成成功。接口用例形如 {title, method, path, body?, expectStatus, expectContains?, acceptanceId?}（acceptanceId 填这条用例验的那条验收条件，矩阵按它逐条判覆盖）；shell 用例形如 {title, command, expectExit?}（需在设置里开 allowShell）。path 可写相对地址，会用测试环境 baseUrl 解析。有一条不合法就整体拒绝、一条都不写。',
+    description: '把**带可执行断言**的测试用例写进这张卡，并当场试跑第一条：跑不通就不算生成成功。接口用例形如 {title, method, path, body?, expectStatus, expectContains?}；shell 形如 {title, command, expectExit?}（需在设置里开 allowShell）；浏览器形如 {title, browser:{url|path, expectText?, expectSelector?}}（需开 allowBrowser）。\n'
+      + '**归属功能点**：每条可带 pointId（这条用例算在哪个需求功能点）和 acceptanceId（验哪条验收条件，矩阵按它逐条判覆盖）；**不填 pointId 就继承卡上的 pointId**——一个功能点多条用例时不用每条都重复写。\n'
+      + '**地址规则**：path 可以写相对地址（用测试环境的 baseUrl 解析），完整地址只认 http(s)。\n'
+      + '有一条不合法就整体拒绝、一条都不写（错误里会点名第几条、为什么）。',
     parameters: {
       id: { type: 'string', required: true, description: 'Task id.' },
       cases: {
@@ -1222,7 +1227,8 @@ export function registerTools(ctx, store) {
 
   register(defineStudioTool({
     name: 'studio_task_case',
-    description: 'Record test cases on a task and their execution results. Test engineers write cases here before running them, then set each result to pass/fail/skip with evidence — this is the test deliverable the board shows.',
+    description: 'Record test cases on a task and their execution results. Test engineers write cases here before running them, then set each result to pass/fail/skip with evidence — this is the test deliverable the board shows.\n'
+      + '每条用例可带 pointId（归到哪个需求功能点，不填沿用卡上的）与 acceptanceId（验哪条验收条件）；要**可执行**的用例（method+path+expectStatus / command / browser / db）请用 studio_task_add_cases，它会当场试跑。',
     parameters: {
       id: { type: 'string', required: true, description: 'Task id.' },
       action: { type: 'string', description: 'add | update | remove (default add)' },

@@ -1,6 +1,28 @@
 # 更新日志
 
 
+## [0.9.35] — 2026-11-20
+
+### 新增（issue #11 的可发现性部分）
+- **用例能归到功能点了，而且默认继承卡上的**：`studio_task_add_cases` / `studio_task_case` 的每条用例
+  可以带 `pointId`（算在哪个需求功能点）与 `acceptanceId`（验哪条验收条件）。
+  **不填 `pointId` 就继承卡的 `pointId`** —— 一个功能点通常多条用例，不让调用方每条重复写。
+  抽屉里加用例时也给了选择器（默认跟卡走，可改），连加几条不用重复选。shell 用例以前硬编码 `pointId: ''`，现在也认。
+- **约束写进工具描述，不再只藏在源码里**：
+  - `studio_task_add_cases` 写明 `pointId` / `acceptanceId` 的语义与默认值、相对地址用测试环境 `baseUrl` 解析、
+    完整地址只认 `http(s)`；一条不合法就整体拒绝并点名第几条为什么。
+  - `studio_requirement_save` 写明：id 可传编号（`REQ-2026-001`）、链接只认 `http(s)://` / `mailto:` / `#` / `/` 开头、
+    RICE 的 `pool` 可以直接带也可以走 `/requirement/pool`。
+  - `studio_task_case` 说明「要可执行的用例请用 `studio_task_add_cases`，它会当场试跑」。
+- **需求页把覆盖率口径写出来了**：「覆盖率按功能点算：一个功能点可以对应多张卡、多条用例；
+  用例自带的 `pointId` 优先，没填就沿用卡上的」——避免读者推成「一卡一点，覆盖率有天花板」
+  （这正是 issue #9 里那位 agent 当时的误判）。
+
+### 测试
+新增 `tests/case-point.test.mjs`：不填 `pointId` 继承卡的功能点、填了不被覆盖、`acceptanceId` 一起存下来。
+`npm test` 269 条全绿（本地 + `TZ=UTC`），产物 `cmp` 一致，`release:check` 7 项通过。
+
+
 ## [0.9.34] — 2026-11-20
 
 ### 修复（GitHub issue #10：计数恒为 0 的回归）
