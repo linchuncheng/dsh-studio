@@ -194,6 +194,11 @@ GIT_SSH_COMMAND="ssh -p 443" git push
 - **不许直接往 `main` 推代码**：一律 worktree 分支 → 测试通过 → 评审完成 → 提 PR → 合并 → 打 tag 发版。
   六步与每步判据写在 [`CONTRIBUTING.md`](CONTRIBUTING.md) §4；简称就是：**worktree 开发 → 测试通过 → 审核完成 → 提 PR → 合并主干 → 构建发布**。
   历史上直推 main 攒出过「远端、目标机、仓库三处不一致」，也出现过「没评审就进主干」。
+- **工作树的隔离单位是「功能」，不是「消息」**：
+  · **会话级**：每开一个会话，开发就在它自己的工作树里做（`create_worktree` / `git worktree add`），不要在主检出上改；
+  · **功能级**：同一会话里做不同功能，各自开一个工作树、各自一条分支，别混在一起；
+  · 同一个功能的连续小改继续用当前工作树，不用每句话都新开。
+- **合并必须用户确认**：agent 把 PR 提好、CI 绿、证据贴全后**停下等人点头**；人没确认不合并、不打 tag、不发版。
 - **提 PR 之前必须先完成评审**（自查清单 + 证据贴进 PR 正文；有第二个人时由他 approve）。评审没完成就提 PR，等于把评审推迟到合并前一刻。
 - 分支上改完就推分支（`git push -u origin <branch>`），PR 合并由人（或 `gh pr merge`）完成，**合并前 CI 必须绿**。
 - **合并进 `main` 之后才打 tag**：`vX.Y.Z` 触发 `release.yml`（npm 发布 + GitHub Release）与 `publish-github-packages.yml`，发完用 `npm run verify:release` 核对「发版一致」。
