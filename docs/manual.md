@@ -1,0 +1,268 @@
+# 使用说明（人与 AI 共用）
+
+> 这份手册写给**两种读者**：第一次打开面板的人，和第一次调用这套工具的 AI。
+>
+> - **人**：从 §1 看到 §4 就能上手；§8 排障手册是出问题时最先翻的。
+> - **AI**：§5（工具用法）、§7（数据在哪）、§8（症状→动作）是必须读的；每节的标题就是锚点，可以直接引用 `docs/manual.md#门禁` 这种链接。
+> - **改代码的人**：去 [`AGENTS.md`](../AGENTS.md)，那里是开发约定；这份手册只管「怎么用」。
+
+---
+
+## §1 一分钟看懂
+
+**它是什么**：一块挂在 DSH 里的「需求 → 任务」工作台。左边是看板，右边是设置；每条需求拆成卡，每张卡按列流转，每一列由某个角色的 AI 专家接手干活，人负责定方向和验收。
+
+**它解决什么**：
+
+- 需求不再是一句话丢过来 → 必须先答「澄清三问」、评审通过，才能拆成能开工的卡。
+- 每张卡**卡的验收清单 = 需求的验收条件**，不是模板。
+- AI 干完活要留证据（评论、交付物、执行记录、用例、代码事实），**没证据推不动**。
+- 交付物自动落飞书云盘，按「项目 / 需求 / 类型」归档。
+
+**它不是什么**：不是代码托管、不是 CI、不是 IM。它调用 GitLab / 飞书，但不管它们本身。
+
+---
+
+## §2 对象与关系
+
+```
+项目 Project ──┬── 需求 Requirement ──┬── 功能点 Point（带验收条件 acceptance）
+               │                      ├── 卡 Task（一个功能点一张卡；卡的验收清单 = 功能点的 acceptance）
+               │                      ├── 需求文档 Doc（PRD 基线）
+               │                      └── 云盘目录 Folder（项目目录下的需求目录）
+               ├── 迭代 Iteration
+               └── 版本 Release ──── 挂一批卡，过门禁才发得出去
+
+卡 Task ──┬── 评论 Comment（含 @专家 派活）
+          ├── 验收清单 Checklist（"做完"的定义）
+          ├── 测试用例 Case（接口/shell/浏览器/数据库；可归功能点 + 验收条件）
+          ├── 交付物 Artifact（需求说明/设计/用例集/报告/MR…，正文进云盘）
+          ├── 执行记录 Coding（agent、分支、commits、改动文件、单测结果、评审结论）
+          └── 历史 History（谁在什么时候把它推到哪一列、为什么被拦）
+
+专家 Expert / 专家团 Team ── 每个角色（产品/架构/研发/测试）一个 AI，派单后在自己的会话里干活
+技能 Skill ── 可复用的做法（命令、坑、检查清单），派单时注入给专家
+```
+
+**一句话记法**：需求是锚点，功能点是可验收的最小单位，卡是能派单的工作单元，用例和交付物是证据。
+
+---
+
+## §3 一条需求的完整旅程（人视角）
+
+| 步 | 在哪做 | 做什么 | 不做会怎样 |
+| --- | --- | --- | --- |
+| 1 | 设置 → 项目与迭代 | 建项目（`KEY` + 名称 + 本地 git 路径） | 需求落不进项目目录，云盘只能进「未归属项目」 |
+| 2 | 需求页 →「＋ 新建」 | 写需求：背景/目标/范围/**不做**/验收/风险六段 | 一句话需求拆出来全是没法验收的卡 |
+| 3 | 需求详情 → 澄清三问 | 答「有没有服务端 / 谁做鉴权 / 交付边界」 | **拆卡会被拦**（`拆卡前先把澄清答完：…`） |
+| 4 | 需求详情 → 功能点 | 每个功能点写 1–3 条 `acceptance` | 拆出来的卡清单是空的，验收无从谈起 |
+| 5 | 需求详情 → 评审 | 提交 → 通过 | 没评审通过**不能拆卡** |
+| 6 | 需求详情 →「拆卡」 | 一个功能点变一张卡，落在「待澄清」 | — |
+| 7 | 看板 | 卡片逐列流转；每列负责人（AI）会被派单 | 卡停在原地不动（看板顶部会提示「停摆」） |
+| 8 | 验收 | 勾清单 → 签字 → 推到「已完成」→ 需求签字 | 需求永远停在「进行中」，版本也发不出去 |
+
+**拖卡就够了吗？** 拖动 = 改状态，会自动检查该列的门禁；被拦时卡留在原列，历史里写清原因。绕过要显式 `override` 写理由（会计入 override 统计）。
+
+---
+
+## §4 门禁到底在拦什么 {#门禁}
+
+五道门，**默认都开**（两道闸门可在「设置 → 列的负责人」里关，关了会在卡历史里留痕）：
+
+| 门 | 什么时候拦 | 拦的条件 | 怎么过 |
+| --- | --- | --- | --- |
+| **澄清门禁** | 拆卡时 | 三问没答完 | 答完三问（`discovery`） |
+| **设计闸门** | 卡进「开发中」 | 没有设计记录，或评审未通过，或多稿未定案 | 放设计稿 + 指认定案 + 评审通过 |
+| **评审闸门** | 卡进「待测试」 | 代码评审没有结论 | `studio_task_coding action=review status=approved` |
+| **准出门禁** | 卡进「已完成」 | 清单没勾完 / 有失败用例 / 卡被标阻塞 / 没人签字 / **项目检查没跑或没通过** | 逐项补齐；`override` 强推需写理由 |
+| **合并门禁** | 合 MR | 评审未过 / 可执行用例没通过 / 项目检查没过 / 登记的分支与 commits 对不上 | 同上；通过后可让平台代合并 |
+
+**设计闸门与「设计评审通过」的区别**：评审通过 ≠ 定案。多稿时必须指认 `chosenId`，否则仍被拦——这是刻意的，防止「评审通过了但没人说清用哪一稿」。
+
+---
+
+## §5 AI 怎么用 {#ai}
+
+### 5.1 先查再动（任何写操作之前）
+
+```
+studio_task_list（按项目/状态过滤）→ 找到卡
+studio_task_get（读全量：需求、清单、用例、交付物、评论、历史）→ 再决定做什么
+```
+
+评论是**最新需求**。评论里说「等等」「先别动」，就停下汇报，不要改状态。
+
+### 5.2 一条需求从零到能开工
+
+```
+studio_requirement_save {
+  title, description,
+  project,
+  discovery: { server, auth, boundary },          // 三问，缺一项拆卡被拒
+  points: [{ id:'p1', title, acceptance:[{id,text}] }]
+}
+studio_requirement_review { id, decision:'submit' }   // 提交评审
+studio_requirement_review { id, decision:'approve', by } // 通过（人或有权限的角色）
+studio_requirement_split { id }                        // 一个功能点一张卡，返回 created + warnings
+```
+
+`warnings` 别丢：说了「有服务端」却没有一条后端功能点、说「没服务端」却要动接口、功能点太空 —— 都是要回头补需求的信号。
+
+### 5.3 干完活要留的东西（缺一样都推不动）
+
+```
+studio_task_comment        { id, body }                 // 做什么、怎么做、验证了什么
+studio_task_artifact       { id, kind, title, content } // 需求/设计/用例/报告…（正文会写进云盘）
+studio_task_coding         { id, action:'update', agent, branch, commits, files, testsTotal, testsPassed }
+studio_task_coding         { id, action:'review', status:'approved', reviewNote }
+studio_task_case           { id, cases:[…] }            // 或者 studio_task_add_cases（可执行用例，会当场试跑）
+studio_task_check          { id, itemId, note }         // 清单逐项勾，附证据
+```
+
+### 5.4 工具清单（46 个，按用途分组）
+
+| 组 | 工具 |
+| --- | --- |
+| 看板/卡 | `studio_task_list` `studio_task_get` `studio_task_create` `studio_task_update` `studio_task_block` `studio_task_unblock` `studio_task_comment` `studio_task_check` |
+| 需求 | `studio_requirement_list` `studio_requirement_get` `studio_requirement_save` `studio_requirement_review` `studio_requirement_split` `studio_requirement_signoff` `studio_requirement_folder` |
+| 设计/交付物 | `studio_task_design` `studio_task_artifact` |
+| 执行/评审 | `studio_task_coding` `studio_task_quality` `studio_merge_gate` |
+| 测试 | `studio_task_case` `studio_task_add_cases` `studio_task_generate_cases` `studio_test_run` `studio_test_suite` |
+| 缺陷/验收 | `studio_task_signoff` `studio_bug_duplicate` |
+| 版本 | `studio_release_list` `studio_release_get` `studio_release_save` `studio_release_publish` `studio_release_gray` |
+| 项目/度量 | `studio_project_list` `studio_project_save` `studio_dashboard` `studio_workload` `studio_burndown` `studio_analytics` `studio_costs` |
+| 技能 | `studio_skill_list` `studio_skill_get` `studio_skill_save` `studio_skill_mine` `studio_skill_delete` |
+| 配置 | `studio_config_get` `studio_config_set` |
+
+### 5.5 常见错误与正确写法
+
+| 想干的事 | 错误做法 | 正确做法 |
+| --- | --- | --- |
+| 改状态 | 直接写库 / 伪造 `coding` 记录 | `studio_task_update`（会过门禁） |
+| 拆卡 | 手工 `task_create` 一张张建，忘了挂 `pointId` | `studio_requirement_split`（自动挂点、清单继承验收条件） |
+| 跑用例 | 自己判断「应该没问题」 | `studio_test_run`（平台真发请求，失败自动开缺陷卡） |
+| 交付物 | 只在评论里说「已完成」 | `studio_task_artifact` 登记（正文进云盘，可被下一个人打开） |
+| 遇到别人的卡 | 直接改别的专家的卡 | 评论里 `@专家名` 交给对方 |
+| 不知道做什么 | 猜 | `studio_task_list` + `studio_task_get`，看不明白就问人 |
+
+**不要绕过工具层走 HTTP**：工具层的入参会做白名单校验、回读落库结果、写审计。只有工具确实没覆盖的（例如 Drive 的批量操作）才走 HTTP，并在评论里说明原因。
+
+---
+
+## §6 设置项地图（17 个分区）
+
+| 分区 | 管什么 | 常改的地方 |
+| --- | --- | --- |
+| 项目与迭代 | 业务项目、服务、迭代 | 新建项目：`KEY`、名称、本地 git 路径、基线分支 |
+| 专家 | 角色 AI 名册：名字、模型、提示词、技能 | 新需求先来这里确认每列有专家 |
+| 专家团 | 多个专家组的团队（团长拆活） | 大需求用团长编排 |
+| 技能库 | 可复用的做法（命令/坑/清单） | 「用上几张卡 / 返工率」是**相关性**不是因果，0 不代表没用 |
+| **列的负责人** | 每列挂哪个角色/专家；**设计闸门 / 评审闸门** | 闸门默认开；关了看板顶部会挂提示 |
+| 代码仓库 | GitLab 地址、令牌、项目路径 | 改完点「测试连接」 |
+| 飞书机器人 | 通知 webhook、多维表格、**云盘根文件夹** | 云盘根目录必须配，否则交付物无处可去 |
+| 集成健康 | 各项外部依赖的体检 | 红色项先修，再看别的 |
+| 自动派单 | 卡进哪几列自动派单、并发数、沙箱、隔离（none/worktree） | 想每张卡独立 worktree 就把隔离设成 worktree |
+| 测试执行 | 允许接口/shell/浏览器/数据库用例、允许的域名、执行上限 | 想跑 shell 用例必须打开开关并配 `shellCwd` |
+| 成本与预算 | 每个模型的价目表（元/百万 token）、预算 | 改了价目表，效能的成本数字才会变 |
+| 部署环境 | 预发/生产环境记录 | 发布准入要求「上过预发」时要用 |
+| 看板外观 | 标题、列宽、显示项 | 只影响展示 |
+| 统一登录（LDAP） | 目录账号登录 | 连不上目录时切「本地超管」 |
+| 权限与审计 | 成员、角色、访问级别、审计日志 | 破坏性操作都要 `confirm` |
+| 数据与备份 | 快照、恢复、导出 CSV、清空 | **删数据前先做快照** |
+
+---
+
+## §7 数据在哪里 {#数据}
+
+| 东西 | 位置 | 说明 |
+| --- | --- | --- |
+| 台账（卡/需求/版本/配置） | `~/.dsh/dsh-studio.db`（SQLite WAL，`meta.state` 存整份状态） | 保留 10 份自动快照；改之前先「设置 → 数据与备份 → 快照」 |
+| 密钥 | `~/.dsh/dsh-studio.secrets.json`（0600） | 不进台账、不进日志 |
+| 技能库 | `~/.dsh/skills/<name>/SKILL.md` | 插件启动时自愈同步 |
+| 交付物文档 | 飞书云盘：`根 / 项目 / 需求 / 01 需求文档 … 07 其它` | 新增直接落子目录；同名会覆盖更新 |
+| 会话日志 | `~/.dsh/sessions/<ws>/studio-<cardId>-<expertId>` | 排障时看这里的 `turn/end` |
+| 审计 | 台账内（设置 → 权限与审计） | 写操作、破坏性操作都有记录 |
+
+**云盘目录规则**（`docs/manual.md#数据`）：
+
+```
+根（设置里的「云盘根文件夹」）
+├── ORD 订单中心/              ← 项目：KEY + 名称；没挂项目的落「未归属项目」
+│   └── REQ-2026-001 积分抵扣/   ← 需求：编号 + 标题
+│       ├── 01 需求文档/  02 设计文档/  03 用例/  04 测试报告/  05 发布/  06 代码评审/  07 其它/
+└── 未归属项目/
+```
+
+建目录前会**先列同层同名并复用**，不会重复建。删需求/删项目时加 `deleteFolder: true` 会连带删目录。
+
+---
+
+## §8 排障手册 {#排障}
+
+> 用法：搜「症状」那一列的关键词。
+
+| 症状 | 先查 | 怎么修 |
+| --- | --- | --- |
+| 卡推不动，历史里写「被拦」 | 历史里的原因文案 | 按文案补齐（清单/用例/评审/设计/项目检查）；确实不适用才 `override` 写理由 |
+| 看板顶部挂「设计闸门 已关闭」 | 设置 → 列的负责人 | 想有保护就点开；关着时推进会在历史留痕 |
+| 拆分卡被拒「先把澄清答完」 | 需求详情 → 澄清三问 | 答完三问再拆；三问要写清做什么/谁鉴权/交付边界 |
+| 拆卡被拒「先过评审」 | 需求详情 → 评审 | 提交 → 通过再拆；已是 `active` 的需求可直接拆 |
+| 交付物「同步到云盘」没出文档 | 抽屉交付物里 `doc.error` 的文字 | 见下三行 |
+| 　· 错误里有 `unsafe file path` | lark-cli 只认当前工作目录子树 | 已修（0.9.44）：上传用 cwd + 相对文件名。升级即可 |
+| 　· 错误里有 `larkJson is not a function` | 调用处漏传参数 | 已修（0.9.46）：`drive-sync` 四个函数有参数守卫，报错会点名 |
+| 　· 错误里有 `unsafe`/`&`/`|` 被截断 | Windows 上 cmd.exe 把 `& \|` 当语法 | 已修（0.9.45）：参数逐个加引号 + `windowsVerbatimArguments` |
+| 产物落在需求根目录而不是 `01 需求文档` | `doc.error` 是否为空 | 空 = 子目录已建好；非空按提示修。历史文档不会自动移动，新文档才进子目录 |
+| 云盘根目录一堆同名文件夹 | `npm run drive:gc -- --base <端口>` | 先体检；`--apply` 才删（只删孤儿） |
+| 面板白屏 / 一行「渲染失败：xxx is not defined」 | 浏览器 console | 这是前端 `ReferenceError`；`node --check` 查不出，重启/升级后复现就报 issue |
+| 改了代码重启没生效 | `npm run sync:profile` 的版本输出 | 确认 profile 版本 = 仓库版本；前端改动还要 `cd web && pnpm build` |
+| 派单没反应/没留言 | 会话日志 `turn/end`、集成健康 | 常见是无可用模型通道（503）；先看「集成健康」 |
+| 用例全 fail 但接口明明是好的 | 测试执行里的 baseUrl / 允许域名 | shell 用例要开 `allowShell` + 配 `shellCwd`；接口用例要允许目标 host |
+| 项目检查一直是「没跑」 | 设置 → 项目 → 检查命令 | 配 `qualityCmd`（如 `npm run check`）；准出门禁要求它跑过且通过 |
+| 需求签不了字 | 需求页的 gate 阻塞项 | 卡没完成 / 有未结缺陷 / 功能点没用例覆盖，逐项补 |
+| 版本发不出去 | 版本详情里的门禁 | 有未完成卡、阻塞卡、未结缺陷或失败用例都会拦 |
+| 技能库显示「还没被用上」 | 专家是否挂了该技能 | 这是相关性统计，不是因果；挂了技能后接过卡才会出现在计数里 |
+
+---
+
+## §9 日常运维
+
+| 场景 | 命令 |
+| --- | --- |
+| 面板渲染体检（改前端后必跑） | `npm run probe:panel -- --base http://127.0.0.1:<端口>` |
+| README 截图重拍 | `npm run shots -- --base http://127.0.0.1:<端口>` |
+| 云盘孤儿目录体检 / 清理 | `npm run drive:gc -- --base <端口>` / 加 `--apply` |
+| 平台全闭环自检 | `STUDIO_BASE=… node tools/e2e-loop.mjs --k 3`（跑完自删） |
+| 真库能不能起 | `npm run smoke:store -- ~/.dsh/dsh-studio.db` |
+| 发版前文档一致性 | `npm run release:check` |
+| 发版后核对（tag/npm/Release） | `npm run verify:release` |
+| CI 结论 | `npm run ci:watch`（失败会自动贴日志尾巴） |
+
+**备份**：改数据前在「设置 → 数据与备份」做快照；手工备份就是拷 `~/.dsh/dsh-studio.db`（连同 `-wal`/`-shm`）。
+
+---
+
+## §10 术语表
+
+| 词 | 意思 |
+| --- | --- |
+| 功能点 Point | 需求里可验收的最小单位；拆卡时一个功能点变一张卡 |
+| 验收条件 Acceptance | 功能点下的一句话断言；**卡的验收清单就是它** |
+| 卡 Task | 能派单的工作单元；一行一个列状态 |
+| 门禁 Gate | 推进前必须满足的条件；拦住时卡留在原列并写历史 |
+| 闸门 Gate（可关） | 设计闸门 / 评审闸门，可在设置里关，关着时推进留痕 |
+| override | 绕过准出的显式记录（必须写理由，计入统计） |
+| 合并门禁 | 合并 MR 前的证据检查（评审/用例/项目检查/代码事实） |
+| 准出门禁 | 进「已完成」前的检查（清单/用例/阻塞/签字/项目检查） |
+| 派单 | 把卡交给某个专家会话去干活（`/agents/run`） |
+| 停摆 | 卡在某一列但长时间没有派单/动作，工作台会标出来 |
+| 交付物 Artifact | 卡上的产出物（文档/MR/用例集/报告），正文进云盘 |
+| 技能 Skill | 可复用的做法，派单时注入给专家 |
+| 隔离（worktree） | 每张卡的派单在独立 git worktree 里干活，互不干扰 |
+
+---
+
+## 附：给 AI 的三条硬规矩
+
+1. **先读再动**：`task_get` 读全量（含评论与历史）再决定；评论是最新需求。
+2. **干完留证据**：评论 + 交付物 + 执行记录 + 用例 + 清单，缺一样都推不动门禁。
+3. **不要伪造**：不直接写库、不手填 `coding`、不替别人签字；做不到就 `block` 并写清原因。
