@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { cmpSemver } from './lib/semver.mjs'
 import { releaseBodyIssue } from './lib/release-notes.mjs'
+import { readDistTags, versionExists } from './lib/registry.mjs'
 
 const PKG = '@marsken/dsh-studio'
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
@@ -63,29 +64,29 @@ if (head !== '') {
 
 // npm 侧：版本必须已发布；latest 可能滞后几分钟，只当警告。
 // 刚 publish 完的那几分钟 registry 还看不到新版本，所以支持 --wait <秒> 轮询等待。
+// 取数走 tools/lib/registry.mjs：dist-tags（几十字节）+ 单版本端点（200/404），
+// 不再拉完整 packument（0.9.30 时已 400 KB）—— 同样是权威答案，快两个数量级。
 const waitArg = process.argv.indexOf('--wait')
 const waitSeconds = waitArg > 0 ? Number(process.argv[waitArg + 1]) || 0 : 0
-const readRegistry = async () => {
-  const res = await fetch('https://registry.npmjs.org/' + encodeURIComponent(PKG), { signal: AbortSignal.timeout(20000) })
-  return res.json()
-}
 try {
-  let reg = await readRegistry()
   const deadline = Date.now() + waitSeconds * 1000
-  while (reg.versions?.[pkg.version] === undefined && Date.now() < deadline) {
+  let published = await versionExists(PKG, pkg.version)
+  while (!published && Date.now() < deadline) {
     console.log('… npm 上还没有 ' + pkg.version + '，15 秒后再查（最多等到 ' + waitSeconds + ' 秒）')
     await new Promise(r => setTimeout(r, 15000))
-    reg = await readRegistry()
+    published = await versionExists(PKG, pkg.version)
   }
-  add('npm 上已发布 ' + pkg.version, Boolean(reg.versions?.[pkg.version]), reg.versions?.[pkg.version] === undefined ? pkg.version + '（刚发布的话可以用 --wait 120 等一等）' : pkg.version)
-  const latest = reg['dist-tags']?.latest ?? '(无)'
+  add('npm 上已发布 ' + pkg.version, published, published ? pkg.version : pkg.version + '（刚发布的话可以用 --wait 120 等一等）')
+
+  const tags = await readDistTags(PKG)
+  const latest = tags.latest ?? '(无)'
   add('npm latest == ' + pkg.version, latest === pkg.version, latest === pkg.version ? latest : 'latest 还是 ' + latest + '（可能还没同步，等几分钟）')
 
   /* dist-tags.next 悬空过一整代：0.2.2-rc.1/2/3 是 2026-11-18 调 CI 的试发版，之后
      0.3 → 0.9 十几个正式版全走 latest，next 一直钉在 0.2.2-rc.3 上，于是
      `npm i @marsken/dsh-studio@next` 装到的是早于全部功能、还对着老宿主接口的构建。
      规则：next 要么不存在（没有预发布通道），要么不比 latest 旧（预发布本来就该更新）。 */
-  const next = reg['dist-tags']?.next ?? ''
+  const next = tags.next ?? ''
   const comparable = /^\d+\.\d+\.\d+/.test(next) && /^\d+\.\d+\.\d+/.test(latest)
   const nextBehind = comparable && cmpSemver(next, latest) < 0
   add(
@@ -131,23 +132,32 @@ try {
    GitHub 的 Latest 是按**创建时间**定的，不是版本号 —— 补建历史 release 那次就把 v0.1.0 顶成了 Latest。
    正常发版走 release.yml（会带 --latest），这条平时应该绿；一旦变红说明有人乱序建了 release，
    手动跑一次 reorder-releases 就能修（它自带"Latest 对了就跳过"的自愈判断）。
-   限流/网络问题时只当"未检查"，不阻塞发版。 */
+   **有 gh 就走 CLI**：已登录，不受匿名 API 60 次/小时限流（以前限流时只能标「未检查」，等于漏检）。 */
 {
   const repoField = typeof pkg.repository === 'string' ? pkg.repository : pkg.repository?.url
   const slug = typeof repoField === 'string' ? (/github\.com[/:]([^/]+\/[^/.]+)/.exec(repoField)?.[1] ?? '') : ''
   if (slug !== '') {
+    let latestTag
     try {
-      const res = await fetch('https://api.github.com/repos/' + slug + '/releases/latest', {
-        headers: { accept: 'application/vnd.github+json', 'user-agent': 'dsh-studio-verify-release' },
-      })
-      if (res.status === 404) add('GitHub Releases Latest == ' + tag, false, '还没有任何 release')
-      else if (res.ok) {
-        const latestTag = (await res.json()).tag_name ?? '(无)'
-        add('GitHub Releases Latest == ' + tag, latestTag === tag, latestTag === tag ? latestTag : 'Latest 是 ' + latestTag)
-      } else add('GitHub Releases Latest（未检查）', true, 'API ' + res.status + '（限流时不阻塞）')
+      latestTag = execFileSync('gh', ['api', `repos/${slug}/releases/latest`, '--jq', '.tag_name'], { encoding: 'utf8', env }).trim()
     } catch (error) {
-      add('GitHub Releases Latest（未检查）', true, String(error?.message ?? error).slice(0, 80))
+      // gh 自己分得清「没有 release」（404）和「网络/限流」
+      latestTag = /HTTP 404/.test(String(error?.stderr ?? error?.message ?? '')) ? null : undefined
     }
+    if (latestTag === undefined) {
+      // 没有 gh 或它连不上：退回匿名 API（可能限流，限流时只标未检查、不阻塞）
+      try {
+        const res = await fetch(`https://api.github.com/repos/${slug}/releases/latest`, {
+          headers: { accept: 'application/vnd.github+json', 'user-agent': 'dsh-studio-verify-release' },
+        })
+        if (res.status === 404) latestTag = null
+        else if (res.ok) latestTag = (await res.json()).tag_name ?? '(无)'
+        else latestTag = undefined
+      } catch { latestTag = undefined }
+    }
+    if (latestTag === undefined) add('GitHub Releases Latest（未检查）', true, 'gh 与匿名 API 都没拿到结果（限流/网络）')
+    else if (latestTag === null) add('GitHub Releases Latest == ' + tag, false, '还没有任何 release')
+    else add('GitHub Releases Latest == ' + tag, latestTag === tag, latestTag === tag ? latestTag : 'Latest 是 ' + latestTag)
   }
 }
 

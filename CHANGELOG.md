@@ -13,6 +13,11 @@
   0.9.30 自己的说明里就原样引用了那句话。现在判据改成**按结构**：CHANGELOG 抽出来的段落一定以
   `## [<version>]` 开头，回退生成的一定是 `## v<version>`，不再做任何措辞匹配。
   两条真实 Release（v0.9.29 / v0.9.30）的正文都验证通过。
+- **发版后补的（同样只影响仓库脚本）**：`release.yml` 的「发布后核对」原来用 `npm view` 查 latest，
+  它要启一次 npm、拉完整 packument（0.9.30 时已 400 KB），冷机器上十几秒。现在改问 dist-tags 端点（**20 字节**）：
+  `tools/registry-latest.mjs`（带 `--expect` 断言与 `REGISTRY_WAIT_SECONDS` 重试窗口）、
+  `tools/registry-has.mjs` 改成单版本端点（只回 200/404），共同的取数在 `tools/lib/registry.mjs`。
+  `verify:release` 也换成这套：npm 段从 ~2s / 400 KB 降到 ~1s / 几十字节。
 
 ## [0.9.29] — 2026-11-20
 

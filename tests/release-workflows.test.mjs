@@ -37,7 +37,9 @@ test('发版校验会盯 GitHub Releases 的 Latest', () => {
 // 装到的是早于全部功能的构建。verify:release 必须断言它不落后于 latest。
 test('发版校验会盯 npm 的 next 通道不落后于 latest', () => {
   const script = read('tools/verify-release.mjs')
-  assert.match(script, /dist-tags'\]\?\.next|dist-tags\?\.next/, 'verify:release 要读 dist-tags.next')
+  // 取数收进了 tools/lib/registry.mjs（dist-tags 端点），这里只要求它真的读到 next
+  assert.match(script, /readDistTags\(/, 'verify:release 要通过 readDistTags 读 dist-tags（含 next）')
+  assert.match(script, /tags\.next/, '要真的取 next')
   assert.match(script, /npm next 不比 latest 旧/, '要有可读的断言名')
   assert.match(script, /cmpSemver/, '要真的比版本号，不是只判空')
 })

@@ -1223,3 +1223,9 @@ test('tooling: Release 正文的判据（按结构，不按措辞）', async () 
   assert.equal(releaseBodyIssue(quoting, '0.9.30'), null)
   assert.equal(releaseBodyIssue('## [0.9.30] — 2026-11-20\n\n### 修复\n- 修了点东西', 'v0.9.30'), null, 'v 前缀要归一')
 })
+
+test('tooling: registry 查询的 URL 编码（scoped 包的 / 必须编成 %2F）', async () => {
+  const { packageSlug } = await import('../tools/lib/registry.mjs')
+  assert.equal(packageSlug('@marsken/dsh-studio'), '%40marsken%2Fdsh-studio')
+  assert.equal(packageSlug('plain-pkg'), 'plain-pkg')
+})

@@ -148,13 +148,10 @@ jobs:
         if: success() && !contains(github.ref_name, '-')
         run: |
           VER="$(node -p "require('./package.json').version")"
-          LATEST="$(npm view @marsken/dsh-studio version)"
-          echo "package.json=$VER registry latest=$LATEST"
-          if [ "$LATEST" != "$VER" ]; then
-            echo "::error::registry latest=$LATEST 与 package.json=$VER 不一致"
-            exit 1
-          fi
-          echo "registry 已指向 $VER"
+          echo "package.json=$VER"
+          # 问 dist-tags 端点（几十字节），不是 `npm view`：后者要启一次 npm、拉 400 KB 的完整 packument，
+          # 在冷机器上要十几秒。刚 publish 完边缘缓存会差几秒，脚本自带有限重试（REGISTRY_WAIT_SECONDS）。
+          node tools/registry-latest.mjs --expect "$VER"
       # ── GitHub Release ───────────────────────────────────────────────
       # 以前只往 npm 发，GitHub 的 Releases 页一直是空的（71 个 tag、0 个 release），
       # 用户点进去看不到任何版本说明。这里在 publish 成功后补一条 release，

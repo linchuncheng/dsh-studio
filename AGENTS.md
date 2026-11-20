@@ -94,6 +94,9 @@ STUDIO_TOKEN=$(sudo journalctl -u dsh-web -n 50 | grep -o 'token=[A-Za-z0-9_-]*'
 10. 发版后跑 `npm run verify:release`：比对 package.json 版本 / 本地 tag / origin main 与 tag / npm registry，
     并用 **gh** 检查这一版的 GitHub Release 建出来了、**正文不是占位句**（`release.yml` 的正文取自 CHANGELOG，
     少了这一版就只剩一句「没写更新日志」）。不一致直接退出码 1；本机没有 gh 或还没打 tag 时这两条只跳过、不判红。
+    **查 registry 不要用 `npm view`**：它启一次 npm、拉完整 packument（0.9.30 时已 400 KB），冷机器上十几秒。
+    改用 `tools/registry-latest.mjs`（dist-tags 端点，20 字节）与 `tools/registry-has.mjs`（单版本端点，200/404），
+    两者都在 `tools/lib/registry.mjs` 上；刚 publish 完的边缘缓存延迟由 `REGISTRY_WAIT_SECONDS` 重试窗口兜住。
 11. 全闭环自检：`STUDIO_BASE=http://<host>:18080 node tools/e2e-loop.mjs [--k 3]`——真建一条需求和卡，跑完澄清门禁→评审→拆卡→各列→代码事实→用例→验收→版本发布；每步都是断言，`--k` 连跑 N 轮看成功率（每轮约 35 秒），任何一轮失败退出码非 0。
     **默认跑完自动删除自己建的数据**（看结果加 `--keep`）。周检用 `npm run selfcheck`（= `--k 3`，连跑三轮看成功率）；定时任务在 2026-11-16 被用户主动删除，不要自动重建，需要时给一条 crontab：`0 9 * * 1 cd <repo> && npm run selfcheck`。
 12. 提示词 A/B：`node tools/prompt-ab.mjs --task <卡 id> --variant '一段追加提示词'` 先看计划（免费），`--setup-only` 验建/删专家通路（免费），`--run` 才真派两次单（花 token）。判据是用例通过数 / 代码事实 / 评论数 / 耗时。
