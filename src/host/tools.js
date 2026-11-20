@@ -1158,6 +1158,11 @@ export function registerTools(ctx, store) {
             body: { type: 'string', description: 'Optional request body (JSON string) for POST/PUT/PATCH.' },
             expectStatus: { type: 'number', description: 'Optional expected HTTP status; 0 or omitted means any 2xx/3xx passes.' },
             expectContains: { type: 'string', description: 'Optional substring the response body must contain.' },
+            shell: { type: 'object', description: 'Optional shell case: {command, expectExit, expectContains?, cwd?}. Needs allowShell.' },
+            browser: {
+              type: 'object',
+              description: 'Optional browser case: {url | path, expectText?, expectSelector?, expectUrl?, expectStatus?, steps?: [{click}|{fill,text}|{wait}|{waitFor}]}. Really opens Chrome/Edge; needs allowBrowser.',
+            },
           },
         },
       },

@@ -18,6 +18,8 @@ import { runDbCase } from './db-runner.js'
 import { emitEvent } from './events.js'
 import { runShellCase } from './shell-runner.js'
 import { runQualityCommand } from './quality-runner.js'
+import { sanitizeCaseBrowser, runBrowserCase } from './browser-runner.js'
+import { hostAllowed, resolveAllowedUrl } from './url-guard.js'
 import { parseFeishuDocFetch } from './lark-doc.js'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -130,39 +132,15 @@ export function codingVerifyLine(report) {
 
 // ------------------------------------------------------- 接口测试执行器（P4）
 
-/** 允许打的 host：精确匹配，或 `*.example.com` 这种子域通配。 */
-export function hostAllowed(host, allowHosts) {
-  const target = String(host ?? '').toLowerCase()
-  if (target.length === 0) return false
-  for (const rule of allowHosts) {
-    if (rule === '*') return true
-    if (rule.startsWith('*.')) {
-      const tail = rule.slice(1)
-      if (target.endsWith(tail) && target.length > tail.length) return true
-      continue
-    }
-    if (target === rule) return true
-  }
-  return false
-}
+/** 允许打的 host：精确匹配，或 `*.example.com` 这种子域通配。
+ *  规则搬到了 url-guard.js —— 浏览器用例也要用同一套，两边各写一份迟早不一致。 */
+export { hostAllowed }
 
 /** 把用例里的相对 URL 拼成绝对地址；不允许的 host 直接抛。 */
 export function resolveCaseUrl(http, env, config) {
   const raw = String(http?.url ?? '').trim()
   if (raw.length === 0) throw new Error('这条用例没有配请求地址')
-  let url
-  try {
-    url = new URL(raw, env.baseUrl)
-  } catch {
-    throw new Error(`请求地址不合法：${raw}`)
-  }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error(`只允许 http/https：${url.protocol}`)
-  }
-  if (!hostAllowed(url.hostname, config.testing.allowHosts)) {
-    throw new Error(`host ${url.hostname} 不在允许列表里（设置 → 测试执行 → 允许访问的域名）`)
-  }
-  return url
+  return resolveAllowedUrl(raw, env.baseUrl, config.testing.allowHosts)
 }
 
 /** 跑一条接口用例：发请求、比状态码、比响应体片段。 */
@@ -254,6 +232,8 @@ registerRunner('http', { match: item => item.http != null, run: (item, env, conf
 // shell 后注册 = 匹配优先级更高：两条都填的时候按 shell 跑（它是显式选择）。
 registerRunner('shell', { match: item => item.shell != null, run: (item, env, config) => runShellCase(item, config) })
 registerRunner('db', { match: item => item.db != null, run: (item, env, config) => runDbCase(item, config) })
+// 浏览器最后注册 = 优先级最高：同时填了接口和浏览器时，按「真开页面」跑（它更接近用户看到的）
+registerRunner('browser', { match: item => item.browser != null, run: (item, env, config) => runBrowserCase(item, env, config) })
 
 async function runHttpCase(item, env, config, seedVars) {
   const started = Date.now()
@@ -1833,6 +1813,24 @@ export async function addAssertedCases(store, taskId, rawCases, options = {}) {
       })
       continue
     }
+    const browserSpec = sanitizeCaseBrowser(item.browser)
+    if (browserSpec !== null) {
+      if (testing.allowBrowser !== true) {
+        rejected.push(`「${title}」是浏览器用例，但设置里没开 allowBrowser（设置 → 测试执行）`)
+        continue
+      }
+      const target = String(browserSpec.url ?? '').trim()
+      if (target === '') {
+        rejected.push(`「${title}」是浏览器用例但没有地址（url / path）`)
+        continue
+      }
+      if (!/^https?:\/\//i.test(target) && String(env?.baseUrl ?? '').trim() === '') {
+        rejected.push(`「${title}」只给了相对地址 ${target}，但还没配测试环境 baseUrl：补上环境，或者写完整地址`)
+        continue
+      }
+      prepared.push({ title, expected, pointId: String(item.pointId ?? '').slice(0, 24), acceptanceId: String(item.acceptanceId ?? '').slice(0, 24), browser: browserSpec })
+      continue
+    }
     const command = String(item.command ?? '').trim()
     if (command !== '') {
       if (!allowShell) {
@@ -1888,6 +1886,7 @@ export async function addAssertedCases(store, taskId, rawCases, options = {}) {
         at: Date.now(),
         http: item.http ?? null,
         shell: item.shell ?? null,
+        browser: item.browser ?? null,
       }, index)
       entry.cases.push(saved)
     }
@@ -1899,7 +1898,7 @@ export async function addAssertedCases(store, taskId, rawCases, options = {}) {
   const first = created[0]
   let verified = null
   if (first !== undefined) {
-    const needsEnv = first.http != null
+    const needsEnv = first.http != null || (first.browser != null && /^https?:\/\//i.test(String(first.browser.url ?? '')) !== true)
     if (needsEnv && env === undefined) {
       verified = { id: first.id, title: first.title, ok: false, status: 0, ms: 0, error: '还没有配置测试环境（设置 → 测试执行）' }
     } else {

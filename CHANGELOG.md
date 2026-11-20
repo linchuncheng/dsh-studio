@@ -1,6 +1,32 @@
 # 更新日志
 
 
+## [0.9.23] — 2026-11-20
+
+### 新增
+- **浏览器用例：第四种执行器**。用例可以真的打开一个页面、点按钮、填输入框，然后断言
+  「页面上有没有这段文字 / 有没有这个元素 / 地址对不对 / 首屏状态码」——接口用例证明不了按钮点得动。
+  - 形状：`{ browser: { url | path, expectText?, expectSelector?, expectUrl?, expectStatus?, steps?: [{click}|{fill,text}|{wait}|{waitFor}] } }`。
+  - 默认关闭（`config.testing.allowBrowser`），和 shell 同一档：打开等于允许看板在这台机器上开浏览器、访问内网地址。
+  - 浏览器自动找 Chrome / Edge / Chromium（也可以配 `testing.browserPath` 或环境变量 `CHROME_PATH`）；
+    没装 `puppeteer-core` 时给出可照做的提示，不会崩堆栈。
+  - 地址守卫和接口用例共用一套（`url-guard.js`）：相对地址拼测试环境 baseUrl，host 必须在允许列表里。
+  - 抽屉里多了「＋ 浏览器」按钮；设置 → 测试执行 里多了开关与浏览器路径。
+- **顺手修掉两个老问题**（都是 AGENTS.md 记过的那类）：
+  - 用例行上的「▶ 跑」以前只给**接口**用例显示，shell / 数据库用例建得出来却永远点不了跑。
+  - 用例定义那一行是个三元链，**数据库用例的来源永远显示不出来**（走不到 db 分支）。
+
+### 顺带
+- `hostAllowed` / 相对地址解析抽到 `src/host/url-guard.js`，接口用例与浏览器用例共用。
+- 公开提单/查询页的三张静态 HTML 从 `domain.js` 搬到 `src/host/intake-pages.js`（domain 又贴到 2000 行上限了）。
+
+### 测试
+新增 `tests/browser-case.test.mjs` 5 条，其中一条**真开浏览器**（本机用 Edge）跑完整链路：
+打开页面 → 点按钮 → 填输入框 → 断言文字/元素/状态码 → 相对地址与白名单拒绝。
+`npm test` 共 236 条全绿（本地 + `TZ=UTC`），产物 `cmp` 一致，`release:check` 7 项通过。
+CI 机器上没有 Chrome/Edge 时这条会自动跳过（其余 4 条照跑）。
+
+
 ## [0.9.22] — 2026-11-20
 
 ### 新增

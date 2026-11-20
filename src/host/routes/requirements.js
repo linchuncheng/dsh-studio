@@ -1,11 +1,9 @@
+import { INTAKE_HTML, MINE_HTML, STATUS_HTML } from '../intake-pages.js'
 import { checklistFromAcceptance } from '../acceptance.js'
 import { resolveSigner } from '../access.js'
 import { actorKind } from '../intervention.js'
 import {
-  INTAKE_HTML,
-  MINE_HTML,
   REQ_STATUS_LABEL,
-  STATUS_HTML,
   cleanId,
   sanitizeRequirementPool,
   text,

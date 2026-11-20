@@ -356,6 +356,26 @@ function Drawer({ task, state, onClose, onChanged }) {
       await onChanged()
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
+  // 浏览器用例：地址 + 期望文本 / 期望选择器。真跑要服务端打开 allowBrowser（会真开一个浏览器）。
+  const addBrowserCase = async () => {
+    const url = await promptDialog('页面地址（相对测试环境 baseUrl，或完整 http(s) 地址）', { title: '加一条浏览器用例', defaultValue: '/' })
+    if (url === null || String(url).trim() === '') return
+    const text = await promptDialog('页面上应该出现的文字（可留空）', { title: '加一条浏览器用例', defaultValue: '' })
+    if (text === null) return
+    const selector = await promptDialog('页面上应该存在的元素选择器（可留空）', { title: '加一条浏览器用例', defaultValue: '' })
+    if (selector === null) return
+    setBusy(true); setError(null)
+    try {
+      const expectText = String(text ?? '').trim()
+      const expectSelector = String(selector ?? '').trim()
+      const browser = { url: String(url).trim() }
+      if (expectText !== '') browser.expectText = expectText
+      if (expectSelector !== '') browser.expectSelector = expectSelector
+      const expected = expectText !== '' ? ('页面含「' + expectText + '」') : (expectSelector !== '' ? ('存在元素 ' + expectSelector) : '页面能打开')
+      await api('/task/case', { id: task.id, action: 'add', cases: [{ title: ('浏览器: ' + String(url).trim()).slice(0, 60), expected, browser }] })
+      await onChanged()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
   const addCase = async () => {
     const title = newCase.title.trim()
     if (title === '') return
@@ -1377,7 +1397,7 @@ function Drawer({ task, state, onClose, onChanged }) {
           }, caseGen.busy ? '生成中…' : '✨ 按需求生成'),
           h('button', {
             className: 'ds-btn ds-btn-ghost',
-            disabled: caseRun.busy || cases.filter(item => item.http != null || item.shell != null || item.db != null).length === 0,
+            disabled: caseRun.busy || cases.filter(item => item.http != null || item.shell != null || item.db != null || item.browser != null).length === 0,
             onClick: () => void runCases(undefined),
           }, caseRun.busy ? '运行中…' : '▶ 跑用例')),
         h('div', { className: 'ds-sec-body', 'data-scroll': '1' },
@@ -1401,11 +1421,19 @@ function Drawer({ task, state, onClose, onChanged }) {
                   (item.steps ?? []).length === 0 ? null : h('span', { className: 'ds-hint' }, `步骤 ${item.steps.length} 条`),
                 ),
                 item.expected === '' ? null : h('div', { className: 'ds-art-ref' }, `期望：${item.expected}`),
-              item.shell == null
-                ? (item.http == null ? null : h('div', { className: 'ds-art-ref' }, `接口：${item.http.method} ${item.http.url} → 期望 ${item.http.expectStatus}${item.http.expectContains ? ` 且含 «${item.http.expectContains}»` : ''}`))
-                : item.shell != null
-                  ? h('div', { className: 'ds-art-ref' }, 'shell：' + item.shell.command)
-                  : h('div', { className: 'ds-art-ref' }, 'db：' + item.db.sql),
+              // 四种可执行用例各显示自己的定义。以前这里是一个三元链，db 那条永远走不到。
+              (() => {
+                if (item.browser != null) {
+                  return h('div', { className: 'ds-art-ref' }, `浏览器：${item.browser.url}`
+                    + (item.browser.expectText ? ` → 含 «${item.browser.expectText}»` : '')
+                    + (item.browser.expectSelector ? ` → 存在 ${item.browser.expectSelector}` : '')
+                    + ((item.browser.steps ?? []).length > 0 ? ` · ${item.browser.steps.length} 步` : ''))
+                }
+                if (item.shell != null) return h('div', { className: 'ds-art-ref' }, 'shell：' + item.shell.command)
+                if (item.db != null) return h('div', { className: 'ds-art-ref' }, 'db：' + item.db.sql)
+                if (item.http != null) return h('div', { className: 'ds-art-ref' }, `接口：${item.http.method} ${item.http.url} → 期望 ${item.http.expectStatus}${item.http.expectContains ? ` 且含 «${item.http.expectContains}»` : ''}`)
+                return null
+              })(),
                 item.lastRun == null ? null : h('div', { className: 'ds-art-ref' }, `${item.lastRun.ok ? '✅' : '❌'} 最近执行：${item.lastRun.status === 0 ? item.lastRun.error : `${item.lastRun.status} · ${item.lastRun.ms}ms`}（${new Date(item.lastRun.at).toLocaleString('zh-CN')}）`),
                 item.lastRun?.response ? h('div', { className: 'ds-code-note' }, `响应片段：${String(item.lastRun.response).slice(0, 400)}${String(item.lastRun.response).length > 400 ? '…' : ''}`) : null,
                 (item.lastRun?.steps ?? []).length === 0 ? null : h('div', { className: 'ds-art-ref' }, `步骤：${item.lastRun.steps.map(step => `${step.ok ? '✅' : '❌'} ${step.method} ${step.url}${step.status === 0 ? '' : ` → ${step.status}`}`).join('；')}`),
@@ -1431,7 +1459,9 @@ function Drawer({ task, state, onClose, onChanged }) {
                     ),
                 item.note === '' ? null : h('div', { className: 'ds-art-ref' }, `记录：${item.note}${item.by ? ` — ${item.by}` : ''}`),
               ),
-              item.http == null ? null : h('button', { className: 'ds-btn ds-btn-ghost', disabled: caseRun.busy, onClick: () => void runCases(item.id) }, '▶'),
+              (item.http == null && item.shell == null && item.db == null && item.browser == null)
+                ? null
+                : h('button', { className: 'ds-btn ds-btn-ghost', disabled: caseRun.busy, onClick: () => void runCases(item.id) }, '▶'),
               h('button', {
                 className: 'ds-btn ds-btn-ghost',
                 disabled: busy,
@@ -1452,6 +1482,7 @@ function Drawer({ task, state, onClose, onChanged }) {
             }),
             h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, title: '加一条 shell 用例：跑命令看退出码与输出（需要先在设置里打开 allowShell）', onClick: () => void addShellCase() }, '＋ shell'),
             h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, title: '加一条数据库用例：查库断言行数与某列值（需要先在设置里打开 allowDb）', onClick: () => void addDbCase() }, '＋ 数据库'),
+            h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, title: '加一条浏览器用例：真开 Chrome/Edge 打开页面，断言看得见的东西（需要先在设置里打开 allowBrowser）', onClick: () => void addBrowserCase() }, '＋ 浏览器'),
             h('button', { className: 'ds-btn', disabled: busy || newCase.title.trim() === '', onClick: () => void addCase() }, '＋ 加用例'),
           ),
           h('div', { className: 'ds-row', style: { gap: 8, flexWrap: 'wrap', marginTop: 6 } },

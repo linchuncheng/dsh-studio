@@ -409,7 +409,8 @@ export function TestingPanel({ config, onChanged }) {
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState(null)
   const [note, setNote] = React.useState(null)
-  const [flags, setFlags] = React.useState({ allowShell: testing.allowShell === true, allowDb: testing.allowDb === true })
+  const [flags, setFlags] = React.useState({ allowShell: testing.allowShell === true, allowDb: testing.allowDb === true, allowBrowser: testing.allowBrowser === true })
+  const [browserPath, setBrowserPath] = React.useState(String(testing.browserPath ?? ''))
   const [limitsDraft, setLimitsDraft] = React.useState({
     casesPerTask: config.limits?.casesPerTask ?? 60,
     runKeys: config.limits?.runKeys ?? 60,
@@ -419,7 +420,7 @@ export function TestingPanel({ config, onChanged }) {
   const saveFlags = async next => {
     setFlags(next)
     setBusy(true); setNote(null)
-    try { await api('/config', { testing: { ...testing, allowShell: next.allowShell, allowDb: next.allowDb } }); setNote('已保存'); await onChanged() }
+    try { await api('/config', { testing: { ...testing, allowShell: next.allowShell, allowDb: next.allowDb, allowBrowser: next.allowBrowser } }); setNote('已保存'); await onChanged() }
     catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
   const saveLimits = async () => {
@@ -515,6 +516,22 @@ export function TestingPanel({ config, onChanged }) {
         h('label', { className: 'ds-check', style: { marginTop: 6 } },
           h(CheckField, { checked: flags.allowDb, disabled: busy, onChange: e => void saveFlags({ ...flags, allowDb: e.target.checked }) }),
           h('span', { className: 'ds-check-text' }, '允许数据库用例（默认只读打开 SQLite）'),
+        ),
+        h('label', { className: 'ds-check', style: { marginTop: 6 } },
+          h(CheckField, { checked: flags.allowBrowser, disabled: busy, onChange: e => void saveFlags({ ...flags, allowBrowser: e.target.checked }) }),
+          h('span', { className: 'ds-check-text' }, '允许浏览器用例（真开 Chrome / Edge 打开页面；能访问内网地址，风险同 shell）'),
+        ),
+        h('div', { className: 'ds-field', style: { marginTop: 8 } },
+          h('div', { className: 'ds-label' }, '浏览器可执行文件（留空则自动找 Chrome / Edge，或读环境变量 CHROME_PATH）'),
+          h(TextField, {
+            className: 'ds-input', value: browserPath, placeholder: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+            onChange: e => setBrowserPath(e.target.value),
+            onBlur: async () => {
+              setBusy(true); setNote(null)
+              try { await api('/config', { testing: { ...testing, allowBrowser: flags.allowBrowser, browserPath } }); setNote('已保存'); await onChanged() }
+              catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+            },
+          }),
         ),
       ),
     ),

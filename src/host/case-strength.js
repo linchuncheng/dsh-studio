@@ -16,6 +16,9 @@ export function isExecutable(testCase) {
   const shell = item.shell
   if (shell !== null && typeof shell === 'object' && String(shell.command ?? '').trim() !== '') return true
   if (item.db !== null && item.db !== undefined && typeof item.db === 'object') return true
+  // 浏览器用例：有地址就算能跑（真开页面断言看得见的东西）
+  const browser = item.browser
+  if (browser !== null && typeof browser === 'object' && String(browser.url ?? '').trim() !== '') return true
   return false
 }
 
