@@ -39,6 +39,52 @@ git tag v0.2.0 && git push origin v0.2.0
 
 > 跟踪 tag 是有意的：`main` 上的中间提交可能不稳定，市场只认你明确打出来的版本。
 
+### 1.1 `--tag` 与 `next` 通道（和 OIDC 不是一回事）
+
+- **OIDC（Trusted Publishing）只管「认证」**：它替代 `NPM_TOKEN` 让 CI 能 `npm publish`。它**不给**
+  `dist-tag` / `unpublish` / `deprecate` 的权限 —— 这三件事天生只能在本机用登录态做。
+- **`--tag` 是 npm 对预发布号的硬要求**：版本号里带 `-`（`0.9.19-next.0` 这种）却不给 `--tag`，
+  npm 直接拒绝发布，因为它绝不允许预发布悄悄变成 `latest`。所以只要还发预发布，就**必须**给某个 tag，
+  但不一定叫 `next`。
+- **`next` 的语义是「最新预发布」**，不是「最新版本」。它发布后一直留在 registry 上，**正式版不会把它挪走**：
+  0.2.2-rc.3 就是这么在 `next` 上挂了整整一代（此后 0.3 → 0.9 十几个正式版全走 `latest`），
+  于是 `npm i @marsken/dsh-studio@next` 装到的是早于全部功能的构建。
+- 规则：**`next` 要么不存在，要么不比 `latest` 旧。** `npm run verify:release` 断言这一条；
+  `release.yml` 发预发布时会打 `::warning::` 提醒。正式版一发，同号 `-next.0` 立刻变旧 → 守卫变红 →
+  这时必须二选一：`npm dist-tag rm @marsken/dsh-studio next`（不要预发布通道了）或
+  `npm dist-tag add @marsken/dsh-studio@<新版> next`。
+
+### 1.2 删除 / 弃用单个版本（npm 的 72 小时规则）
+
+npm 的策略很硬：**发布满 72 小时后，版本就删不掉了**，registry 上永久保留（别人的 lockfile 可能锁着它）。
+在那之前可以删，但只该删「从来没人该装」的版本。
+
+| 距发布 | 能做什么 | 命令 |
+| --- | --- | --- |
+| < 72 小时 | `unpublish`（单版本）+ `deprecate` | `npm unpublish @marsken/dsh-studio@0.2.2-rc.3 --force` |
+| ≥ 72 小时 | **只能** `deprecate`（装的时候出警告，版本仍在） | `npm deprecate "@marsken/dsh-studio@<=0.5.1" "装完不加载，请升到 latest"` |
+
+`unpublish` 还要过 npm 自己那关：包还有别的版本、没有其它包依赖它、下载量不高、你是 owner。
+被拒就退回 `deprecate`，别去开支持单。
+
+**删之前先摘 dist-tag**：`npm dist-tag ls @marsken/dsh-studio` —— 有 tag 指着这个版本时先
+`npm dist-tag rm @marsken/dsh-studio <tag>`（0.2.2-rc.3 当年就是被 `next` 指着）。
+
+**代价**：删掉后，锁着该版本的 `package-lock.json` 再装会 404/ETARGET，必须重装 `@latest`。
+所以**正式版本一个都别删**，删的只有两类：调 CI 试发的预发布、确认装完就坏的版本。
+
+2026-11-20 的清理清单（维护者本机执行；CI 做不了）：
+
+```bash
+npm dist-tag ls @marsken/dsh-studio            # 先确认没有 tag 指着待删版本
+npm unpublish @marsken/dsh-studio@0.2.2-rc.1 --force
+npm unpublish @marsken/dsh-studio@0.2.2-rc.2 --force
+npm unpublish @marsken/dsh-studio@0.2.2-rc.3 --force
+npm deprecate @marsken/dsh-studio@0.9.0 "侧栏不注册（注册名写成了短名），请装 @marsken/dsh-studio@latest"
+npm deprecate @marsken/dsh-studio@0.9.1 "recordAudit 裸引用，写工具会报错，请装 @marsken/dsh-studio@latest"
+npm deprecate "@marsken/dsh-studio@<=0.5.1" "cordis.patch.yml 写的是裸名 dsh-studio，装完不加载，请装 @marsken/dsh-studio@latest"
+```
+
 ## 2. 收录：投 awesome-dsh-plugin，不是给 dsh-m 提 PR
 
 dsh-m 的市场数据来自两处，**入口完全不同**：
