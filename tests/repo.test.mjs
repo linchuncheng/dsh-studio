@@ -1229,3 +1229,11 @@ test('tooling: registry 查询的 URL 编码（scoped 包的 / 必须编成 %2F�
   assert.equal(packageSlug('@marsken/dsh-studio'), '%40marsken%2Fdsh-studio')
   assert.equal(packageSlug('plain-pkg'), 'plain-pkg')
 })
+
+test('state: 计数用原对象算，不许传给剥掉数组的 rest（issue #10 回归）', () => {
+  const source = read('index.js')
+  assert.match(source, /const \{ comments, checklist, cases, \.\.\.rest \} = task/, '应该先留原对象、再解构出 rest')
+  assert.match(source, /\.\.\.publicComments\(task\)/, 'publicComments 要拿原对象')
+  assert.ok(!/\.\.\.publicComments\(rest\)/.test(source), '不能把 rest 传给统计函数')
+  assert.ok(!/\.\.\.publicChecklist\(rest\)/.test(source), '不能把 rest 传给统计函数')
+})

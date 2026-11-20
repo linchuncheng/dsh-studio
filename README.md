@@ -47,7 +47,7 @@
 ```mermaid
 flowchart LR
   UI["浏览器<br/>client.js + web/src<br/>看板 · 需求 · 用例 · 版本 · 效能 · 设置"]
-  API["index.js<br/>apply(ctx) · 43 个 studio_* 工具 · /studio-api 前缀路由"]
+  API["index.js<br/>apply(ctx) · 45 个 studio_* 工具 · /studio-api 前缀路由"]
   HOST["src/host/*<br/>domain · dispatcher · executor · integrations · routes"]
   DB[("SQLite<br/>state · 快照 · side 键")]
   AGENT["专家会话<br/>studio-任务-专家"]
@@ -245,6 +245,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | --- | --- | --- |
 | 澄清 | 三问必答（有没有服务端 / 鉴权谁做 / 交付边界） | **拦**：答不完拆不了卡 |
 | 设计 | 评审通过但**没定案**（多稿里没指认哪一稿），或一稿都没有 | **拦**：先把稿放进去、指认一稿（`override` 可强推） |
+| **评审** | 进「待测试」时代码评审还没结论（**默认开**，`config.reviewGate.enabled=false` 才关） | **拦**：改完先让评审人用 `studio_task_coding action=review` 给结论（`override` 可强推） |
 | 拆卡 | 说有后端，但功能点没有一条讲接口 / 数据表 / 鉴权 | 提示 |
 | 拆卡 | 说没有后端，功能点却要建表 / 写接口 | 提示 |
 | 拆卡 | 功能点没有验收标准（长不出用例） | 提示 |

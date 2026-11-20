@@ -3,8 +3,9 @@
 
 import { COVERAGE_TARGET, coverageStrength, draftCasesFromCriteria, isExecutable } from './case-strength.js'
 import { isAiSignoff } from './intervention.js'
+import { reviewGate } from './quality.js'
 import { overrideSummary } from './override.js'
-import { CASE_HTTP_METHODS, CODE_PREFIX, ROLE_IDS, STATUS_IDS, STATUSES, nextRequirementCode, nextTaskCode, normalizePatch, sanitizeBaseline, sanitizeCase, sanitizeReqDoc, sanitizeRequirement, sanitizeTestRun, text,
+import { CASE_HTTP_METHODS, CODE_PREFIX, ROLE_IDS, STATUS_IDS, STATUSES, nextRequirementCode, nextTaskCode, normalizePatch, sanitizeBaseline, sanitizeCase, sanitizeReqDoc, sanitizeRequirement, sanitizeTestRun, sanitizeUrl, text,
   canonicalAuthor,
   sanitizeCoding,
 } from './domain.js'
@@ -488,6 +489,17 @@ export function requirementTaskTouched(task) {
 }
 
 export async function saveRequirement(store, input) {
+  /* 链接写坏了不能静默变成空串：issue #9 第 1 条（prd 传相对路径 → 返回"已保存"，实际存成空串，
+     要再读一遍库才发现）。只认 sanitizeUrl 允许的形态，其余直接报错并说明合法格式。 */
+  const links = input?.links
+  if (links !== null && links !== undefined && typeof links === 'object') {
+    for (const [key, label] of [['prd', 'PRD'], ['proto', '原型'], ['acceptance', '验收标准']]) {
+      const raw = String(links[key] ?? '').trim()
+      if (raw !== '' && sanitizeUrl(raw) === '') {
+        throw new Error(`${label}链接「${raw}」不合法：只认 http(s)://、mailto:、# 锚点，或以 / 开头的站内路径`)
+      }
+    }
+  }
   // 部分更新（只带 id + 改动的字段）时，先把库里那条垫在下面，免得被判成「标题为空」。
   if (input.id !== undefined && input.id !== null) {
     const known = store.snapshot().requirements.find(item => item.id === String(input.id))
@@ -1537,6 +1549,13 @@ export async function updateTask(store, id, patch) {
       if (gate.needed === true && gate.ready !== true) {
         emitEvent('gate/blocked', { taskId: id, gate: 'design', blockers: gate.blockers.slice(0, 3) })
         throw new Error(`进开发被拦：${gate.blockers.join('；')}`)
+      }
+      /* 评审闸门（默认开）：进「待测试」之前代码评审必须有结论。
+         以前只有「已完成」的准出看 review，于是待评审→待测试直接放行（issue #9 第 3 条）。 */
+      const review = reviewGate(store.snapshot().config, current, normalized.status)
+      if (review.needed === true && review.ready !== true) {
+        emitEvent('gate/blocked', { taskId: id, gate: 'review', blockers: review.blockers.slice(0, 3) })
+        throw new Error(`进测试被拦：${review.blockers.join('；')}`)
       }
     }
   }

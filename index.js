@@ -964,21 +964,39 @@ function publicState(store) {
     statuses: STATUSES,
     roles: ROLE_IDS,
     priorities: PRIORITIES,
+    /* 两道闸门当前是否生效：默认关上时要能一眼看见「现在是裸奔状态」，
+       而不是靠 agent 读源码才知道（issue #9 第 3 条）。 */
+    gates: {
+      design: {
+        enabled: state.config.design?.enabled === true,
+        columns: Array.isArray(state.config.design?.columns) && state.config.design.columns.length > 0 ? state.config.design.columns : ['dev'],
+      },
+      review: {
+        enabled: state.config.reviewGate?.enabled !== false,
+        columns: Array.isArray(state.config.reviewGate?.columns) && state.config.reviewGate.columns.length > 0 ? state.config.reviewGate.columns : ['test'],
+      },
+    },
     config: publicConfig(state.config),
-    tasks: state.tasks.map(({ comments, checklist, cases, ...task }) => ({
-      /* 库里存的三个数组不随轮询下发（否则既有空数组又有计数，issue #5 第 9 条） */
-      ...task,
-      ...publicComments(task),
-      ...publicCases(task),
-      ...publicChecklist(task),
-      sla: bugSla(task, state.config),
-      /* 停摆：派单印记还在这一列但会话已经不在跑（崩过 / 被中断）。
-         这种卡不会自己恢复，也不再被自动派单——以前界面上和「排队中」一模一样，
-         2026-11-18 线上一次发现 5 张，最早卡了 8 天。 */
-      stalled: isStalled(task),
-      // 正文太占地方，轮询只下发长度；抽屉点「阅读 / 正文」时走 /task/artifact 的 get 单独取。
-      artifacts: (task.artifacts ?? []).map(publicArtifact),
-    })),
+    tasks: state.tasks.map(task => {
+      /* 库里存的三个数组不随轮询下发（否则既有空数组又有计数，issue #5 第 9 条）。
+         注意：**计数必须在解构之前用原对象算**——以前把剥掉数组的 rest 传进去，
+         Array.isArray(undefined) 兜成空数组，于是所有卡的评论数/清单进度恒为 0，
+         不报错、不抛异常，只看接口 ok 根本发现不了（issue #10）。 */
+      const { comments, checklist, cases, ...rest } = task
+      return {
+        ...rest,
+        ...publicComments(task),
+        ...publicCases(task),
+        ...publicChecklist(task),
+        sla: bugSla(task, state.config),
+        /* 停摆：派单印记还在这一列但会话已经不在跑（崩过 / 被中断）。
+           这种卡不会自己恢复，也不再被自动派单——以前界面上和「排队中」一模一样，
+           2026-11-18 线上一次发现 5 张，最早卡了 8 天。 */
+        stalled: isStalled(task),
+        // 正文太占地方，轮询只下发长度；抽屉点「阅读 / 正文」时走 /task/artifact 的 get 单独取。
+        artifacts: (task.artifacts ?? []).map(publicArtifact),
+      }
+    }),
     fallbackFolder: state.fallbackFolder ?? null,
     releases: (state.releases ?? []).map(release => ({
       ...release,

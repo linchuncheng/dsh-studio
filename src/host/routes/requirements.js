@@ -1,5 +1,6 @@
 import { INTAKE_HTML, MINE_HTML, STATUS_HTML } from '../intake-pages.js'
 import { checklistFromAcceptance } from '../acceptance.js'
+import { resolveRequirement, requirementRefHint, reviewRequirement } from '../reviews.js'
 import { resolveSigner } from '../access.js'
 import { actorKind } from '../intervention.js'
 import {
@@ -183,32 +184,14 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   }
   if (method === 'POST' && route === '/requirement/review') {
     const body = await host.readJsonBody(req)
-    const id = String(body.id ?? '')
-    const decision = String(body.decision ?? 'approve')
-    if (!['submit', 'approve', 'reject'].includes(decision)) throw new Error('未知的评审动作：submit / approve / reject')
-    const by = String(body.by ?? '').trim().slice(0, 60) || '人'
-    const note = String(body.note ?? '').slice(0, 600)
-    if (decision === 'reject' && note.trim() === '') throw new Error('打回要说清楚哪里不行，写一句评审意见')
-    let saved
-    await store.mutate(state => {
-      const found = state.requirements.find(item => item.id === id)
-      if (found === undefined) throw new Error(`no requirement ${id}`)
-      const now = Date.now()
-      if (decision === 'submit') {
-        found.status = 'review'
-        found.review = { status: 'pending', by, at: now, note }
-      } else if (decision === 'approve') {
-        found.status = found.status === 'closed' ? 'closed' : 'active'
-        found.review = { status: 'approved', by, at: now, note }
-      } else {
-        found.status = 'draft'
-        found.review = { status: 'changes_requested', by, at: now, note }
-      }
-      found.updatedAt = now
-      saved = found
+    // 逻辑与 studio_requirement_review 工具共用一份（src/host/reviews.js），编号/内部 id 都认
+    const requirement = await reviewRequirement(store, {
+      id: body.id,
+      decision: String(body.decision ?? 'approve'),
+      by: String(body.by ?? '').trim() || '人',
+      note: String(body.note ?? ''),
     })
     const snapshot = store.snapshot()
-    const requirement = snapshot.requirements.find(item => item.id === id) ?? saved
     host.sendJson(res, 200, { ok: true, requirement, review: requirement.review ?? null, progress: requirementProgress(snapshot, requirement), state: host.publicState(store) })
     return true
   }

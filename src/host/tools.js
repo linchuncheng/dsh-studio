@@ -11,6 +11,7 @@ import {
 } from './executor.js'
 import { runSummary } from './dispatcher.js'
 import { mineSkillFromCard } from './skill-mine.js'
+import { resolveRequirement, requirementRefHint, reviewRequirement, saveTaskDesign } from './reviews.js'
 import { skillUsage, skillUsageLine } from './skill-usage.js'
 import { mergeGateFor, mergeGateLine } from './merge-gate.js'
 const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","markDuplicate","mergeMergeRequest","publicConfig","publishMergeGate","recordAudit","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
@@ -146,6 +147,27 @@ export function registerTools(ctx, store) {
   }))
 
   register(defineStudioTool({
+    name: 'studio_requirement_review',
+    description: 'Review a requirement: submit (提交评审) / approve (通过) / reject (打回，必须带 note)。**批准是拆卡的前置条件**（requirement/split 在没批准时会拒），也是 agent 以前只能绕 HTTP 做的事。编号（REQ-2026-001）与内部 id（req-xxx）都认。',
+    parameters: {
+      id: { type: 'string', required: true, description: '需求 id（req-xxx）或编号（REQ-YYYY-NNN）。' },
+      decision: { type: 'string', required: true, description: 'submit | approve | reject' },
+      by: { type: 'string', description: '评审人（填你自己的专家名）。' },
+      note: { type: 'string', description: '评审意见；reject 必填。' },
+    },
+    async execute(args) {
+      const requirement = await reviewRequirement(store, {
+        id: args.id,
+        decision: String(args.decision ?? ''),
+        by: String(args.by ?? 'agent'),
+        note: String(args.note ?? ''),
+      })
+      const label = { pending: '待评审', approved: '评审通过', changes_requested: '打回要改' }[requirement?.review?.status] ?? requirement?.review?.status ?? ''
+      return `需求 ${requirement?.code || requirement?.id}：${label}${String(args.note ?? '') === '' ? '' : `（${String(args.note).slice(0, 80)}）`}`
+    },
+  }))
+
+  register(defineStudioTool({
     name: 'studio_requirement_list',
     description: 'List product requirements (REQ-...). A requirement is the anchor of the whole delivery chain: every task, artifact, test case, bug and MR hangs under it. Filter by project or status.',
     parameters: {
@@ -174,8 +196,11 @@ export function registerTools(ctx, store) {
     parameters: { id: { type: 'string', required: true, description: '需求 id' } },
     async execute(args) {
       await store.ready
-      const rollup = requirementRollup(store.snapshot(), args.id)
-      if (rollup === undefined) throw new Error(`no requirement ${args.id}`)
+      const snapshot = store.snapshot()
+      const target = resolveRequirement(snapshot, args.id)
+      if (target === undefined) throw new Error(requirementRefHint(snapshot, args.id))
+      const rollup = requirementRollup(snapshot, target.id)
+      if (rollup === undefined) throw new Error(requirementRefHint(snapshot, args.id))
       return {
         ...rollup,
         matrix: requirementMatrix(store.snapshot(), rollup.requirement),
@@ -203,6 +228,13 @@ export function registerTools(ctx, store) {
     },
     async execute(args) {
       const input = { ...args }
+      // id 允许传编号（REQ-2026-001）：归一成内部 id，否则会存出一条新需求
+      if (input.id !== undefined && String(input.id).trim() !== '') {
+        const snapshot = store.snapshot()
+        const target = resolveRequirement(snapshot, input.id)
+        if (target === undefined) throw new Error(requirementRefHint(snapshot, input.id))
+        input.id = target.id
+      }
       if (args.prd !== undefined || args.proto !== undefined || args.acceptance !== undefined) {
         input.links = { prd: args.prd ?? '', proto: args.proto ?? '', acceptance: args.acceptance ?? '' }
       }
@@ -221,7 +253,10 @@ export function registerTools(ctx, store) {
       action: { type: 'string', description: 'sign（默认）| clear' },
     },
     async execute(args) {
-      const id = String(args.id ?? '')
+      const snapshotNow = store.snapshot()
+      const found = resolveRequirement(snapshotNow, args.id)
+      if (found === undefined) throw new Error(requirementRefHint(snapshotNow, args.id))
+      const id = found.id
       const action = args.action === 'clear' ? 'clear' : 'sign'
       const note = String(args.note ?? '').trim().slice(0, 600)
       if (action === 'sign' && note === '') throw new Error('需求验收签字要写一句结论：交付了什么、遗留什么')
@@ -339,7 +374,14 @@ export function registerTools(ctx, store) {
       dueAt: { type: 'number', description: '期望完成时间（epoch 毫秒）。' },
     },
     async execute(args) {
-      const task = await host.createTask(store, args)
+      const input = { ...args }
+      if (input.requirementId !== undefined && String(input.requirementId).trim() !== '') {
+        const snapshot = store.snapshot()
+        const target = resolveRequirement(snapshot, input.requirementId)
+        if (target === undefined) throw new Error(requirementRefHint(snapshot, input.requirementId))
+        input.requirementId = target.id
+      }
+      const task = await host.createTask(store, input)
       return `已创建 ${task.id}：${task.title}（${task.status}，${task.role}）`
     },
   }))
@@ -370,8 +412,38 @@ export function registerTools(ctx, store) {
     },
     async execute(args) {
       const { id, ...rest } = args
+      if (rest.requirementId !== undefined && String(rest.requirementId).trim() !== '') {
+        const snapshot = store.snapshot()
+        const target = resolveRequirement(snapshot, rest.requirementId)
+        if (target === undefined) throw new Error(requirementRefHint(snapshot, rest.requirementId))
+        rest.requirementId = target.id
+      }
       const task = await updateTask(store, id, { ...rest, by: rest.by })
       return `已更新 ${task.id}：${task.status}｜${task.title}`
+    },
+  }))
+
+  register(defineStudioTool({
+    name: 'studio_task_design',
+    description: 'Record the design review on a card: drafts (name + link + note, max 8), which draft is chosen (chosenId), and the review status (pending | approved | changes_requested). 设计闸门要求 status=approved **且**已定案才准进开发；定案的那一稿会写进研发的派单提示词。部分更新即可（合并而不是覆盖）。',
+    parameters: {
+      id: { type: 'string', required: true, description: 'Task id.' },
+      status: { type: 'string', description: 'pending | approved | changes_requested' },
+      drafts: { type: 'array', items: { type: 'object', additionalProperties: true }, description: '多稿：每稿 {id?, name, link, image?, note?}（整体替换，最多 8 稿）' },
+      chosenId: { type: 'string', description: '定案的那一稿 id；多稿时必须指认' },
+      link: { type: 'string', description: '单稿时的设计稿链接（老字段，保留兼容）' },
+      note: { type: 'string', description: '评审意见' },
+      by: { type: 'string', description: '谁录的（你的专家名）。' },
+    },
+    async execute(args) {
+      const patch = {}
+      for (const key of ['status', 'drafts', 'chosenId', 'link', 'note']) {
+        if (args[key] !== undefined) patch[key] = args[key]
+      }
+      const design = await saveTaskDesign(store, String(args.id ?? ''), patch, String(args.by ?? 'agent'))
+      const chosen = (design?.drafts ?? []).find(item => item.id === design.chosenId)
+      const label = { pending: '待评审', approved: '评审通过', changes_requested: '要改' }[design?.status] ?? design?.status ?? '未登记'
+      return `设计：${label}${chosen === undefined ? `｜${(design?.drafts ?? []).length} 稿未定案` : `｜定案「${chosen.name}」`}`
     },
   }))
 

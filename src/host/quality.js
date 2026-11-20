@@ -139,3 +139,29 @@ export function reviewDecision(rawStatus, allowed) {
   const value = String(rawStatus ?? '').trim()
   return Array.isArray(allowed) && allowed.includes(value) ? value : 'pending'
 }
+
+/**
+ * 评审闸门：进「待测试」之前，代码评审必须已经通过。
+ *
+ * 以前只有「已完成」的准出会看 `coding.review`，于是「待评审 → 待测试」直接放行，
+ * review 还 pending 就能进测试（issue #9 第 3 条）。这个闸门默认**开**，
+ * 因为闸门的价值就是挡住错误动作，默认关等于不存在；要关就显式 `reviewGate.enabled = false`。
+ */
+export function reviewGate(config, task, nextStatus) {
+  const gate = config?.reviewGate ?? {}
+  const enabled = gate.enabled !== false
+  const columns = Array.isArray(gate.columns) && gate.columns.length > 0 ? gate.columns : ['test']
+  const needed = enabled === true && columns.includes(String(nextStatus ?? ''))
+  if (needed !== true) return { needed: false, ready: true, blockers: [] }
+  const status = String(task?.coding?.review?.status ?? '')
+  if (status === 'approved') return { needed: true, ready: true, blockers: [] }
+  return {
+    needed: true,
+    ready: false,
+    blockers: [
+      status === 'changes_requested'
+        ? '代码评审要求修改：改完再推进到待测试'
+        : '代码评审还没通过：进「待测试」之前要评审人用 studio_task_coding action=review 给结论（或用 override 说明原因）',
+    ],
+  }
+}

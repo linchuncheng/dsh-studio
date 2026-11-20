@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { readArtifactImage } from '../artifact-image.js'
-import { applyFidelityItem, applySpecItem, designPatchFrom, pushDiffHistory, sanitizeDesign } from '../design.js'
+import { designPatchFrom } from '../design.js'
+import { resolveRequirement, requirementRefHint, saveTaskDesign } from '../reviews.js'
 import { emitEvent } from '../events.js'
 import { collectCases, groupCaseKeys, loadSuites, resolveSuiteKeys, sanitizeSuite, saveSuites, summarizeRun } from '../cases.js'
 import { clearTeamMemory, loadTeamMemory } from '../team-memory.js'
@@ -106,6 +107,14 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
     if (createType !== 'bug' && String(body.requirementId ?? '').trim() === '') {
       throw new Error('建卡要挂到一条需求上：先选或新建需求（缺陷可以不挂）')
     }
+    /* 需求编号要归一成内部 id 再存外键：以前把 REQ-2026-002 原样存进去，
+       卡就成了脏引用，需求汇总显示「卡 0/0」还不报错（issue #9 第 2 条）。 */
+    const snapshotNow = store.snapshot()
+    if (String(body.requirementId ?? '').trim() !== '') {
+      const target = resolveRequirement(snapshotNow, body.requirementId)
+      if (target === undefined) throw new Error(requirementRefHint(snapshotNow, body.requirementId))
+      body.requirementId = target.id
+    }
     const task = await host.createTask(store, body)
     host.sendJson(res, 200, { ok: true, task, state: host.publicState(store) })
     return true
@@ -124,27 +133,8 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
       host.sendJson(res, 200, { ok: true, design: task.design ?? null, readOnly: true })
       return true
     }
-    let design = sanitizeDesign({ ...incoming, by, at: Date.now() })
-    const saved = await store.mutate(state => {
-      const task = state.tasks.find(entry => entry.id === id)
-      if (task === undefined) throw new Error(`no task ${id}`)
-      // 合并而不是覆盖：只带 diff 的调用不该把 link/status/spec 抹掉，顺带记一条历史。
-      const merged = sanitizeDesign({ ...(task.design ?? {}), ...incoming, by, at: Date.now() })
-      if (merged !== null && merged.diff !== null) merged.diffHistory = pushDiffHistory(task.design?.diffHistory ?? [], merged.diff)
-      const chosenBefore = String(task.design?.chosenId ?? '')
-      design = merged
-      task.design = design
-      // 还原度顺手写进验收清单：验收时不用再回抽屉里找数字。
-      if (design !== null && design.diff !== null) task.checklist = applyFidelityItem(task.checklist, design.diff.percent)
-      if (design !== null && design.spec !== null) task.checklist = applySpecItem(task.checklist, design.spec)
-      // 定案是一次决定，不只是改个字段：谁在哪天选了哪一稿要能查。
-      if (design !== null && design.chosenId !== '' && design.chosenId !== chosenBefore) {
-        const picked = (design.drafts ?? []).find(item => item.id === design.chosenId)
-        task.history.push({ at: Date.now(), by, status: task.status, note: `设计定案：${picked?.name ?? design.chosenId}` })
-      }
-      task.updatedAt = Date.now()
-      task.history.push({ at: task.updatedAt, by, status: task.status, note: `设计评审：${design.status}` })
-    })
+    // 评审/定案逻辑与 studio_task_design 工具共用一份（src/host/reviews.js）
+    const design = await saveTaskDesign(store, id, incoming, by)
     host.sendJson(res, 200, { ok: true, design, state: host.publicState(store) })
     return true
   }
@@ -432,12 +422,21 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
       } else if (action === 'remove') {
         task.artifacts = task.artifacts.filter(item => item.id !== String(body.artifactId ?? ''))
       } else if (action === 'update') {
+        /* 顶层字段也认：以前把 content 放在顶层 → 200 但正文没变，什么都不说（issue #9 第 1 条）。
+           找不到目标交付物也直接报错，不再静默返回 ok。 */
+        const patch = { ...(body.patch ?? body.artifact ?? {}) }
+        for (const key of ['title', 'content', 'kind', 'ref', 'status', 'stage']) {
+          if (body[key] !== undefined && patch[key] === undefined) patch[key] = body[key]
+        }
+        let hit = false
         task.artifacts = task.artifacts.map(item => {
           if (item.id !== String(body.artifactId ?? '')) return item
-          const merged = sanitizeArtifact({ ...item, ...(body.patch ?? body.artifact ?? {}) }, 0) ?? item
+          hit = true
+          const merged = sanitizeArtifact({ ...item, ...patch }, 0) ?? item
           merged.id = item.id
           return merged
         })
+        if (hit !== true) throw new Error(`找不到交付物「${String(body.artifactId ?? '')}」：先用 action=get 或 studio_task_get 看清 id`)
       } else {
         throw new Error(`unknown action ${action}`)
       }

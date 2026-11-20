@@ -56,3 +56,26 @@ test('签字路由：override 必须声明在 store.mutate 之前（0.4.0~0.9.0 
   assert.ok(used > 0, '签字路由里应该用 override 写记录')
   assert.ok(declared < used, 'override 必须先声明再使用（以前声明在 if 块里，mutate 里用会 ReferenceError）')
 })
+
+// issue #9 第 3 条：评审闸门以前只在「已完成」检查，待评审→待测试直接放行。
+test('评审闸门：进待测试之前代码评审必须有结论（默认开）', async () => {
+  const { reviewGate } = await import('../src/host/quality.js')
+  const pending = { coding: { review: { status: 'pending' } } }
+  const approved = { coding: { review: { status: 'approved' } } }
+  const changes = { coding: { review: { status: 'changes_requested', note: '接口没做幂等' } } }
+
+  const on = { reviewGate: { enabled: true } }
+  assert.equal(reviewGate(on, pending, 'test').needed, true)
+  assert.equal(reviewGate(on, pending, 'test').ready, false)
+  assert.match(reviewGate(on, pending, 'test').blockers.join(), /还没通过/)
+  assert.equal(reviewGate(on, changes, 'test').ready, false)
+  assert.match(reviewGate(on, changes, 'test').blockers.join(), /要求修改/)
+  assert.equal(reviewGate(on, approved, 'test').ready, true, '评审通过就放行')
+  assert.equal(reviewGate(on, pending, 'review').needed, false, '别的列不管')
+  assert.equal(reviewGate(on, { coding: null }, 'test').ready, false, '没有执行记录也要拦')
+
+  // 默认（配置里没写）= 开；显式 false 才关
+  assert.equal(reviewGate({}, pending, 'test').needed, true, '默认就生效，不写配置不算关')
+  assert.equal(reviewGate({ reviewGate: { enabled: false } }, pending, 'test').needed, false, '显式关掉才不拦')
+  assert.equal(reviewGate({ reviewGate: { enabled: true, columns: ['accept'] } }, pending, 'test').needed, false, '换列也认')
+})

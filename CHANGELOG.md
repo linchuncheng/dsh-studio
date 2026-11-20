@@ -1,6 +1,38 @@
 # 更新日志
 
 
+## [0.9.34] — 2026-11-20
+
+### 修复（GitHub issue #10：计数恒为 0 的回归）
+- **所有卡片的「评论数」「清单进度」角标恒为 0**：`publicState` 先把三个数组解构剥掉，再把
+  **剥掉数组的对象**传给统计函数；`Array.isArray(undefined)` 兜成空数组 → 计数静默归零。
+  数据一直在库里（`/task/comments` 能取到 38 条），只是轮询那一份算错了。
+  现在计数在解构**之前**用原对象算，并加了一条回归锁（静态断言 + 真机核对）。
+
+### 修复（GitHub issue #9：agent 走完整条需求后的 7 条体验问题）
+- **标识符归一化（第 2 条）**：`resolveRequirement` 同时认内部 id（`req-078f16`）与编号（`REQ-2026-001`，大小写不敏感）。
+  `studio_requirement_get/save/signoff/folder`、`studio_task_create/update`、`POST /task/create` 都走它；
+  找不到时直接给「可用的有：REQ-2026-001（req-078f16）…」——不再是 `no requirement REQ-2026-001`。
+  以前写路径不归一化，`requirementId:"REQ-2026-002"` 会被原样存成外键，卡变成脏引用、需求汇总显示「卡 0/0」。
+- **补齐两个评审工具（第 4 条）**：`studio_requirement_review`（submit / approve / reject）、
+  `studio_task_design`（多稿 + 定案 + 评审状态）。逻辑抽到 `src/host/reviews.js`，**HTTP 路由与工具共用一份**，
+  不再出现「面板能做、agent 只能绕 HTTP」。工具数 43 → 45。
+- **评审闸门默认生效（第 3 条）**：进「待测试」之前 `coding.review.status` 必须是 `approved`，
+  与设计闸门同构；要关得显式 `config.reviewGate.enabled = false`。
+  `/state` 新增 `gates`，把两道闸门当前是否生效直接下发——关掉时不再"看起来有保护"。
+- **静默失真收口（第 1 条）**：
+  - 需求链接写坏（相对路径 / ftp 等）现在直接报错并说明合法格式，不再存成空串；
+  - `POST /task/artifact action=update` 认顶层 `content` 等字段，找不到目标交付物直接报错，
+    不再「200 但什么都没变」。
+- **第 6 条（读操作写审计）与第 7 条（`markDuplicate is not defined`）已在 0.9.17 / 0.9.20 修复**，
+  本次复核后一并回复在 issue 里。
+
+### 测试
+新增 `tests/reviews.test.mjs` 5 条（引用归一化 / 找不到时的提示 / 三段评审 / 设计部分更新不抹多稿 / 链接校验）、
+`tests/gates.test.mjs` 加 1 条评审闸门、`tests/repo.test.mjs` 加 1 条计数回归锁。
+`npm test` 266 条全绿（本地 + `TZ=UTC`），产物 `cmp` 一致，`release:check` 7 项通过。
+
+
 ## [0.9.33] — 2026-11-20
 
 ### 新增
