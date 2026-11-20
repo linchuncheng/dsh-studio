@@ -348,6 +348,11 @@ export function SkillsPanel({ config, onChanged }) {
       ),
       h('div', { className: 'ds-hint' }, skill.description),
       skill.whenToUse ? h('div', { className: 'ds-hint' }, `何时用：${skill.whenToUse}`) : null,
+      h('div', { className: 'ds-hint' }, (() => {
+        const usage = skill.usage
+        if (usage === null || usage === undefined || usage.cards === 0) return '还没被用上（挂它的专家还没接过卡）'
+        return `用上 ${usage.cards} 张卡（完成 ${usage.done}）${usage.rework > 0 ? `，其中 ${usage.rework} 张被打回（${usage.reworkRate}%）` : '，没有返工'}`
+      })()),
       users(skill.name).length > 0
         ? h('div', { className: 'ds-hint' }, `使用中的专家：${users(skill.name).map(expert => `${expert.emoji}${expert.name}`).join('、')}`)
         : h('div', { className: 'ds-empty' }, '还没有专家挂这个技能'),

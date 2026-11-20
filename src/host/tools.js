@@ -11,6 +11,7 @@ import {
 } from './executor.js'
 import { runSummary } from './dispatcher.js'
 import { mineSkillFromCard } from './skill-mine.js'
+import { skillUsage, skillUsageLine } from './skill-usage.js'
 import { mergeGateFor, mergeGateLine } from './merge-gate.js'
 const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","markDuplicate","mergeMergeRequest","publicConfig","publishMergeGate","recordAudit","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
 let host = {
@@ -1296,9 +1297,11 @@ export function registerTools(ctx, store) {
       if (host.getActiveSkills() === undefined) throw new Error('技能库尚未就绪')
       const skills = host.getActiveSkills().list()
       if (skills.length === 0) return '技能库还是空的。可以用 studio_skill_save 把这次摸索出来的做法写成一条技能。'
+      // 每条技能配上「被用上过没有」：只看正文判断不出价值，台账里才有答案。
+      const usage = new Map(skillUsage(store.snapshot()).map(row => [row.name, row]))
       return [
         `技能库共 ${skills.length} 条（落盘在 ${host.skillsRoot()}/<名字>/SKILL.md）：`,
-        ...skills.map(skill => `- ${skill.name}${skill.enabled === false ? '（已停用）' : ''}：${skill.description}${skill.tags.length > 0 ? `  [${skill.tags.join('/')}]` : ''}`),
+        ...skills.map(skill => `- ${skill.name}${skill.enabled === false ? '（已停用）' : ''}：${skill.description}${skill.tags.length > 0 ? `  [${skill.tags.join('/')}]` : ''} · ${skillUsageLine(usage.get(skill.name))}`),
       ].join('\n')
     },
   }))

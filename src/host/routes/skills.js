@@ -1,4 +1,5 @@
 import { mineSkillFromCard } from '../skill-mine.js'
+import { skillUsage } from '../skill-usage.js'
 
 const INJECTED = ["isSkillName","readJsonBody","sendJson","skillFromMarkdown","skillFromZip","skillsRoot","getSkills"]
 let host = {
@@ -46,7 +47,14 @@ if (method === 'POST' && route === '/skill/mine') {
 if (route.startsWith('/skills')) {
   if (host.getSkills() === undefined) throw new Error('技能库尚未就绪')
   if (method === 'GET' && route === '/skills') {
-    host.sendJson(res, 200, { ok: true, root: host.skillsRoot(), skills: host.getSkills().list(), onDisk: await host.getSkills().visibleRoots() })
+    // 顺带把「被用上过没有」算出来：技能库光有正文看不出价值，得配上台账里的使用证据。
+    const usage = new Map(skillUsage(store.snapshot()).map(row => [row.name, row]))
+    host.sendJson(res, 200, {
+      ok: true,
+      root: host.skillsRoot(),
+      skills: host.getSkills().list().map(skill => ({ ...skill, usage: usage.get(skill.name) ?? null })),
+      onDisk: await host.getSkills().visibleRoots(),
+    })
     return true
   }
   if (method === 'POST' && route === '/skills/save') {
