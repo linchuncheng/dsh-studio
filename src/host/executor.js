@@ -11,7 +11,7 @@ import { CASE_HTTP_METHODS, CODE_PREFIX, ROLE_IDS, STATUS_IDS, STATUSES, nextReq
 } from './domain.js'
 import { qualityTargetFor, sanitizeQuality } from './card-quality.js'
 import { casesOfTasks, impactSummary } from './impact.js'
-import { designGate } from './design.js'
+import { designGate, designGateOffNote } from './design.js'
 import { isStalled } from './dispatch-state.js'
 import { RUN_LOG, parseMentions } from './dispatcher.js'
 import { appendTeamMemory } from './team-memory.js'
@@ -1557,6 +1557,9 @@ export async function updateTask(store, id, patch) {
         emitEvent('gate/blocked', { taskId: id, gate: 'design', blockers: gate.blockers.slice(0, 3) })
         throw new Error(`进开发被拦：${gate.blockers.join('；')}`)
       }
+      // 闸门关着也要留痕（判定在 design.js 里，executor 这边只落一行历史）
+      const offNote = designGateOffNote(store.snapshot().config, normalized.status, current.status)
+      if (offNote !== '') current.history = [...(current.history ?? []), { at: Date.now(), by: text(patch.by, 60) ?? 'agent', status: normalized.status, note: offNote }]
       /* 评审闸门（默认开）：进「待测试」之前代码评审必须有结论。
          以前只有「已完成」的准出看 review，于是待评审→待测试直接放行（issue #9 第 3 条）。 */
       const review = reviewGate(store.snapshot().config, current, normalized.status)

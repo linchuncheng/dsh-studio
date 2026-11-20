@@ -181,3 +181,18 @@ export function designPatchFrom(body) {
   if (!fromDesign && !fromTop) return null
   return design ?? Object.fromEntries(fields.filter(key => source[key] !== undefined && source[key] !== null).map(key => [key, source[key]]))
 }
+
+/**
+ * 设计闸门**关着**、但这一步正好落在闸门列：返回一句留痕文案（否则空串）。
+ *
+ * 为什么不直接改默认值：改了会卡住存量里没做设计评审的卡，这是产品取舍。
+ * 但"闸门关着且没人知道"不该发生 —— 所以留在卡的历史里，事后能查。
+ */
+export function designGateOffNote(config, nextStatus, currentStatus) {
+  const gate = config?.design ?? {}
+  const columns = Array.isArray(gate.columns) && gate.columns.length > 0 ? gate.columns : ['dev']
+  if (gate.enabled === true) return ''
+  if (!columns.includes(String(nextStatus ?? ''))) return ''
+  if (String(currentStatus ?? '') === String(nextStatus ?? '')) return ''
+  return '设计闸门当时是关闭的：这一步没有经过设计评审'
+}

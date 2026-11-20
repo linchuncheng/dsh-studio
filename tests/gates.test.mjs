@@ -89,3 +89,27 @@ test('评审闸门配置：默认开、显式 false 才关、columns 回落 test
   assert.deepEqual(sanitizeReviewGate({ columns: [] }).columns, ['test'], '空数组回落到默认列')
   assert.deepEqual(sanitizeReviewGate({ columns: ['accept', 'done'] }).columns, ['accept', 'done'])
 })
+
+test('设计闸门关着时，推进到闸门列要在历史里留痕（不拦，但不能没人知道）', async () => {
+  const { updateTask, configureExecutor } = await import('../src/host/executor.js')
+  const { StudioStore, SecretStore } = await import('../src/host/store.js')
+  const { mkdtempSync, rmSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  configureExecutor(new Proxy({ serviceDependencies: () => [], serviceConflicts: () => undefined }, { get: (t, k) => (k in t ? t[k] : () => undefined) }))
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-gate-trace-'))
+  const store = new StudioStore(join(dir, 'state.json'), { dbFile: join(dir, 'state.db'), secrets: new SecretStore(join(dir, '.secrets.json')) })
+  try {
+    await store.ready
+    await store.mutate(state => {
+      state.config.design = { enabled: false, columns: ['dev'] }
+      state.tasks.push({ id: 't-g1', code: 'DEV-001', title: 'x', status: 'design', role: 'architect', requirement: '', priority: 'normal', history: [], comments: [], checklist: [], cases: [], artifacts: [], blocked: null })
+    })
+    await updateTask(store, 't-g1', { status: 'dev', by: '架构师' })
+    const task = store.snapshot().tasks.find(item => item.id === 't-g1')
+    assert.ok((task.history ?? []).some(entry => String(entry.note ?? '').includes('设计闸门当时是关闭的')), '关着也要留痕')
+  } finally {
+    store.db?.close?.()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
