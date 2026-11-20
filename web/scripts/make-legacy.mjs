@@ -96,7 +96,7 @@ const imports = [
   "import { ExpertsPanel, TeamsPanel, TestingPanel, EscalatePanel, EnvironmentsPanel } from './studio/panels/people.js'",
   "import { LdapPanel, CostsPanel, BusinessPanel } from './studio/panels/platform.js'",
   "import { AccessPanel, ColumnsPanel, StoragePanel, HealthPanel } from './studio/panels/governance.js'",
-  "import { ReposPanel, BotsPanel, SkillsPanel } from './studio/panels/integrations.js'",
+  "import { ReposPanel, BotsPanel, SkillsPanel, DocsSinkPanel } from './studio/panels/integrations.js'",
   "import { DashboardPage } from './studio/pages/insights.js'",
   "import { CasesPage } from './studio/pages/cases.js'",
   "import { BurnChart, ProgressField } from './studio/charts.js'",

@@ -231,6 +231,24 @@ try {
   check('④ 评审闸门默认开启', gateButtons.review === 'on', gateButtons.reviewText ?? '')
   await page.screenshot({ path: join(outDir, 'settings-gates.png') })
 
+  // ④b 设置 → 文档出口：出口选择真的渲染出来了（能建的东西必须有能用的路径）
+  // 带计数徽标的导航项按文本精确匹配点不到（文本是「文档出口0」），这里按前缀找。
+  const docsNav = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('button, [role="button"], a')]
+      .find(node => (node.textContent ?? '').trim().startsWith('文档出口'))
+    if (el === undefined || el === null) return false
+    el.click()
+    return true
+  })
+  if (docsNav === true) await new Promise(resolve => setTimeout(resolve, 700))
+  const docsPane = await page.evaluate(() => ({
+    provider: document.querySelector('[data-docs-sink]')?.getAttribute('data-docs-sink') ?? null,
+    text: document.body.innerText,
+  }))
+  check('④b 设置页有「文档出口」面板', docsNav === true && docsPane.provider !== null, docsPane.provider ?? '没找到 [data-docs-sink]')
+  check('④b 文档出口写清了主从关系', docsPane.text.includes('WeKnora 失败只记 error'))
+  await page.screenshot({ path: join(outDir, 'docs-sink.png') })
+
   // ⑤ 设置 → 技能库：使用读数
   const skillsNav = await clickExact('技能库')
   if (skillsNav === true) await new Promise(resolve => setTimeout(resolve, 800))

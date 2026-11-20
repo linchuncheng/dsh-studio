@@ -1483,6 +1483,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         { group: '接入' },
         { id: 'gitlab', label: '代码仓库', count: (config.gitlab.projects ?? []).length },
         { id: 'feishu', label: '飞书机器人', count: (config.feishu.bots ?? []).length },
+      { id: 'docs', label: '文档出口', count: (config.docs?.provider ?? 'feishu') === 'feishu' ? 0 : 1 },
         { id: 'health', label: '集成健康', count: state.integrations?.broken ?? 0 },
         { group: '运行' },
         { id: 'agents', label: '自动派单' },
@@ -1510,7 +1511,8 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         if (id === 'storage') return h(StoragePanel, { state, onChanged })
         if (id === 'gitlab') return h(ReposPanel, { config, onChanged })
         if (id === 'feishu') return h('div', null, h(BotsPanel, { config, onChanged }), h(EscalatePanel, { config, onChanged }))
-        if (id === 'health') return h(HealthPanel, { state, config, onChanged })
+        if (id === 'docs') return h(DocsSinkPanel, { config, onChanged })
+      if (id === 'health') return h(HealthPanel, { state, config, onChanged })
         if (id === 'board') {
           return h('div', null,
             h('div', { className: 'ds-panel ds-form-panel' },

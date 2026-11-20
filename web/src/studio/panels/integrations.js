@@ -463,3 +463,61 @@ export function SkillsPanel({ config, onChanged }) {
     ),
   )
 }
+/** 文档出口：artifact 永远是真源，飞书 / WeKnora 只是投影（判据见 src/host/doc-sink.js）。 */
+export function DocsSinkPanel({ config, onChanged }) {
+  const { h, api, TextField, React } = client()
+  const docs = config.docs ?? {}
+  const weknora = docs.weknora ?? {}
+  const [provider, setProvider] = React.useState(docs.provider ?? 'feishu')
+  const [baseUrl, setBaseUrl] = React.useState(weknora.baseUrl ?? '')
+  const [apiKey, setApiKey] = React.useState(weknora.apiKey ?? '')
+  const [tenantId, setTenantId] = React.useState(weknora.tenantId ?? '')
+  const [kb, setKb] = React.useState(weknora.knowledgeBaseId ?? '')
+  const [busy, setBusy] = React.useState(false)
+  const [note, setNote] = React.useState(null)
+  const save = async () => {
+    setBusy(true); setNote(null)
+    try {
+      await api('/config', {
+        docs: {
+          provider,
+          weknora: { baseUrl: baseUrl.trim(), apiKey: apiKey.trim(), tenantId: tenantId.trim(), knowledgeBaseId: kb.trim() },
+        },
+      })
+      setNote('已保存')
+      await onChanged()
+    } catch (cause) { setNote(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+  const field = (label, node, hint) => h('div', { className: 'ds-field' },
+    h('label', { className: 'ds-label' }, label),
+    node,
+    hint === undefined ? null : h('div', { className: 'ds-hint' }, hint),
+  )
+  return h('div', { className: 'ds-panel ds-form-panel', 'data-docs-sink': provider },
+    h('div', { className: 'ds-panel-head' }, '文档出口'),
+    h('div', { className: 'ds-panel-body' },
+      h('div', { className: 'ds-hint' }, '交付物永远以本地 artifact 为真源；这里只决定同步时投递到哪。both 时飞书为主，WeKnora 失败只记 error、不阻塞交付物登记。'),
+      field('出口',
+        h('select', { className: 'ds-input', value: provider, onChange: event => setProvider(event.target.value) },
+          h('option', { value: 'feishu' }, '只写飞书云盘'),
+          h('option', { value: 'weknora' }, '只写 WeKnora 知识库'),
+          h('option', { value: 'both' }, '两个都写（飞书为主）'),
+        )),
+      field('WeKnora 地址',
+        h(TextField, { className: 'ds-input', value: baseUrl, placeholder: 'http://192.168.120.200:8080/api/v1', onChange: event => setBaseUrl(event.target.value) }),
+        '带不带 /api/v1 都行'),
+      field('API Key',
+        h(TextField, { className: 'ds-input', value: apiKey, placeholder: 'sk-…', onChange: event => setApiKey(event.target.value) }),
+        '只需要 retrieve 能力；要跑问答再加 chat'),
+      field('租户 ID',
+        h(TextField, { className: 'ds-input', value: tenantId, placeholder: '10000', onChange: event => setTenantId(event.target.value) })),
+      field('知识库 ID',
+        h(TextField, { className: 'ds-input', value: kb, placeholder: 'deba6be0-…', onChange: event => setKb(event.target.value) }),
+        '交付物会以 manual 文档写进这个库，并自动触发 reparse'),
+      h('div', { className: 'ds-panel-actions' },
+        h('button', { className: 'ds-btn ds-btn-primary', disabled: busy, onClick: save }, busy ? '保存中…' : '保存'),
+      ),
+      note === null ? null : h('div', { className: 'ds-hint' }, note),
+    ),
+  )
+}
