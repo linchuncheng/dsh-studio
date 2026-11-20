@@ -59,7 +59,7 @@ import { configureInsightsRoutes, handleInsightsRoute } from './src/host/routes/
 import { configureStateRoutes, handleStateRoute } from './src/host/routes/state.js'
 import { configureAdminRoutes, handleAdminRoute } from './src/host/routes/admin.js'
 import { configureSkillsRoutes, handleSkillsRoute } from './src/host/routes/skills.js'
-import { INTEGRATION, markHealth, escalateHealth, healthReport, restoreHealth, projectReady, gitlabReady, gitlabMergeRequestDetail, gitlabRequest, gitlabSync, publishMergeGate, feishuPush, feishuBroadcast, broadcastChange, configureIntegrations } from './src/host/integrations.js'
+import { INTEGRATION, markHealth, escalateHealth, healthReport, restoreHealth, projectReady, gitlabReady, gitlabMergeRequestDetail, gitlabRequest, gitlabSync, mergeMergeRequest, publishMergeGate, feishuPush, feishuBroadcast, broadcastChange, configureIntegrations } from './src/host/integrations.js'
 import { SecretStore, StudioStore } from './src/host/store.js'
 
 function upsertById(list, incoming) {
@@ -2491,6 +2491,7 @@ export function apply(ctx) {
 
   configureToolHost({
     addAssertedCases, addDraftCases, applyConfig, auditSummary, buildAnalytics, buildMetrics, burndownReport, checkToolAccess, createTask, markDuplicate, recordAudit,
+    mergeMergeRequest,
     publicConfig,
     publishMergeGate,
     releaseGate, releaseNotes, skillsRoot, taskLine, toolLevel, toolOperator, upsertById, workloadReport,
@@ -2557,7 +2558,7 @@ export function apply(ctx) {
     configureStateRoutes({ publicState, getDispatcher: () => activeDispatcher, sendJson })
     configureCodingRoutes({
   gitlabRequest,
-  gitlabMergeRequestDetail, applyConfig, ensureWorktree, publicState, publishMergeGate, readJsonBody, removeWorktree, sendJson, serviceOf, upsertById, workProjectOf })
+  gitlabMergeRequestDetail, applyConfig, ensureWorktree, mergeMergeRequest, publicState, publishMergeGate, readJsonBody, removeWorktree, sendJson, serviceOf, upsertById, workProjectOf })
     configureAgentsRoutes({ publicState, readJsonBody, sendJson, getDispatcher: () => activeDispatcher })
     configureConnectRoutes({ mirrorCardsToBitable, applyConfig, installedPackages, publicState, readJsonBody, resolvePackageName, runPluginCli, sendJson, upsertById, getSyncTimer: () => syncTimer })
     configureAdminRoutes({ applyConfig, checkToolAccess, operatorFromSessionId, operatorOf, publicState, readJsonBody, sendJson })

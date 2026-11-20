@@ -671,6 +671,20 @@ function Drawer({ task, state, onClose, onChanged }) {
     if (Object.keys(patch).length === 0) return
     await saveDesignPatch(patch)
   }
+  // 真的去 GitLab 合并：GitLab CE 没有外部状态检查，合并按钮拦不住人，
+  // 所以「让门禁生效」的方式是——合并由平台执行，门禁没过就不发这个请求。
+  const mergeNow = async () => {
+    if (!(await confirmDialog('真的去 GitLab 合并这个 MR？合并后会删除源分支，且无法撤销。', { title: '合并 MR', danger: true, okText: '合并' }))) return
+    setMergeRun({ busy: true, line: '' })
+    try {
+      const result = await api('/task/merge', { id: task.id, by: '人' })
+      const merge = result.merge ?? {}
+      setMergeRun({ busy: false, line: `✅ 已合并 MR !${merge.iid}${merge.sha ? `（merge commit ${String(merge.sha).slice(0, 8)}）` : ''}` })
+      await onChanged()
+    } catch (cause) {
+      setMergeRun({ busy: false, line: cause instanceof Error ? cause.message : String(cause) })
+    }
+  }
   // 从 GitLab 核对：拉 MR 的 changes 与流水线，和卡上自报的值比一遍（没配 GitLab 会直接提示）。
   const verifyGitlab = async () => {
     setBusy(true); setError(null); setNotice(null)
@@ -1171,6 +1185,12 @@ function Drawer({ task, state, onClose, onChanged }) {
           h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' } },
             h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy || mergeRun.busy, onClick: () => void syncMergeGate() },
               mergeRun.busy ? '发布中…' : '同步合并门禁'),
+            h('button', {
+              className: 'ds-btn',
+              disabled: busy || mergeRun.busy || mergeGate === null || mergeGate.state !== 'success',
+              title: '门禁通过后由平台调用 GitLab 的 merge API。GitLab CE 拦不住人工点合并（没有外部状态检查），所以合并走这里才受管辖',
+              onClick: () => void mergeNow(),
+            }, '合并 MR'),
             h('span', { className: 'ds-hint' }, '需要卡片关联 MR、且配了 GitLab 项目。'),
           ),
           mergeRun.line === '' ? null : h('div', { className: 'ds-hint', style: { marginTop: 6 } }, mergeRun.line),

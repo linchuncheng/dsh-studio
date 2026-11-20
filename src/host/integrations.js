@@ -4,6 +4,7 @@
 import { randomBytes } from 'node:crypto'
 import { STATUSES, mergeCoding } from './domain.js'
 import { MERGE_GATE_NAME, mergeGateFor, mergeGateLine, mergeGateNeedsRefresh, sanitizeMergeGate } from './merge-gate.js'
+import { emitEvent } from './events.js'
 
 let host = { newTaskId: () => '', serviceOf: () => null, getStore: () => null }
 
@@ -256,6 +257,12 @@ export async function gitlabMergeRequestDetail(config, project, iid) {
       }))
     }
   } catch { /* 同上 */ }
+  /* GitLab 15.3（极狐 CE 实测）的 /changes **不再返回 commits_count**：字段列表里有
+     changes_count / overflow，没有提交数。以前只认 commits_count，于是「自报 1 个提交、MR 里 1 个」
+     被判成「MR 里是 0 个」——真机上直接误伤。commits 端点已经拿到了逐条提交，用它兜底。 */
+  if (detail.changes !== null && detail.changes.commits === 0 && detail.commits.length > 0) {
+    detail.changes.commits = detail.commits.length
+  }
   // 单测结果：GitLab 的 test_report 就是流水线跑出来的测试汇总；仓库没产出报告就退一步数 job 成败。
   if (detail.pipeline !== null && detail.pipeline.id > 0) {
     try {
@@ -503,6 +510,54 @@ export async function publishMergeGate(store, taskId, { by = 'agent' } = {}) {
   const record = sanitizeMergeGate(base)
   await writeMergeGate(store, taskId, record)
   return { gate, status: record }
+}
+
+/**
+ * 真的去 GitLab 合并这个 MR。
+ *
+ * 为什么要有这一步：GitLab CE 没有「外部状态检查」能力（极狐 15.3 实测：approvals 接口 404），
+ * 提交状态只能当可见记录，拦不住人直接点合并。所以要让门禁**真的生效**，就得由平台自己执行合并：
+ * 门禁过了才调 merge API，没过就拒绝。人绕开平台去 GitLab 点合并仍然可能，但那是绕过工具，
+ * 不是工具没做——台账上这张卡不会记成「已合并」。
+ */
+export async function mergeMergeRequest(store, taskId, { by = 'agent' } = {}) {
+  const state = store.snapshot()
+  const task = state.tasks.find(entry => entry.id === taskId)
+  if (task === undefined) throw new Error(`no task ${taskId}`)
+  const iid = Number(task.gitlabMR?.iid ?? 0)
+  if (iid <= 0) throw new Error('这张卡还没关联 MR：先把 !iid 填进卡片的 GitLab 区块')
+  const config = state.config
+  const projects = config.gitlab?.projects ?? []
+  const project = projects.find(item => item.id === task.gitlabProject) ?? projects[0]
+  if (project === undefined) throw new Error('还没配 GitLab 项目（设置 → 代码仓库）')
+  const gate = mergeGateFor(state, task)
+  if (gate.ready !== true) throw new Error(`合并门禁没过：${gate.blockers.join('；')}`)
+
+  let mr
+  try {
+    mr = await gitlabRequest(config, project, `/merge_requests/${iid}/merge`, {
+      method: 'PUT',
+      body: JSON.stringify({ should_remove_source_branch: true }),
+    })
+  } catch (error) {
+    // 405 / 406 是 GitLab 的「现在合不了」：把它的原话带回去（冲突、pipeline、审批没满足都在这里）
+    throw new Error('GitLab 拒绝合并：' + String(error?.message ?? error).slice(0, 300))
+  }
+  const mergedSha = String(mr?.merge_commit_sha ?? mr?.squash_commit_sha ?? mr?.sha ?? '')
+  const at = Date.now()
+  await store.mutate(draft => {
+    const target = draft.tasks.find(entry => entry.id === taskId)
+    if (target === undefined) return
+    target.gitlabMR = { ...(target.gitlabMR ?? {}), iid, state: String(mr?.state ?? 'merged'), url: String(mr?.web_url ?? target.gitlabMR?.url ?? '') }
+    target.coding = mergeCoding(target.coding ?? null, { mergedBy: String(by).slice(0, 40), mergedAt: at })
+    target.history = [...(target.history ?? []), {
+      at, by: String(by).slice(0, 40), status: target.status,
+      note: `已在 GitLab 合并 MR !${iid}${mergedSha === '' ? '' : `（merge commit ${mergedSha.slice(0, 8)}）`}`,
+    }]
+    target.updatedAt = at
+  })
+  emitEvent('task/merged', { taskId, iid, sha: mergedSha, by })
+  return { iid, state: String(mr?.state ?? 'merged'), sha: mergedSha, task: store.snapshot().tasks.find(entry => entry.id === taskId) }
 }
 
 export async function gitlabSync(store, projectId) {

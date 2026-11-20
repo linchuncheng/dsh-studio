@@ -4,10 +4,11 @@ import { clearAgentFailure, noteAgentFailure } from '../dispatcher.js'
 import { codingVerifyLine, qualitySummary, runCommand, runTaskQuality, taskExitGate, verifyCodingRecord } from '../executor.js'
 import { compareCodingFacts } from '../gitlab-facts.js'
 import { mergeGateFor } from '../merge-gate.js'
-const INJECTED = ["applyConfig","ensureWorktree","publicState","publishMergeGate","readJsonBody","removeWorktree","sendJson","serviceOf","upsertById","workProjectOf"]
+const INJECTED = ["applyConfig","ensureWorktree","mergeMergeRequest","publicState","publishMergeGate","readJsonBody","removeWorktree","sendJson","serviceOf","upsertById","workProjectOf"]
 let host = {
   applyConfig: () => {},
   ensureWorktree: () => {},
+  mergeMergeRequest: async () => ({}),
   publicState: () => {},
   publishMergeGate: async () => ({}),
   readJsonBody: () => {},
@@ -173,6 +174,18 @@ if (method === 'POST' && route === '/task/worktree') {
     skipped: info?.skipped ?? '',
     state: host.publicState(store),
   })
+  return true
+}
+if (method === 'POST' && route === '/task/merge') {
+  /* 真的去 GitLab 合并：门禁在服务端判，没过就拒绝。
+     GitLab CE 没有「外部状态检查」，提交状态只是可见记录 —— 要让门禁生效，合并必须由平台执行。 */
+  const body = await host.readJsonBody(req)
+  try {
+    const merged = await host.mergeMergeRequest(store, String(body.id ?? ''), { by: String(body.by ?? '人').slice(0, 40) })
+    host.sendJson(res, 200, { ok: true, merge: merged, state: host.publicState(store) })
+  } catch (error) {
+    host.sendJson(res, 400, { ok: false, error: String(error?.message ?? error).slice(0, 300) })
+  }
   return true
 }
 if (method === 'POST' && route === '/task/merge-gate') {

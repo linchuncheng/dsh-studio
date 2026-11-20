@@ -12,7 +12,7 @@ import {
 import { runSummary } from './dispatcher.js'
 import { mineSkillFromCard } from './skill-mine.js'
 import { mergeGateFor, mergeGateLine } from './merge-gate.js'
-const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","markDuplicate","publicConfig","publishMergeGate","recordAudit","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
+const INJECTED = ["activeDispatcher","activeSkills","addAssertedCases","addDraftCases","applyConfig","auditSummary","buildAnalytics","buildMetrics","burndownReport","checkToolAccess","createTask","markDuplicate","mergeMergeRequest","publicConfig","publishMergeGate","recordAudit","releaseGate","releaseNotes","skillsRoot","taskLine","toolLevel","toolOperator","upsertById","workloadReport"]
 let host = {
   activeDispatcher: () => {},
   activeSkills: () => {},
@@ -30,6 +30,7 @@ let host = {
   /** 配置的对外形状（密钥换成 presence 标记）。**必须注入**：定义在 index.js，裸调用会 ReferenceError。 */
   publicConfig: () => ({}),
   /** 把合并门禁发成 GitLab 提交状态：定义在 integrations.js（要发请求），注入。 */
+  mergeMergeRequest: async () => ({}),
   publishMergeGate: async () => ({}),
   recordAudit: () => {},
   releaseGate: () => {},
@@ -1119,6 +1120,7 @@ export function registerTools(ctx, store) {
       id: { type: 'string', required: true, description: 'Task id.' },
       by: { type: 'string', description: 'Who triggered it (your expert name).' },
       publish: { type: 'boolean', description: 'Default true: also post the commit status to GitLab. false = only compute the verdict (works without GitLab configured).' },
+      action: { type: 'string', description: "publish (default) | merge: 门禁通过时**真的**调用 GitLab 的 merge API 合并这个 MR（GitLab CE 无法用状态拦截人工合并，所以合并由平台执行）" },
     },
     async execute(args) {
       const state = store.snapshot()
@@ -1127,6 +1129,13 @@ export function registerTools(ctx, store) {
       if (args.publish === false) {
         const gate = mergeGateFor(state, task)
         return [mergeGateLine(gate), ...gate.blockers.map(item => `- ${item}`)].join('\n')
+      }
+      if (String(args.action ?? '') === 'merge') {
+        const merged = await host.mergeMergeRequest(store, String(args.id ?? ''), { by: String(args.by ?? 'agent').slice(0, 40) })
+        return [
+          `已合并 MR !${merged.iid}（GitLab 状态 ${merged.state}${merged.sha === '' ? '' : `，merge commit ${merged.sha.slice(0, 8)}`}）`,
+          '卡片上已记 mergedBy / mergedAt，历史里留了一行「已在 GitLab 合并」。',
+        ].join('\n')
       }
       const { gate, status } = await host.publishMergeGate(store, String(args.id ?? ''), { by: String(args.by ?? 'agent').slice(0, 40) })
       return [

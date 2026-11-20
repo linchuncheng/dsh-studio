@@ -8,7 +8,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 
 import { SecretStore, StudioStore } from '../src/host/store.js'
-import { gitlabSyncMergeRequests, publishMergeGate } from '../src/host/integrations.js'
+import { gitlabMergeRequestDetail, gitlabSyncMergeRequests, mergeMergeRequest, publishMergeGate } from '../src/host/integrations.js'
 import { MERGE_GATE_NAME, mergeGateFor, mergeGateNeedsRefresh } from '../src/host/merge-gate.js'
 import { configureCodingRoutes, handleCodingRoute } from '../src/host/routes/coding.js'
 
@@ -186,6 +186,79 @@ test('同步会自动刷新门禁：换提交重发一次，没变化不重发',
     store.db?.close?.()
     await new Promise(resolve => server.close(resolve))
     rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('合并：门禁没过不发请求；过了才调 GitLab merge API 并记账', async () => {
+  let mergeCalls = 0
+  const server = createServer((req, res) => {
+    const send = (code, payload) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(payload)) }
+    if (req.method === 'PUT' && req.url.includes('/merge_requests/7/merge')) {
+      mergeCalls += 1
+      return send(200, { iid: 7, state: 'merged', merge_commit_sha: 'merge123456', web_url: 'http://x/7' })
+    }
+    if (req.method === 'GET' && req.url.includes('/merge_requests/7/changes')) return send(200, { changes: [{ new_path: 'src/x.js' }] })
+    if (req.method === 'GET' && req.url.includes('/merge_requests/7/commits')) return send(200, [{ id: 'abc123456789', short_id: 'abc12345', title: 'feat', author_name: 'dev' }])
+    if (req.method === 'GET' && req.url.includes('/merge_requests/7/pipelines')) return send(200, [])
+    if (req.method === 'GET' && req.url.includes('/merge_requests/7')) return send(200, { iid: 7, sha: 'abc123456789', state: 'opened', web_url: 'http://x/7' })
+    return send(404, {})
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  const port = server.address().port
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-merge-real-'))
+  const store = new StudioStore(join(dir, 'state.json'), { dbFile: join(dir, 'state.db'), secrets: new SecretStore(join(dir, '.secrets.json')) })
+  try {
+    await store.ready
+    await store.mutate(state => {
+      state.config.gitlab = { ...state.config.gitlab, url: `http://127.0.0.1:${port}`, token: 't', projects: [{ id: 'gl-1', name: 'demo', url: '', project: 'demo/order', group: '', token: '', syncEnabled: false, syncLabel: '', lastSyncAt: 0, lastSyncError: '' }] }
+      state.tasks.push(baseTask({ coding: { ...baseTask().coding, review: { status: 'pending' } } }))
+    })
+    // 评审没过 → 拒绝，且一个请求都不该发
+    await assert.rejects(() => mergeMergeRequest(store, 't-m1', { by: '架构师' }), /合并门禁没过/)
+    assert.equal(mergeCalls, 0, '门禁没过时不能碰 GitLab')
+
+    // 评审通过 → 真的合并
+    await store.mutate(state => {
+      const target = state.tasks.find(item => item.id === 't-m1')
+      target.coding = { ...target.coding, review: { status: 'approved', by: '架构师', note: 'ok' } }
+    })
+    const merged = await mergeMergeRequest(store, 't-m1', { by: '架构师' })
+    assert.equal(mergeCalls, 1)
+    assert.equal(merged.state, 'merged')
+    assert.equal(merged.sha, 'merge123456')
+    const after = store.snapshot().tasks.find(item => item.id === 't-m1')
+    assert.equal(after.gitlabMR.state, 'merged')
+    assert.equal(after.coding.mergedBy, '架构师')
+    assert.ok(after.coding.mergedAt > 0)
+    assert.ok((after.history ?? []).some(entry => String(entry.note ?? '').includes('已在 GitLab 合并')))
+  } finally {
+    store.db?.close?.()
+    await new Promise(resolve => server.close(resolve))
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('GitLab 15.3 的 /changes 不给 commits_count：用 commits 端点兜底，别把 1 个提交说成 0 个', async () => {
+  const server = createServer((req, res) => {
+    const send = (code, payload) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(payload)) }
+    if (req.method === 'GET' && req.url.includes('/merge_requests/7/changes')) {
+      // 真实 15.3 的形状：只有 changes / changes_count / overflow，没有 commits_count
+      return send(200, { changes: [{ new_path: 'src/a.js' }, { new_path: 'src/b.js' }], changes_count: '2', overflow: false })
+    }
+    if (req.method === 'GET' && req.url.includes('/merge_requests/7/commits')) return send(200, [{ id: 'deadbeefdeadbeef', short_id: 'deadbeef', title: 'feat', author_name: 'dev' }])
+    if (req.method === 'GET' && req.url.includes('/merge_requests/7/pipelines')) return send(200, [])
+    return send(404, {})
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  const port = server.address().port
+  try {
+    const config = { gitlab: { url: `http://127.0.0.1:${port}`, token: 't' } }
+    const project = { id: 'gl-1', project: 'demo/order', url: '', token: '' }
+    const detail = await gitlabMergeRequestDetail(config, project, 7)
+    assert.equal(detail.changes.files.length, 2)
+    assert.equal(detail.changes.commits, 1, 'commits_count 缺失时要用 commits 端点的条数兜底')
+  } finally {
+    await new Promise(resolve => server.close(resolve))
   }
 })
 

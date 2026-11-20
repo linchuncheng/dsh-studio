@@ -1,6 +1,22 @@
 # 更新日志
 
 
+## [0.9.32] — 2026-11-20
+
+### 新增
+- **GitLab 合并由平台执行**：`POST /task/merge` 与 `studio_merge_gate action=merge`。
+  门禁通过才调 `PUT /merge_requests/:iid/merge`，没过直接拒绝、一个请求都不发；
+  合并成功后把 `mergedBy / mergedAt / gitlabMR.state=merged / merge commit` 一起记进卡片，历史留一行。
+  抽屉「合并门禁」块多了「合并 MR」按钮（只有门禁状态为 success 时可点，点了还要二次确认）。
+  - 为什么这么做：**GitLab CE 拦不住人工点合并**。极狐 15.3 实测没有 approvals 接口（404）、
+    也没有外部状态检查，提交状态只是可见记录。要让门禁真的生效，合并就必须由平台执行。
+
+### 修复（真机才暴露的版本差异）
+- **GitLab 15.3 的 `/changes` 不再返回 `commits_count`**：自报「1 个提交」、MR 里也是 1 个，
+  却被判成「MR 里是 0 个」。现在用 `/commits` 端点的条数兜底。
+- 顺带在真机上把 GitLab 链路跑通并留档：issue 同步建卡（`Closes #1` 后自动挂上 MR）、
+  执行记录 vs MR 事实对账（文件数不一致会点名）、提交状态发布。
+
 ## [0.9.31] — 2026-11-20
 
 ### 新增
