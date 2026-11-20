@@ -107,6 +107,11 @@ STUDIO_TOKEN=$(sudo journalctl -u dsh-web -n 50 | grep -o 'token=[A-Za-z0-9_-]*'
     2026-11-20 连推 5 个提交全红就是这么漏掉的。指定别的提交：`npm run ci:watch -- --sha <sha>`。
     注意 `ci.yml` 在跑 `npm test` 之前**不装依赖**：契约测试里不能 `import` devDependency（浏览器用例那条就是踩在这上面红的）。
 
+14. **面板渲染探针**：`npm run probe:panel -- --base http://127.0.0.1:<dsh 端口>` ——
+    用假宿主挂**真实 client.js** + 把 `/studio-api/*` 反代到正在跑的实例，puppeteer 逐页断言并截图（`tmp/probe/`）。
+    **接口测试与单测看不见"渲染在哪个面板里"**：0.9.36 就把「评审闸门」开关插进了「数据与备份」面板，
+    全绿但设置页看不到。探针自己造带「（探针）」标记的数据、跑完自删；没装 puppeteer-core 或没 Chrome 时**跳过不判红**。
+    改判据：在 `tools/visual/panel-probe.mjs` 的 `check(...)` 列表里加，别写一次性脚本。
 ## 4.5 需求澄清（比代码更靠前的一道门）
 
 - **不清楚就一直问，问到能一句话复述「交付什么、给谁用、怎么算完成」为止**。宁可多问三轮，也不要按猜测开工。

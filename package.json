@@ -56,7 +56,8 @@
     "verify:empty": "node tools/visual/empty-state-probe.mjs",
     "verify:desktop": "node tools/verify-desktop.mjs",
     "sync:profile": "node tools/sync-profile.mjs",
-    "ci:watch": "node tools/ci-watch.mjs"
+    "ci:watch": "node tools/ci-watch.mjs",
+    "probe:panel": "node tools/visual/panel-probe.mjs"
   },
   "exports": {
     ".": "./index.js",
