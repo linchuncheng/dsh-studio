@@ -88,9 +88,13 @@ AGENTS.md 列出每个 host 模块、config 白名单不漏键）每一条都对
 | 3 | **测试通过** | `npm test` 与 `TZ=UTC npm test` 全绿、`node --check`、`npm run verify:tdz`；改前端再加 `cd web && pnpm build` 与 `cmp dist/client.js client.js` |
 | 4 | **审核完成** | 自查清单 + 证据贴进 PR 正文；有第二个人时由他 approve。**评审没过不许提 PR** |
 | 5 | **提 PR** | `gh pr create`，正文写现象/根因/验证方式 + 检查清单结果 |
-| 6 | **合并主干 → 构建与发布** | PR 合并后 CI 必须绿；再打 tag `vX.Y.Z` 触发 `release.yml` 与镜像流水线，最后 `npm run verify:release` 必须「发版一致」 |
+| 6 | **合并主干 → 构建与发布** | **合并要用户确认**（agent 只提 PR，不自作主张 merge）；合并后 CI 必须绿；再打 tag `vX.Y.Z` 触发 `release.yml` 与镜像流水线，最后 `npm run verify:release` 必须「发版一致」 |
 
 - **不许直接往 `main` 推代码**：改了就在 worktree 分支上提交、开 PR。
+- **会话级隔离**：每开一个会话，开发就在它自己的工作树里做（会话一开始先 `create_worktree` 或 `git worktree add`），不要在主检出上改。
+- **功能级隔离**：同一个会话里做**不同功能**时，各自开一个工作树（分支名按功能取，如 `feat/x`、`docs/y`），别把两个功能塞进同一个分支。
+  同一个功能的连续小改（修笔误、补一行测试）继续用**当前那个**工作树，不必每句话都新开——隔离的单位是「功能」，不是「消息」。
+- **合并只由用户确认**：agent 把 PR 提好、CI 绿、证据贴全，然后**停下来等人点头**；人不确认就不合并、不打 tag。
 - 分支：`fix/…`、`feat/…`、`docs/…`、`ci/…`，一个 PR 只做一件事。
 - 提交标题一句话说清做了什么，与既有历史保持同一风格（中文/英文都行，本项目主要用中文）。
   正文写**为什么**：现象、根因、你验证的方式。
