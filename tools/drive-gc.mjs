@@ -66,10 +66,14 @@ if (root === '') {
   console.error('没有配置云盘根文件夹（设置 → 飞书 · 云盘根文件夹）')
   process.exit(2)
 }
+const projectFolders = Object.fromEntries(
+  Object.entries(state.config.feishu.projectFolders ?? {}).map(([key, entry]) => [key, String(entry?.token ?? '')]),
+)
 const references = {
   requirementTokens: state.requirements.map(item => String(item.folder?.token ?? '')).filter(Boolean),
-  projectTokens: Object.values(state.config.feishu.projectFolders ?? {}).map(entry => String(entry?.token ?? '')).filter(Boolean),
-  unassignedToken: String(state.config.feishu.projectFolders?.__unassigned__?.token ?? ''),
+  projectFolders,
+  liveProjectIds: (state.config.projects ?? []).map(item => String(item.id)),
+  unassignedToken: String(projectFolders.__unassigned__ ?? ''),
 }
 
 // 分页拉全量
