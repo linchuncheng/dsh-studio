@@ -218,6 +218,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | `npm run verify:desktop` | 桌面版（Electron 客户端）验收：插件是否加载、`/state.profile` 是否等于当前 profile、`/market.installed` 里有没有本插件、破坏性路由是否要求 `confirm`。**客户端半边（侧栏入口/面板渲染）验不了** —— 桌面窗口走 `dsh-app://` + 启动令牌，脚本会列出人工确认项 |
 | `npm run verify:empty` | 空数据巡检：把 `/state` 换成一"刚装好、什么都没建"的样子，走一遍全部页签 —— 空看板这类分支只有新装用户才会走到（issue #6 就是这么漏的） |
 | `npm run shots -- --base <端口>` | README 截图：造演示数据 → 真 `client.js` 渲染 → 逐页截图到 `docs/images/`，跑完自删（含云盘目录）。**界面一改就重跑**，别手工截图——2026-11-20 那批图停在 11-18，中间左栏、闸门、BoardUI 全变了 |
+| `npm run drive:gc -- --base <端口>` | 云盘孤儿目录体检/清理：**只删「名字像 REQ-* 且台账里没有引用」的文件夹**，项目目录/未归属项目/看不懂的一律保留，文件永不删。默认只体检，`--apply` 才真删（进回收站），串行 + 退避重试（并发会被飞书判 resource contention） |
 | `npm run probe:panel -- --base http://127.0.0.1:<端口>` | 面板**渲染**：假宿主挂真实 `client.js` + 把 `/studio-api/*` 反代到正在跑的实例，puppeteer 逐页断言并截图到 `tmp/probe/`。接口测试与单测看不见「渲染在哪个面板里」——0.9.36 就有开关插错面板而全绿的情况。自己造「（探针）」数据、跑完自删；没装 puppeteer-core 或没 Chrome 时跳过不判红 |
 | `npm run verify:mirror` | 本地演练 GitHub Packages 镜像的改名步骤（只在打 tag 时才跑的东西，提前在本地验一遍） |
 | `npm run verify:tdz` | 作用域级“先用后声明”扫描（TDZ）：浏览器里的 `Cannot access 'x' before initialization` 就是这么来的，`node --check` 查不出。已接进 `release:check` |
