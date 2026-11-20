@@ -1119,7 +1119,9 @@ export function registerTools(ctx, store) {
         for (const item of wanted) {
           try {
             const doc = await syncArtifact(store, task.id, item.id)
-            notes.push(`已归档到云盘：${doc.url}`)
+            const where = doc?.provider === 'weknora' ? '知识库' : '云盘'
+            const link = String(doc?.url ?? '').trim()
+            notes.push(link === '' ? `已归档到${where}：${String(doc?.name ?? '') || item.title}` : `已归档到${where}：${link}`)
           } catch (error) {
             notes.push(`归档失败：${String(error?.message ?? error).slice(0, 160)}`)
           }

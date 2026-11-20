@@ -1,5 +1,6 @@
 /** dsh-studio 的领域层：板列、卡片/需求/发布的数据形状与清洗、默认配置、编号生成。纯函数，可单测。 */
 import { sanitizeProjectFolders, sanitizeRequirementFolder } from './drive-folders.js'
+import { sanitizeArtifactDocs, sanitizeDocsConfig } from './doc-sink.js'
 // 面板/配置补丁也要能清洗它（index.js 从 domain 取这批 sanitize*）
 export { sanitizeProjectFolders }
 import { sanitizeAcceptanceItem } from './acceptance.js'
@@ -220,6 +221,8 @@ export function defaultConfig() {
     feishu: { appId: '', appSecret: '', chatId: '', baseToken: '', tableId: '', webhook: '', notifyOnChange: true, bots: [], driveFolder: 'IuJPfTCtWlDrzwdCFmLc71aynbg', autoSyncArtifacts: true,
     /** 项目级云盘文件夹缓存：{ [项目 id 或 __unassigned__]: { token, url, name, at } }。 */
     projectFolders: {}, escalateWebhook: '', escalateAfter: 3 },
+    /** 文档出口：artifact 永远是真源，飞书 / WeKnora 只是投影（判据全在 doc-sink.js）。 */
+    docs: sanitizeDocsConfig({}),
     /** 出站 webhook：卡片流转/用例失败/派单失败推给外部系统。 */
     webhooks: [],
     /** 数量上限：以前是硬编码在路由里的 60/60/40，超了静默丢。 */
@@ -445,6 +448,7 @@ export function mergeConfig(saved) {
     templates: sanitizeTemplates(saved.templates),
     gitlab,
     feishu,
+    docs: sanitizeDocsConfig(saved.docs, base.docs),
     roles: mergeSection(base.roles, saved.roles),
     market: mergeSection(base.market, saved.market),
     agents: mergeSection(base.agents, saved.agents),
@@ -1174,6 +1178,8 @@ export function sanitizeArtifact(raw, index) {
       at: Number(docRaw.at) || 0,
       error: String(docRaw.error ?? '').slice(0, 300),
     },
+    /* 每个出口各记一份台账：换出口不丢历史，切回来也不用重传（形状在 doc-sink.js）。 */
+    docs: sanitizeArtifactDocs(raw.docs),
   }
 }
 
