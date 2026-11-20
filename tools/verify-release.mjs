@@ -118,7 +118,7 @@ try {
     try {
       const view = JSON.parse(execFileSync('gh', ['release', 'view', tag, '--json', 'tagName,isDraft,body,url'], { encoding: 'utf8', env }))
       add('GitHub Release ' + tag + ' 已建且不是草稿', view.isDraft !== true, String(view.url ?? ''))
-      const issue = releaseBodyIssue(view.body)
+      const issue = releaseBodyIssue(view.body, pkg.version)
       add('Release 正文写的是这一版', issue === null, issue ?? String(view.body ?? '').trim().split('\n')[0].slice(0, 80))
     } catch (error) {
       add('GitHub Release ' + tag + ' 已建且不是草稿', false,

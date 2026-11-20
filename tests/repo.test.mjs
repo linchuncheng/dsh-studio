@@ -1207,14 +1207,19 @@ test('host: index.js 能被真的 import 起来（模块搬走后导入断裂，
   assert.ok(Array.isArray(module.inject), 'index.js 必须导出 inject 数组')
 })
 
-test('tooling: Release 正文的判据（空 / 占位 / 太短都算没写）', async () => {
-  const { releaseBodyIssue, RELEASE_BODY_PLACEHOLDER } = await import('../tools/lib/release-notes.mjs')
+test('tooling: Release 正文的判据（按结构，不按措辞）', async () => {
+  const { releaseBodyIssue } = await import('../tools/lib/release-notes.mjs')
   assert.match(String(releaseBodyIssue('')), /空的/)
-  assert.match(String(releaseBodyIssue('   \n  ')), /空的/)
-  assert.match(String(releaseBodyIssue('这一版没有写更新日志，下面是它包含的提交（完成后对比完整 diff）：')), /占位/)
-  // 正文里正常引用这句话，不该被判成占位（0.9.29 的真身就是这么被误伤的）
-  assert.equal(releaseBodyIssue('### 修复\n- 说明里提到「没写更新日志」这四个字，但正文是完整的更新日志，够长了'), null)
-  assert.ok(String(releaseBodyIssue('没写更新日志')).includes(RELEASE_BODY_PLACEHOLDER) === false, '判据里不该把常量本身当正文')
-  assert.match(String(releaseBodyIssue('短')), /只有 1 字/)
-  assert.equal(releaseBodyIssue('## [0.9.29] — 2026-11-20\n\n### 修复\n- 修了点东西，够长了'), null)
+  assert.match(String(releaseBodyIssue('   \n ')), /空的/)
+  // 回退生成器打出来的形状：## v<version> + 提交列表
+  assert.match(
+    String(releaseBodyIssue('## v0.9.30\n\n这一版没有写更新日志，下面是它包含的提交（完成后对比完整 diff）：', '0.9.30')),
+    /不是 CHANGELOG 的 0.9.30 这一版/,
+  )
+  // 版本对不上也算错（比如把上一版正文发出来了）
+  assert.match(String(releaseBodyIssue('## [0.9.29] — 2026-11-20\n\n### 修复\n- x', '0.9.30')), /不是 CHANGELOG 的 0.9.30/)
+  // 正文里正常引用「没写更新日志」不该被判红：0.9.29 / 0.9.30 都被这句话误伤过
+  const quoting = '## [0.9.30] — 2026-11-20\n\n### 修复\n- 说明里提到「这一版没有写更新日志」这句话，但正文是完整的更新日志'
+  assert.equal(releaseBodyIssue(quoting, '0.9.30'), null)
+  assert.equal(releaseBodyIssue('## [0.9.30] — 2026-11-20\n\n### 修复\n- 修了点东西', 'v0.9.30'), null, 'v 前缀要归一')
 })
