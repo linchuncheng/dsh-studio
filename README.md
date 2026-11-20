@@ -68,10 +68,9 @@ flowchart LR
 | --- | --- |
 | ![workbench](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/workbench.png) | ![board](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/board.png) |
 
-| 卡片抽屉：状态 / 清单 / 用例 / 执行记录 | 需求：基线、变更影响面、可追溯矩阵 |
+| 卡片抽屉：清单 / 用例（可归功能点）/ 执行记录 | 需求：基线、变更影响面、可追溯矩阵 |
 | --- | --- |
 | ![drawer](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/drawer.png) | ![requirements](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/requirements.png) |
-| ![cases](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/cases.png) | ![quality](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/quality.png) |
 
 | 用例库：跨卡聚合、套件、最近回归 | 效能：一次通过率、返工率、按专家 + token 成本 |
 | --- | --- |
@@ -81,11 +80,17 @@ flowchart LR
 | --- | --- |
 | ![releases](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/releases.png) | ![settings-execution](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/settings-execution.png) |
 
-| 设置·成本与预算：价目表（元/百万 token） | 设置·专家：8 位专家、模型与提示词 |
+| 设置·成本与预算：价目表（元/百万 token） | 设置·专家：专家名册、模型与提示词 |
 | --- | --- |
 | ![settings-cost](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/settings-cost.png) | ![settings-experts](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/settings-experts.png) |
 
-截图不是手截的：`npm run shots`（`tools/visual/capture.mjs`）会登录面板、逐个页签截一遍，顺手断言没有「渲染失败」。
+| 设置·列的负责人：**设计闸门 / 评审闸门**（默认开）+ 每列候选人 | 设置·技能库：沉淀的技能、被用上几张卡、返工率 |
+| --- | --- |
+| ![settings-gates](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/settings-gates.png) | ![settings-skills](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/settings-skills.png) |
+
+截图不是手截的：`npm run shots -- --base http://127.0.0.1:<dsh 端口>`（`tools/visual/capture.mjs`）
+会造一套**演示数据**（标题都带「演示·」）、用**真实 client.js** 渲染面板、逐页截图并断言没有「渲染失败」，
+跑完把数据连同云盘目录一起删掉。界面一改重跑一次即可，不用再手工对齐尺寸和演示内容。
 
 ## 安装
 
@@ -212,6 +217,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | `npm run smoke:store -- ~/.dsh/dsh-studio.db` | 用生产库的 `.db/-wal/-shm` 副本在本地跑真实启动路径，抓「空库能起、真库就炸」的 `ReferenceError` |
 | `npm run verify:desktop` | 桌面版（Electron 客户端）验收：插件是否加载、`/state.profile` 是否等于当前 profile、`/market.installed` 里有没有本插件、破坏性路由是否要求 `confirm`。**客户端半边（侧栏入口/面板渲染）验不了** —— 桌面窗口走 `dsh-app://` + 启动令牌，脚本会列出人工确认项 |
 | `npm run verify:empty` | 空数据巡检：把 `/state` 换成一"刚装好、什么都没建"的样子，走一遍全部页签 —— 空看板这类分支只有新装用户才会走到（issue #6 就是这么漏的） |
+| `npm run shots -- --base <端口>` | README 截图：造演示数据 → 真 `client.js` 渲染 → 逐页截图到 `docs/images/`，跑完自删（含云盘目录）。**界面一改就重跑**，别手工截图——2026-11-20 那批图停在 11-18，中间左栏、闸门、BoardUI 全变了 |
 | `npm run probe:panel -- --base http://127.0.0.1:<端口>` | 面板**渲染**：假宿主挂真实 `client.js` + 把 `/studio-api/*` 反代到正在跑的实例，puppeteer 逐页断言并截图到 `tmp/probe/`。接口测试与单测看不见「渲染在哪个面板里」——0.9.36 就有开关插错面板而全绿的情况。自己造「（探针）」数据、跑完自删；没装 puppeteer-core 或没 Chrome 时跳过不判红 |
 | `npm run verify:mirror` | 本地演练 GitHub Packages 镜像的改名步骤（只在打 tag 时才跑的东西，提前在本地验一遍） |
 | `npm run verify:tdz` | 作用域级“先用后声明”扫描（TDZ）：浏览器里的 `Cannot access 'x' before initialization` 就是这么来的，`node --check` 查不出。已接进 `release:check` |
