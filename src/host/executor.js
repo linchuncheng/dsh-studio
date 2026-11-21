@@ -812,9 +812,9 @@ export function requirementGate(state, requirement) {
   const allCases = tasks.flatMap(task => task.cases ?? [])
   const strength = coverageStrength(allCases)
   if (strength.rate !== null && strength.rate < COVERAGE_TARGET) {
-    warnings.push(
+    blockers.push(
       `可执行用例只有 ${strength.executable}/${strength.total}（${Math.round(strength.rate * 100)}%），低于 ${Math.round(COVERAGE_TARGET * 100)}% 的目标：` +
-      '只有标题的用例跑不起来，也不算验过——把它们改成带断言的（接口 / shell / 数据库 / 浏览器）',
+      '只有标题的用例跑不起来，也不算验过——把它们改成带断言的（接口 / shell / 数据库 / 浏览器）再签字',
     )
   }
   // 「通过」有两种来源：跑出来的（有 lastRun）和人手标的（没有）。后者不能当验证证据。

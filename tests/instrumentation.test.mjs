@@ -31,7 +31,7 @@ test('工作台数得清「停摆」：派单印记还在这一列、但会话�
   assert.deepEqual(dash.list.stalled.map(item => item.id), ['t-1'])
 })
 
-test('需求准出：可执行用例占比低于 60% 会给出读数（不只是「跑过几条」）', () => {
+test('需求准出：可执行用例占比低于 60% 会拦住签字，并给出读数', () => {
   const requirement = { id: 'r1', code: 'REQ-2026-001', title: '退款流水', points: [], status: 'active' }
   const tasks = [card({
     cases: [
@@ -42,9 +42,10 @@ test('需求准出：可执行用例占比低于 60% 会给出读数（不只是
     ],
   })]
   const progress = requirementProgress({ tasks, requirements: [requirement], releases: [], config: { experts: [], design: {} } }, requirement)
-  const warnings = (progress.gate?.warnings ?? []).join(' ')
-  assert.match(warnings, /可执行用例只有 1\/4/, '要把 1/4 这个数字说出来：' + warnings)
-  assert.match(warnings, /60%/, '要带上目标值，否则人不知道差多少')
+  const blockers = (progress.gate?.blockers ?? []).join(' ')
+  assert.equal(progress.gate?.ready, false, '低于 60% 不该放行')
+  assert.match(blockers, /可执行用例只有 1\/4/, '要把 1/4 这个数字说出来：' + blockers)
+  assert.match(blockers, /60%/, '要带上目标值，否则人不知道差多少')
 })
 
 test('需求准出：用例都带断言时不提这条（别在达标的时候唠叨）', () => {
@@ -56,5 +57,5 @@ test('需求准出：用例都带断言时不提这条（别在达标的时候�
     ],
   })]
   const progress = requirementProgress({ tasks, requirements: [requirement], releases: [], config: { experts: [], design: {} } }, requirement)
-  assert.ok(!(progress.gate?.warnings ?? []).join(' ').includes('可执行用例只有'), '达标了不该有这条提示')
+  assert.ok(!(progress.gate?.blockers ?? []).join(' ').includes('可执行用例只有'), '达标了不该有这条')
 })

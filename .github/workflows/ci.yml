@@ -19,6 +19,11 @@ jobs:
         with:
           version: 9
 
+      # 浏览器用例要 puppeteer-core（根 devDependency）：先装依赖，npm test 里的
+      # browser-case 才会真开 Chrome 跑，而不是 skip。其余契约测试仍应保持无依赖也能跑。
+      - name: Install test dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
       - name: Syntax
         run: node --check index.js && node --check client.src.js
 
