@@ -1029,3 +1029,29 @@ Toaster。剩下自研的都是「官方没有、或者语义不兼容」的部�
 
 判据进了 `npm run probe:panel` 的 ⑥ 两项：正文直接子块间距 ≥ 8px、KPI 末行不许只剩一张。
 **只验"有没有元素相交"是抓不到这类问题的**（相交数一直是 0），必须量相邻块的间距。
+
+## 界面审视（unslop 口径，2026-11-22）
+
+用 [heydamir/unslop](https://github.com/heydamir/unslop) 的方法（审计 → 定方向 → 九道 pass）把全部功能面看了一遍：
+**32 个面**（7 页签 + 设置 18 分区 + 抽屉 5 页签 + 命令面板 + 新建抽屉），浅色全量 + 深色抽 6 面。
+
+```bash
+node tools/visual/ui-audit.mjs --base http://127.0.0.1:<dsh 端口>          # = npm run audit:ui
+node tools/visual/ui-audit.mjs --base ... --theme dark --only board,drawer
+```
+
+它和既有探针的分工：`verify:audit` 查「还有没有原生控件」，`verify:a11y` 查「可访问名称与对比度」，
+`review:layout` 查「字号/溢出/硬编码颜色」，**`audit:ui` 查"设计系统本身是否一致"**——
+4px 网格、字号档位、颜色 token 数量、emoji 是否当图标、圆角层级、首屏空白、网格落单、文字截断。
+它只出证据（截图 + `tmp/unslop-audit/metrics*.json`），不改代码，也不进发版闸门。
+
+四条结论（完整报告见 [`ui-audit-2026-11-22.md`](ui-audit-2026-11-22.md)）：
+
+1. **字体从未落地**：`boardui/theme.css` 引用 `--font-inter`，但仓库没有 `@font-face`、没有字体资源，
+   实测全部文本回落到 `ui-sans-serif`。要么自托管 Inter，要么把 token 改成系统字。
+2. **两套设计系统并存**：BoardUI 是 4/8/12/16 + 圆角 8/16，手写 `.ds-*` 是 6/10/14/18 + 圆角 10，
+   于是实测圆角 7 种、非 4px 网格最常见的是 `gap:6px`（1044 次）。
+3. **emoji 就是图标系统**：18 个图形符号，32 面全中（抽屉出现 28 次/面）。专家 emoji 是数据字段
+   （`config.experts[].emoji`），在 8 处渲染，不能靠全局替换，要按 role 映射线性图标。
+4. **干净的部分别动**：渐变文字 0、彩色发光 0（96 处阴影全是同一枚中性软阴影）、循环动效 0、
+   暗色 6 面 0 处对比度失败。

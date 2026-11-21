@@ -251,6 +251,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | `npm run verify:ax` | 无障碍树（CDP AX tree）：交互节点命名、可聚焦却被 ignored、标题跳级、对话框名称。**暂未接入发版闸门**；8 页签 + 抽屉的 AX 命名检查已并入 `verify:pages`，真机 `verify:ax` 仍需 token 复跑 |
 | `npm run review:layout` | 24 个模块的字号/溢出/内联硬编码颜色巡检 |
 | `npm run review:components` | 官方元素 vs 自研元素的分布，看还有哪些组件没换 |
+| `npm run audit:ui` | unslop 口径的界面体检：32 个面（7 页签 + 设置 18 分区 + 抽屉 5 页签 + 命令面板 + 新建抽屉）逐面截图 + 采 computed style 指标（4px 网格、字号档位、颜色 token、emoji、圆角、对比度、首屏空白、网格落单、文字截断）。**只出证据不改代码**，结论见 `docs/ui-audit-2026-11-22.md` |
 
 `pnpm build` 已串上守卫（`make-legacy → guard --pre → vite build → sync-client → guard --post`），CI 也会跑：忘记构建或写出上面两类样式，流水线直接红。
 
