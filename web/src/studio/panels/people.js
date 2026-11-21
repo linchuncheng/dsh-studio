@@ -9,12 +9,6 @@ export function ExpertsPanel({ config, onChanged }) {
   const [draft, setDraft] = React.useState(null)
   const [error, setError] = React.useState(null)
   const [busy, setBusy] = React.useState(false)
-  const EMOJI_CHOICES = [
-    '🧩', '📋', '🏛️', '🛠️', '🧪', '🔍', '🛡️', '⚙️',
-    '📦', '💰', '💳', '📊', '📈', '🧠', '🤖', '🧭',
-    '🎯', '🚀', '🧱', '🔧', '🧰', '🧮', '📝', '📚',
-    '🗂️', '🔐', '🌐', '☁️', '🗄️', '🧬', '🩺', '⚖️',
-  ]
 
   // 角色模板：新建专家时按角色套用 label / 模型 / 提示词；改这里不动已有专家
   const ROLE_KEYS = ['product', 'architect', 'dev', 'qa']
@@ -100,7 +94,7 @@ export function ExpertsPanel({ config, onChanged }) {
   }
   const rows = experts.map(expert => h('div', { className: 'ds-listrow', key: expert.id },
     h('div', { className: 'ds-listrow-main' },
-      h('div', {}, `${expert.emoji} ${expert.name}`,
+      h('div', {}, expert.name,
         expert.domain ? h(ChipField, { className: 'ds-chip' }, expert.domain) : null,
         expert.enabled === false ? h('span', { className: 'ds-hint' }, ' （已停用）') : null),
       h('div', { className: 'ds-hint' }, `${expert.model || '跟随默认模型'}${expert.description ? ' · ' + expert.description : ''}`),
@@ -165,33 +159,11 @@ export function ExpertsPanel({ config, onChanged }) {
         error !== null ? h('span', { key: 'error', className: 'ds-error ds-side-note' }, error) : null,
       ],
     },
-        h('div', { className: 'ds-row', style: { gap: 12, alignItems: 'flex-start' } },
-          h('div', { className: 'ds-field', style: { flex: 1 } },
-            h('div', { className: 'ds-label' }, '名字（@ 用这个名字）'),
-            h(TextField, { className: 'ds-input', value: draft.name, placeholder: '安全专家', onChange: e => set('name', e.target.value) }),
-          ),
-          h('div', { className: 'ds-field', style: { flex: '0 0 96px' } },
-            h('div', { className: 'ds-label' }, '当前图标'),
-            h('div', { className: 'ds-emoji-preview' }, draft.emoji || '🧩'),
-          ),
-        ),
         h('div', { className: 'ds-field' },
-          h('div', { className: 'ds-label' }, '图标（点一个换上，也可以自己填）'),
-          h('div', { className: 'ds-emojigrid' },
-            EMOJI_CHOICES.map(face => h('button', {
-              key: face, type: 'button', className: 'ds-emoji', 'data-on': draft.emoji === face ? '1' : '0',
-              title: face, onClick: () => set('emoji', face),
-            }, face)),
-          ),
-          h('div', { className: 'ds-row', style: { gap: 8, marginTop: 8, alignItems: 'center' } },
-            h(TextField, {
-              className: 'ds-input', style: { flex: '0 0 120px' }, value: draft.emoji, maxLength: 4,
-              placeholder: '🧩',
-              onChange: e => set('emoji', e.target.value),
-            }),
-            h('span', { className: 'ds-hint' }, '也可以粘一个 emoji，或者留空用默认的 🧩。'),
-          ),
+          h('div', { className: 'ds-label' }, '名字（@ 用这个名字）'),
+          h(TextField, { className: 'ds-input', value: draft.name, placeholder: '安全专家', onChange: e => set('name', e.target.value) }),
         ),
+        h('div', { className: 'ds-hint' }, '图标由角色决定（产品 / 架构 / 研发 / 测试各一个），全站一致，不用再挑 emoji。'),
         h('div', { className: 'ds-field' },
           h('div', { className: 'ds-label' }, '一句话定位'),
           h(TextField, { className: 'ds-input', value: draft.description, placeholder: '负责接口安全与权限模型评审', onChange: e => set('description', e.target.value) }),
@@ -315,7 +287,7 @@ export function TeamsPanel({ config, onChanged }) {
   }
   const nameOf = id => {
     const found = experts.find(expert => expert.id === id)
-    return found === undefined ? id : `${found.emoji} ${found.name}`
+    return found === undefined ? id : found.name
   }
   const save = async () => {
     if (draft === null) return
@@ -333,11 +305,11 @@ export function TeamsPanel({ config, onChanged }) {
 
   const rows = teams.map(team => h('div', { className: 'ds-listrow', key: team.id },
     h('div', { className: 'ds-listrow-main' },
-      h('div', {}, `👥 ${team.name}`),
+      h('div', {}, team.name),
       h('div', { className: 'ds-hint' }, `团长 ${nameOf(team.lead)} · 成员 ${team.members.map(nameOf).join('、')}`),
       h('div', { className: 'ds-hint' }, (memory[team.id] ?? []).length === 0
-        ? '🧠 团队记忆：还没有（卡做完会自动记一条，派活时带进提示词）'
-        : `🧠 团队记忆 ${memory[team.id].length} 条 · 最近：${memory[team.id][0]?.outcome ?? ''} ${memory[team.id][0]?.title ?? ''}`),
+        ? '团队记忆：还没有（卡做完会自动记一条，派活时带进提示词）'
+        : `团队记忆 ${memory[team.id].length} 条 · 最近：${memory[team.id][0]?.outcome ?? ''} ${memory[team.id][0]?.title ?? ''}`),
     ),
     h('div', { className: 'ds-listrow-actions' },
       tipOf('清空这个团的记忆', h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy || (memory[team.id] ?? []).length === 0, onClick: () => void clearMemory(team) }, '清空记忆')),

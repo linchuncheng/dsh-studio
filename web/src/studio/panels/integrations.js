@@ -354,7 +354,7 @@ export function SkillsPanel({ config, onChanged }) {
         return `用上 ${usage.cards} 张卡（完成 ${usage.done}）${usage.rework > 0 ? `，其中 ${usage.rework} 张被打回（${usage.reworkRate}%）` : '，没有返工'}`
       })()),
       users(skill.name).length > 0
-        ? h('div', { className: 'ds-hint' }, `使用中的专家：${users(skill.name).map(expert => `${expert.emoji}${expert.name}`).join('、')}`)
+        ? h('div', { className: 'ds-hint' }, `使用中的专家：${users(skill.name).map(expert => `${expert.name}`).join('、')}`)
         : h('div', { className: 'ds-empty' }, '还没有专家挂这个技能'),
     ),
     h('div', { className: 'ds-listrow-actions' },

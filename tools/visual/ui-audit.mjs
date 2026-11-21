@@ -366,6 +366,9 @@ const COLLECTOR = `(() => {
     const min = Math.min(...heights), max = Math.max(...heights)
     if (max - min > 2 && result.rowRhythm.length < 20) result.rowRhythm.push(key.split('>')[1] + ' x' + heights.length + ' heights ' + min + '..' + max)
   }
+  const svgNodes = [...root.querySelectorAll('svg')].filter(el => { const box = el.getBoundingClientRect(); return box.width > 0 && box.height > 0 })
+  result.icons = { total: svgNodes.length, sizes: svgNodes.reduce((bag, el) => { const box = el.getBoundingClientRect(); const key = Math.round(box.width) + 'x' + Math.round(box.height); bag[key] = (bag[key] ?? 0) + 1; return bag }, {}) }
+
   // ---- 几何：构图、留白、对齐、截断
   const rectOf = el => el.getBoundingClientRect()
   const main = root.querySelector('.ds-body') ?? root

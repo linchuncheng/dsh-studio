@@ -253,7 +253,7 @@ window.__ModuleLoader__.load({
     // color-mix(currentColor N%, transparent)），所以只要在根元素上定住 color 与 background，
     // 再把 --ds-surface、--ds-accent 换掉，整块面板就会跟着换肤，不用逐条改样式。
     const THEME_KEY = 'dsh-studio:theme'
-    const THEMES = [['light', '☀ 明亮'], ['dark', '☾ 黑暗'], ['system', '跟随系统']]
+    const THEMES = [['light', '明亮'], ['dark', '黑暗'], ['system', '跟随系统']]
 
     function systemDarkQuery() {
       return typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: dark)') : null
@@ -2237,8 +2237,8 @@ function installKeyboardActivation() {
                     className: 'ds-chip',
                     'data-on': '1',
                     title: `没配 LDAP 时平台默认以超管身份使用，不需要登录；写操作与审计都记在它名下${state.config.localAuth?.mustChange === true ? '。当前仍是默认口令 admin，请去「设置 → 统一登录」改掉' : ''}`,
-                  }, `👤 超管 ${state.config.localAuth?.username ?? 'admin'}${state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`)
-                : h(ChipField, { className: 'ds-chip', title: `已登录：${authUser()?.id ?? ''}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? '（仍是默认口令，去「设置 → 统一登录」改掉）' : ''}` }, `👤 ${authUser()?.name ?? authUser()?.id}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`),
+                  }, `超管 ${state.config.localAuth?.username ?? 'admin'}${state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`)
+                : h(ChipField, { className: 'ds-chip', title: `已登录：${authUser()?.id ?? ''}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? '（仍是默认口令，去「设置 → 统一登录」改掉）' : ''}` }, `${authUser()?.name ?? authUser()?.id}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`),
               authUser() === null
                 ? h('button', { className: 'ds-btn ds-btn-ghost', title: '用域账号或本地超管账号登录', onClick: () => setShowLogin(true) }, '登录')
                 : tipOf('退出当前账号（退出后回到超管身份）', h('button', {
@@ -2289,7 +2289,7 @@ function installKeyboardActivation() {
                     style: { color: 'var(--color-notification-error-foreground)', borderColor: 'color-mix(in srgb, var(--color-notification-error-foreground) 40%, var(--ds-line))' },
                     title: (state.integrations.channels ?? []).filter(item => item.state === 'error').map(item => `${item.label}：${item.lastError}`).join('\n'),
                     onClick: () => { setTab('settings'); setSettingsSection('health') },
-                  }, `⚠ 集成异常 ${state.integrations.broken}`)
+                  }, h('span', { className: 'ds-dot', 'data-kind': 'danger', style: { marginRight: 6 } }), `集成异常 ${state.integrations.broken}`)
                 : null,
               h('div', { className: 'ds-newmenu', style: { position: 'relative' } },
                 h('button', {

@@ -349,7 +349,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
           const warnings = Array.isArray(json.warnings) ? json.warnings : []
           setSplitNote((created.length === 0
             ? '没有可拆的功能点：要么都覆盖了，要么还没加功能点。'
-            : `已建 ${created.length} 张卡：${created.map(item => item.code || item.id).join('、')}`) + (warnings.length === 0 ? '' : ' ⚠ ' + warnings.join('；')))
+            : `已建 ${created.length} 张卡：${created.map(item => item.code || item.id).join('、')}`) + (warnings.length === 0 ? '' : ' · 注意：' + warnings.join('；')))
           if (typeof onChanged === 'function') onChanged()
         } catch (err) {
           setSplitNote(err.message)
@@ -881,8 +881,8 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
                   h('div', { className: 'ds-hint' },
                     `${pct}% · ${done}/${tasks.length} 张卡完成 · 功能点覆盖 ${covered}/${pointTotal} · 用例通过 ${casePass}/${caseTotal}`),
                 ),
-                (gate.blockers ?? []).map(line => h('div', { key: line, className: 'ds-gate-item', 'data-kind': 'block' }, `⛔ ${line}`)),
-                (gate.warnings ?? []).map(line => h('div', { key: line, className: 'ds-gate-item', 'data-kind': 'warn' }, `⚠ ${line}`)),
+                (gate.blockers ?? []).map(line => h('div', { key: line, className: 'ds-gate-item', 'data-kind': 'block' }, `${line}`)),
+                (gate.warnings ?? []).map(line => h('div', { key: line, className: 'ds-gate-item', 'data-kind': 'warn' }, `${line}`)),
                 gate.ready ? h('div', { className: 'ds-hint' }, '门禁已通过：签完字这条需求就算交付。') : null,
                 signoff === null
                   ? h('div', { className: 'ds-gate-sign' },
@@ -894,7 +894,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
                     h('button', { className: 'ds-btn ds-btn-primary', onClick: () => void signRequirement('sign') }, '需求验收签字'),
                   )
                   : h('div', { className: 'ds-gate-sign' },
-                    h('div', { className: 'ds-hint', style: { flex: 1 } }, `✍ ${signoff.by} 于 ${fmtTime(signoff.at)} 签字：${signoff.note}`),
+                    h('div', { className: 'ds-hint', style: { flex: 1 } }, `${signoff.by} 于 ${fmtTime(signoff.at)} 签字：${signoff.note}`),
                     h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => void signRequirement('clear') }, '取消签字'),
                   ),
                 reqNote === null ? null : h('div', { className: 'ds-hint' }, reqNote),
@@ -1200,7 +1200,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
                   })()}${task.dueAt > 0 ? ` · 截止 ${fmtDate(task.dueAt)}` : ''}`),
                 ),
                 h('div', { className: 'ds-listrow-actions' },
-                  task.blocked !== undefined && task.blocked !== null ? h(ChipField, { className: 'ds-chip ds-chip-blocked' }, '⛔') : null,
+                  task.blocked !== undefined && task.blocked !== null ? h(ChipField, { className: 'ds-chip ds-chip-blocked' }, '阻塞') : null,
                   task.type === 'bug' ? h(ChipField, { className: 'ds-chip ds-chip-bug', 'data-sev': task.severity ?? 'p2' }, 'BUG') : null,
                 ),
               ))),

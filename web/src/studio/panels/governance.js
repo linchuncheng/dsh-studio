@@ -1,5 +1,6 @@
 /* Settings panels lifted out of client.src.js; shared handles come from the studio context. */
 
+import { icon } from '../icons.js'
 import { ROLE_LABEL, ACCESS_ROLE_OPTIONS, STRATEGIES, ROUTE_LABEL } from '../labels.js'
 import { buildRoster, filterRoster } from '../roster.js'
 import { fmtTime } from '../format.js'
@@ -115,7 +116,7 @@ export function AccessPanel({ state, config, onChanged }) {
         (access.members ?? []).length === 0 ? h('div', { className: 'ds-empty' }, '还没有成员。') : null,
         h('div', { className: 'ds-row', style: { gap: 8, flexWrap: 'wrap' } },
           h(TextField, {
-            className: 'ds-input', placeholder: '成员名字（和页头「👤 我是…」一致）', value: draft.name,
+            className: 'ds-input', placeholder: '成员名字（和页头「我是…」一致）', value: draft.name,
             style: { flex: '1 1 200px' },
             onChange: event => setDraft({ ...draft, name: event.target.value }),
           }),
@@ -219,13 +220,13 @@ export function ColumnsPanel({ state, onChanged }) {
   }
   const strategyOf = status => config.columns?.[status]?.strategy ?? 'round_robin'
   const labelOf = member => {
-    if (member.kind === 'role') return '🎯 ' + (ROLE_LABEL[member.id] ?? member.id)
+    if (member.kind === 'role') return ROLE_LABEL[member.id] ?? String(member.id ?? '')
     if (member.kind === 'team') {
       const team = (config.teams ?? []).find(entry => entry.id === member.id)
-      return team === undefined ? `👥 ${member.id}` : `${team.emoji ?? '👥'} ${team.name}`
+      return team === undefined ? String(member.id ?? '') : team.name
     }
     const expert = (config.experts ?? []).find(entry => entry.id === member.id)
-    return expert === undefined ? member.id : `${expert.emoji} ${expert.name}`
+    return expert === undefined ? String(member.id ?? '') : expert.name
   }
   // 设计闸门：开关 + 勾哪几列要拦。存的是 config.design，服务端 designGate() 用它。
   const gateColumns = Array.isArray(config.design?.columns) ? config.design.columns : ['dev']
@@ -310,7 +311,7 @@ export function ColumnsPanel({ state, onChanged }) {
           h('div', { className: 'ds-colrow-head' },
             h('span', { className: 'ds-colrow-name' }, column.label ?? column.id),
             members.length === 0
-              ? h('span', { className: 'ds-hint' }, '👤 等人认领（不自动派）')
+              ? h('span', { className: 'ds-hint' }, '等人认领（不自动派）')
               : members.map((member, index) => h(ChipField, { className: 'ds-chip ds-chip-owner', key: `${member.kind}:${member.id}` },
                 labelOf(member),
                 h('button', {
@@ -341,7 +342,7 @@ export function ColumnsPanel({ state, onChanged }) {
                   ? h('div', { className: 'ds-mention-empty' }, '没有匹配的专家或专家团')
                   : filterRoster(roster, query).map(item => h('button', {
                     key: item.key, className: 'ds-mention-item', onClick: () => add(column.id, item),
-                  }, h('span', null, item.emoji), h('span', null, item.name), h('span', { className: 'ds-hint' }, item.hint))),
+                  }, item.icon === undefined ? null : icon(h, item.icon), h('span', null, item.name), h('span', { className: 'ds-hint' }, item.hint))),
               ),
             )
             : null,

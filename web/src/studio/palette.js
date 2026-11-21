@@ -46,7 +46,7 @@ export function searchItems(state) {
       key: 'expert:' + expert.id,
       kind: 'expert',
       id: expert.id,
-      label: `${expert.emoji ?? ''} ${expert.name}`.trim(),
+      label: expert.name,
       hint: ['专家', ROLE_LABEL[expert.role] ?? expert.role ?? '', expert.domain ?? ''].filter(Boolean).join(' · '),
       search: [expert.name, expert.id, expert.domain, expert.description, ROLE_LABEL[expert.role]].filter(Boolean).join(' ').toLowerCase(),
     })
@@ -56,7 +56,7 @@ export function searchItems(state) {
       key: 'team:' + team.id,
       kind: 'team',
       id: team.id,
-      label: `👥 ${team.name}`.trim(),
+      label: team.name,
       hint: ['专家团', (team.members ?? []).length + ' 位成员'].join(' · '),
       search: [team.name, team.id, team.description, ...(team.members ?? []).map((member) => member.name ?? member.id)].filter(Boolean).join(' ').toLowerCase(),
     })
@@ -76,7 +76,7 @@ export function searchItems(state) {
       key: 'skill:' + skill.name,
       kind: 'skill',
       id: skill.name,
-      label: '🧩 ' + skill.name,
+      label: skill.name,
       hint: ['技能', skill.enabled === false ? '已停用' : '已启用', (skill.users ?? 0) + ' 位专家在用'].join(' · '),
       search: [skill.name, skill.description, ...(skill.tags ?? [])].filter(Boolean).join(' ').toLowerCase(),
     })
@@ -296,7 +296,7 @@ export async function runPaletteAction(item, ctx) {
     if (item.action === 'card-dispatch') {
       const expert = (state?.config?.experts ?? []).find((entry) => entry.id === item.expertId)
       await api('/agents/run', { id: item.cardId, expert: item.expertId })
-      notify('已派给 ' + (expert === undefined ? item.expertId : expert.emoji + expert.name))
+      notify('已派给 ' + (expert === undefined ? item.expertId : expert.name))
       return { refresh: true }
     }
     if (item.action === 'card-comment') {

@@ -2315,3 +2315,33 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
 
 /* 计数徽标：18px 的小方块比胶囊更安静（看板列头的那个数字） */
 [data-dsh-studio] .ds-count { border-radius: 6px; }
+
+/* ========================================================================
+ * unslop pass 2 —— 一套线性图标（lucide）+ 状态点
+ * 图标只用 currentColor，不单独上色；状态一律 6px 圆点 + 文字。
+ * ======================================================================== */
+[data-dsh-studio] .ds-icon {
+  flex: none;
+  vertical-align: -2px;
+  color: currentColor;
+}
+
+[data-dsh-studio] .ds-dot {
+  display: inline-block;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ds-muted, #6b6b74);
+}
+[data-dsh-studio] .ds-dot[data-kind="ok"] { background: var(--ds-ok-text, #0b7a43); }
+[data-dsh-studio] .ds-dot[data-kind="warn"] { background: var(--ds-warn-text, #a26100); }
+[data-dsh-studio] .ds-dot[data-kind="danger"] { background: var(--ds-danger-text, #c0392b); }
+[data-dsh-studio] .ds-dot[data-kind="info"] { background: var(--primary, #2563eb); }
+[data-dsh-studio] .ds-dot[data-kind="idle"] { background: var(--ds-line, #d4d4d8); }
+
+[data-dsh-studio] .ds-card-foot span,
+[data-dsh-studio] .ds-meta span { display: inline-flex; align-items: center; gap: 4px; }
+
+/* 评论头像里只放图标时，用同一套底色，不再回退成 emoji */
+[data-dsh-studio] .ds-cm-initial-icon { display: inline-flex; align-items: center; justify-content: center; }
