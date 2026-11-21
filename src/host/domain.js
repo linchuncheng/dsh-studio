@@ -4,6 +4,10 @@ import { sanitizeArtifactDocs, sanitizeDocsConfig } from './doc-sink.js'
 // 面板/配置补丁也要能清洗它（index.js 从 domain 取这批 sanitize*）
 export { sanitizeProjectFolders }
 import { sanitizeAcceptanceItem } from './acceptance.js'
+import { ACCESS_ROLES, sanitizeUsers } from './users.js'
+import { sanitizeAudit, sanitizeAuditEntry } from './audit.js'
+export { ACCESS_ROLES, sanitizeUsers }
+export { sanitizeAudit, sanitizeAuditEntry }
 import { qualityFields } from './card-quality.js'
 import { resolveCaseResult } from './case-strength.js'
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
@@ -62,7 +66,6 @@ export const ISOLATION_MODES = ['none', 'worktree']
  * 成员角色：管理员能改配置与删除，成员能推进卡，只读只能看。
  * 没启用成员权限时所有人按管理员算（向后兼容单机用法）。
  */
-export const ACCESS_ROLES = ['admin', 'member', 'viewer']
 export const ACCESS_ROLE_LABEL = { admin: '管理员', member: '成员', viewer: '只读' }
 export const ROLE_LEVEL = { viewer: 0, member: 1, admin: 2 }
 export const LEVEL_RANK = { read: 0, write: 1, admin: 2 }
@@ -366,34 +369,6 @@ export function verifyLocalPassword(localAuth, username, password) {
   const computed = Buffer.from(hash, 'hex')
   const ok = stored.length === computed.length && timingSafeEqual(stored, computed)
   return { ok, reason: ok ? '' : 'badpass' }
-}
-
-/** 登录过的人：最多 500 条，id 统一小写，按最近登录排序。 */
-export function sanitizeUsers(raw) {
-  const list = Array.isArray(raw) ? raw : []
-  const out = []
-  const seen = new Set()
-  for (const item of list) {
-    if (out.length >= 500) break
-    if (item === null || typeof item !== 'object') continue
-    const id = String(item.id ?? item.name ?? '').trim().toLowerCase().slice(0, 80)
-    if (id === '' || seen.has(id)) continue
-    seen.add(id)
-    out.push({
-      id,
-      name: String(item.name ?? id).trim().slice(0, 80) || id,
-      mail: String(item.mail ?? '').trim().slice(0, 160),
-      dept: String(item.dept ?? '').trim().slice(0, 120),
-      dn: String(item.dn ?? '').trim().slice(0, 400),
-      role: ACCESS_ROLES.includes(item.role) ? item.role : 'member',
-      source: item.source === 'ldap' ? 'ldap' : 'local',
-      firstLoginAt: Number(item.firstLoginAt) || 0,
-      lastLoginAt: Number(item.lastLoginAt) || 0,
-      loginCount: Math.max(0, Math.round(Number(item.loginCount) || 0)),
-      lastIp: String(item.lastIp ?? '').trim().slice(0, 60),
-    })
-  }
-  return out.sort((a, b) => b.lastLoginAt - a.lastLoginAt)
 }
 
 /** Shallow-merge one section of a saved settings object over the defaults. */
@@ -1808,32 +1783,6 @@ export function normalizePatch(input) {
   return patch
 }
 
-
-export function sanitizeAuditEntry(raw, index) {
-  const input = raw !== null && typeof raw === 'object' ? raw : {}
-  const route = String(input.route ?? '').slice(0, 120)
-  if (route === '') return null
-  return {
-    id: String(input.id ?? `au-${index}`).slice(0, 60),
-    at: Number.isFinite(input.at) ? Number(input.at) : 0,
-    by: String(input.by ?? '').slice(0, 40) || '人',
-    route,
-    level: ['read', 'write', 'admin'].includes(input.level) ? input.level : 'write',
-    status: Number.isFinite(input.status) ? Number(input.status) : 0,
-    ok: input.ok === true,
-    summary: String(input.summary ?? '').slice(0, 200),
-  }
-}
-
-export function sanitizeAudit(input) {
-  if (!Array.isArray(input)) return []
-  const out = []
-  for (const raw of input.slice(-1000)) {
-    const item = sanitizeAuditEntry(raw, out.length)
-    if (item !== null) out.push(item)
-  }
-  return out
-}
 
 export function sanitizeReleases(input) {
   if (!Array.isArray(input)) return []
