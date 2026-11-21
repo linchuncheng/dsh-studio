@@ -1,5 +1,6 @@
 /* Settings panels lifted out of client.src.js; shared handles come from the studio context. */
 
+import { uiIcon, expertIconName } from '../icons.js'
 import { ROLE_LABEL } from '../labels.js'
 import { client } from '../context.js'
 
@@ -94,7 +95,7 @@ export function ExpertsPanel({ config, onChanged }) {
   }
   const rows = experts.map(expert => h('div', { className: 'ds-listrow', key: expert.id },
     h('div', { className: 'ds-listrow-main' },
-      h('div', {}, expert.name,
+      h('div', {}, uiIcon(h, expertIconName(expert)), ' ', expert.name,
         expert.domain ? h(ChipField, { className: 'ds-chip' }, expert.domain) : null,
         expert.enabled === false ? h('span', { className: 'ds-hint' }, ' （已停用）') : null),
       h('div', { className: 'ds-hint' }, `${expert.model || '跟随默认模型'}${expert.description ? ' · ' + expert.description : ''}`),
