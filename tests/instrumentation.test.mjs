@@ -46,6 +46,7 @@ test('需求准出：可执行用例占比低于 60% 会拦住签字，并给出
   assert.equal(progress.gate?.ready, false, '低于 60% 不该放行')
   assert.match(blockers, /可执行用例只有 1\/4/, '要把 1/4 这个数字说出来：' + blockers)
   assert.match(blockers, /60%/, '要带上目标值，否则人不知道差多少')
+  assert.deepEqual(progress.coverage, { total: 4, executable: 1, draft: 3, rate: 0.25 }, '列表/详情要能直接显示覆盖率')
 })
 
 test('需求准出：用例都带断言时不提这条（别在达标的时候唠叨）', () => {

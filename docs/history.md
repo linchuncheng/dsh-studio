@@ -1098,3 +1098,17 @@ issue #4「抽屉头部被窗口按钮盖住」的修复过程，记下来给以
 
 1. **探针自己也会说谎**：批 1 里「新用例不继承卡功能点」的失败，其实是探针点了看板第一张真实卡片，不是产品 bug；改成按标题点自己造的卡后 23/23。
 2. **行数闸门已经贴脸**：`domain.js` 1999、`client.src.js` 2499（闸门 <2000 / <2500），下一批必须先拆再加。
+
+## 2026-11-21 · 安全、门禁与结构：批 5–9
+
+批 1–4 合并后继续把体检表上剩下的项做完：
+
+- **批 5 口令**：`localAuth.password` 从 state / 快照里移走，只留密钥文件；`merge` 动作单独要求管理员。顺手修了 `hashLocalPassword` 缺 `scryptSync` 导入——改口令以前必炸 `ReferenceError`。
+- **批 6 会话**：`sessions` 表只存 token 的 SHA-256，内存表按哈希键查；升级前的明文行第一次读取时自动迁移，重启不掉登录。改口令会吊销全部旧会话；SQLite 台账与 WAL/SHM 在 POSIX 上收紧到 0600。
+- **批 7 门禁**：发布审批从提示改成 blocker；需求准出的可执行用例覆盖率低于 60% 也改成 blocker。`releaseGate` / `releaseNotes` 抬到 `release-model.js`，项目页抬到 `pages/projects.js`。CI 先装 puppeteer-core，ubuntu runner 自带 Chrome，浏览器用例从 skip 变成真跑（`# tests 370 / # skipped 0`）。
+- **批 8 拆分**：`users.js` / `audit.js` / `requirement-gate.js` 三个新模块；`domain.js` 1999→1948，`executor.js` 1999→1742。
+- **批 9 补完**：接口 / shell / 数据库 / 浏览器四种用例定义都能改（lastRun 不丢）；`studio_task_add_cases` 支持 db；需求列表直接显示「可执行 1/4」；用例库分页与排序；`override` 只赋值一次并给出看板强推入口；`/requirement/split`、`/requirement/pool` 真正走白名单；派单提示词去掉重复的评审段；灰度批次有回滚按钮；README / manual / AGENTS 的计数与排障补齐。
+
+验证：`npm test` 375/375（本地 + UTC），TDZ 38 文件，`release:check` 7 项，panel-probe 29/29、pages-probe 25/25，真库 `smoke:store` 通过。
+
+教训更新：行数闸门不是「下一批再说」——`domain.js` 与 `executor.js` 贴到 1999 时，批 9 的字段改动只能先拆再改；现在四个大文件（index 2551、client.src 2460、domain 1948、executor 1742）都有余量。

@@ -224,6 +224,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   }
   if (method === 'POST' && route === '/requirement/split') {
     const body = await host.readJsonBody(req)
+    rejectUnknownFields('/requirement/split', body)
     // 逻辑与 studio_requirement_split 共用（src/host/split.js），免得工具与路由行为漂移
     const { created, warnings } = await splitRequirement(store, body, host.createTask)
     host.sendJson(res, 200, { ok: true, created, warnings, state: host.publicState(store) })
@@ -231,6 +232,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
   }
   if (method === 'POST' && route === '/requirement/pool') {
     const body = await host.readJsonBody(req)
+    rejectUnknownFields('/requirement/pool', body)
     const id = cleanId(body.id, 'req')
     const pool = sanitizeRequirementPool(body.pool ?? body)
     let next = null

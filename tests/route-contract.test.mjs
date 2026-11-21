@@ -24,6 +24,9 @@ test('白名单：面板实际发的 payload 必须原样通过（不能误伤�
     ['/requirement/signoff', { id: 'req-1', action: 'sign', note: 'ok', by: '张三' }],
     ['/task/merge-gate', { id: 't-1', by: '人' }],
     ['/task/merge', { id: 't-1', by: '人' }],
+    ['/requirement/split', { id: 'req-1' }],
+    ['/requirement/pool', { id: 'req-1', pool: { reach: 1, impact: 1, confidence: 1, effort: 1 } }],
+    ['/requirement/pool', { id: 'req-1', reach: 1, impact: 1, confidence: 1, effort: 1 }],
   ]
   for (const [route, body] of panelPayloads) {
     assert.doesNotThrow(() => rejectUnknownFields(route, body), `${route} 的面板 payload 被误伤了：${JSON.stringify(body)}`)

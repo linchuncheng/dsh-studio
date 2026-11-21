@@ -23,7 +23,7 @@ import { RUN_LOG, parseMentions } from './dispatcher.js'
 import { appendTeamMemory } from './team-memory.js'
 import { pickRunner, registerRunner } from './runners.js'
 import { syncArtifact as syncArtifactImpl } from './doc-sync.js'
-import { runDbCase } from './db-runner.js'
+import { runDbCase, sanitizeDbCase } from './db-runner.js'
 import { emitEvent } from './events.js'
 import { runShellCase } from './shell-runner.js'
 import { runQualityCommand } from './quality-runner.js'
@@ -1624,6 +1624,15 @@ export async function addAssertedCases(store, taskId, rawCases, options = {}) {
       prepared.push({ title, expected, pointId: String(item.pointId ?? '').slice(0, 24), acceptanceId: String(item.acceptanceId ?? '').slice(0, 24), browser: browserSpec })
       continue
     }
+    const dbSpec = sanitizeDbCase(item.db)
+    if (dbSpec !== null) {
+      if (testing.allowDb !== true) {
+        rejected.push(`「${title}」是数据库用例，但设置里没开 allowDb（设置 → 测试执行）`)
+        continue
+      }
+      prepared.push({ title, expected, pointId: String(item.pointId ?? '').slice(0, 24), acceptanceId: String(item.acceptanceId ?? '').slice(0, 24), db: dbSpec })
+      continue
+    }
     const command = String(item.command ?? '').trim()
     if (command !== '') {
       if (!allowShell) {
@@ -1648,7 +1657,7 @@ export async function addAssertedCases(store, taskId, rawCases, options = {}) {
       })
       continue
     }
-    rejected.push(`「${title}」既没有 path（接口）也没有 command（shell）：这条跑不了，等于又一条草稿`)
+    rejected.push(`「${title}」既没有 path（接口）、command（shell）、db（数据库）也没有 browser（浏览器）：这条跑不了，等于又一条草稿`)
   }
   if (rejected.length > 0) {
     const shown = rejected.slice(0, 5).join('；')
@@ -1686,6 +1695,7 @@ export async function addAssertedCases(store, taskId, rawCases, options = {}) {
         at: Date.now(),
         http: item.http ?? null,
         shell: item.shell ?? null,
+        db: item.db ?? null,
         browser: item.browser ?? null,
       }, index)
       entry.cases.push(saved)

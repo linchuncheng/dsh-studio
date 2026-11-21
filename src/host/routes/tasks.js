@@ -6,6 +6,9 @@ import { resolveRequirement, requirementRefHint, saveTaskDesign } from '../revie
 import { emitEvent } from '../events.js'
 import { collectCases, groupCaseKeys, loadSuites, resolveSuiteKeys, sanitizeSuite, saveSuites, summarizeRun } from '../cases.js'
 import { clearTeamMemory, loadTeamMemory } from '../team-memory.js'
+import { sanitizeCaseShell } from '../shell-case.js'
+import { sanitizeDbCase } from '../db-runner.js'
+import { sanitizeCaseBrowser } from '../browser-runner.js'
 import {
   CASE_HTTP_METHODS,
   CASE_PRIORITIES,
@@ -579,6 +582,23 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
           if (body.expected !== undefined) merged.expected = String(body.expected).trim().slice(0, 300)
           if (body.note !== undefined) merged.note = String(body.note).trim().slice(0, 400)
           if (body.http !== undefined) merged.http = sanitizeCaseHttp(body.http)
+          /* 另外三种执行方式也要能改：以前只认 http，写错命令/SQL/地址只能删了重建，
+             历史与 lastRun 一起丢。开关没开时不许改定义，避免「跑不了还改得挺欢」。 */
+          if (body.shell !== undefined) {
+            if (body.shell !== null && store.snapshot().config?.testing?.allowShell !== true) throw new Error('shell 用例开关没开（testing.allowShell）：先在 设置 → 测试执行 打开「允许 shell 用例」')
+            if (body.shell !== null && sanitizeCaseShell(body.shell) === null) throw new Error('shell 用例至少要有 command')
+            merged.shell = sanitizeCaseShell(body.shell)
+          }
+          if (body.db !== undefined) {
+            if (body.db !== null && store.snapshot().config?.testing?.allowDb !== true) throw new Error('数据库用例开关没开（testing.allowDb）：先在 设置 → 测试执行 打开「允许数据库用例」')
+            if (body.db !== null && sanitizeDbCase(body.db) === null) throw new Error('数据库用例至少要有 file 与 sql')
+            merged.db = sanitizeDbCase(body.db)
+          }
+          if (body.browser !== undefined) {
+            if (body.browser !== null && store.snapshot().config?.testing?.allowBrowser !== true) throw new Error('浏览器用例开关没开（testing.allowBrowser）：先在 设置 → 测试执行 打开「允许浏览器用例」')
+            if (body.browser !== null && sanitizeCaseBrowser(body.browser) === null) throw new Error('浏览器用例至少要有 url')
+            merged.browser = sanitizeCaseBrowser(body.browser)
+          }
           if (body.pointId !== undefined) merged.pointId = String(body.pointId).trim().slice(0, 24)
           if (body.flaky !== undefined) merged.flaky = body.flaky === true
           if (body.type !== undefined && CASE_TYPES.includes(String(body.type))) merged.type = String(body.type)

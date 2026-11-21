@@ -256,6 +256,8 @@ export function requirementProgress(state, requirement) {
     : (tasks.length > 0 && done === tasks.length && gate.ready ? 'delivered' : (tasks.length > 0 ? 'active' : 'draft'))
   return {
     gate,
+    /* 可执行覆盖率：给列表/详情直接显示「可执行 1/4」，不用点开准出才知道为什么被拦。 */
+    coverage: coverageStrength(tasks.flatMap(task => task.cases ?? [])),
     cards: { total: tasks.length, done, open: tasks.length - done, blocked },
     progress,
     derived,

@@ -2219,6 +2219,26 @@ function installKeyboardActivation() {
       }
       const openTask = openId === null ? null : state.tasks.find(t => t.id === openId) ?? null
       const counts = state.tasks.reduce((acc, task) => { acc[task.status] = (acc[task.status] ?? 0) + 1; return acc }, {})
+      /* 推卡被门禁拦住时，人可以直接写理由强推（override 有入口了；以前只能走 API/工具）。
+         原因会记进 task.override 与效能页的「强制放行」统计。 */
+      const moveTask = async (id, status) => {
+        try {
+          await api('/task/update', { id, status })
+          await reload()
+        } catch (cause) {
+          const message = cause instanceof Error ? cause.message : String(cause)
+          if (!/准出没过|进开发被拦|进测试被拦/.test(message)) { toast(message, 'error'); return }
+          const reason = await promptDialog(`${message}\n\n确实要强推就写原因（会计入 override 统计）：`, { title: '绕过门禁', okText: '强推' })
+          if (reason === null || String(reason).trim() === '') return
+          try {
+            await api('/task/update', { id, status, override: String(reason).trim() })
+            await reload()
+            toast('已强推，原因已记录', 'warn')
+          } catch (again) {
+            toast(again instanceof Error ? again.message : String(again), 'error')
+          }
+        }
+      }
 
       return h('div', { 'data-dsh-studio': '', 'data-theme': resolvedTheme },
         h('style', null, CSS),
@@ -2373,7 +2393,7 @@ function installKeyboardActivation() {
           ? h('div', { className: 'ds-err', style: { padding: '6px 18px' } }, error)
           : null,
         tab === 'board'
-          ? h(Board, { state, onWip: async (status, current) => { const raw = await promptDialog(`这一列的 WIP 上限（0 = 不限，最多 50）`, { title: 'WIP 上限', defaultValue: String(current) }); if (raw === null) return; const value = Math.min(50, Math.max(0, Math.trunc(Number(String(raw).trim()) || 0))); try { await api('/columns/wip', { status, wip: value }); toast(value === 0 ? '已取消 WIP 上限' : `WIP 上限设为 ${value}`); await reload() } catch (cause) { toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onCreate: () => setCreating(true), onMove: async (id, status) => { try { await api('/task/update', { id, status }); await reload() } catch (cause) { /* 准出/设计闸门会在这里抛错。以前是 void 吞掉，界面只表现为「卡弹回去」，用户以为看板坏了 */ toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onOpen: setOpenId })
+          ? h(Board, { state, onWip: async (status, current) => { const raw = await promptDialog(`这一列的 WIP 上限（0 = 不限，最多 50）`, { title: 'WIP 上限', defaultValue: String(current) }); if (raw === null) return; const value = Math.min(50, Math.max(0, Math.trunc(Number(String(raw).trim()) || 0))); try { await api('/columns/wip', { status, wip: value }); toast(value === 0 ? '已取消 WIP 上限' : `WIP 上限设为 ${value}`); await reload() } catch (cause) { toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onCreate: () => setCreating(true), onMove: moveTask, onOpen: setOpenId })
           : tab === 'dashboard'
             ? h(DashboardPage, { state, onOpenTask: setOpenId, onOpenBoard: () => setTab('board'), onOpenCases: () => setTab('cases') })
           : tab === 'requirements'

@@ -1267,6 +1267,10 @@ return h('div', { className: 'ds-body' },
                       h('span', { className: 'ds-hint' }, `${reqDone}/${tasks.length} 卡`),
                       gate === null ? null : h('span', { className: 'ds-hint', style: { color: gate.ready ? 'var(--color-notification-success-foreground)' : 'var(--color-chart-8-active)' } },
                         gate.ready ? '准出通过' : `还差 ${gate.blockers.length} 项`),
+                      req.progress?.coverage !== undefined && req.progress.coverage.total > 0
+                        ? h('span', { className: 'ds-hint', 'data-coverage': `${req.progress.coverage.executable}/${req.progress.coverage.total}`, title: '可执行用例数 / 总用例数；低于 60% 会拦住签字' },
+                          `可执行 ${req.progress.coverage.executable}/${req.progress.coverage.total}`)
+                        : null,
                     ),
                     h('div', { className: 'ds-check-bar', 'data-full': pct === 100 ? '1' : '0', style: { marginTop: 2 } },
                       h('span', { style: { width: `${pct}%` } })),

@@ -412,6 +412,60 @@ function Drawer({ task, state, onClose, onChanged }) {
       await onChanged()
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
+  /* 改定义：接口 / shell / 数据库 / 浏览器四种都能改。
+     以前只有新建入口，写错地址或命令只能删了重建——lastRun 与历史一起丢。 */
+  const saveCaseDefinition = async (item, patch) => {
+    setBusy(true); setError(null)
+    try {
+      await api('/task/case', { id: task.id, action: 'update', caseId: item.id, ...patch })
+      await onChanged()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+  const editCaseDefinition = async (item) => {
+    if (item.http != null) {
+      const method = await promptDialog('HTTP 方法', { title: '改接口用例', defaultValue: item.http.method ?? 'GET' })
+      if (method === null) return
+      const path = await promptDialog('地址（相对测试环境 baseUrl，或完整 http(s) 地址）', { title: '改接口用例', defaultValue: item.http.url ?? '' })
+      if (path === null) return
+      const status = await promptDialog('期望状态码', { title: '改接口用例', defaultValue: String(item.http.expectStatus ?? 200) })
+      if (status === null) return
+      const contains = await promptDialog('响应里应包含什么（可留空）', { title: '改接口用例', defaultValue: item.http.expectContains ?? '' })
+      if (contains === null) return
+      await saveCaseDefinition(item, { http: { ...item.http, method: String(method).trim().toUpperCase(), url: String(path).trim(), expectStatus: Number(status), expectContains: String(contains).trim() } })
+      return
+    }
+    if (item.shell != null) {
+      const command = await promptDialog('shell 命令', { title: '改 shell 用例', defaultValue: item.shell.command ?? '' })
+      if (command === null) return
+      const contains = await promptDialog('期望输出里包含什么（可留空）', { title: '改 shell 用例', defaultValue: item.shell.expectContains ?? '' })
+      if (contains === null) return
+      await saveCaseDefinition(item, { shell: { ...item.shell, command: String(command).trim(), expectContains: String(contains).trim() } })
+      return
+    }
+    if (item.db != null) {
+      const file = await promptDialog('SQLite 库文件路径', { title: '改数据库用例', defaultValue: item.db.file ?? '' })
+      if (file === null) return
+      const sql = await promptDialog('SQL 语句', { title: '改数据库用例', defaultValue: item.db.sql ?? '' })
+      if (sql === null) return
+      const column = await promptDialog('断言首行的哪一列（留空就只看能不能执行）', { title: '改数据库用例', defaultValue: item.db.expectColumn ?? '' })
+      if (column === null) return
+      const expect = await promptDialog('这一列的期望值（可留空）', { title: '改数据库用例', defaultValue: item.db.expectValue ?? '' })
+      if (expect === null) return
+      await saveCaseDefinition(item, { db: { ...item.db, file: String(file).trim(), sql: String(sql).trim(), expectColumn: String(column).trim(), expectValue: String(expect).trim() === '' ? null : String(expect).trim() } })
+      return
+    }
+    if (item.browser != null) {
+      const url = await promptDialog('页面地址（相对 baseUrl 或完整 http(s)）', { title: '改浏览器用例', defaultValue: item.browser.url ?? '/' })
+      if (url === null) return
+      const text = await promptDialog('页面上应该出现的文字（可留空）', { title: '改浏览器用例', defaultValue: item.browser.expectText ?? '' })
+      if (text === null) return
+      const selector = await promptDialog('页面上应该存在的元素选择器（可留空）', { title: '改浏览器用例', defaultValue: item.browser.expectSelector ?? '' })
+      if (selector === null) return
+      const expectText = String(text).trim()
+      const expectSelector = String(selector).trim()
+      await saveCaseDefinition(item, { browser: { ...item.browser, url: String(url).trim(), expectText: expectText === '' ? undefined : expectText, expectSelector: expectSelector === '' ? undefined : expectSelector } })
+    }
+  }
   const addCase = async () => {
     const title = newCase.title.trim()
     if (title === '') return
@@ -1593,6 +1647,9 @@ function Drawer({ task, state, onClose, onChanged }) {
                     ),
                 item.note === '' ? null : h('div', { className: 'ds-art-ref' }, `记录：${item.note}${item.by ? ` — ${item.by}` : ''}`),
               ),
+              (item.http == null && item.shell == null && item.db == null && item.browser == null)
+                ? null
+                : h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, title: '改这条用例的定义（地址 / 命令 / SQL / 断言）；lastRun 与历史保留', onClick: () => void editCaseDefinition(item) }, '改定义'),
               (item.http == null && item.shell == null && item.db == null && item.browser == null)
                 ? null
                 : h('button', { className: 'ds-btn ds-btn-ghost', disabled: caseRun.busy, onClick: () => void runCases(item.id) }, '▶'),

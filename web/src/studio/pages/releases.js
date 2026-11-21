@@ -320,6 +320,16 @@ export function ReleasesPage({ state, onOpenTask }) {
                 h('div', { className: 'ds-listrow-actions' },
                   item.status === 'pending' ? h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, onClick: () => void act('/release/gray', { id: form.id, action: 'start', batchId: item.id, by: '人' }, '已开始灰度') }, '开始') : null,
                   item.status === 'running' ? h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, onClick: () => void act('/release/gray', { id: form.id, action: 'advance', batchId: item.id, by: '人' }, '这一批已通过') }, '通过') : null,
+                  item.status === 'running' || item.status === 'passed'
+                    ? h('button', {
+                      className: 'ds-btn ds-btn-ghost', 'data-danger': '1', disabled: busy,
+                      onClick: async () => {
+                        const ok = await confirmDialog(`回滚灰度「${item.name}」？会把这个版本整体回滚，之后要重新发布。`, { title: '回滚灰度', danger: true, okText: '回滚' })
+                        if (!ok) return
+                        void act('/release/gray', { id: form.id, action: 'rollback', batchId: item.id, by: '人', note: '人工回滚' }, '已回滚')
+                      },
+                    }, '回滚')
+                    : null,
                   item.status === 'passed' ? h(ChipField, { className: 'ds-chip', 'data-on': '1' }, '已通过') : null,
                   item.status === 'rolled_back' ? h(ChipField, { className: 'ds-chip', 'data-sla': 'overdue' }, '已回滚') : null,
                 ),
