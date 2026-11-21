@@ -92,6 +92,14 @@ test('合并门禁：项目检查没跑/没通过、执行记录对不上、流�
   assert.match(mergeGateFor(stateFor(pipeline), pipeline).blockers.join(), /流水线没通过/)
 })
 
+test('合并门禁：有 MR 但没有执行记录必须拦（不能拿空证据过门禁）', () => {
+  const task = baseTask({ coding: null })
+  const gate = mergeGateFor(stateFor(task), task)
+  assert.equal(gate.applicable, true, '有 MR 就适用')
+  assert.equal(gate.ready, false)
+  assert.match(gate.blockers.join(), /执行记录/)
+})
+
 test('合并门禁：和准出不是一回事——没签字也能合（合并看证据）', () => {
   const task = baseTask({ signoff: null, checklist: [] })
   assert.equal(mergeGateFor(stateFor(task), task).ready, true, '验收签字不该挡合并')
