@@ -188,16 +188,16 @@
   --text-headline-bold--font-weight: 700;
 
   /* ===== Body — 14 / 20 ==================================================== */
-  --text-body-regular: 0.875rem;
-  --text-body-regular--line-height: 1.25rem;
+  --text-body-regular: 0.8125rem;
+  --text-body-regular--line-height: 1.125rem;
   --text-body-regular--letter-spacing: 0;
   --text-body-regular--font-weight: 400;
-  --text-body-medium: 0.875rem;
-  --text-body-medium--line-height: 1.25rem;
+  --text-body-medium: 0.8125rem;
+  --text-body-medium--line-height: 1.125rem;
   --text-body-medium--letter-spacing: 0;
   --text-body-medium--font-weight: 500;
-  --text-body-semibold: 0.875rem;
-  --text-body-semibold--line-height: 1.25rem;
+  --text-body-semibold: 0.8125rem;
+  --text-body-semibold--line-height: 1.125rem;
   --text-body-semibold--letter-spacing: 0;
   --text-body-semibold--font-weight: 600;
   --text-body-bold: 0.875rem;

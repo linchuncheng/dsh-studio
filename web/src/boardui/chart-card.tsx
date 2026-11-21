@@ -74,14 +74,14 @@ export function ChartCard({ title, aside, hint, footer, className, children }: C
           <span className="ms-auto text-caption-1-medium text-text-tertiary">{aside}</span>
         )}
       </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-2.5 px-4 py-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-2 px-4 py-3">
         {hint === undefined || hint === null || hint === "" ? null : (
           <div className="text-caption-1-regular text-text-tertiary">{hint}</div>
         )}
         {children}
       </div>
       {footer === undefined || footer === null || footer === "" ? null : (
-        <div className="border-t border-separator-border px-4 py-2.5 text-caption-1-regular text-text-tertiary">
+        <div className="border-t border-separator-border px-4 py-2 text-caption-1-regular text-text-tertiary">
           {footer}
         </div>
       )}

@@ -144,7 +144,7 @@ export function ReleasesPage({ state, onOpenTask }) {
     ? h('div', { className: 'ds-hint' }, '左边选一个版本，或者新建一个。')
     : h('div', { className: 'ds-req-detail' },
       // 版本 ↔ 需求：卡上挂着哪条需求，这里就列哪条，不用人再维护一遍。
-      (release?.requirements ?? []).length === 0 ? null : h('div', { className: 'ds-row', style: { flexWrap: 'wrap', gap: 6, marginBottom: 8 } },
+      (release?.requirements ?? []).length === 0 ? null : h('div', { className: 'ds-row', style: { flexWrap: 'wrap', gap: 8, marginBottom: 8 } },
         h('span', { className: 'ds-hint' }, `这个版本涉及 ${release.requirements.length} 条需求：`),
         release.requirements.map(req => h('span', {
           key: req.id, className: 'ds-chip', title: req.title,
@@ -356,7 +356,7 @@ export function ReleasesPage({ state, onOpenTask }) {
             h('div', { style: { borderTop: '1px solid var(--ds-line)', margin: '10px 0' } }),
             // 部署环境：这里只留痕，平台不接 CD，也不会去调任何部署脚本。
             h('div', { className: 'ds-hint' }, '上过哪些环境（只登记，不触发部署）'),
-            (release.deploys ?? []).length === 0 ? null : h('div', { className: 'ds-row', style: { flexWrap: 'wrap', gap: 6, marginTop: 6 } },
+            (release.deploys ?? []).length === 0 ? null : h('div', { className: 'ds-row', style: { flexWrap: 'wrap', gap: 8, marginTop: 6 } },
               release.deploys.map(item => h('span', {
                 key: item.id,
                 className: 'ds-chip',

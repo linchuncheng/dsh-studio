@@ -397,7 +397,7 @@ export function SkillsPanel({ config, onChanged }) {
         style: { position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' },
         onChange: event => { const file = event.target.files === null ? undefined : event.target.files[0]; event.target.value = ''; void upload(file) },
       }),
-      h('label', { className: 'ds-hint', style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' } },
+      h('label', { className: 'ds-hint', style: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' } },
         h(CheckField, { checked: overwrite, onChange: event => setOverwrite(event.target.checked) }),
         '覆盖同名技能',
       ),

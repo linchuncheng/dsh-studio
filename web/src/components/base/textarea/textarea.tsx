@@ -84,7 +84,7 @@ const textareaStyles = sortCx({
   // 8px shell + 4px on the control = 12px to the text (10px at `small`).
   fieldSize: {
     medium: "p-2",
-    small: "px-1.5 py-2",
+    small: "px-1 py-2",
   },
 
   textarea: [

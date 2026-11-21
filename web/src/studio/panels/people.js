@@ -212,7 +212,7 @@ export function ExpertsPanel({ config, onChanged }) {
             h('button', { className: 'ds-btn', onClick: () => addSkillName() }, '加上'),
           ),
           (draft.skills ?? []).filter(name => !library.some(skill => skill.name === name)).length > 0
-            ? h('div', { className: 'ds-row', style: { flexWrap: 'wrap', gap: 6, marginTop: 6, alignItems: 'center' } },
+            ? h('div', { className: 'ds-row', style: { flexWrap: 'wrap', gap: 8, marginTop: 6, alignItems: 'center' } },
               h('span', { className: 'ds-hint' }, '不在技能库（仍会写进提示词）：'),
               (draft.skills ?? []).filter(name => !library.some(skill => skill.name === name)).map(name => h(ChipField, { key: name, className: 'ds-chip', 'data-missing': '1' },
                 name,
@@ -348,7 +348,7 @@ export function TeamsPanel({ config, onChanged }) {
         h('div', { className: 'ds-field' },
           h('div', { className: 'ds-label' }, '成员'),
           experts.length === 0 ? h('div', { className: 'ds-hint' }, '先去上面建几个专家。') : h('div', { className: 'ds-row', style: { flexWrap: 'wrap', gap: 12 } },
-            experts.map(expert => h('label', { className: 'ds-row', key: expert.id, style: { alignItems: 'center', gap: 6, cursor: 'pointer' } },
+            experts.map(expert => h('label', { className: 'ds-row', key: expert.id, style: { alignItems: 'center', gap: 8, cursor: 'pointer' } },
               h(CheckField, { checked: (draft.members ?? []).includes(expert.id),
                 onChange: e => set('members', e.target.checked
                   ? [...(draft.members ?? []), expert.id]
@@ -537,12 +537,12 @@ export function TestingPanel({ config, onChanged }) {
         hooks.length === 0
           ? h('div', { className: 'ds-empty' }, '还没有 webhook。配一个就能把卡片流转、用例失败、门禁拦截推给 CI / IM / 工单系统。')
           : hooks.map((hook, index) => h('div', { key: index, style: { marginBottom: 8 } },
-            h('div', { className: 'ds-row', style: { gap: 6, alignItems: 'center' } },
+            h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center' } },
             h(TextField, { className: 'ds-input', style: { flex: 1 }, placeholder: 'https://ci.example/hook', value: hook.url ?? '', onChange: e => setHooks(list => list.map((item, i) => (i === index ? { ...item, url: e.target.value } : item))) }),
             h(SwitchToggle, { checked: hook.enabled !== false, onChange: e => setHooks(list => list.map((item, i) => (i === index ? { ...item, enabled: e.target.checked } : item))) }),
               h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, onClick: () => setHooks(list => list.filter((_, i) => i !== index)) }, '×'),
             ),
-            h('div', { className: 'ds-row', style: { gap: 10, flexWrap: 'wrap', marginTop: 2 } },
+            h('div', { className: 'ds-row', style: { gap: 12, flexWrap: 'wrap', marginTop: 2 } },
               ['task/moved', 'case/failed', 'gate/blocked', 'agent/failed', 'regression/finished'].map(name => h('label', { className: 'ds-check', key: name },
                 h(CheckField, {
                   checked: (hook.events ?? []).includes(name),

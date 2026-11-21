@@ -137,7 +137,7 @@ const inputStyles = sortCx({
 
   fieldSize: {
     medium: "p-2",                // 8px all sides → h auto = 36
-    small:  "h-8 px-1.5 py-2",    // 32 / 6 / 8
+    small:  "h-8 px-1 py-2",    // 32 / 6 / 8
   },
 
   // When a leadingAddon is present (Phone basic): tighten left padding.

@@ -138,7 +138,7 @@ export function Tab({ className, children, icon: Icon, count, ref, ...props }: T
       {...props}
       className={(state) =>
         cx(
-          "relative inline-flex cursor-pointer items-center gap-2.5 px-2.5 py-2 whitespace-nowrap",
+          "relative inline-flex cursor-pointer items-center gap-2 px-2 py-2 whitespace-nowrap",
           "outline-none transition-colors duration-150 ease",
           "focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-border-focus-ring",
           state.isDisabled && "cursor-not-allowed opacity-50",
@@ -150,7 +150,7 @@ export function Tab({ className, children, icon: Icon, count, ref, ...props }: T
         <>
           <span
             className={cx(
-              "inline-flex items-center gap-1.5",
+              "inline-flex items-center gap-2",
               isSelected
                 ? "text-body-medium text-accent-600"
                 : "text-body-regular text-text-primary",

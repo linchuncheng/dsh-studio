@@ -40,7 +40,7 @@ import { useDirection } from "@/components/foundations/direction/direction";
 export type TooltipSize = "sm" | "md";
 
 const sizes = sortCx({
-  sm: "px-2.5 py-1.5 text-caption-1-medium",
+  sm: "px-2 py-1 text-caption-1-medium",
   md: "px-3 py-2 text-body-medium rounded-2lg",
 });
 
