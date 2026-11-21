@@ -176,6 +176,16 @@ try {
     const axTree = await axSession.send('Accessibility.getFullAXTree')
     const unnamed = axTree.nodes.filter(node => !node.ignored && AX_ROLES.has(node.role?.value) && String(node.name?.value ?? '').trim() === '').map(node => node.role.value)
     check(`「${label}」交互节点都有可访问名称`, unnamed.length === 0, unnamed.slice(0, 6).join(','))
+    const trapped = await page.evaluate(() => {
+      const nodes = [...document.querySelectorAll('[data-dsh-studio] a[href],[data-dsh-studio] button,[data-dsh-studio] input,[data-dsh-studio] select,[data-dsh-studio] textarea,[data-dsh-studio] [tabindex]')]
+      return nodes.filter(el => {
+        if (el.disabled === true || el.tabIndex < 0) return false
+        const box = el.getBoundingClientRect()
+        if (box.width === 0 || box.height === 0) return false
+        return el.closest('[aria-hidden="true"]') !== null
+      }).length
+    })
+    check(`「${label}」没有可聚焦却被 aria-hidden 的节点`, trapped === 0, String(trapped))
     await page.screenshot({ path: join(outDir, `${label}.png`) })
   }
 

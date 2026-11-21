@@ -239,7 +239,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 
 | 命令 | 覆盖 |
 | --- | --- |
-| `npm run verify:pages` | 8 个页面能进、能渲染、页签高亮、无 pageerror、每页与卡片抽屉的交互节点都有可访问名称（37 项；CI 也跑） |
+| `npm run verify:pages` | 8 个页面能进、能渲染、页签高亮、无 pageerror、每页与卡片抽屉的交互节点都有可访问名称（45 项；CI 也跑） |
 | `npm run verify:audit` | **29 个模块**（8 页签 + 18 设置面板 + 3 抽屉）里还有没有原生下拉/原生输入/老按钮（违规必须为 0） |
 | `npm run verify:selects` | 下拉是否都是官方组件、尺寸是否合规范、弹层是否真的在最上层 |
 | `npm run verify:drawer` | 抽屉打开/聚焦/Esc/取消（15 项） |
