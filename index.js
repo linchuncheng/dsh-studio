@@ -2068,8 +2068,8 @@ function toolOperator(store, exec) {
  * 工具层的权限判定：和 HTTP 面板用同一张成员名单、同一套档位。
  * `access.agents === 'bypass'` 时只记审计不拦（给「全交给 AI」的团队留一个开关）。
  */
-function checkToolAccess(config, operator, toolName) {
-  const level = toolLevel(toolName)
+function checkToolAccess(config, operator, toolName, args = null) {
+  const level = toolLevel(toolName, args)
   // operator 既可能是名字字符串，也可能是 {id,name}；统一取名字再判。
   const name = typeof operator === 'string' ? operator : String(operator?.name ?? operator?.id ?? '')
   if (config?.access?.enabled !== true) return { level, denial: null }

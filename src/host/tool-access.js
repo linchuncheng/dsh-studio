@@ -55,7 +55,10 @@ export const TOOL_ACCESS = {
   studio_skill_delete: 'admin',
 }
 
-export function toolLevel(name) {
+export function toolLevel(name, args = null) {
+  /* 同一个工具里动作风险不同：merge 会把分支真的合进远端（admin+confirm 的路由同款），
+     publish 只发一个提交状态，保持 write。 */
+  if (name === 'studio_merge_gate' && String(args?.action ?? '') === 'merge') return 'admin'
   return TOOL_ACCESS[name] ?? 'write'
 }
 

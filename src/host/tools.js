@@ -96,8 +96,8 @@ export function registerTools(ctx, store) {
         const config = store.snapshot().config
         const operator = host.toolOperator(store, exec)
         const { level, denial } = operator === null
-          ? { level: host.toolLevel(tool.name), denial: null }
-          : host.checkToolAccess(config, operator.name, tool.name)
+          ? { level: host.toolLevel(tool.name, args), denial: null }
+          : host.checkToolAccess(config, operator.name, tool.name, args)
         if (denial !== null) {
           await host.recordAudit(store, {
             by: `${operator.name}(AI)`, route: `tool:${tool.name}`, level,

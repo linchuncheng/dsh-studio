@@ -50,10 +50,11 @@ export class SecretStore {
         feishu: typeof parsed.feishu === 'object' && parsed.feishu !== null ? parsed.feishu : {},
         ldap: typeof parsed.ldap === 'object' && parsed.ldap !== null ? parsed.ldap : {},
         legacy: typeof parsed.legacy === 'object' && parsed.legacy !== null ? parsed.legacy : {},
+        localAuth: typeof parsed.localAuth === 'object' && parsed.localAuth !== null ? parsed.localAuth : null,
       }
     } catch (error) {
       if (error?.code !== 'ENOENT') console.warn('[dsh-studio] could not read secrets file:', error?.message ?? error)
-      this.cache = { gitlab: {}, feishu: {}, ldap: {}, legacy: {} }
+      this.cache = { gitlab: {}, feishu: {}, ldap: {}, legacy: {}, localAuth: null }
     }
     return this.cache
   }
@@ -64,6 +65,7 @@ export class SecretStore {
       feishu: next?.feishu ?? {},
       ldap: next?.ldap ?? {},
       legacy: next?.legacy ?? {},
+      localAuth: next?.localAuth ?? null,
     }
     const run = this.chain.then(async () => {
       await mkdir(dirname(this.file), { recursive: true })
@@ -89,6 +91,8 @@ export class StudioStore {
     this.chain = Promise.resolve()
     /** 本进程这一轮写所基于的 revision（单写者校验用）：落盘前比对磁盘上的是不是它。 */
     this.baseRevision = 0
+    /** 口令哈希是否已经安全落在密钥文件里：是才允许从 state/快照里摘掉。 */
+    this.secretsHaveLocalAuth = false
     this.ready = this.#boot()
   }
 
@@ -394,7 +398,7 @@ export class StudioStore {
   }
 
   /** 落盘前把密钥摘掉：库里只留「有没有配」，密钥在 600 权限的单独文件里。 */
-  #serialize() {
+  #serialize(dropPassword = false) {
     const plain = {
       ...this.state,
       config: structuredClone(this.state.config ?? {}),
@@ -411,6 +415,14 @@ export class StudioStore {
     }
     const ldap = plain.config.ldap ?? {}
     if (typeof ldap.bindPassword === 'string') ldap.bindPassword = ''
+    /* 口令哈希也不该进 state / 快照：只有确认密钥文件里已经写成功（dropPassword）
+       才摘掉。摘掉时 mustChange 写 false —— 这个 null 表示「哈希在密钥文件里」，
+       不是「还是默认口令」；加载时 #hydrateSecrets 会把哈希补回来。 */
+    const localAuth = plain.config.localAuth ?? {}
+    if (dropPassword && localAuth.password !== null && localAuth.password !== undefined) {
+      localAuth.password = null
+      localAuth.mustChange = false
+    }
     return plain
   }
 
@@ -429,6 +441,10 @@ export class StudioStore {
       const webhook = String(bot.webhook ?? '').trim()
       if (webhook !== '') feishu[bot.id] = webhook
     }
+    const password = this.state.config.localAuth?.password
+    const localAuth = password !== null && typeof password === 'object' && typeof password.hash === 'string'
+      ? { salt: String(password.salt ?? ''), hash: String(password.hash), at: Number(password.at) || 0 }
+      : null
     await this.secrets.replace({
       gitlab,
       feishu,
@@ -440,7 +456,9 @@ export class StudioStore {
         gitlabToken: String(gitlabConfig.token ?? '').trim(),
         feishuWebhook: String(feishuConfig.webhook ?? '').trim(),
       },
+      localAuth,
     })
+    this.secretsHaveLocalAuth = localAuth !== null
   }
 
   /** 从密钥文件把密钥补回内存（库里存的是空串）。 */
@@ -467,16 +485,40 @@ export class StudioStore {
     if (String(feishuConfig.webhook ?? '').trim() === '' && typeof vault.legacy?.feishuWebhook === 'string') {
       feishuConfig.webhook = vault.legacy.feishuWebhook
     }
+    /* 口令哈希：state 里被摘成 null（mustChange 也只是加载时 sanitize 的默认值），
+       真正的哈希在密钥文件里。这里补回来，并把 mustChange 还原成「已设过口令」。 */
+    const localAuth = this.state.config.localAuth ?? (this.state.config.localAuth = { enabled: true, username: 'admin', password: null, mustChange: true, updatedAt: 0 })
+    if ((localAuth.password === null || localAuth.password === undefined) && vault.localAuth !== null && typeof vault.localAuth?.hash === 'string' && vault.localAuth.hash !== '') {
+      localAuth.password = {
+        salt: String(vault.localAuth.salt ?? '').slice(0, 64),
+        hash: String(vault.localAuth.hash).slice(0, 256),
+        at: Number(vault.localAuth.at) || 0,
+      }
+      localAuth.mustChange = false
+      this.secretsHaveLocalAuth = true
+    }
   }
 
   async #persist() {
     await mkdir(dirname(this.file), { recursive: true })
-    const plain = this.#serialize()
+    /* 口令哈希必须先写进密钥文件，才允许从 state 里摘掉；密钥写失败就保留在 state 里，
+       宁可这次落盘多带一份哈希，也不能让重启后登录不进。 */
+    let dropPassword = false
+    if (this.secrets !== null) {
+      try {
+        await this.#syncSecrets()
+        dropPassword = this.secretsHaveLocalAuth
+      } catch (error) {
+        /* 密钥没写成功：这一轮绝不能把哈希从 state 里摘掉，否则重启后新口令就丢了。 */
+        this.secretsHaveLocalAuth = false
+        console.warn('[dsh-studio] secrets write failed; keeping password hash in state for this write:', error?.message ?? error)
+      }
+    }
+    const plain = this.#serialize(dropPassword)
     if (this.db === null) {
       const tmp = `${this.file}.${process.pid}.tmp`
       await writeFile(tmp, JSON.stringify(plain, null, 2), 'utf8')
       await rename(tmp, this.file)
-      await this.#syncSecrets()
       return
     }
     const text = JSON.stringify(plain)
@@ -504,7 +546,6 @@ export class StudioStore {
       try { this.db.exec('ROLLBACK') } catch { /* ignore */ }
       throw error
     }
-    await this.#syncSecrets()
   }
 
   /** 最近若干次落盘的快照（不含正文，列表用）。 */

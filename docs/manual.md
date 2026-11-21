@@ -180,7 +180,7 @@ studio_task_check          { id, itemId, note }         // 清单逐项勾，附
 | 东西 | 位置 | 说明 |
 | --- | --- | --- |
 | 台账（卡/需求/版本/配置） | `~/.dsh/dsh-studio.db`（SQLite WAL，`meta.state` 存整份状态） | 保留 10 份自动快照；改之前先「设置 → 数据与备份 → 快照」 |
-| 密钥 | `~/.dsh/dsh-studio.secrets.json`（0600） | 不进台账、不进日志 |
+| 密钥 | `~/.dsh/dsh-studio.secrets.json`（0600） | 不进台账、不进日志；GitLab / 飞书 / LDAP 的密钥与本地超管口令哈希都在这里 |
 | 技能库 | `~/.dsh/skills/<name>/SKILL.md` | 插件启动时自愈同步 |
 | 交付物文档 | 飞书云盘：`根 / 项目 / 需求 / 01 需求文档 … 07 其它` | 新增直接落子目录；同名会覆盖更新 |
 | 会话日志 | `~/.dsh/sessions/<ws>/studio-<cardId>-<expertId>` | 排障时看这里的 `turn/end` |
