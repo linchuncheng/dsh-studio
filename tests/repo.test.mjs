@@ -962,6 +962,23 @@ test('host: /state answers 304 when nothing changed (a thousand cards must not b
   assert.equal(handleStateRoute({ method: 'GET', route: '/tasks', req: { headers: {} }, res: makeRes(), store: {} }), false)
 })
 
+test('host: /state 304 时不再构建整包状态（每条需求的准出计算不该白跑）', async () => {
+  const { configureStateRoutes, handleStateRoute, stateEtag } = await import('../src/host/routes/state.js')
+  let built = 0
+  configureStateRoutes({
+    publicState: () => { built += 1; return { revision: 7 } },
+    getDispatcher: () => undefined,
+    sendJson: () => {},
+  })
+  const res = { setHeader: () => {}, end: () => {} }
+  const store = { snapshot: () => ({ revision: 7 }) }
+  assert.equal(handleStateRoute({
+    method: 'GET', route: '/state', store, res,
+    req: { studioActor: '李四', headers: { 'if-none-match': stateEtag(7, '李四') } },
+  }), true)
+  assert.equal(built, 0, '命中 ETag 就不该调 publicState')
+})
+
 test('host: feishu doc fetch output is parsed without throwing on junk', async () => {
   const { parseFeishuDocFetch } = await import('../src/host/lark-doc.js')
   const ok = parseFeishuDocFetch(JSON.stringify({ ok: true, data: { document: { content: '<title>库存预占 PRD</title>\n# 背景\n正文' } } }))

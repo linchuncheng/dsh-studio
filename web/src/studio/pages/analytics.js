@@ -21,6 +21,9 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
   const [project, setProject] = React.useState('')
   const [data, setData] = React.useState(null)
   const [error, setError] = React.useState(null)
+  /* 次数据（负载/燃尽/成本/质量）以前 catch(()=>{})，接口一挂就显示成「还没有数据」。
+     现在记下失败原因，在页面上和「真的没数据」分开说。 */
+  const [secondaryError, setSecondaryError] = React.useState(null)
   const [load, setLoad] = React.useState(null)
   const [burn, setBurn] = React.useState(null)
   const [costs, setCosts] = React.useState(null)
@@ -67,8 +70,9 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
         setBurn(burnOut.burndown ?? null)
         setCosts({ ...(costOut.costs ?? {}), budget: costOut.budget ?? null, usage: costOut.usage ?? null })
         setQuality(qualityOut.quality ?? null)
+        setSecondaryError(null)
       })
-      .catch(() => {})
+      .catch(cause => { if (alive) setSecondaryError(cause instanceof Error ? cause.message : String(cause)) })
     return () => { alive = false }
   }, [days, project, state.revision])
 
@@ -192,6 +196,7 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
   }
 
   return h('div', { className: 'ds-body' },
+    secondaryError === null ? null : h('div', { className: 'ds-err', style: { marginBottom: 8 } }, `部分数据没加载出来：${secondaryError}（负载 / 燃尽 / 成本 / 质量可能是空的或旧的）`),
     h('div', { className: 'ds-board-bar' },
       h('span', { className: 'ds-hint' }, `统计口径：最近 ${data.days} 天 · ${data.scope.tasks} 张卡（${data.scope.done} 张已完成）`),
       h(SelectField, {

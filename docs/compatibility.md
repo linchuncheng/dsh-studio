@@ -25,8 +25,8 @@
 | --- | --- | --- |
 | `export const inject = ['tools','systemPrompt']` | 插件声明必须的服务 | 插件不加载；面板消失 |
 | `ctx.systemPrompt.section({ name, order, text })` | 注入 `studio-protocol`（order 70），告诉 agent 如何用 `studio_*` 工具 | agent 不写讨论、不推进卡片 |
-| `ctx.tools.register(tool)` ×40 | 全部 `studio_*` 工具（建卡、派单、门禁、发布…） | 工具消失；LLM 报 unknown tool |
-| `ctx.inject(['webServer'], ctx => ctx.webServer.register({ kind:'prefix', path:'/studio-api', handler }))` | 所有 HTTP 路由（125 条，含 `/suite/*`、`/coding/gitlab`、`/requirement/impact`、`/task/design`） | 前端全 404，面板空壳 |
+| `ctx.tools.register(tool)` ×46 | 全部 `studio_*` 工具（建卡、派单、门禁、发布…） | 工具消失；LLM 报 unknown tool |
+| `ctx.inject(['webServer'], ctx => ctx.webServer.register({ kind:'prefix', path:'/studio-api', handler }))` | 所有 HTTP 路由（135 条，含 `/suite/*`、`/coding/gitlab`、`/requirement/impact`、`/task/design`） | 前端全 404，面板空壳 |
 | `ctx.inject(['agents','sessionController','workspaceRegistry','permissionPresets','agentDefaultModel'], …)` | 派单引擎 `Dispatcher`：起会话、发指令、收 `agent/status` 事件 | 派单报「这一列还没人负责」或会话永远 idle |
 | `ctx.agents.create / resume / get / list / abort` | 一卡一会话（`studio-<taskId>-<expertId>`） | 会话起不来；`has no provider/model`；槽位泄漏 |
 | `ctx.agents.create({ agentOptions:{ provider, model }, setup })` + `agentPresets.resolve(id)` + `presets.mount(scope, id)` | 三件缺一不可，否则没有 shell/文件工具 | agent 只会说话、改不了代码 |
@@ -34,7 +34,6 @@
 | `ctx.effect(fn, label)` | 所有长生命周期资源（定时器、工具、section） | 热重载后重复注册 / 内存泄漏 |
 | `ctx.on('agent/status', …)` | `idle` 时结算槽位 | 并发闸门卡死 |
 | `node:sqlite`（`DatabaseSync`） | 状态库 `~/.dsh/dsh-studio.db`（WAL、`meta.state`、10 份快照） | 启动即崩；数据不落盘 |
-| `llm.listModels(provider.id)`（模型下拉） | `/models` 端点 | 模型列表为空 |
 | `llm.listModels(provider.id)`（模型下拉） | `/models` 端点 | 模型列表为空 |
 | `ctx.inject(['sessionProjections'])` → `stateOf(session, 'tokenMeasurement')` | 派单收尾（`dispatcher.settle`）趁会话还活着取引擎自己的 token 计量，落到卡的 `insight` | 取不到就只是少一行「引擎计量」，不影响派单；宿主改名/改签名时报 `session.snapshotEvents is not a function` |
 

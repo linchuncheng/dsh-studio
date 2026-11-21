@@ -37,6 +37,8 @@ let host = {
 /** 需求（含交付物、文档、飞书同步）相关路由。宿主能力由 configureRequirementRoutes() 注入。 */
 /** /intake/query 的失败计数（IP → 最近失败时间戳）。进程内即可，重启丢失无所谓。 */
 const INTAKE_QUERY_FAILS = new Map()
+/** /intake/mine/query 的请求计数：按完整联系方式查单本来就不该被穷举。 */
+const INTAKE_MINE_HITS = new Map()
 
 export function configureRequirementRoutes(services) {
   host = { ...host, ...(services ?? {}) }
@@ -287,6 +289,15 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     return true
   }
   if (method === 'POST' && route === '/intake/mine/query') {
+    /* 这个接口按完整联系方式返回整批需求；不限流就能拿手机号段穷举别人的单。 */
+    const source = String(req.socket?.remoteAddress ?? 'unknown')
+    const now = Date.now()
+    const hits = (INTAKE_MINE_HITS.get(source) ?? []).filter(at => now - at < 10 * 60 * 1000)
+    if (hits.length >= 30) {
+      host.sendJson(res, 429, { ok: false, error: '查询太频繁，请 10 分钟后再试' })
+      return true
+    }
+    INTAKE_MINE_HITS.set(source, [...hits, now].slice(-60))
     const body = await host.readJsonBody(req)
     const contact = String(body.contact ?? '').trim()
     if (contact.length < 4) throw new Error('请填写提交时留的联系方式（至少 4 位）')

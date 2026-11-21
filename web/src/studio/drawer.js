@@ -31,6 +31,10 @@ function Drawer({ task, state, onClose, onChanged }) {
        否则键盘用户一路 Tab 就跑到下面被遮住的页面里去了）
      - 关闭后把焦点还给打开它的那个元素 */
   const drawerRef = React.useRef(null)
+  /* onClose 每次父组件渲染都是新的内联函数：effect 依赖它就会每次轮询都重跑，
+     把正在写评论的焦点抢回抽屉容器（每 15 秒一次）。用 ref 拿最新的，effect 只跑一次。 */
+  const onCloseRef = React.useRef(onClose)
+  onCloseRef.current = onClose
   React.useEffect(() => {
     const opener = typeof document === 'undefined' ? null : document.activeElement
     const node = drawerRef.current
@@ -41,7 +45,7 @@ function Drawer({ task, state, onClose, onChanged }) {
         .filter(el => el.disabled !== true && el.offsetParent !== null)
     }
     const onKey = event => {
-      if (event.key === 'Escape') { onClose(); return }
+      if (event.key === 'Escape') { onCloseRef.current(); return }
       if (event.key !== 'Tab') return
       const list = focusables()
       if (list.length === 0) { event.preventDefault(); return }
@@ -60,7 +64,7 @@ function Drawer({ task, state, onClose, onChanged }) {
       window.removeEventListener('keydown', onKey)
       if (opener !== null && typeof opener.focus === 'function') opener.focus()
     }
-  }, [onClose])
+  }, [])
   const [plan, setPlan] = React.useState({
     project: task.project ?? '',
     iteration: task.iteration ?? '',
