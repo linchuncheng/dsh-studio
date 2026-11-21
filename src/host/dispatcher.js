@@ -2,6 +2,7 @@
 import { DEFAULT_ROLES, FALLBACK_AGENT_MODEL, ROLE_IDS, SANDBOX_MODES, STATUSES, codingSummary, normalizeStrategy, worktreeRoot } from './domain.js'
 import { effectiveConcurrency } from './parallel-guard.js'
 import { abandonedRetry } from './dispatch-state.js'
+import { handoffBlock } from './handoff.js'
 import { emitEvent } from './events.js'
 import { loadTeamMemory, teamMemoryBlock } from './team-memory.js'
 import { mkdir } from 'node:fs/promises'
@@ -1048,6 +1049,8 @@ export function buildExpertPrompt(task, expert, column, config, team, instructio
       : '',
     task.gitlabIssue ? `\nGitLab Issue：${task.gitlabIssue}` : '',
     task.blockedReason ? `\n上次阻塞原因：${task.blockedReason}` : '',
+    /* 交接契约放在最近评论之前：评论是流水，决策/未决/风险才是下一棒先要看的结论面。 */
+    handoffBlock(task.handoff),
     recent ? `\n最近评论：\n${recent}` : '',
     instruction ? `\n有人刚刚在看板上 @ 了你：\n${instruction}` : '',
     '',
@@ -1056,7 +1059,7 @@ export function buildExpertPrompt(task, expert, column, config, team, instructio
     '工作方式：',
     `1. 先用 studio_task_get 读取这张卡的完整内容（id=${task.id}）。`,
     '2. 需要改代码时在工作目录内操作，改动要小步、可验证。',
-    '3. 每一步结束用 studio_task_comment 留下证据：结论、改动文件、执行过的命令与结果。',
+    '3. 每一步结束用 studio_task_comment 留下证据：结论、改动文件、执行过的命令与结果。交接给下一棒之前，用 studio_task_update 的 handoff 写清决策 / 假设 / 未决 / 风险 / 影响面，别让下一棒只能翻评论猜。',
     `   调用时 author 一律填你自己的名字「${expert.name}」，看板靠它把人和 AI 的发言分开显示。`,
     '4. 产出物要登记：文档/MR/用例/报告用 studio_task_artifact 记一条（kind + title + ref + content 正文），系统会把正文写成飞书云盘「需求文件夹」下的 Markdown 文档；同时把要点写进 studio_task_update 的 artifacts 字段。',
     '5. 做完一项就 studio_task_check 勾一项（附证据），清单全勾完才算这一步真的完了。',

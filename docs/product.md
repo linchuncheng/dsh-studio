@@ -98,6 +98,7 @@ AI 是执行手，判定权在确定性规则和人手里。要变成 AI Native�
 | 17 | **合并门禁** | 能不能合只看证据（评审 / 可执行用例 / 项目检查 / 执行记录与代码事实 / 流水线），**不看验收签字**；结论发成 GitLab 提交状态 `studio/merge-gate`，挂在 MR 头提交上；卡上记「已合并」前也要过这一关 | ✅ 已做（0.9.22：`merge-gate.js` + `publishMergeGate` + `studio_merge_gate` + `POST /task/merge-gate`；`tests/merge-gate.test.mjs` 6 条，含本地 GitLab 桩。**真 GitLab 上的拦截效果未验**：需要仓库打开「状态检查必须通过」） |
 | 18 | **浏览器用例** | 一条用例能真开浏览器：跳转、点击、填表、等待，断言页面文字 / 元素 / 地址 / 状态码；默认关闭；没装浏览器或没装 puppeteer 时给可照做的提示 | ✅ 已做（0.9.23：`browser-runner.js` + `url-guard.js`；`tests/browser-case.test.mjs` 5 条，其中一条真开浏览器跑完整链路。CI 上没有 Chrome/Edge 时该条自动跳过） |
 | 19 | **多稿并定案** | 一卡多稿可对比；被配成设计闸门的列要「评审通过 **且** 已定案」才进开发；定案稿写进研发的派单提示词；老数据只有 `link` 时加载期归一成一稿，不许把已通过的卡挡回去 | ✅ 已做（0.9.24：`design.js` 的 `drafts` / `chosenId` + 抽屉「设计」页签；`tests/design-drafts.test.mjs` 8 条，含「重开 store 后迁移生效」与「派单提示词带上定案稿」） |
+| 20 | **交接契约** | 卡上有结构化 `handoff`（决策 / 假设 / 未决 / 风险 / 影响面）；抽屉「交接」页签可写；**派单提示词先读契约、再读最近评论**；清空保存 = 删除契约 | ✅ 已做（`src/host/handoff.js` + `studio_task_update.handoff` + 抽屉「交接」页签；`tests/handoff.test.mjs` 5 条，含 HTTP / 工具两个入口与提示词顺序；panel-probe 覆盖「页签五段可提交」） |
 
 ## 5. 落地顺序
 

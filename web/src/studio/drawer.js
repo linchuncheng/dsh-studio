@@ -7,6 +7,16 @@ import { parseSteps } from './cases.js'
 
 const DESIGN_LABEL = { approved: '已通过', pending: '待评审', changes_requested: '要改' }
 
+/* 交接契约五段式：顺序与 src/host/handoff.js 的 HANDOFF_FIELDS 一致。
+   标签在这里写死是为了不把 host 模块 import 进浏览器包（会多带一份纯函数）。 */
+const HANDOFF_FORM = [
+  ['decision', '决策', '这一棒定下来的选择与理由'],
+  ['assumptions', '假设', '依赖什么；不成立会怎样'],
+  ['openQuestions', '未决', '还没定的问题 / 要谁拍板'],
+  ['risks', '风险', '最可能出问题的地方与缓解'],
+  ['impactScope', '影响面', '模块 / 接口 / 数据 / 用户'],
+]
+
 export function createDrawer({ h, React, api, kit, currentUser, renderMarkdown, tipOf, tipLabel, confirmDialog, promptDialog, TextField, TextAreaField, ChipField, CheckField, SelectField, MdField, MentionPicker }) {
 function Drawer({ task, state, onClose, onChanged }) {
   const [busy, setBusy] = React.useState(false)
@@ -176,6 +186,7 @@ function Drawer({ task, state, onClose, onChanged }) {
     { id: 'overview', label: '概览', hint: '标题、状态、负责人、阻塞原因与关键时间' },
     { id: 'content', label: '内容', hint: '需求正文与验收标准，支持 Markdown' },
     { id: 'plan', label: '计划', hint: '项目、迭代、服务、挂哪条需求、优先级' },
+    { id: 'handoff', label: '交接', count: task.handoff !== null && task.handoff !== undefined ? '✓' : '', hint: '决策 / 假设 / 未决 / 风险 / 影响面；派单提示词先读它' },
     { id: 'design', label: '设计', count: designDrafts.length > 0 ? designDrafts.length : '', hint: '多稿对比与定案' },
     { id: 'deliver', label: '交付物', count: artifacts.length > 0 ? artifacts.length : '', hint: '文档 / MR / 用例 / 报告；空的交付物会被准出拦下' },
     { id: 'test', label: '测试', count: caseSum.total > 0 ? `${casePass}/${caseSum.total}` : (checkSum.total > 0 ? `☑${doneCount}/${checkSum.total}` : ''), hint: '验收清单、用例执行记录；失败的用例会自动开缺陷' },
@@ -183,11 +194,26 @@ function Drawer({ task, state, onClose, onChanged }) {
     { id: 'discuss', label: '讨论', count: commentTotal > 0 ? commentTotal : '', hint: '评论；在评论里 @ 专家或专家团即派单' },
   ]
   const [draft, setDraft] = React.useState({ title: task.title, requirement: task.requirement, gitlabIssue: task.gitlabIssue, gitlabMR: task.gitlabMR?.url ?? '', pointId: task.pointId ?? '' })
+  /* 交接契约：从卡上已有的五段初始化；清空全部字段保存 = 删除契约（后端把全空归一成 null）。 */
+  const [handoff, setHandoff] = React.useState(() => {
+    const saved = task.handoff ?? {}
+    return Object.fromEntries(HANDOFF_FORM.map(([key]) => [key, String(saved[key] ?? '')]))
+  })
 
   const push = async (patch) => {
     setBusy(true); setError(null)
     try {
       await api('/task/update', { id: task.id, patch })
+      await onChanged()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
+  /* 交接契约单独走一次 /task/update：五段是一个整体，走 push 的 patch 包装也行，
+     但这里要给出「保存成功」的明确反馈——专家写契约时最怕点了没反应。 */
+  const saveHandoff = async () => {
+    setBusy(true); setError(null); setNotice(null)
+    try {
+      await api('/task/update', { id: task.id, handoff: { ...handoff, by: currentUser() } })
+      setNotice('交接契约已保存：下一棒派单时会先读它')
       await onChanged()
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
@@ -437,7 +463,7 @@ function Drawer({ task, state, onClose, onChanged }) {
     try {
       const out = await api('/task/cases/generate', { id: task.id })
       const note = out?.added > 0
-        ? `已生成 ${out.added} 条用例，这张卡现在共 ${out.total} 条`
+        ? `已生成 ${out.added} 条草稿（只有标题，不计入覆盖率）；补上 method+path 或 command 才能跑，优先用 studio_task_add_cases。`
         : `没生成用例：${out?.reason ?? '没有可用的验收条件'}`
       setCaseGen({ busy: false, note })
       await onChanged()
@@ -1071,6 +1097,27 @@ function Drawer({ task, state, onClose, onChanged }) {
           worktreeMsg && worktree === null ? h('div', { className: 'ds-hint' }, worktreeMsg) : null,
         ),
       ),
+      h('div', { className: 'ds-sec', style: hideWhen('handoff'), 'data-handoff': '' },
+        h('div', { className: 'ds-sec-head' }, '交接契约',
+          h('span', { className: 'ds-hint' }, '交给下一棒之前写清：决策 / 假设 / 未决 / 风险 / 影响面')),
+        h('div', { className: 'ds-sec-body' },
+          HANDOFF_FORM.map(([key, label, hint]) => h('div', { className: 'ds-field', key, 'data-handoff-field': key },
+            h('div', { className: 'ds-label' }, label),
+            h(TextAreaField, {
+              className: 'ds-textarea', rows: 3, value: handoff[key],
+              placeholder: hint,
+              onChange: event => setHandoff({ ...handoff, [key]: event.target.value }),
+            }),
+          )),
+          h('div', { className: 'ds-hint' }, '派单提示词会先读这份契约，再看最近评论。清空全部字段保存 = 删除契约。'),
+          h('div', { className: 'ds-listrow-actions' },
+            h('button', { className: 'ds-btn ds-btn-primary', disabled: busy, onClick: () => void saveHandoff() }, '保存交接'),
+            task.handoff !== null && task.handoff !== undefined
+              ? h('span', { className: 'ds-hint' }, `上次更新 ${fmtTime(task.handoff.at)}${task.handoff.by ? ` · ${task.handoff.by}` : ''}`)
+              : h('span', { className: 'ds-hint' }, '还没写过交接契约'),
+          ),
+        ),
+      ),
       h('div', { className: 'ds-sec', style: hideWhen('design') },
         h('div', { className: 'ds-sec-head' }, '设计多稿与定案',
           h('span', { className: 'ds-hint' }, `${DESIGN_LABEL[task.design?.status] ?? '未登记'}${chosenDraft === null ? '' : ` · 定案「${chosenDraft.name}」`}`)),
@@ -1474,8 +1521,10 @@ function Drawer({ task, state, onClose, onChanged }) {
           h('button', {
             className: 'ds-btn ds-btn-ghost',
             disabled: caseGen.busy,
+            title: '按功能点 / 验收条件生成「标题草稿」：规则推断不出可执行断言，草稿不计入覆盖率。'
+              + '要能真的跑，请用测试专家 / studio_task_add_cases 补 method+path 或 command。',
             onClick: () => void generateCases(),
-          }, caseGen.busy ? '生成中…' : '✨ 按需求生成'),
+          }, caseGen.busy ? '生成中…' : '✨ 生成用例草稿'),
           h('button', {
             className: 'ds-btn ds-btn-ghost',
             disabled: caseRun.busy || cases.filter(item => item.http != null || item.shell != null || item.db != null || item.browser != null).length === 0,

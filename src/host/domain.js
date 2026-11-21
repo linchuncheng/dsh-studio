@@ -10,6 +10,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { sanitizeDbCase } from './db-runner.js'
 import { sanitizeDiscovery } from './discovery.js'
 import { sanitizeOverride } from './override.js'
+import { sanitizeHandoff } from './handoff.js'
 import { sanitizePrices } from './usage.js'
 import { sanitizeGitlabFacts } from './gitlab-facts.js'
 import { sanitizeWebhooks } from './webhooks.js'
@@ -1777,6 +1778,7 @@ export function normalizePatch(input) {
   }
   if (input.requirementId !== undefined) patch.requirementId = text(input.requirementId, 60) ?? ''
   if (input.pointId !== undefined) patch.pointId = text(input.pointId, 24) ?? ''
+  if (input.handoff !== undefined) patch.handoff = sanitizeHandoff(input.handoff)
   if (input.override !== undefined) patch.override = text(input.override, 300) ?? ''
   if (input.releaseId !== undefined) patch.releaseId = text(input.releaseId, 60) ?? ''
   if (input.dueAt !== undefined) {
@@ -1805,7 +1807,6 @@ export function normalizePatch(input) {
   if (input.bugSource !== undefined) patch.bugSource = sanitizeBugSource(input.bugSource)
   return patch
 }
-
 
 
 export function sanitizeAuditEntry(raw, index) {

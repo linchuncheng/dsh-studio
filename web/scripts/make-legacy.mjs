@@ -88,6 +88,7 @@ const imports = [
   "import { createMentionPicker } from './studio/mentions.js'",
   "import { createDrawer } from './studio/drawer.js'",
   "import { advanceColumn, createPalette, nextStatusOf, paletteShortcut, runPaletteAction } from './studio/palette.js'",
+  "import { createRunTray } from './studio/run-tray.js'",
   "import { parseSteps } from './studio/cases.js'",
   "import { provideClient } from './studio/context.js'",
   "import { withDestructiveConfirm } from './studio/destructive.js'",

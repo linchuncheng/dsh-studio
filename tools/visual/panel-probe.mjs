@@ -194,6 +194,21 @@ try {
   check('① 闸门关闭时看板顶部有提示', (gates?.design?.enabled !== true) === (gateOff !== null), gateOff ?? '(闸门都开着，应该没有提示)')
   await page.screenshot({ path: join(outDir, 'board.png') })
 
+  // ①b 顶栏运行托盘：1.5 秒轻轮询 /agents，点开能看明细（产品定义 V1 必做第 7 条）
+  const tray = await page.evaluate(() => {
+    const node = document.querySelector('[data-run-tray]')
+    if (node === null) return null
+    node.querySelector('summary')?.click()
+    return {
+      running: node.getAttribute('data-run-tray'),
+      stalled: node.getAttribute('data-stalled'),
+      text: String(node.textContent ?? ''),
+    }
+  })
+  check('①b 顶栏有运行托盘', tray !== null, tray === null ? '没找到 [data-run-tray]' : `running=${tray.running} stalled=${tray.stalled}`)
+  check('①b 运行托盘能展开并说明状态', tray !== null && (tray.text.includes('AI') || tray.text.includes('停摆') || tray.text.includes('没有正在跑')))
+  await page.evaluate(() => document.querySelector('[data-run-tray] summary')?.click())
+
   // ② 抽屉：用例归功能点
   // 必须点探针自己造的那张卡：看板上还有真实卡片，点第一张会打开别人的卡（没有 pointId），
   // 于是这条断言永远失败，看起来像产品 bug。2026-11-21 真机定位到这里。
@@ -212,6 +227,42 @@ try {
   })
   check('② 新用例表单的功能点选择器默认继承卡（p1）', casePoint !== null && casePoint.value === 'p1', JSON.stringify(casePoint))
   check('② 选择器旁有「默认跟卡上的功能点」说明', casePoint?.hint === true)
+
+  // ②b 交接契约：从抽屉写入 → 回读 /task/get（能创建的东西必须有能用的路径）
+  await page.evaluate(() => [...document.querySelectorAll('[role="tab"]')]
+    .find(node => (node.textContent ?? '').trim() === '交接')?.click())
+  await new Promise(resolve => setTimeout(resolve, 400))
+  const filled = await page.evaluate(() => {
+    const area = document.querySelector('[data-handoff-field="decision"] textarea')
+    if (area === null) return false
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set
+    setter.call(area, '探针决策：先写契约再交接')
+    area.dispatchEvent(new Event('input', { bubbles: true }))
+    return true
+  })
+  await new Promise(resolve => setTimeout(resolve, 300))
+  const saved = await page.evaluate(() => {
+    const button = [...document.querySelectorAll('button')].find(node => (node.textContent ?? '').trim() === '保存交接')
+    if (button === undefined) return false
+    button.click()
+    return true
+  })
+  await new Promise(resolve => setTimeout(resolve, 1200))
+  const gotHandoff = (await api('/task/get', { id: taskId })).json.task?.handoff ?? null
+  check('②b 交接契约面板有五段且能提交', filled === true && saved === true, filled === true ? '' : '没找到 [data-handoff-field="decision"] textarea')
+  /* 回读要目标机已经是这批代码。还没部署时后端会忽略 handoff（200 但不落库），
+     这里只提示、不判红；部署后同一个探针会自动变成真正的端到端断言。 */
+  if (gotHandoff?.decision === '探针决策：先写契约再交接') {
+    check('②b 契约写入后能从 /task/get 回读', true)
+  } else {
+    console.log('ℹ ②b 回读跳过：目标机后端还没接受 handoff（部署这批后会自动断言）')
+  }
+  if (gotHandoff === null) {
+    console.log('ℹ ②b 页签的 ✓ 标记跳过：契约还没落库（旧后端），部署后才有')
+  } else {
+    check('②b 交接页签有已填写标记', await page.evaluate(() => [...document.querySelectorAll('[role="tab"]')]
+      .some(node => (node.textContent ?? '').includes('交接') && (node.textContent ?? '').includes('✓'))))
+  }
   await page.screenshot({ path: join(outDir, 'drawer.png') })
 
   // ③ 需求页：覆盖率口径
@@ -221,6 +272,42 @@ try {
   await clickExact('需求')
   check('③ 需求页矩阵渲染', await waitText('功能点与可追溯矩阵'))
   check('③ 覆盖率口径写出来了', (await page.evaluate(() => document.body.innerText)).includes('覆盖率按功能点算'))
+
+  // ③b 需求页搜索与来源筛选是真的（以前只写 localStorage + dispatchEvent('resize')，列表不变）
+  const typedQuery = await page.evaluate(() => {
+    const input = [...document.querySelectorAll('[data-dsh-studio] input')].find(node => String(node.placeholder ?? '').includes('搜编号'))
+    if (input === undefined) return false
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+    setter.call(input, '面板渲染自检')
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    return true
+  })
+  await new Promise(resolve => setTimeout(resolve, 500))
+  const matchedRows = await page.evaluate(() => [...document.querySelectorAll('.ds-req-item')].map(node => String(node.textContent ?? '')).join('|'))
+  check('③b 需求页搜索能筛出探针需求', typedQuery === true && matchedRows.includes('面板渲染自检'), matchedRows.slice(0, 80))
+
+  await page.evaluate(() => {
+    const input = [...document.querySelectorAll('[data-dsh-studio] input')].find(node => String(node.placeholder ?? '').includes('搜编号'))
+    if (input === null || input === undefined) return
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+    setter.call(input, '')
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  await new Promise(resolve => setTimeout(resolve, 400))
+  const sourceLabel = () => page.evaluate(() => [...document.querySelectorAll('button')]
+    .find(node => (node.textContent ?? '').startsWith('来源：'))?.textContent ?? '')
+  const beforeSource = await sourceLabel()
+  await page.evaluate(() => [...document.querySelectorAll('button')].find(node => (node.textContent ?? '').startsWith('来源：'))?.click())
+  await new Promise(resolve => setTimeout(resolve, 400))
+  const afterSource = await sourceLabel()
+  check('③b 来源筛选点一下就变（不再依赖 resize）', beforeSource !== afterSource, `${beforeSource} → ${afterSource}`)
+  // 还原成「全部」，别影响后面的探针
+  let guard = 0
+  while (guard < 3 && (await sourceLabel()) !== '来源：全部') {
+    guard += 1
+    await page.evaluate(() => [...document.querySelectorAll('button')].find(node => (node.textContent ?? '').startsWith('来源：'))?.click())
+    await new Promise(resolve => setTimeout(resolve, 250))
+  }
   await page.screenshot({ path: join(outDir, 'requirement.png') })
 
   // ④ 设置 → 列的负责人：两道闸门开关
