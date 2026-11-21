@@ -1,6 +1,39 @@
 # 更新日志
 
 
+## [0.9.56] — 2026-11-21
+
+### 安全：口令与会话不再明文落盘
+
+- 本地口令的哈希从 state / 快照里移走，只留 0600 的密钥文件；旧库首次落盘自动迁移，登录不受影响
+- 会话 token 在 `sessions` 表里只存 SHA-256；升级前的明文行自动改写，重启不掉登录
+- 改口令会吊销全部旧会话；SQLite 台账与 WAL/SHM 在 POSIX 上收紧到 0600
+- 「合并 MR」动作单独要求管理员（`studio_merge_gate action=merge`）
+
+### 门禁：发布审批与用例覆盖率变成硬门槛
+
+- 版本上没有审批记录时不能发布（`releaseGate.blockers`），`/release/publish` 直接拒绝
+- 需求准出的可执行用例覆盖率低于 60% 从提示改成 blocker，签字被拦
+- 灰度批次在版本页可以直接回滚；看板推卡被门禁拦时，可以写原因强推并记入 override 统计
+
+### 用例：四种执行方式都能改
+
+- `/task/case` 支持修改 shell / 数据库 / 浏览器用例的定义，执行记录不丢；开关没开时拒绝修改
+- `studio_task_add_cases` 支持 `{title, db:{file, sql}}`
+- 需求列表直接显示「可执行 x/y」；用例库 50 条/页 + 按最近执行 / 标题 / 结果排序
+
+### 修复
+
+- 改本地口令必炸的 `scryptSync is not defined`（缺导入）
+- `override` 在补丁归一化里被赋值两次，结构化对象会被覆盖成空串
+- `/requirement/split`、`/requirement/pool` 的多传字段现在真的会被拒绝
+- 派单提示词里重复的评审段；测试段补齐数据库 / 浏览器用例写法
+
+### 工程
+
+- 浏览器用例接入 CI：先装 puppeteer-core，ubuntu runner 自带 Chrome，真开浏览器跑（CI `# skipped 0`）
+- `index.js`、`domain.js`、`executor.js`、`client.src.js` 四个大文件完成拆分，给 2000 / 2500 行闸门留出余量
+
 ## [0.9.55] — 2026-11-21
 
 ### 文档出口：交付物可以投给 WeKnora 了
