@@ -1,6 +1,6 @@
 /* Card detail drawer: overview, content, plan, artifacts, tests, runs and talk. */
 
-import { uiIcon, expertIconName } from './icons.js'
+import { expertIconName, statusDot, uiIcon } from './icons.js'
 import { ARTIFACT_KINDS, ARTIFACT_KIND_LABEL, ARTIFACT_STATUS, ARTIFACT_STATUS_LABEL, CASE_PRIORITIES, CASE_RESULT_LABEL, CASE_RESULTS, CASE_TYPES, CASE_TYPE_LABEL, CODING_REVIEW_LABEL, PRIORITY_LABEL, ROLE_LABEL, SEVERITY_LABEL, TYPE_LABEL } from './labels.js'
 import { artifactsWithoutBody, buildRoster, cardOwner, caseSummaryOf, checkSummaryOf, commentCountOf, filterRoster, fromDateInput, ownerLabel, toDateInput } from './roster.js'
 import { fmtTime } from './format.js'
@@ -1462,7 +1462,7 @@ function Drawer({ task, state, onClose, onChanged }) {
         h('div', { className: 'ds-sec-head' }, '交付物',
           h('span', { className: 'ds-hint' }, '文档、MR、用例、报告——交付要有东西，不只是一句「做完了」；登记后会写成飞书云盘需求文件夹里的一份文档'),
           artifactsWithoutBody(task).length > 0
-            ? h('span', { className: 'ds-card-warn', title: '这些交付物还没写正文，点「正文」补上再同步' }, `● ${artifactsWithoutBody(task).length} 件缺正文`)
+            ? h('span', { className: 'ds-card-warn', title: '这些交付物还没写正文，点「正文」补上再同步' }, statusDot(h, 'warn'), ` ${artifactsWithoutBody(task).length} 件缺正文`)
             : null,
           (task.artifacts ?? []).length > 0
             ? h('button', {
@@ -1480,7 +1480,7 @@ function Drawer({ task, state, onClose, onChanged }) {
                 h('div', { className: 'ds-art-title' },
                   artifactHasBody(item)
                     ? null
-                    : h('span', { className: 'ds-card-warn', style: { marginRight: 6 }, title: '这条交付物还没写正文，云盘文档里只有标题' }, '●'),
+                    : h('span', { className: 'ds-card-warn', title: '这条交付物还没写正文，云盘文档里只有标题' }, statusDot(h, 'warn', { style: { marginRight: 6 } })),
                   item.title,
                 ),
                 h('div', { className: 'ds-art-ref' }, `正文 ${typeof item.contentLength === 'number' ? item.contentLength : String(item.content ?? '').length} 字${artifactHasBody(item) ? '' : ' · 缺正文'}${item.doc?.url ? '' : ' · 还没归档'}`),

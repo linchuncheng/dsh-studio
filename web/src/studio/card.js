@@ -2,7 +2,7 @@
    drag handle. Rendering only — every action is a callback from the board. */
 
 import { PRIORITY_LABEL, ROLE_LABEL } from './labels.js'
-import { uiIcon } from './icons.js'
+import { statusDot, uiIcon } from './icons.js'
 import { fmtDate, fmtTime } from './format.js'
 import { artifactsWithoutBody, cardOwner, caseSummaryOf, checkSummaryOf, commentCountOf } from './roster.js'
 
@@ -147,7 +147,7 @@ function Card({ task, onOpen, config, requirements, onPickRequirement, onPickPro
         className: caseRun.fail > 0 ? 'ds-case-fail' : '',
         title: `测试用例：通过 ${caseRun.pass}/${caseRun.total}${caseRun.fail > 0 ? `，不通过 ${caseRun.fail}` : ''}`,
       }, uiIcon(h, caseRun.fail > 0 ? 'resultFail' : 'resultPass'), ` ${caseRun.pass}/${caseRun.total}`) : null,
-      noBody > 0 ? h('span', { className: 'ds-card-warn', title: `${noBody} 件交付物还没写正文，云盘文档里只有标题` }, '● 缺正文') : null,
+      noBody > 0 ? h('span', { className: 'ds-card-warn', title: `${noBody} 件交付物还没写正文，云盘文档里只有标题` }, statusDot(h, 'warn'), ' 缺正文') : null,
       commentCountOf(task) > 0 ? h('span', {}, `· ${commentCountOf(task)} 评论`) : null,
       h('span', { style: { marginLeft: 'auto' } }, fmtTime(task.updatedAt)),
     ),
