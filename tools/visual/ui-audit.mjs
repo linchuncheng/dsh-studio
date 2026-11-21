@@ -270,6 +270,7 @@ const COLLECTOR = `(() => {
     }
     // ---- type
     bump(result.fontSizes, cs.fontSize)
+    if (cs.fontSize === '14px' && (result.font14 ??= []).length < 20) result.font14.push(describe(el).slice(0, 90))
     bump(result.fontWeights, cs.fontWeight)
     bump(result.fontFamilies, cs.fontFamily.split(',')[0].replace(/["']/g, '').trim())
     if (cs.textTransform === 'uppercase' || cs.textTransform === 'capitalize') {
