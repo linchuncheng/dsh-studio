@@ -62,7 +62,7 @@ export function TabsBar({ items, value, onChange, className }) {
             title={item.hint || undefined}
             onClick={() => onChange(item.id)}
             className={cn(
-              'studio-tab relative z-10 inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap outline-none',
+              'studio-tab relative z-10 inline-flex shrink-0 cursor-pointer items-center gap-2 whitespace-nowrap outline-none',
               selected ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary',
             )}
           >

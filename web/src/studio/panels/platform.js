@@ -309,7 +309,7 @@ export function CostsPanel({ config, onChanged, suggestModels }) {
           : null,
         prices.length === 0
           ? h('div', { className: 'ds-hint' }, '还是空的：只统计 token，不算钱。点「＋ 加一行」把常见模型的价格填进来。')
-          : prices.map((item, index) => h('div', { className: 'ds-row', key: index, style: { gap: 6, alignItems: 'center', marginTop: 6, flexWrap: 'wrap' } },
+          : prices.map((item, index) => h('div', { className: 'ds-row', key: index, style: { gap: 8, alignItems: 'center', marginTop: 6, flexWrap: 'wrap' } },
             h(TextField, { className: 'ds-input', style: { flex: '2 1 180px' }, placeholder: '模型 id，如 deepseek-v4.1-flash', value: item.model ?? '', onChange: event => setPrices(list => list.map((row, i) => (i === index ? { ...row, model: event.target.value } : row))) }),
             h(TextField, { className: 'ds-input', style: { flex: '1 1 70px' }, placeholder: '输入', value: String(item.input ?? ''), onChange: event => setPrices(list => list.map((row, i) => (i === index ? { ...row, input: Number(event.target.value) || 0 } : row))) }),
             h(TextField, { className: 'ds-input', style: { flex: '1 1 70px' }, placeholder: '输出', value: String(item.output ?? ''), onChange: event => setPrices(list => list.map((row, i) => (i === index ? { ...row, output: Number(event.target.value) || 0 } : row))) }),
@@ -508,7 +508,7 @@ export function BusinessPanel({ config, onChanged }) {
                 ),
                 others.length === 0
                   ? null
-                  : h('div', { className: 'ds-row', style: { gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' } },
+                  : h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' } },
                     h('span', { className: 'ds-hint' }, '检查命令'),
                     h(TextField, {
                       className: 'ds-input', value: service.qualityCmd ?? '', placeholder: '留空用项目级',

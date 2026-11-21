@@ -1603,7 +1603,7 @@ function Drawer({ task, state, onClose, onChanged }) {
               }, CASE_RESULTS.map(value => h('option', { key: value, value }, CASE_RESULT_LABEL[value]))),
               h('div', { className: 'ds-grow' },
                 h('div', { className: 'ds-art-title' }, item.title),
-                h('div', { className: 'ds-row', style: { gap: 6, alignItems: 'center', marginTop: 2 } },
+                h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', marginTop: 2 } },
                   h(ChipField, { className: 'ds-chip ds-chip-soft' }, CASE_TYPE_LABEL[item.type ?? 'functional'] ?? '功能'),
                   h(ChipField, { className: 'ds-chip ds-chip-soft', 'data-pri': item.priority ?? 'p2' }, String(item.priority ?? 'p2').toUpperCase()),
                   String(item.preconditions ?? '') === '' ? null : h('span', { className: 'ds-hint' }, `前置：${item.preconditions}`),
@@ -1629,7 +1629,7 @@ function Drawer({ task, state, onClose, onChanged }) {
                 (item.http?.steps ?? []).length === 0 ? null : h(ChipField, { className: 'ds-chip ds-chip-soft' }, `多步 ${item.http.steps.length}`),
                 ((state.requirements ?? []).find(entry => entry.id === task.requirementId)?.points ?? []).length === 0
                   ? (item.pointId ? h('div', { className: 'ds-art-ref' }, `功能点：${item.pointId}`) : null)
-                  : h('div', { className: 'ds-row', style: { gap: 6, alignItems: 'center' } },
+                  : h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center' } },
                       h('span', { className: 'ds-hint' }, '功能点'),
                       h(SelectField, {
                         className: 'ds-select',

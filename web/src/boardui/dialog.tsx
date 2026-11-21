@@ -77,7 +77,7 @@ export function ConfirmDialog({
             {title}
           </Heading>
           {message === undefined || message === null || message === "" ? null : (
-            <p className="mt-1.5 whitespace-pre-wrap text-body-2-regular leading-relaxed text-text-secondary">
+            <p className="mt-1 whitespace-pre-wrap text-body-2-regular leading-relaxed text-text-secondary">
               {message}
             </p>
           )}
@@ -91,7 +91,7 @@ export function ConfirmDialog({
               className={cx(
                 "mt-3 box-border w-full min-w-0 resize-y rounded-2lg",
                 "border border-border-button-default bg-background-primary-default",
-                "px-2.5 py-2 text-body-2-regular leading-relaxed text-text-primary",
+                "px-2 py-2 text-body-2-regular leading-relaxed text-text-primary",
                 "placeholder:text-text-placeholder",
                 "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
               )}

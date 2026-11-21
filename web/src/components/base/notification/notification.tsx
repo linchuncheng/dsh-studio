@@ -128,7 +128,7 @@ const styles = sortCx({
   title: "text-body-medium text-text-primary",
   timestamp: "text-body-regular text-text-tertiary",
   description: "text-body-regular text-text-secondary",
-  actions: "mt-1.5 flex flex-wrap items-center gap-2",
+  actions: "mt-1 flex flex-wrap items-center gap-2",
   close: "absolute top-3 end-3",
   status: {
     neutral: "bg-background-tertiary-default text-text-secondary",

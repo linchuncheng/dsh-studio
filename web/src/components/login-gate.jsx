@@ -133,7 +133,7 @@ export function ShadcnLoginGate({ config, theme, message, onDone, onClose, overl
         </p>
 
         <form className="grid w-full max-w-full gap-3" onSubmit={submit}>
-          <div className="grid min-w-0 gap-1.5">
+          <div className="grid min-w-0 gap-2">
             <Label htmlFor="studio-account" className="text-[12px] text-muted-foreground">
               {mode === 'local' ? '超管账号' : '域账号'}
             </Label>
@@ -148,7 +148,7 @@ export function ShadcnLoginGate({ config, theme, message, onDone, onClose, overl
             />
           </div>
 
-          <div className="grid min-w-0 gap-1.5">
+          <div className="grid min-w-0 gap-2">
             <Label htmlFor="studio-pass" className="text-[12px] text-muted-foreground">
               密码
             </Label>
@@ -175,7 +175,7 @@ export function ShadcnLoginGate({ config, theme, message, onDone, onClose, overl
           </div>
 
           {error === '' ? null : (
-            <div className="flex items-start gap-1.5 rounded-md border border-destructive/35 bg-destructive/5 px-2.5 py-2 text-[12px] leading-relaxed text-destructive">
+            <div className="flex items-start gap-2 rounded-md border border-destructive/35 bg-destructive/5 px-2 py-2 text-[12px] leading-relaxed text-destructive">
               <span aria-hidden>!</span>
               <span className="min-w-0 break-words">{error}</span>
             </div>

@@ -9,7 +9,7 @@ import { Button as BoarduiButton } from '../../boardui/index'
 
 const CTX_COLORS = ['#4A5699', '#C45FA0', '#6277BA', '#F39A2B', '#94a3b8']
 const CTX_NUM = { width: 56, textAlign: 'right', fontSize: 12, flexShrink: 0 }
-const CTX_ROW = { display: 'flex', alignItems: 'center', gap: 10, padding: '7px 6px', borderTop: '1px solid var(--ds-line)', cursor: 'pointer' }
+const CTX_ROW = { display: 'flex', alignItems: 'center', gap: 12, padding: '7px 6px', borderTop: '1px solid var(--ds-line)', cursor: 'pointer' }
 const CTX_DETAIL = { padding: '6px 8px 12px', borderTop: '1px dashed var(--ds-line)' }
 const CTX_STACK = { display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden', background: 'var(--ds-line)', margin: '4px 0 10px' }
 const CTX_LEGEND = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontSize: 12 }
@@ -118,7 +118,7 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
     const parts = Array.isArray(data.parts) ? data.parts : []
     const head = '最近一次会话 ' + fmtTime(Math.round(data.at)) + ' · 峰值 ' + Math.round(data.peak / 1000) + 'k / 窗口 ' + Math.round((data.window ?? 0) / 1000) + 'k（' + (data.percent ?? 0) + '%）· 全程约 ' + Math.round(data.approxTokens / 1000) + 'k token'
     const stack = h('div', { style: CTX_STACK }, parts.map((part, index) => h('span', { key: part.key, title: part.label + ' ' + part.percent + '%', style: { width: Math.max(part.percent, 0.5) + '%', background: CTX_COLORS[index % CTX_COLORS.length] } })))
-    const legend = h('div', { style: CTX_LEGEND }, parts.map((part, index) => h('div', { key: part.key, style: { display: 'flex', alignItems: 'center', gap: 6 } },
+    const legend = h('div', { style: CTX_LEGEND }, parts.map((part, index) => h('div', { key: part.key, style: { display: 'flex', alignItems: 'center', gap: 8 } },
       h('span', { style: { width: 8, height: 8, borderRadius: 2, flexShrink: 0, background: CTX_COLORS[index % CTX_COLORS.length] } }),
       h('span', { style: { flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, part.label),
       h('span', { style: { width: 34, textAlign: 'right' } }, part.percent + '%'),

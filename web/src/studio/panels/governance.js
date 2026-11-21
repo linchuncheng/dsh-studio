@@ -71,7 +71,7 @@ export function AccessPanel({ state, config, onChanged }) {
         h(ChipField, { className: 'ds-chip' }, `当前身份：${currentUser()}`),
       ),
       h('div', { className: 'ds-panel-body' },
-        h('div', { className: 'ds-row', style: { gap: 10, alignItems: 'center', flexWrap: 'wrap' } },
+        h('div', { className: 'ds-row', style: { gap: 12, alignItems: 'center', flexWrap: 'wrap' } },
           h('label', { className: 'ds-check', style: { flex: '0 0 auto' } },
             h(SwitchToggle, { checked: access.enabled === true, disabled: busy,
               onChange: event => void act('/access/save', { enabled: event.target.checked }),

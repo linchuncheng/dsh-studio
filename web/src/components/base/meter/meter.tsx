@@ -55,7 +55,7 @@ export function Meter({
 }: MeterProps) {
   const showValue = showValueLabel ?? label != null;
   return (
-    <AriaMeter {...props} className={cx("flex w-full flex-col gap-1.5", className)}>
+    <AriaMeter {...props} className={cx("flex w-full flex-col gap-2", className)}>
       {({ percentage, valueText }) => (
         <>
           {label != null || showValue ? (

@@ -113,14 +113,14 @@ export function Select<T extends object>({
               "disabled:cursor-not-allowed disabled:bg-background-primary-disabled disabled:text-text-tertiary disabled:shadow-none",
               size === "sm"
                 ? "gap-1 px-[7px] py-1 text-body-2-medium"
-                : "gap-1.5 px-2.5 py-2 text-body-medium",
+                : "gap-2 px-2 py-2 text-body-medium",
               triggerClassName,
             )}
           >
             <AriaSelectValue
               className={cx(
                 "flex min-w-0 items-center truncate",
-                size === "sm" ? "gap-1" : "gap-[5px]",
+                size === "sm" ? "gap-1" : "gap-1",
               )}
             >
               {renderValue as never /* RAC accepts node or render-prop */}
@@ -171,7 +171,7 @@ export function SelectItem({ className, children, ...props }: SelectItemProps) {
       className={(state) =>
         cx(
           MENU_ITEM,
-          size === "sm" ? "px-2 py-1.5 text-body-2-medium" : "text-body-medium",
+          size === "sm" ? "px-2 py-1 text-body-2-medium" : "text-body-medium",
           (state.isFocused || state.isSelected) && MENU_ITEM_ACTIVE,
           state.isDisabled && "cursor-not-allowed text-text-disabled",
           typeof className === "function" ? className(state) : className,

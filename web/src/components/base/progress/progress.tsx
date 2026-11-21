@@ -126,7 +126,7 @@ export function ProgressBar({
   const showValue = showValueLabel ?? (label != null && !isIndeterminate);
 
   return (
-    <AriaProgressBar {...props} isIndeterminate={isIndeterminate} className={cx("flex w-full flex-col gap-1.5", className)}>
+    <AriaProgressBar {...props} isIndeterminate={isIndeterminate} className={cx("flex w-full flex-col gap-2", className)}>
       {({ percentage = 0, valueText }) => (
         <>
           {label != null || showValue ? (

@@ -89,7 +89,7 @@ export function createRunTray({ h, React, api }) {
     },
       h('summary', {
         title: '运行托盘：谁在跑、有没有卡停摆（1.5 秒刷新；点开看明细）',
-        style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: 'var(--ds-muted)', listStyle: 'none', padding: '2px 4px' },
+        style: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--ds-muted)', listStyle: 'none', padding: '2px 4px' },
       },
         h('span', { 'aria-hidden': 'true', style: { width: 7, height: 7, borderRadius: '50%', background: dot, flex: 'none' } }),
         label,
