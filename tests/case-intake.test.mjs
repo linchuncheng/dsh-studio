@@ -23,6 +23,26 @@ function fakeStore(config, tasks = [{ id: 't-1', title: '卡片', cases: [], upd
 
 const testing = extra => ({ envs: [], defaultEnv: '', timeoutMs: 3000, allowHosts: ['127.0.0.1', 'localhost'], concurrency: 1, allowShell: false, ...extra })
 
+test('用例入库：db 用例可以写进去（allowDb 开着）', async () => {
+  const store = fakeStore({ testing: testing({ allowDb: true }) })
+  const out = await addAssertedCases(store, 't-1', [{
+    title: '库里有一行',
+    db: { file: '/tmp/does-not-exist.db', sql: 'select 1 as n', expectColumn: 'n', expectValue: '1' },
+  }])
+  assert.equal(out.added, 1)
+  const saved = store.state.tasks[0].cases[0]
+  assert.equal(saved.db.sql, 'select 1 as n')
+  assert.equal(isExecutable(saved), true, 'db 用例要算可执行')
+})
+
+test('用例入库：allowDb 没开时不收 db 用例', async () => {
+  const store = fakeStore({ testing: testing({}) })
+  await assert.rejects(
+    () => addAssertedCases(store, 't-1', [{ title: 'db', db: { file: '/tmp/x.db', sql: 'select 1' } }]),
+    /allowDb/,
+  )
+})
+
 test('用例入库：不给断言的不收（不能又攒一条草稿）', async () => {
   const store = fakeStore({ testing: testing({}) })
   await assert.rejects(

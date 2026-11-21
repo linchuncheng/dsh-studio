@@ -1725,7 +1725,6 @@ export function normalizePatch(input) {
   for (const key of ['gitlabIssue', 'owner', 'blockedReason', 'feishuThread']) {
     if (input[key] !== undefined) patch[key] = text(input[key], 500) ?? ''
   }
-  if (input.override !== undefined) { const next = sanitizeOverride(input.override); if (next !== undefined) patch.override = next }
   // MR 不是字符串：卡片上的 gitlabMR 是对象，之前用 text() 一律压成空串（实测存进去是 ""）。
   // 允许传对象，也允许传 "!12" / MR 链接（从里面取 iid）。
   if (input.gitlabMR !== undefined) {

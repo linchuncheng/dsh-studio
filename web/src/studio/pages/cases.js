@@ -27,6 +27,10 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
   const [note, setNote] = React.useState('')
   const [regressions, setRegressions] = React.useState([])
   const [openDetail, setOpenDetail] = React.useState(null)
+  /* 用例库不分页时一次渲染全部行，上千条会卡；排序也只在「最近执行」之外补两种。 */
+  const [sortBy, setSortBy] = React.useState('recent')
+  const [page, setPage] = React.useState(1)
+  const PAGE_SIZE = 50
 
   const refresh = React.useCallback(async () => {
     try {
@@ -70,6 +74,20 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
     const skip = list.filter(row => row.result === 'skip').length
     return { pass, fail, skip, rest: list.length - pass - fail - skip }
   }, [list])
+
+  const sorted = React.useMemo(() => {
+    const copy = [...list]
+    if (sortBy === 'title') copy.sort((left, right) => String(left.title ?? '').localeCompare(String(right.title ?? ''), 'zh'))
+    else if (sortBy === 'result') {
+      const rank = { fail: 0, pending: 1, skip: 2, pass: 3 }
+      copy.sort((left, right) => (rank[left.result] ?? 9) - (rank[right.result] ?? 9))
+    } else copy.sort((left, right) => (Number(right.lastRunAt) || 0) - (Number(left.lastRunAt) || 0))
+    return copy
+  }, [list, sortBy])
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
+  const currentPage = Math.min(Math.max(1, page), totalPages)
+  const pageRows = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  React.useEffect(() => { setPage(1) }, [query, requirement, result, kind, suiteFilter, sortBy])
 
   const requirements = state.requirements ?? []
   const runnable = list.filter(row => row.runnable === true)
@@ -233,6 +251,19 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
             )),
           h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => void saveSuite() }, '＋ 存为套件'),
         ),
+        h('div', { className: 'ds-row', style: { marginTop: 8, gap: 8, flexWrap: 'wrap', alignItems: 'center' } },
+          h('span', { className: 'ds-hint' }, `共 ${sorted.length} 条 · 第 ${currentPage}/${totalPages} 页`),
+          h(SelectField, {
+            className: 'ds-select', style: { width: 130 }, value: sortBy,
+            onChange: event => setSortBy(event.target.value),
+          },
+            h('option', { value: 'recent' }, '最近执行'),
+            h('option', { value: 'title' }, '标题'),
+            h('option', { value: 'result' }, '结果（失败在前）'),
+          ),
+          h('button', { className: 'ds-btn ds-btn-ghost', disabled: currentPage <= 1, onClick: () => setPage(currentPage - 1) }, '上一页'),
+          h('button', { className: 'ds-btn ds-btn-ghost', disabled: currentPage >= totalPages, onClick: () => setPage(currentPage + 1) }, '下一页'),
+        ),
         note === '' ? null : h('div', { className: 'ds-hint', style: { marginTop: 6 } }, note),
         regressions.length === 0 ? null : h('div', { className: 'ds-reg-list' },
           h('span', { className: 'ds-hint' }, '最近回归：'),
@@ -264,7 +295,7 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
                 selectedKeys: selected,
                 onSelectionChange: keys => setSelected(new Set(keys)),
                 onRowAction: key => {
-                  const target = list.find(item => item.key === key)
+                  const target = sorted.find(item => item.key === key)
                   if (target !== undefined) onOpenTask(target.taskId)
                 },
               },
@@ -280,7 +311,7 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
                 h(TableBody, null,
                   /* 不能用 isDisabled 表达"不可跑"：它同时禁掉行激活，手工用例就点不开所属卡片了。
                选择按 row.runnable 在 selection 层控制（见 selectedKeys 的计算）。 */
-              list.map(row => h(TableRow, { key: row.key, id: row.key, isDisabled: running === true },
+              pageRows.map(row => h(TableRow, { key: row.key, id: row.key, isDisabled: running === true },
                     h(TableCell, null, CASE_RESULT_LABEL[row.result] ?? row.result),
                     h(TableCell, null, row.title),
                     h(TableCell, null, `${row.taskCode || row.taskId} · ${row.requirementTitle || '未挂需求'}${row.pointId ? ' · ' + row.pointId : ''}`),
@@ -307,7 +338,7 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
               openDetail === null
                 ? null
                 : (() => {
-                  const row = list.find(item => item.key === openDetail)
+                  const row = sorted.find(item => item.key === openDetail)
                   if (row === undefined) return null
                   return h('div', { className: 'ds-case-lib-detail' },
                     h('div', null, `期望：${row.expected || '—'}`),

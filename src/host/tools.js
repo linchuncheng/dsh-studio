@@ -595,7 +595,7 @@ export function registerTools(ctx, store) {
 
   register(defineStudioTool({
     name: 'studio_task_add_cases',
-    description: '把**带可执行断言**的测试用例写进这张卡，并当场试跑第一条：跑不通就不算生成成功。接口用例形如 {title, method, path, body?, expectStatus, expectContains?}；shell 形如 {title, command, expectExit?}（需在设置里开 allowShell）；浏览器形如 {title, browser:{url|path, expectText?, expectSelector?}}（需开 allowBrowser）。\n'
+    description: '把**带可执行断言**的测试用例写进这张卡，并当场试跑第一条：跑不通就不算生成成功。接口用例形如 {title, method, path, body?, expectStatus, expectContains?}；shell 形如 {title, command, expectExit?}（需在设置里开 allowShell）；数据库形如 {title, db:{file, sql, expectColumn?, expectValue?}}（需开 allowDb）；浏览器形如 {title, browser:{url|path, expectText?, expectSelector?}}（需开 allowBrowser）。\n'
       + '**归属功能点**：每条可带 pointId（这条用例算在哪个需求功能点）和 acceptanceId（验哪条验收条件，矩阵按它逐条判覆盖）；**不填 pointId 就继承卡上的 pointId**——一个功能点多条用例时不用每条都重复写。\n'
       + '**地址规则**：path 可以写相对地址（用测试环境的 baseUrl 解析），完整地址只认 http(s)。\n'
       + '有一条不合法就整体拒绝、一条都不写（错误里会点名第几条、为什么）。',
@@ -604,7 +604,7 @@ export function registerTools(ctx, store) {
       cases: {
         type: 'array',
         required: true,
-        description: '用例数组：每条必须有 title，并且带 method + path + expectStatus（接口）或 command（shell）。',
+        description: '用例数组：每条必须有 title，并带 method + path + expectStatus（接口）、command（shell）、db:{file,sql}（数据库）或 browser:{url}（浏览器）之一。',
         items: { type: 'object' },
       },
       env: { type: 'string', description: '测试环境 id，默认用设置里的默认环境。' },
