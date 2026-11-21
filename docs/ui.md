@@ -130,7 +130,7 @@ pnpm build            # make-legacy → vite build → sync-client，一次跑�
 
 ### 中窄屏顶栏与代码分割（2026-11-21）
 
-- 761–920px 时顶栏动作区（新建 / 刷新 / 运行托盘 / 当前用户）约 600px，一行放不下会把标题挤到只剩几十像素。`@media (max-width:920px)` 让 `.ds-head-top` / `.ds-head-actions` 换行：800px 实测标题独占一行、动作区第二行，无横向溢出；`pages-probe` 在 1600px 跑完后切 800px 再验一次（无横向溢出 + 动作区换行）。
+- 761–920px 时顶栏动作区（新建 / 刷新 / 运行托盘 / 当前用户）约 600px，一行放不下会把标题挤到只剩几十像素。`@media (max-width:920px)` 让 `.ds-head-top` / `.ds-head-actions` 换行：800px 实测标题独占一行、动作区第二行，无横向溢出；`pages-probe` 在 1600px 跑完后切 800px 再验一次（无横向溢出 + 动作区换行）；同时每页检查「可聚焦却被 aria-hidden 藏起来」的节点。
 - **不做代码分割**：`web/vite.config.mjs` 的 `inlineDynamicImports` + `cssCodeSplit:false` 是 DSH 单文件插件的加载约定（`window.__ModuleLoader__` 只取一个 `client.js`）。拆 chunk 会让部署与加载找不到资源；要减体积只能删依赖或把非首屏逻辑做成运行时懒加载，不能靠 Rollup 拆包。
 
 ### 踩过的坑：Radix 门户跑出作用域
