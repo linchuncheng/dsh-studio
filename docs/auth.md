@@ -101,6 +101,10 @@
 修法：`attachSessionStore()` 见到 `store.db === null` 直接返回，不设标记；请求管线里 `await store.ready` 之后再 `if (SESSION_STORE === null) attachSessionStore(store)`，这样第一次请求一定能把库里的会话装回来。
 
 验证：登录拿到 token → `systemctl restart dsh-web` → 同一个 token 调 `/auth/me` 仍返回 `{ok:true,user:{id:'admin',role:'admin',source:'local'}}`。
+
+### 会话 token 只以哈希落库（2026-11-21）
+
+`sessions` 表存的是 token 的 SHA-256（`src/host/sessions.js`），不是明文；客户端拿原始 token，服务端算哈希后查内存表与台账。升级前的明文行在第一次 `listSessions()` 时自动改写成哈希，**重启不需要重新登录**。改口令会 `clearSessions()` 吊销全部旧会话——泄露的 token 不能继续用旧口令的授权。
 ﻿
 ### 卡片详情页签也换成 shadcn Tabs（2026-11-10）
 

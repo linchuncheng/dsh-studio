@@ -12,6 +12,8 @@ let host = {
   ldapLookup: async () => ({ ok: false, entries: [] }),
   ldapAttr: () => '',
   sessions: new Map(),
+  sessionKeyFor: token => token,
+  clearSessions: () => {},
   dropSession: () => {},
   hasSessionStore: () => false,
   publicState: () => ({}),
@@ -106,6 +108,8 @@ export async function handleAuthRoute({ method, route, req, res, store, url }) {
           ? { ...current, password: null, mustChange: true, updatedAt: Date.now() }
           : { ...current, password: hashLocalPassword(next), mustChange: false, updatedAt: Date.now() }
     })
+    /* 改口令 = 吊销所有旧会话：否则泄露的 token 仍然能用旧口令的授权。 */
+    host.clearSessions()
     await host.recordAudit(store, { by: host.operatorOf(req), route, level: 'admin', status: 200, ok: true, summary: body.reset === true ? '重置本地超管密码为默认' : '修改本地超管密码' })
     host.sendJson(res, 200, { ok: true, state: host.publicState(store) })
     return true
@@ -123,7 +127,7 @@ export async function handleAuthRoute({ method, route, req, res, store, url }) {
     const rawToken = req.headers['x-studio-session']
     const token = String((Array.isArray(rawToken) ? rawToken[0] : rawToken) ?? '').trim()
     if (token !== '') {
-      host.sessions.delete(token)
+      host.sessions.delete(host.sessionKeyFor(token))
       if (host.hasSessionStore()) host.dropSession(token)
     }
     host.sendJson(res, 200, { ok: true })

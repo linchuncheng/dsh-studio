@@ -38,7 +38,7 @@ export function LdapPanel({ config, onChanged }) {
     try {
       await api('/auth/password', { username: localAuth.username, currentPassword: oldPw, newPassword: newPw })
       setOldPw(''); setNewPw('')
-      setPwNote('密码已更新')
+      setPwNote('密码已更新；所有旧会话已失效，开着登录的话请重新登录')
       onChanged()
     } catch (cause) {
       setPwError(cause instanceof Error ? cause.message : String(cause))
