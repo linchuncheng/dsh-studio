@@ -175,7 +175,7 @@ function Board({ state, onOpen, onMove, onWip, onCreate }) {
         : null,
       filtering
         ? h('button', {
-          className: 'ds-btn', style: { padding: '4px 10px' },
+          className: 'ds-btn', style: { padding: '4px 12px' },
           onClick: () => { setQuery(''); setExpertFilter(''); setTypeFilter(''); setOnlyBlocked(false); setOnlyNoBody(false); setProjectFilter(''); setIterationFilter(''); setServiceFilter(''); setRequirementFilter('') },
         }, '清除筛选')
         : null,

@@ -377,7 +377,7 @@ export function SkillsPanel({ config, onChanged }) {
     stray.length > 0
       ? h('div', { className: 'ds-hint' }, `磁盘上还有 ${stray.length} 个不归这里管的技能目录：${stray.join('、')}`)
       : null,
-    h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', padding: '6px 0 10px', flexWrap: 'wrap' } },
+    h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', padding: '8px 0 12px', flexWrap: 'wrap' } },
       // 以前把 <input type=file> 藏在 <label class="ds-btn"> 里：长得像按钮，但
       // **键盘根本到不了**（label 不可聚焦，Tab 跳过它），屏幕阅读器也只报一个标签。
       // 改成正常按钮 + 隐藏的文件输入框：按钮能被 Tab 聚焦、Enter/Space 触发，

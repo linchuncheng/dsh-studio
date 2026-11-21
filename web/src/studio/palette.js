@@ -508,7 +508,7 @@ export function createPalette({ h, React, TextField }) {
         }),
         h('div', { className: 'ds-palette-list' },
           list.length === 0
-            ? h('div', { className: 'ds-hint', style: { padding: '10px 12px' } },
+            ? h('div', { className: 'ds-hint', style: { padding: '12px 12px' } },
               flow === null ? '没有匹配的内容' : flow.step === 'expert' ? '没有匹配的专家' : '没有匹配的卡片')
             : list.map((item, index) => h('div', {
               key: item.key,

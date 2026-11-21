@@ -141,7 +141,7 @@ export function ExpertsPanel({ config, onChanged }) {
       render: row => row,
       empty: '还没有专家，点「新增专家」建一个。',
     }),
-    h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', padding: '6px 0 10px' } },
+    h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', padding: '8px 0 12px' } },
       h('span', { className: 'ds-hint' }, '按业务领域一次生成四位：'),
       h(TextField, {
         className: 'ds-input', style: { maxWidth: 180 }, value: batchDomain, placeholder: '支付 / 风控 / 会员',
