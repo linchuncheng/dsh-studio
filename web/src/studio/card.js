@@ -2,9 +2,15 @@
    drag handle. Rendering only — every action is a callback from the board. */
 
 import { PRIORITY_LABEL, ROLE_LABEL } from './labels.js'
-import { icon } from './icons.js'
+import { uiIcon } from './icons.js'
 import { fmtDate, fmtTime } from './format.js'
 import { artifactsWithoutBody, cardOwner, caseSummaryOf, checkSummaryOf, commentCountOf } from './roster.js'
+
+/** SLA 剩余时间换成人能读的量级：48 小时以内给小时，再往上给天。 */
+function slaText(ms) {
+  const hours = Math.max(1, Math.round(Math.abs(ms) / 3600000))
+  return hours >= 48 ? `${Math.round(hours / 24)} 天` : `${hours}h`
+}
 
 export function createCard({ h, ChipField }) {
 function Card({ task, onOpen, config, requirements, onPickRequirement, onPickProject }) {
@@ -54,7 +60,7 @@ function Card({ task, onOpen, config, requirements, onPickRequirement, onPickPro
               event.stopPropagation()
               onPickRequirement(requirement.id)
             },
-          }, icon(h, 'file'), ` ${requirement.code || requirement.title || '需求'}`)
+          }, uiIcon(h, 'file'), ` ${requirement.code || requirement.title || '需求'}`)
         : h(ChipField, {
             className: 'ds-chip',
             'data-req-missing': '1',
@@ -77,10 +83,10 @@ function Card({ task, onOpen, config, requirements, onPickRequirement, onPickPro
           }, project.key || project.name)
         : null,
       iteration !== undefined
-        ? h(ChipField, { className: 'ds-chip', 'data-iter': '1', title: `迭代 ${iteration.name}（${iteration.start || '未定'} → ${iteration.due || '未定'}）` }, icon(h, 'clock'), ` ${iteration.name || iteration.id}`)
+        ? h(ChipField, { className: 'ds-chip', 'data-iter': '1', title: `迭代 ${iteration.name}（${iteration.start || '未定'} → ${iteration.due || '未定'}）` }, uiIcon(h, 'clock'), ` ${iteration.name || iteration.id}`)
         : null,
       service !== undefined
-        ? h(ChipField, { className: 'ds-chip', 'data-svc': '1', title: `服务 ${service.name}${service.repoPath ? `｜${service.repoPath}` : ''}（worktree 从这里切）` }, icon(h, 'suite'), ` ${service.name}`)
+        ? h(ChipField, { className: 'ds-chip', 'data-svc': '1', title: `服务 ${service.name}${service.repoPath ? `｜${service.repoPath}` : ''}（worktree 从这里切）` }, uiIcon(h, 'suite'), ` ${service.name}`)
         : (task.service ?? '') !== ''
           ? h(ChipField, { className: 'ds-chip', 'data-svc-missing': '1', title: `卡上记的服务 ${task.service} 已经不在项目里了（服务被改名或删除），重新选一个` }, '服务已失效')
           : null,
@@ -109,8 +115,8 @@ function Card({ task, onOpen, config, requirements, onPickRequirement, onPickPro
             'data-sla': task.sla.state,
             title: `SLA ${task.sla.hours} 小时，应修于 ${new Date(task.sla.dueAt).toLocaleString('zh-CN')}`,
           }, task.sla.state === 'overdue'
-            ? `逾期 ${Math.max(1, Math.round(Math.abs(task.sla.remaining) / 3600000))}h`
-            : task.sla.state === 'due_soon' ? '快到时限' : `剩 ${Math.max(1, Math.round(task.sla.remaining / 3600000))}h`)
+            ? `逾期 ${slaText(Math.abs(task.sla.remaining))}`
+            : task.sla.state === 'due_soon' ? '快到时限' : `剩 ${slaText(task.sla.remaining)}`)
         : null,
       task.duplicateOf ? h(ChipField, { className: 'ds-chip', title: '和另一张缺陷是同一件事' }, '重复') : null,
       (Number(task.reopenCount) || 0) > 0
@@ -134,16 +140,14 @@ function Card({ task, onOpen, config, requirements, onPickRequirement, onPickPro
       ? h('div', { className: 'ds-stalled-line' }, 'AI 上次没有正常结束，这张卡不会再被自动派单 —— 需要手动「重新派单」')
       : null,
     h('div', { className: 'ds-card-foot' },
-      h('span', {}, task.id),
       task.dueAt > 0 ? h('span', { 'data-overdue': overdue ? '1' : '0', style: overdue ? { color: 'var(--color-notification-error-foreground)', fontWeight: 600 } : null }, `· ${fmtDate(task.dueAt)}${overdue ? ' 逾期' : ''}`) : null,
-      check.total > 0 ? h('span', { title: '验收清单' }, icon(h, 'checks'), ` ${check.done}/${check.total}`) : null,
-      artifactCount > 0 ? h('span', { title: '已登记交付物' }, icon(h, 'attach'), ` ${artifactCount}`) : null,
+      check.total > 0 ? h('span', { title: '验收清单' }, uiIcon(h, 'checks'), ` ${check.done}/${check.total}`) : null,
+      artifactCount > 0 ? h('span', { title: '已登记交付物' }, uiIcon(h, 'attach'), ` ${artifactCount}`) : null,
       caseRun.total > 0 ? h('span', {
         className: caseRun.fail > 0 ? 'ds-case-fail' : '',
         title: `测试用例：通过 ${caseRun.pass}/${caseRun.total}${caseRun.fail > 0 ? `，不通过 ${caseRun.fail}` : ''}`,
-      }, icon(h, caseRun.fail > 0 ? 'resultFail' : 'resultPass'), ` ${caseRun.pass}/${caseRun.total}`) : null,
+      }, uiIcon(h, caseRun.fail > 0 ? 'resultFail' : 'resultPass'), ` ${caseRun.pass}/${caseRun.total}`) : null,
       noBody > 0 ? h('span', { className: 'ds-card-warn', title: `${noBody} 件交付物还没写正文，云盘文档里只有标题` }, '● 缺正文') : null,
-      (task.coding?.files?.length ?? 0) > 0 ? h('span', { title: 'AI Coding 改动文件数' }, `· ⌥ ${task.coding.files.length}`) : null,
       commentCountOf(task) > 0 ? h('span', {}, `· ${commentCountOf(task)} 评论`) : null,
       h('span', { style: { marginLeft: 'auto' } }, fmtTime(task.updatedAt)),
     ),

@@ -2227,7 +2227,7 @@ function installKeyboardActivation() {
               h('span', { className: 'ds-brand-mark' }, '◈'),
               h('div', null,
                 h('div', { className: 'ds-title' }, state.config.board.title),
-                h('div', { className: 'ds-sub' }, `${state.tasks.length} 个任务 · rev ${state.revision} · 更新于 ${fmtTime(state.updatedAt)}`),
+                h('div', { className: 'ds-sub', title: `数据版本 rev ${state.revision}（每次写操作递增）` }, `${state.tasks.length} 张卡 · ${fmtTime(state.updatedAt)} 更新`),
               ),
             ),
             h('div', { className: 'ds-head-actions' },
