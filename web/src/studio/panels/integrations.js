@@ -470,7 +470,7 @@ export function DocsSinkPanel({ config, onChanged }) {
   const weknora = docs.weknora ?? {}
   const [provider, setProvider] = React.useState(docs.provider ?? 'feishu')
   const [baseUrl, setBaseUrl] = React.useState(weknora.baseUrl ?? '')
-  const [apiKey, setApiKey] = React.useState(weknora.apiKey ?? '')
+  const [apiKey, setApiKey] = React.useState('')
   const [tenantId, setTenantId] = React.useState(weknora.tenantId ?? '')
   const [kb, setKb] = React.useState(weknora.knowledgeBaseId ?? '')
   const [busy, setBusy] = React.useState(false)
@@ -507,8 +507,8 @@ export function DocsSinkPanel({ config, onChanged }) {
         h(TextField, { className: 'ds-input', value: baseUrl, placeholder: 'http://192.168.120.200:8080/api/v1', onChange: event => setBaseUrl(event.target.value) }),
         '带不带 /api/v1 都行'),
       field('API Key',
-        h(TextField, { className: 'ds-input', value: apiKey, placeholder: 'sk-…', onChange: event => setApiKey(event.target.value) }),
-        '只需要 retrieve 能力；要跑问答再加 chat'),
+        h(TextField, { className: 'ds-input', value: apiKey, placeholder: weknora.apiKeySet ? '已配置（留空保持不变）' : 'sk-…', onChange: event => setApiKey(event.target.value) }),
+        weknora.apiKeySet ? '已保存；留空保持不变，输入新值会覆盖' : '只需要 retrieve 能力；要跑问答再加 chat'),
       field('租户 ID',
         h(TextField, { className: 'ds-input', value: tenantId, placeholder: '10000', onChange: event => setTenantId(event.target.value) })),
       field('知识库 ID',
