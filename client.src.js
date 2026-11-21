@@ -2267,9 +2267,9 @@ function installKeyboardActivation() {
                 ? h(ChipField, {
                     className: 'ds-chip',
                     'data-on': '1',
-                    title: '没配 LDAP 时平台默认以超管身份使用，不需要登录；写操作与审计都记在它名下',
-                  }, `👤 超管 ${state.config.localAuth?.username ?? 'admin'}`)
-                : h(ChipField, { className: 'ds-chip', title: `已登录：${authUser()?.id ?? ''}` }, `👤 ${authUser()?.name ?? authUser()?.id}`),
+                    title: `没配 LDAP 时平台默认以超管身份使用，不需要登录；写操作与审计都记在它名下${state.config.localAuth?.mustChange === true ? '。当前仍是默认口令 admin，请去「设置 → 统一登录」改掉' : ''}`,
+                  }, `👤 超管 ${state.config.localAuth?.username ?? 'admin'}${state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`)
+                : h(ChipField, { className: 'ds-chip', title: `已登录：${authUser()?.id ?? ''}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? '（仍是默认口令，去「设置 → 统一登录」改掉）' : ''}` }, `👤 ${authUser()?.name ?? authUser()?.id}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`),
               authUser() === null
                 ? h('button', { className: 'ds-btn ds-btn-ghost', title: '用域账号或本地超管账号登录', onClick: () => setShowLogin(true) }, '登录')
                 : tipOf('退出当前账号（退出后回到超管身份）', h('button', {

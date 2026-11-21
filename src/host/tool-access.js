@@ -42,7 +42,7 @@ export const TOOL_ACCESS = {
   studio_requirement_split: 'write',
   studio_requirement_signoff: 'write',
   studio_requirement_folder: 'write',
-  studio_project_save: 'write',
+  studio_project_save: 'admin',
   studio_skill_save: 'write',
   studio_skill_mine: 'write',
   studio_bug_duplicate: 'write',

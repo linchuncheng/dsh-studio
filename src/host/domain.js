@@ -70,10 +70,10 @@ export const LEVEL_RANK = { read: 0, write: 1, admin: 2 }
 /** 只有管理员能碰的动作：改全局配置、删东西、发布/回滚、装插件。 */
 export const ADMIN_ROUTES = new Set([
   '/config', '/access/save', '/access/delete',
-  '/task/delete', '/experts/delete', '/teams/delete', '/skills/delete',
-  '/projects/delete', '/repos/delete', '/bots/delete', '/requirement/delete',
-  '/release/delete', '/release/approve', '/release/publish', '/release/rollback',
-  '/market/install', '/market/uninstall', '/audit/clear', '/snapshot/restore',
+  '/task/delete', '/experts/delete', '/teams/delete', '/skills/delete', '/experts/save', '/teams/save', '/skills/upload',
+  '/projects/delete', '/repos/delete', '/bots/delete', '/requirement/delete', '/projects/save',
+  '/release/delete', '/release/approve', '/release/publish', '/release/rollback', '/release/gray',
+  '/market/install', '/market/uninstall', '/audit/clear', '/snapshot/restore', '/task/merge', '/reset',
 ])
 
 /**

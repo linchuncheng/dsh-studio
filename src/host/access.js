@@ -4,7 +4,7 @@
 import { ACCESS_ROLE_LABEL, ADMIN_ROUTES, LEVEL_RANK, ROLE_LEVEL } from './domain.js'
 
 /** 只是读、但走 POST 的入口（前端只有一处 api() 封装，固定发 POST）。 */
-export const READ_ONLY_POST_ROUTES = new Set(['/task/comments', '/task/parts', '/cases', '/team/memory', '/suite/list'])
+export const READ_ONLY_POST_ROUTES = new Set(['/task/comments', '/task/parts', '/cases', '/team/memory', '/suite/list', '/release/get', '/requirement/get', '/requirement/matrix', '/requirement/impact', '/contexts', '/contexts/session', '/access/explain'])
 
 /** 这个请求需要什么权限：读、写、还是管理员。 */
 export function accessLevelFor(route, method) {
@@ -20,7 +20,7 @@ export function checkAccess(config, operator, level, trusted = false) {
   const access = config?.access ?? { enabled: false, members: [] }
   if (access.enabled !== true) return null
   const raw = String(operator ?? '').trim()
-  if (trusted === true && raw.includes('超级管理员')) return null
+  if (trusted === true && raw === '超级管理员') return null
   const name = raw.toLowerCase()
   const member = access.members.find((item) => {
     const ids = [item.id, item.name].map((value) => String(value ?? '').trim().toLowerCase()).filter(Boolean)
@@ -114,6 +114,7 @@ export const DESTRUCTIVE_ROUTES = new Map([
   ['/market/install', 'INSTALL'],
   ['/market/uninstall', 'UNINSTALL'],
   ['/release/publish', 'PUBLISH'],
+  ['/task/merge', 'MERGE'],
   ['/release/rollback', 'ROLLBACK'],
   ['/reset', 'RESET'],
   ['/access/save', 'SAVE ACCESS'],

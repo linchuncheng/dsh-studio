@@ -23,6 +23,7 @@ export const DESTRUCTIVE_CONFIRM = {
   '/market/install': 'INSTALL',
   '/market/uninstall': 'UNINSTALL',
   '/release/publish': 'PUBLISH',
+  '/task/merge': 'MERGE',
   '/release/rollback': 'ROLLBACK',
   '/reset': 'RESET',
   '/access/save': 'SAVE ACCESS',

@@ -209,6 +209,11 @@ try {
   check('①b 运行托盘能展开并说明状态', tray !== null && (tray.text.includes('AI') || tray.text.includes('停摆') || tray.text.includes('没有正在跑')))
   await page.evaluate(() => document.querySelector('[data-run-tray] summary')?.click())
 
+  // ①c 默认口令提示：mustChange=true 时页头要能看见「默认口令」
+  const localAuth = (await state()).config?.localAuth ?? {}
+  const showsDefaultHint = (await page.evaluate(() => document.body.innerText)).includes('默认口令')
+  check('①c 默认口令有可见提示', (localAuth.mustChange === true) === showsDefaultHint, `mustChange=${localAuth.mustChange} 页面可见=${showsDefaultHint}`)
+
   // ② 抽屉：用例归功能点
   // 必须点探针自己造的那张卡：看板上还有真实卡片，点第一张会打开别人的卡（没有 pointId），
   // 于是这条断言永远失败，看起来像产品 bug。2026-11-21 真机定位到这里。

@@ -1,7 +1,7 @@
 # 更新日志
 
 
-## [0.9.55] — 待发布
+## [0.9.55] — 2026-11-21
 
 ### 文档出口：交付物可以投给 WeKnora 了
 
@@ -22,6 +22,11 @@
 
 `runTaskCases` 只对接口/浏览器用例解析测试环境，纯 shell 卡拿到 `undefined` 却直接读 `env.id`，
 抛 `Cannot read properties of undefined (reading 'id')` —— 用例建得出来、单条试跑也过，就是不能整卡跑。
+
+### 修复：WeKnora 重复同步会堆文档、只写知识库时提示 undefined
+
+- 交付物重复同步到 WeKnora 时，用台账里的 `knowledgeId` **先删旧、再建新**，同一件交付物不再越同步越多；
+- 只配 WeKnora 出口时，工具提示不再出现「已归档到云盘：undefined」，改成如实的「已归档到知识库」。
 
 ## [0.9.54] — 2026-11-21
 
