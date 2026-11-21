@@ -34,11 +34,24 @@ export function stateEtag(revision, viewer) {
 /** GET /state（和 `/`）：带 ETag，命中就 304。返回 true 表示这个请求已处理。 */
 export function handleStateRoute({ method, route, req, res, store }) {
   if (method !== 'GET' || (route !== '/' && route !== '/state')) return false
+  const asked = String(req?.headers?.['if-none-match'] ?? '')
+  /* 先拿 revision 判 ETag，再构建整包状态。
+     以前顺序反了：304 虽然一个字节都不发，但 publicState（含每条需求的准出计算）
+     每次都白算一遍。上千张卡时这是纯浪费。 */
+  const revision = typeof store?.snapshot === 'function' ? Number(store.snapshot().revision) || 0 : null
+  if (revision !== null) {
+    const etag = stateEtag(revision, req?.studioActor ?? '')
+    if (asked !== '' && asked === etag) {
+      if (typeof res?.writeHead === 'function') res.writeHead(304, { etag, 'cache-control': 'no-cache' })
+      else if (typeof res?.setHeader === 'function') res.setHeader('etag', etag)
+      res?.end?.()
+      return true
+    }
+  }
   const dispatcher = host.getDispatcher()
   const state = host.publicState(store)
   const body = dispatcher === undefined ? { ok: true, state } : { ok: true, state: { ...state, agents: dispatcher.status() } }
   const etag = stateEtag(body.state?.revision, req?.studioActor ?? '')
-  const asked = String(req?.headers?.['if-none-match'] ?? '')
   if (asked !== '' && asked === etag) {
     if (typeof res?.writeHead === 'function') res.writeHead(304, { etag, 'cache-control': 'no-cache' })
     else if (typeof res?.setHeader === 'function') res.setHeader('etag', etag)
