@@ -39,14 +39,14 @@ export     function IntakePage({ state, onChanged, mode }) {
         catch (error) { toast(error.message ?? String(error), 'error') }
       }
       const panel = (title, hint, body) => h('div', { 'data-panel': title === '业务提单' ? 'form' : (title.startsWith('业务提单 ') ? 'list' : 'status'), style: { border: '1px solid var(--border)', borderRadius: 10, background: 'var(--card)', display: 'flex', flexDirection: 'column', minWidth: 0 } },
-        h('div', { style: { padding: '10px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'baseline', gap: 8 } },
+        h('div', { style: { padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'baseline', gap: 8 } },
           h('div', { style: { fontSize: 13, fontWeight: 600 } }, title),
           h('span', { style: { fontSize: 11.5, color: 'var(--muted-foreground)' } }, hint),
         ),
-        h('div', { style: { padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 } }, body),
+        h('div', { style: { padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 } }, body),
       )
       return h('div', { className: 'ds-body', 'data-mode': mode ?? '', style: { overflowY: 'auto' } },
-        h('div', { style: { display: 'grid', gridTemplateColumns: 'minmax(0,1.15fr) minmax(0,.85fr)', gap: 12, padding: '14px 16px 20px', alignItems: 'start' } },
+        h('div', { style: { display: 'grid', gridTemplateColumns: 'minmax(0,1.15fr) minmax(0,.85fr)', gap: 12, padding: '16px 16px 20px', alignItems: 'start' } },
           panel('业务提单', '提交后进入「草稿」，等产品补 PRD', [
             h('div', { className: 'ds-field' }, h('div', { className: 'ds-label' }, '标题'), h(TextField, { id: 'ip-title', placeholder: '一句话说清要做什么' })),
             h('div', { className: 'ds-field' }, h('div', { className: 'ds-label' }, '描述（至少 10 字）'), h(TextAreaField, { id: 'ip-desc', rows: 4, placeholder: '现状、期望、影响范围' })),
@@ -72,13 +72,13 @@ h('div', { className: 'ds-field' }, h('div', { className: 'ds-label' }, '验收�
             h('div', { className: 'ds-field' }, h('div', { className: 'ds-label' }, '需求编号'), h(TextField, { id: 'ip-qcode', placeholder: 'REQ-2026-001' })),
             h('div', { className: 'ds-field' }, h('div', { className: 'ds-label' }, '联系方式后四位'), h(TextField, { id: 'ip-qcc', 'aria-label': '联系方式后四位' })),
             h('div', null, h('button', { className: 'ds-btn', onClick: query }, '查询')),
-            result === '' ? null : h('div', { style: { padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--muted)', fontSize: 12, lineHeight: 1.6 } }, result),
+            result === '' ? null : h('div', { style: { padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--muted)', fontSize: 12, lineHeight: 1.6 } }, result),
           ]),
           h('div', { style: { gridColumn: '1 / -1' } },
             panel('业务提单 ' + business.length + ' 条', '转产品 = 送进待评审；产品补 PRD 后才能拆卡', [
               business.length === 0
                 ? h('div', { className: 'ds-empty' }, '还没有业务提单。')
-                : business.map(item => h('div', { key: item.id, style: { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--card)' } },
+                : business.map(item => h('div', { key: item.id, style: { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--card)' } },
                   h('div', { style: { minWidth: 0, flex: '1 1 auto', display: 'flex', flexDirection: 'column', gap: 2 } },
                     h('div', { style: { fontSize: 12.5, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, (item.code || '未编号') + '　' + item.title),
                     h('div', { style: { fontSize: 11.5, color: 'var(--muted-foreground)' } }, (REQ_STATUS_LABEL[item.status] ?? item.status) + ' · ' + (item.requester?.name ?? '') + (item.requester?.dept ? '（' + item.requester.dept + '）' : '')),
@@ -748,7 +748,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
                     key: item.id,
                     className: 'ds-question-row',
                     'data-status': item.status,
-                    style: { display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--card)' },
+                    style: { display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--card)' },
                   },
                     h('span', { className: 'ds-chip', 'data-on': item.status === 'answered' ? '1' : '0' }, item.status === 'answered' ? '已回答' : '待回答'),
                     h('div', { style: { flex: '1 1 auto', minWidth: 0 } },
@@ -1047,7 +1047,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
             h('div', { className: 'ds-pane-desc' }, '功能点是需求的骨架：一条功能点对若干张卡、若干条用例。卡和用例上都挂 pointId，这里就能看出哪条没人做、哪条没被验证。'),
           ),
           matrix === null
-            ? h('div', { className: 'ds-hint', style: { padding: '6px 0' } }, '还没有功能点。点「＋ 加功能点」把需求拆成可交付、可验证的条目。')
+            ? h('div', { className: 'ds-hint', style: { padding: '8px 0' } }, '还没有功能点。点「＋ 加功能点」把需求拆成可交付、可验证的条目。')
             : h('div', { className: 'ds-matrix' },
               h('div', { className: 'ds-matrix-sum' },
                 `功能点 ${matrix.summary.points} · 已覆盖 ${matrix.summary.coveredPoints}${matrix.summary.pointsWithoutCases > 0 ? `（${matrix.summary.pointsWithoutCases} 条还没有用例，覆盖率 ${matrix.summary.coverageRate}%）` : ''} · 卡 ${matrix.summary.cards}（未归点 ${matrix.summary.looseCards}）· 用例 ${matrix.summary.cases}（通过 ${matrix.summary.pass}${matrix.summary.fail > 0 ? `，失败 ${matrix.summary.fail}` : ''}）· 通过率 ${matrix.summary.passRate}%`,

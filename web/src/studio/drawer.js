@@ -1031,7 +1031,7 @@ function Drawer({ task, state, onClose, onChanged }) {
         h('div', { className: 'ds-field', style: { flex: 1 } },
           h('div', { className: 'ds-label' }, 'GitLab MR'),
           (task.gitlabMR?.iid ?? 0) > 0
-            ? h('div', { className: 'ds-art-row', style: { padding: '6px 0', borderBottom: 'none' } },
+            ? h('div', { className: 'ds-art-row', style: { padding: '8px 0', borderBottom: 'none' } },
                 h(ChipField, { className: 'ds-chip', 'data-on': task.gitlabMR.state === 'opened' ? '1' : undefined }, `MR !${task.gitlabMR.iid} · ${task.gitlabMR.state}`),
                 h('div', { className: 'ds-grow' },
                   h('div', { className: 'ds-art-title' }, task.gitlabMR.title || `MR !${task.gitlabMR.iid}`),

@@ -70,7 +70,7 @@ export function createRunTray({ h, React, api }) {
       const expert = (state.config?.experts ?? []).find(item => item.id === info.expert)
       return h('div', {
         key: String(info.sessionId ?? info.taskId ?? info.expert),
-        style: { padding: '5px 4px', borderTop: '1px solid var(--ds-line-soft, var(--ds-line))' },
+        style: { padding: '4px 4px', borderTop: '1px solid var(--ds-line-soft, var(--ds-line))' },
       },
         h('div', { style: { fontSize: 12, lineHeight: 1.4 } },
           h('b', null, task?.code || String(info.taskId ?? '任务')),
@@ -100,7 +100,7 @@ export function createRunTray({ h, React, api }) {
         style: {
           position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 30, minWidth: 280, maxWidth: 380,
           background: 'var(--ds-surface, var(--ds-card))', border: '1px solid var(--ds-line)',
-          borderRadius: 8, boxShadow: 'var(--ds-shadow, 0 8px 24px rgba(0,0,0,.18))', padding: '6px 8px',
+          borderRadius: 8, boxShadow: 'var(--ds-shadow, 0 8px 24px rgba(0,0,0,.18))', padding: '8px 8px',
         },
       },
         failed

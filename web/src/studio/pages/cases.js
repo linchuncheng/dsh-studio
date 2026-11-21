@@ -276,7 +276,7 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
         ),
         error !== null ? h('div', { className: 'ds-err' }, error) : null,
         rows === null
-          ? h('div', { className: 'ds-hint', style: { padding: '10px 2px' } }, '载入用例…')
+          ? h('div', { className: 'ds-hint', style: { padding: '12px 2px' } }, '载入用例…')
           : list.length === 0
             ? h('div', { className: 'ds-empty' },
               h('div', null, '没有符合条件的用例。用例登记在卡片详情的「测试」里。'),

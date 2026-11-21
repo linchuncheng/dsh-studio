@@ -9,11 +9,11 @@ import { Button as BoarduiButton } from '../../boardui/index'
 
 const CTX_COLORS = ['#4A5699', '#C45FA0', '#6277BA', '#F39A2B', '#94a3b8']
 const CTX_NUM = { width: 56, textAlign: 'right', fontSize: 12, flexShrink: 0 }
-const CTX_ROW = { display: 'flex', alignItems: 'center', gap: 12, padding: '7px 6px', borderTop: '1px solid var(--ds-line)', cursor: 'pointer' }
-const CTX_DETAIL = { padding: '6px 8px 12px', borderTop: '1px dashed var(--ds-line)' }
+const CTX_ROW = { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 8px', borderTop: '1px solid var(--ds-line)', cursor: 'pointer' }
+const CTX_DETAIL = { padding: '8px 8px 12px', borderTop: '1px dashed var(--ds-line)' }
 const CTX_STACK = { display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden', background: 'var(--ds-line)', margin: '4px 0 10px' }
 const CTX_LEGEND = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontSize: 12 }
-const CTX_CHIP = { display: 'flex', flexDirection: 'column', gap: 2, padding: '6px 10px', border: '1px solid var(--ds-line)', borderRadius: 8, minWidth: 84 }
+const CTX_CHIP = { display: 'flex', flexDirection: 'column', gap: 2, padding: '8px 12px', border: '1px solid var(--ds-line)', borderRadius: 8, minWidth: 84 }
 
 export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
   const { h, React, api, SelectField } = client()
