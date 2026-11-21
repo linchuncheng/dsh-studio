@@ -2235,3 +2235,83 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
     scroll-behavior: auto !important;
   }
 }
+
+/* ========================================================================
+ * unslop pass 1 —— 4px 间距网格 / 圆角层级 / chip 形状（纯 CSS）
+ *
+ * 体检（npm run audit:ui）里量到的三件事：
+ *   1. 面板、卡片、按钮全是 10px 圆角（--radius-2lg），层级被抹平；
+ *   2. 非 4px 网格最多的是 6px（1044 次）与 11/15（面板头内边距）；
+ *   3. chip 是 999px 胶囊（32 面 253 个），面板却是 10px 方角。
+ *
+ * 定一套层级：面板/弹窗 12 · 卡片 10 · 控件 8 · chip 6 · 状态点全圆。
+ * 间距只走 4/8/12/16/24。用 html body 提一级，压过 client.src.js 里同名的
+ * [data-dsh-studio] 规则（那是运行时注入、同特异性会赢）。
+ * ======================================================================== */
+
+[data-dsh-studio] .ds-body { padding: 24px; }
+
+html body [data-dsh-studio] .ds-head { padding: 16px 24px 0; }
+
+[data-dsh-studio] .ds-panel { border-radius: 12px; margin-bottom: 16px; }
+
+[data-dsh-studio] .ds-card { border-radius: 10px; padding: 12px; }
+
+[data-dsh-studio] .ds-panel-head {
+  padding: 12px 16px;
+  min-height: 48px;
+  gap: 8px;
+}
+
+[data-dsh-studio] .ds-panel-body {
+  padding: 16px !important;
+  gap: 12px;
+}
+
+[data-dsh-studio] .ds-btn { border-radius: 8px; gap: 8px; }
+
+[data-dsh-studio] .ds-chip {
+  border-radius: 6px;
+  padding: 0 8px;
+}
+
+/* 抽屉头/内层页签：跟控件同一档圆角，不再用 10px */
+[data-dsh-studio] .ds-dw-head { gap: 8px; }
+[data-dsh-studio] .ds-dw-tabs { padding: 4px; gap: 4px; border-radius: 8px; }
+[data-dsh-studio] .ds-dw-tab { border-radius: 6px; height: 28px; }
+
+/* 弹窗与 KPI 卡：这两处被 client.src.js 的 [data-dsh-studio] 规则覆盖过 */
+html body [data-dsh-studio] .ds-modal { border-radius: 12px; }
+html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
+
+/* 新建弹窗 2 列装 7 张，末行永远落单一张 —— 让最后一张跨两列 */
+[data-dsh-studio] .ds-modal-grid > :last-child:nth-child(odd) { grid-column: span 2; }
+
+/* 需求详情 7 个统计格：auto-fit 在宽屏会挤出第 8、9 个空列，固定 7 列一行 */
+[data-dsh-studio] .ds-req-stats {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 1100px) { [data-dsh-studio] .ds-req-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 720px) { [data-dsh-studio] .ds-req-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+[data-dsh-studio] .ds-kpi-section { margin-bottom: 16px; }
+
+/* 次要文字用颜色表达层级，不用 opacity —— .5 的 11px 字实际对比度只有 2.6:1，
+   量不出来是因为脚本只看 color、不看元素 opacity。 */
+[data-dsh-studio] .ds-hint { opacity: 1; color: var(--ds-muted, var(--muted-foreground)); }
+[data-dsh-studio] .ds-meta { opacity: 1; color: var(--ds-muted, var(--muted-foreground)); }
+
+/* 胶囊不是只有 .ds-chip 一个类：全站 253 个 999px 分布在下面这一族里。
+   除了真正的状态点（6px）与进度条，其余统一收到 6px。 */
+[data-dsh-studio] .ds-ok,
+[data-dsh-studio] .ds-err,
+[data-dsh-studio] .ds-suite,
+[data-dsh-studio] .ds-reg-item,
+[data-dsh-studio] .ds-palette-kind { border-radius: 6px; padding: 0 6px; }
+
+[data-dsh-studio] .ds-meta .ds-chip[data-role] { border-radius: 6px; }
+[data-dsh-studio] .ds-col-owner-name { border-radius: 6px; }
+
+/* 计数徽标：18px 的小方块比胶囊更安静（看板列头的那个数字） */
+[data-dsh-studio] .ds-count { border-radius: 6px; }
