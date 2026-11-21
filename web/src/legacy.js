@@ -950,6 +950,12 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 [data-dsh-studio] ::-webkit-scrollbar-thumb:hover { background:color-mix(in srgb, currentColor 38%, transparent); }
 [data-dsh-studio] ::-webkit-scrollbar-corner { background:transparent; }
 
+/* 中窄屏（761–920px）：顶栏动作区有 600px 宽（新建 / 刷新 / 运行托盘 / 当前用户），
+   一行放不下时会把标题挤到只剩几十像素；先让动作区换行，标题保持可读。 */
+@media (max-width:920px) {
+  .ds-head-top { flex-wrap:wrap; gap:8px; }
+  .ds-head-actions { flex-wrap:wrap; gap:6px; margin-left:0; }
+}
 /* ---- 窄屏（平板竖屏 / 手机）：单列、卡片占满、按钮换行 ---- */
 @media (max-width:760px) {
   .ds-head { padding:10px 12px 0; }

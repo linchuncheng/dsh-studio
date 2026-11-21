@@ -128,6 +128,11 @@ pnpm build            # make-legacy → vite build → sync-client，一次跑�
 - `client.js` 的 `confirmDialog(message, options)` / `promptDialog(message, options)` 返回 Promise，`DialogHost` 挂在工作区根节点上；没有 UIKIT 时自动回落原生弹窗，保证纯单文件产物仍可用。
 - 列表行统一：`.ds-listrow` 内按钮 26px 高、幽灵按钮 hover 才显形；`[data-danger="1"]` 的按钮红字 + 淡红 hover；`.ds-audit-row` 行高 7/14；窄屏（≤900px）缩小 spark 日期字号、≤760px 隔天显示，避免 14 个标签挤成一排。
 
+### 中窄屏顶栏与代码分割（2026-11-21）
+
+- 761–920px 时顶栏动作区（新建 / 刷新 / 运行托盘 / 当前用户）约 600px，一行放不下会把标题挤到只剩几十像素。`@media (max-width:920px)` 让 `.ds-head-top` / `.ds-head-actions` 换行：800px 实测标题独占一行、动作区第二行，无横向溢出；`pages-probe` 在 1600px 跑，另用 800px 临时复验过。
+- **不做代码分割**：`web/vite.config.mjs` 的 `inlineDynamicImports` + `cssCodeSplit:false` 是 DSH 单文件插件的加载约定（`window.__ModuleLoader__` 只取一个 `client.js`）。拆 chunk 会让部署与加载找不到资源；要减体积只能删依赖或把非首屏逻辑做成运行时懒加载，不能靠 Rollup 拆包。
+
 ### 踩过的坑：Radix 门户跑出作用域
 
 Tailwind 产物被 `web/scripts/scope-css.mjs` 改写成 `[data-dsh-studio] .fixed …`；而 Radix 的 Portal 默认挂到 `document.body`，门户里的元素不在这个子树里，定位类全部失效，弹窗会掉到页面末尾变成一段普通文本流（UIA 能读到文字、肉眼看不见）。
