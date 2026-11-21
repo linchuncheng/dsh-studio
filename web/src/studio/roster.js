@@ -3,6 +3,7 @@
    callers pass the live config, nothing here touches the store. */
 
 import { ROLE_LABEL, STRATEGY_LABEL } from './labels.js'
+import { expertIconName } from './icons.js'
 
 export function toDateInput(value) {
   if (typeof value !== 'number' || value === 0) return ''
@@ -19,13 +20,13 @@ export function fromDateInput(text) {
 
 export function memberLabel(config, member) {
   if (member === undefined || member === null) return ''
-  if (member.kind === 'role') return `🎯 ${ROLE_LABEL[member.id] ?? member.id}`
+  if (member.kind === 'role') return ROLE_LABEL[member.id] ?? String(member.id ?? '')
   if (member.kind === 'team') {
     const team = (config.teams ?? []).find(entry => entry.id === member.id)
-    return team === undefined ? '' : `👥 ${team.name}`
+    return team === undefined ? '' : team.name
   }
   const expert = (config.experts ?? []).find(entry => entry.id === member.id)
-  return expert === undefined ? (ROLE_LABEL[member.id] ?? String(member.id ?? '')) : `${expert.emoji} ${expert.name}`
+  return expert === undefined ? (ROLE_LABEL[member.id] ?? String(member.id ?? '')) : expert.name
 }
 
 export function ownerLabel(config, owner) {
@@ -46,7 +47,7 @@ export function buildRoster(config) {
     items.push({
       key: 'r:' + role,
       name: '角色 · ' + (ROLE_LABEL[role] ?? role),
-      emoji: '🎯',
+      icon: 'role',
       hint: '按角色位派单，具体人按卡片业务领域挑',
       group: '角色位',
     })
@@ -56,7 +57,7 @@ export function buildRoster(config) {
     items.push({
       key: 'e:' + expert.id,
       name: expert.name,
-      emoji: expert.emoji ?? '🤖',
+      icon: expertIconName(expert),
       hint: [expert.description, expert.domain ? `${expert.domain} · ${ROLE_LABEL[expert.role] ?? expert.role}` : ROLE_LABEL[expert.role] ?? expert.role].filter(Boolean).join(' · '),
       group: '专家',
     })
@@ -65,7 +66,7 @@ export function buildRoster(config) {
     items.push({
       key: 't:' + team.id,
       name: team.name,
-      emoji: team.emoji ?? '👥',
+      icon: 'team',
       hint: `团长 ${config?.experts?.find(expert => expert.id === team.lead)?.name ?? '未设'} · ${(team.members ?? []).length} 位成员`,
       group: '专家团',
     })
@@ -83,10 +84,10 @@ export function cardOwner(task, config) {
   const experts = config.experts ?? []
   if (task.dispatch?.state === 'running' && task.dispatch?.expert) {
     const running = experts.find(expert => expert.id === task.dispatch.expert)
-    if (running !== undefined) return { label: `${running.emoji} ${running.name}`, note: '正在处理', expert: running }
+    if (running !== undefined) return { label: running.name, note: '正在处理', expert: running }
   }
   const assigned = experts.find(expert => expert.id === task.expert)
-  if (assigned !== undefined) return { label: `${assigned.emoji} ${assigned.name}`, note: '卡上指派', expert: assigned }
+  if (assigned !== undefined) return { label: assigned.name, note: '卡上指派', expert: assigned }
   const owner = config.columns?.[task.status]
   if (owner !== undefined && Array.isArray(owner.members) && owner.members.length > 0) {
     if (owner.members.length === 1) {

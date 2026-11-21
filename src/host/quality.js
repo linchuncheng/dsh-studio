@@ -77,7 +77,7 @@ export function buildQuality(state, runs) {
   const runById = new Map(runRows.map(item => [item.name, item]))
   const experts = [...perExpert.values()].map(row => {
     const info = (state?.config?.experts ?? []).find(item => item.id === row.key)
-    const label = info === undefined ? row.key : `${info.emoji ?? ''} ${info.name}`.trim()
+    const label = info === undefined ? row.key : String(info.name ?? row.key)
     // 先按 id 认领（派单日志里带了 expertId），再退回名字。
     const run = runById.get(row.key) ?? runByName.get(String(info?.name ?? row.key).toLowerCase())
     return {

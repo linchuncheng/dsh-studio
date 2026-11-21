@@ -676,7 +676,7 @@ export function registerTools(ctx, store) {
       const dispatcher = host.getActiveDispatcher()
       const running = dispatcher === undefined ? [] : [...dispatcher.running.values()]
       const report = host.workloadReport(store.snapshot(), running)
-      const lines = report.experts.filter(item => item.enabled).map(item => `${item.emoji} ${item.name}：在跑 ${item.running} · 在办 ${item.open} · 近7天完成 ${item.done7d}${item.overdue > 0 ? ` · 逾期缺陷 ${item.overdue}` : ''}`)
+      const lines = report.experts.filter(item => item.enabled).map(item => `${item.name}：在跑 ${item.running} · 在办 ${item.open} · 近7天完成 ${item.done7d}${item.overdue > 0 ? ` · 逾期缺陷 ${item.overdue}` : ''}`)
       return lines.length === 0 ? '还没有配置专家。' : [`同时有 ${report.busy} 位专家在跑。`, ...lines].join('\n')
     },
   }))

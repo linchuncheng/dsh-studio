@@ -260,7 +260,7 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
       ? null
       : h('div', { className: 'ds-panel', style: { marginTop: 12 } },
         h('div', { className: 'ds-panel-head' },
-          `${ov.overLimit ? '⚠ ' : ''}强制放行 ${ov.total} 次`,
+          `${ov.overLimit ? '超限 · ' : ''}强制放行 ${ov.total} 次`,
           h('span', { className: 'ds-hint' }, `卡 ${ov.cards} · 需求 ${ov.requirements}${ov.noReason > 0 ? ` · ${ov.noReason} 次没写原因` : ''}（区间内）`)),
         ov.overLimit
           ? h('div', { className: 'ds-err' }, `超过上限 ${ov.max} 次：这个口子用得太勤了，先看看下面每一次是不是真的必要`)
@@ -368,7 +368,7 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
           (load?.experts ?? []).filter(item => item.enabled).length === 0
             ? h('div', { className: 'ds-empty' }, '还没有启用的专家。')
             : (load?.experts ?? []).filter(item => item.enabled).map(item => h('div', { key: item.id, className: 'ds-an-row' },
-              h('span', { className: 'ds-an-name' }, `${item.emoji} ${item.name}`),
+              h('span', { className: 'ds-an-name' }, `${item.name}`),
               // 这里原来是自己画的 .ds-an-track/.ds-an-fill —— 同一页里出现了两条进度条实现
               // （另一条走 kit('ProgressBar')）。统一交给 ProgressField，它渲染官方 Meter。
               h(ProgressField, {

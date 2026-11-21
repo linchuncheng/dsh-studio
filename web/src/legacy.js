@@ -284,7 +284,7 @@ export function createStudio(React, h) {
     // color-mix(currentColor N%, transparent)），所以只要在根元素上定住 color 与 background，
     // 再把 --ds-surface、--ds-accent 换掉，整块面板就会跟着换肤，不用逐条改样式。
     const THEME_KEY = 'dsh-studio:theme'
-    const THEMES = [['light', '☀ 明亮'], ['dark', '☾ 黑暗'], ['system', '跟随系统']]
+    const THEMES = [['light', '明亮'], ['dark', '黑暗'], ['system', '跟随系统']]
 
     function systemDarkQuery() {
       return typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: dark)') : null
@@ -463,7 +463,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
   background:color-mix(in srgb, var(--ds-accent) 14%, transparent); color:var(--ds-accent); font-size:13px; }
 .ds-head-actions { margin-left:auto; display:flex; align-items:center; gap:8px; flex:none; }
 .ds-head-tabs { display:flex; align-items:center; flex-wrap:wrap; row-gap:6px; gap:10px; padding-bottom:9px; }
-.ds-title { font-size:16px; font-weight:650; letter-spacing:.01em; }
+.ds-title { font-size:16px; font-weight:600; letter-spacing:.01em; }
 .ds-sub { font-size:12px; opacity:.55; }
 .ds-tabs { display:inline-flex; gap:2px; padding:3px; border-radius:10px; background:var(--ds-soft); border:1px solid var(--ds-line);
   max-width:100%; overflow-x:auto; scrollbar-width:none; }
@@ -568,7 +568,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-proj-name { font-size:14px; font-weight:600; }
 .ds-proj-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px 12px; }
 .ds-proj-stats > div { display:flex; flex-direction:column; }
-.ds-proj-stats b { font-size:16px; font-weight:650; line-height:1.2; }
+.ds-proj-stats b { font-size:16px; font-weight:600; line-height:1.2; }
 .ds-proj-stats b[data-warn="1"] { color:var(--ds-danger-text); }
 .ds-proj-stats span { font-size:11px; opacity:.6; }
 .ds-proj-bar { margin-top:2px; }
@@ -594,7 +594,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 @media (max-width:560px) { .ds-kpi-grid { grid-template-columns:minmax(0,1fr); } }
 .ds-kpi { position:relative; overflow:hidden; border:1px solid var(--ds-line); border-radius:10px; padding:11px 13px 12px; background:var(--ds-card); box-shadow:var(--ds-shadow), inset 3px 0 0 color-mix(in srgb, var(--ds-accent) 55%, transparent); }
 .ds-kpi[data-warn="1"] { border-color: color-mix(in srgb, var(--color-notification-error-foreground) 40%, var(--ds-line)); box-shadow:inset 3px 0 0 color-mix(in srgb, #e5484d 70%, transparent); }
-.ds-kpi-value { font-size:23px; font-weight:650; letter-spacing:-.02em; line-height:1.15; }
+.ds-kpi-value { font-size:23px; font-weight:600; letter-spacing:0; line-height:1.15; font-variant-numeric:tabular-nums; }
 .ds-kpi[data-warn="1"] .ds-kpi-value { color:var(--ds-danger-text); }
 .ds-kpi-label { font-size:12px; font-weight:600; margin-top:1px; }
 .ds-kpi-hint { font-size:11px; opacity:.6; margin-top:3px; line-height:1.45; }
@@ -613,7 +613,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-span-12 { grid-column:span 12; }
 @media (max-width:1180px) { .ds-span-3, .ds-span-4, .ds-span-5 { grid-column:span 6; } .ds-span-7, .ds-span-8, .ds-span-9 { grid-column:span 12; } }
 @media (max-width:760px) { .ds-an-grid > .ds-panel { grid-column:span 12; } }
-.ds-an-sec { display:flex; align-items:baseline; gap:10px; margin:14px 0 8px; padding-bottom:2px; font-size:12px; font-weight:600; letter-spacing:.02em; opacity:.8; }
+.ds-an-sec { display:flex; align-items:baseline; gap:10px; margin:14px 0 8px; padding-bottom:2px; font-size:12px; font-weight:600; letter-spacing:0; color:var(--ds-muted); }
 .ds-an-sec .ds-hint { margin-left:auto; font-weight:400; opacity:.75; }
 /* 栅格里已由 gap 控制间距，panel 自带的 margin-bottom 会把行高顶歪 */
 .ds-an-grid > .ds-panel { margin-bottom:0; }
@@ -637,16 +637,16 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-chip[data-role="dev"] { color:#0f9d58; border-color:#0f9d5855; }
 .ds-chip[data-role="qa"] { color:#e08600; border-color:#e0860055; }
 .ds-chip-ai { color:var(--ds-accent); border-color:var(--ds-accent); animation: ds-pulse 1.6s ease-in-out infinite; }
-.ds-chip-blocked { color:#fff; background:#e5484d; border-color:#e5484d; font-weight:650; }
+.ds-chip-blocked { color:#fff; background:#e5484d; border-color:#e5484d; font-weight:600; }
 .ds-card-warn { color:var(--ds-danger-text); font-size:11px; font-weight:600; white-space:nowrap; }
 .ds-case-fail { color:var(--ds-danger-text); font-weight:600; }
 .ds-card[data-nobody="1"] .ds-card-warn { animation: ds-pulse 2.2s ease-in-out infinite; }
 .ds-card[data-nobody="1"] { border-color: color-mix(in srgb, #e5484d 42%, var(--ds-line)); }
 .ds-art-row[data-missing="1"] { background: color-mix(in srgb, #e5484d 5%, transparent); }
-.ds-chip-bug { color:#c0392b; border-color:#c0392b66; background:color-mix(in srgb, #c0392b 8%, transparent); font-weight:650; }
+.ds-chip-bug { color:#c0392b; border-color:#c0392b66; background:color-mix(in srgb, #c0392b 8%, transparent); font-weight:600; }
 .ds-chip-bug[data-sev="p0"] { color:#fff; background:#c0392b; border-color:#c0392b; }
 .ds-chip-bug[data-sev="p1"] { color:#c0392b; background:color-mix(in srgb, #c0392b 16%, transparent); }
-.ds-chip[data-sla="overdue"] { color:#fff; background:#e5484d; border-color:#e5484d; font-weight:650; }
+.ds-chip[data-sla="overdue"] { color:#fff; background:#e5484d; border-color:#e5484d; font-weight:600; }
 .ds-chip[data-sla="due_soon"] { color:var(--ds-warn-text); border-color:#b4530966; background:color-mix(in srgb, #d97706 12%, transparent); }
 .ds-chip[data-sla="ok"] { color:#137a4b; border-color:#137a4b55; background:color-mix(in srgb, #0f9d58 8%, transparent); }
 .ds-smoke-done { color:color-mix(in srgb, currentColor 55%, transparent); text-decoration:line-through; }
@@ -705,7 +705,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-settings { display:grid; grid-template-columns:186px minmax(0,1fr); gap:18px; align-items:start; width:100%; }
 .ds-settings-nav { position:sticky; top:8px; display:flex; flex-direction:column; gap:1px;
   border-right:1px solid var(--ds-line); padding:0 10px 10px 0; }
-.ds-settings-nav-group { font-size:11px; letter-spacing:.08em; opacity:.45; padding:10px 10px 4px; }
+.ds-settings-nav-group { font-size:12px; letter-spacing:0; color:var(--ds-muted); padding:10px 10px 4px; }
 .ds-nav-item { display:flex; align-items:center; gap:8px; width:100%; text-align:left; font:inherit; color:inherit;
   border:0; background:none; padding:7px 10px; border-radius:10px; cursor:pointer; font-size:13px; line-height:1.2; }
 .ds-nav-item:hover { background:var(--ds-soft2); }
@@ -714,7 +714,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-nav-count { margin-left:auto; font-size:11px; opacity:.5; font-variant-numeric:tabular-nums; }
 .ds-settings-pane { min-width:0; width:100%; max-width:1060px; padding-bottom:24px; }
 .ds-pane-head { margin:0 0 14px; display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-.ds-pane-title { font-size:14px; font-weight:650; letter-spacing:.01em; }
+.ds-pane-title { font-size:14px; font-weight:600; letter-spacing:.01em; }
 .ds-pane-desc { font-size:11px; opacity:.55; margin-top:3px; max-width:62ch; line-height:1.55; }
 .ds-settings-pane > .ds-panel:last-child { margin-bottom:0; }
 @media (max-width: 760px) {
@@ -744,7 +744,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-modal { width:min(560px,96vw); max-height:min(86vh,760px); overflow:auto; display:flex; flex-direction:column; gap:14px;
   background:var(--ds-surface); color:inherit; border:1px solid var(--ds-line); border-radius:16px; padding:20px 22px;
   box-shadow:0 24px 60px #0000003d; }
-.ds-modal h3 { margin:0; font-size:16px; font-weight:650; }
+.ds-modal h3 { margin:0; font-size:16px; font-weight:600; }
 .ds-modal-foot { display:flex; align-items:center; gap:10px; padding-top:2px; }
 .ds-modal-foot .ds-grow { flex:1; }
 .ds-modal-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -832,8 +832,8 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-cm[data-kind="human"] .ds-cm-avatar { background:var(--ds-accent); border-color:transparent; }
 .ds-cm-initial { font-size:12px; font-weight:700; color:#fff; line-height:1; }
 .ds-cm-head { display:flex; align-items:center; gap:7px; margin-bottom:5px; flex-wrap:wrap; }
-.ds-cm-name { font-size:12px; font-weight:650; }
-.ds-cm-kind { font-size:11px; letter-spacing:.06em; text-transform:uppercase; padding:0 5px; line-height:15px;
+.ds-cm-name { font-size:12px; font-weight:600; }
+.ds-cm-kind { font-size:11px; letter-spacing:0; text-transform:none; padding:0 5px; line-height:15px;
   border-radius:10px; border:1px solid currentColor; opacity:.75; }
 .ds-cm[data-kind="human"] .ds-cm-kind { color:var(--ds-accent); }
 .ds-cm[data-kind="agent"] .ds-cm-kind { opacity:.45; }
@@ -885,7 +885,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-req-detail { border:1px solid var(--ds-line); border-radius:10px; padding:16px 18px; min-height:220px; }
 .ds-req-headline { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
 .ds-req-code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; opacity:.6; letter-spacing:.02em; }
-.ds-req-name { font-size:16px; font-weight:650; margin-top:2px; line-height:1.35; }
+.ds-req-name { font-size:16px; font-weight:600; margin-top:2px; line-height:1.35; }
 .ds-req-actions { display:flex; align-items:center; gap:8px; flex:0 0 auto; }
 .ds-req-actions .ds-select { width:auto; min-width:96px; height:28px; }
 .ds-req-links { display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; }
@@ -894,7 +894,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-req-desc { margin-top:10px; font-size:12px; line-height:1.65; opacity:.92; }
 .ds-req-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:8px; margin-top:14px; }
 .ds-stat-box { border:1px solid var(--ds-line); border-radius:10px; padding:8px 10px; display:flex; flex-direction:column; gap:2px; }
-.ds-stat-box b { font-size:16px; font-weight:650; }
+.ds-stat-box b { font-size:16px; font-weight:600; }
 .ds-matrix { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
 .ds-matrix-sum { font-size:12px; opacity:.72; padding:6px 0 2px; }
 .ds-pt-row { display:flex; align-items:flex-start; gap:14px; padding:10px 12px; border:1px solid var(--ds-line); border-left:3px solid color-mix(in srgb, currentColor 20%, transparent); border-radius:10px; }
@@ -929,7 +929,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-base-box { display:flex; align-items:center; justify-content:space-between; gap:12px; border:1px solid var(--ds-line); border-radius:10px; padding:9px 12px; margin-top:8px; background:color-mix(in srgb, #0f9d58 6%, transparent); }
 .ds-base-box[data-empty="1"] { background:var(--ds-soft); color:inherit; }
 .ds-base-main { display:flex; flex-direction:column; gap:3px; min-width:0; }
-.ds-base-main b { font-size:13px; font-weight:650; }
+.ds-base-main b { font-size:13px; font-weight:600; }
 .ds-base-main span { font-size:12px; opacity:.72; line-height:1.45; }
 .ds-doc-list { display:flex; flex-direction:column; margin-top:6px; }
 .ds-doc-row { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--ds-line); }
@@ -1070,7 +1070,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 
 /* 页头 / 页面底 */
 [data-dsh-studio] .ds-head { background:var(--background); border-bottom:1px solid var(--border); padding:14px 20px 0; }
-[data-dsh-studio] .ds-brand, [data-dsh-studio] .ds-title { letter-spacing:-.01em; }
+[data-dsh-studio] .ds-brand, [data-dsh-studio] .ds-title { letter-spacing:0; }
 
 /* 按钮：outline（默认）、primary、ghost 三态 */
 [data-dsh-studio] .ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px;
@@ -2258,7 +2258,7 @@ function installKeyboardActivation() {
               h('span', { className: 'ds-brand-mark' }, '◈'),
               h('div', null,
                 h('div', { className: 'ds-title' }, state.config.board.title),
-                h('div', { className: 'ds-sub' }, `${state.tasks.length} 个任务 · rev ${state.revision} · 更新于 ${fmtTime(state.updatedAt)}`),
+                h('div', { className: 'ds-sub', title: `数据版本 rev ${state.revision}（每次写操作递增）` }, `${state.tasks.length} 张卡 · ${fmtTime(state.updatedAt)} 更新`),
               ),
             ),
             h('div', { className: 'ds-head-actions' },
@@ -2268,8 +2268,8 @@ function installKeyboardActivation() {
                     className: 'ds-chip',
                     'data-on': '1',
                     title: `没配 LDAP 时平台默认以超管身份使用，不需要登录；写操作与审计都记在它名下${state.config.localAuth?.mustChange === true ? '。当前仍是默认口令 admin，请去「设置 → 统一登录」改掉' : ''}`,
-                  }, `👤 超管 ${state.config.localAuth?.username ?? 'admin'}${state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`)
-                : h(ChipField, { className: 'ds-chip', title: `已登录：${authUser()?.id ?? ''}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? '（仍是默认口令，去「设置 → 统一登录」改掉）' : ''}` }, `👤 ${authUser()?.name ?? authUser()?.id}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`),
+                  }, `超管 ${state.config.localAuth?.username ?? 'admin'}${state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`)
+                : h(ChipField, { className: 'ds-chip', title: `已登录：${authUser()?.id ?? ''}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? '（仍是默认口令，去「设置 → 统一登录」改掉）' : ''}` }, `${authUser()?.name ?? authUser()?.id}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`),
               authUser() === null
                 ? h('button', { className: 'ds-btn ds-btn-ghost', title: '用域账号或本地超管账号登录', onClick: () => setShowLogin(true) }, '登录')
                 : tipOf('退出当前账号（退出后回到超管身份）', h('button', {
@@ -2320,7 +2320,7 @@ function installKeyboardActivation() {
                     style: { color: 'var(--color-notification-error-foreground)', borderColor: 'color-mix(in srgb, var(--color-notification-error-foreground) 40%, var(--ds-line))' },
                     title: (state.integrations.channels ?? []).filter(item => item.state === 'error').map(item => `${item.label}：${item.lastError}`).join('\n'),
                     onClick: () => { setTab('settings'); setSettingsSection('health') },
-                  }, `⚠ 集成异常 ${state.integrations.broken}`)
+                  }, h('span', { className: 'ds-dot', 'data-kind': 'danger', style: { marginRight: 6 } }), `集成异常 ${state.integrations.broken}`)
                 : null,
               h('div', { className: 'ds-newmenu', style: { position: 'relative' } },
                 h('button', {

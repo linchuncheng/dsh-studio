@@ -1,5 +1,6 @@
 /* Card detail drawer: overview, content, plan, artifacts, tests, runs and talk. */
 
+import { uiIcon, expertIconName } from './icons.js'
 import { ARTIFACT_KINDS, ARTIFACT_KIND_LABEL, ARTIFACT_STATUS, ARTIFACT_STATUS_LABEL, CASE_PRIORITIES, CASE_RESULT_LABEL, CASE_RESULTS, CASE_TYPES, CASE_TYPE_LABEL, CODING_REVIEW_LABEL, PRIORITY_LABEL, ROLE_LABEL, SEVERITY_LABEL, TYPE_LABEL } from './labels.js'
 import { artifactsWithoutBody, buildRoster, cardOwner, caseSummaryOf, checkSummaryOf, commentCountOf, filterRoster, fromDateInput, ownerLabel, toDateInput } from './roster.js'
 import { fmtTime } from './format.js'
@@ -120,7 +121,7 @@ function Drawer({ task, state, onClose, onChanged }) {
   const caseRest = Math.max(0, caseSum.total - casePass - caseFail)
   const caseSummary = caseSum.total === 0
     ? ''
-    : `${caseSum.total} 条 · ✅ 通过 ${casePass} · ❌ 不通过 ${caseFail}${caseRest > 0 ? ` · ⬜ 没跑 ${caseRest}` : ''}`
+    : `${caseSum.total} 条 · 通过 ${casePass} · 不通过 ${caseFail}${caseRest > 0 ? ` · 没跑 ${caseRest}` : ''}`
   const checklist = parts !== null && Array.isArray(parts.checklist) ? parts.checklist : (Array.isArray(task.checklist) ? task.checklist : [])
   const doneCount = checkSum.done
   const artifacts = task.artifacts ?? []
@@ -193,7 +194,7 @@ function Drawer({ task, state, onClose, onChanged }) {
     { id: 'handoff', label: '交接', count: task.handoff !== null && task.handoff !== undefined ? '✓' : '', hint: '决策 / 假设 / 未决 / 风险 / 影响面；派单提示词先读它' },
     { id: 'design', label: '设计', count: designDrafts.length > 0 ? designDrafts.length : '', hint: '多稿对比与定案' },
     { id: 'deliver', label: '交付物', count: artifacts.length > 0 ? artifacts.length : '', hint: '文档 / MR / 用例 / 报告；空的交付物会被准出拦下' },
-    { id: 'test', label: '测试', count: caseSum.total > 0 ? `${casePass}/${caseSum.total}` : (checkSum.total > 0 ? `☑${doneCount}/${checkSum.total}` : ''), hint: '验收清单、用例执行记录；失败的用例会自动开缺陷' },
+    { id: 'test', label: '测试', count: caseSum.total > 0 ? `${casePass}/${caseSum.total}` : (checkSum.total > 0 ? `${doneCount}/${checkSum.total}` : ''), hint: '验收清单、用例执行记录；失败的用例会自动开缺陷' },
     { id: 'coding', label: '执行记录', count: coding === null ? '' : (coding.review?.status === 'approved' ? '✓ 已评审' : ''), hint: 'AI 的分支、提交、改动文件；可以「核对代码事实」' },
     { id: 'discuss', label: '讨论', count: commentTotal > 0 ? commentTotal : '', hint: '评论；在评论里 @ 专家或专家团即派单' },
   ]
@@ -675,7 +676,7 @@ function Drawer({ task, state, onClose, onChanged }) {
       const exit = last.exitCode === null || last.exitCode === undefined ? '' : ` · 退出码 ${last.exitCode}`
       setQualityRun({
         busy: false,
-        line: `${last.ok === true ? '✅ 通过' : '❌ 不通过'}${last.timedOut === true ? '（超时）' : ''}${exit} · ${Math.round((Number(last.ms) || 0) / 100) / 10}s`,
+        line: `${last.ok === true ? '通过' : '不通过'}${last.timedOut === true ? '（超时）' : ''}${exit} · ${Math.round((Number(last.ms) || 0) / 100) / 10}s`,
       })
       await onChanged()
     } catch (cause) {
@@ -705,7 +706,7 @@ function Drawer({ task, state, onClose, onChanged }) {
       const status = result.mergeGate ?? {}
       setMergeRun({
         busy: false,
-        line: `${status.state === 'success' ? '✅ 已发布：通过' : '❌ 已发布：不通过'}${status.sha ? `（sha ${String(status.sha).slice(0, 8)}）` : ''}`,
+        line: `${status.state === 'success' ? '已发布：通过' : '已发布：不通过'}${status.sha ? `（sha ${String(status.sha).slice(0, 8)}）` : ''}`,
       })
       await onChanged()
     } catch (cause) {
@@ -765,7 +766,7 @@ function Drawer({ task, state, onClose, onChanged }) {
     try {
       const result = await api('/task/merge', { id: task.id, by: '人' })
       const merge = result.merge ?? {}
-      setMergeRun({ busy: false, line: `✅ 已合并 MR !${merge.iid}${merge.sha ? `（merge commit ${String(merge.sha).slice(0, 8)}）` : ''}` })
+      setMergeRun({ busy: false, line: `已合并 MR !${merge.iid}${merge.sha ? `（merge commit ${String(merge.sha).slice(0, 8)}）` : ''}` })
       await onChanged()
     } catch (cause) {
       setMergeRun({ busy: false, line: cause instanceof Error ? cause.message : String(cause) })
@@ -779,7 +780,7 @@ function Drawer({ task, state, onClose, onChanged }) {
       const facts = out?.facts ?? null
       setNotice(facts === null
         ? '核对完成，但没有拿到结果'
-        : `GitLab 核对：文件 ${facts.files.declared}→${facts.files.actual} · 提交 ${facts.commits.declared}→${facts.commits.actual}${(facts.commitList ?? []).length > 0 ? `（拿到 ${facts.commitList.length} 条明细）` : ''}${facts.pipeline ? ` · 流水线 ${facts.pipeline}` : ''}${facts.ci ? ` · CI ${facts.ci.passed}/${facts.ci.total}` : ''}${(facts.mismatches ?? []).length > 0 ? ` · ⚠ ${facts.mismatches.join('；')}` : ' · ✅ 一致'}`)
+        : `GitLab 核对：文件 ${facts.files.declared}→${facts.files.actual} · 提交 ${facts.commits.declared}→${facts.commits.actual}${(facts.commitList ?? []).length > 0 ? `（拿到 ${facts.commitList.length} 条明细）` : ''}${facts.pipeline ? ` · 流水线 ${facts.pipeline}` : ''}${facts.ci ? ` · CI ${facts.ci.passed}/${facts.ci.total}` : ''}${(facts.mismatches ?? []).length > 0 ? ` · 不一致：${facts.mismatches.join('；')}` : ' · 一致'}`)
       await onChanged()
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
@@ -902,10 +903,10 @@ function Drawer({ task, state, onClose, onChanged }) {
                 h('span', { className: 'ds-hint' }, '点一下看这张卡还差什么才能收口'))
             : h('div', { className: 'ds-gate', 'data-ready': gate.ready ? '1' : '0' },
                 h('div', { className: 'ds-gate-head' },
-                  h('b', null, gate.ready ? '✅ 可以进「已完成」' : `⛔ 还差 ${gate.blockers.length} 项`),
+                  h('b', null, gate.ready ? '可以进「已完成」' : `还差 ${gate.blockers.length} 项`),
                   h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => void checkGate() }, '重新检查')),
-                (gate.blockers ?? []).map(line => h('div', { key: line, className: 'ds-gate-item', 'data-kind': 'block' }, `⛔ ${line}`)),
-                (gate.warnings ?? []).map(line => h('div', { key: line, className: 'ds-gate-item', 'data-kind': 'warn' }, `⚠ ${line}`)),
+                (gate.blockers ?? []).map(line => h('div', { key: line, className: 'ds-gate-item', 'data-kind': 'block' }, `${line}`)),
+                (gate.warnings ?? []).map(line => h('div', { key: line, className: 'ds-gate-item', 'data-kind': 'warn' }, `${line}`)),
                 (gate.blockers ?? []).length === 0 && (gate.warnings ?? []).length === 0
                   ? h('div', { className: 'ds-hint' }, '没有遗留项。') : null),
           task.signoff === null || task.signoff === undefined
@@ -919,7 +920,7 @@ function Drawer({ task, state, onClose, onChanged }) {
                 }),
                 h('button', { className: 'ds-btn ds-btn-primary', disabled: busy, onClick: () => void signOff('sign') }, '签字确认'))
             : h('div', { className: 'ds-gate-sign' },
-                h('span', null, `✍ ${task.signoff.by} 于 ${new Date(task.signoff.at).toLocaleString()} 签字：${task.signoff.note}`),
+                h('span', null, `${task.signoff.by} 于 ${new Date(task.signoff.at).toLocaleString()} 签字：${task.signoff.note}`),
                 h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => void signOff('clear') }, '取消签字')),
         ),
       ),
@@ -930,12 +931,12 @@ function Drawer({ task, state, onClose, onChanged }) {
           ? h('div', { className: 'ds-sec-body' },
             h('div', { className: 'ds-hint' }, '缺信息、缺权限、等外部依赖、测试过不去——都可以标阻塞，别硬编。'),
             h('div', { className: 'ds-listrow-actions' },
-              h('button', { className: 'ds-btn ds-btn-ghost', 'data-warn': '1', disabled: busy, onClick: () => void markBlocked() }, '⛔ 标记阻塞'),
+              h('button', { className: 'ds-btn ds-btn-ghost', 'data-warn': '1', disabled: busy, onClick: () => void markBlocked() }, '标记阻塞'),
             ),
           )
           : h('div', { className: 'ds-sec-body' },
             h('div', { className: 'ds-blocked-box' },
-              h('div', { style: { fontWeight: 600 } }, `⛔ ${blocked.reason || '未填写原因'}`),
+              h('div', { style: { fontWeight: 600 } }, `${blocked.reason || '未填写原因'}`),
               h('div', { className: 'ds-hint' }, `${blocked.by || '人'} · ${fmtTime(blocked.at)} · 停在「${state.statuses.find(c => c.id === task.status)?.label ?? task.status}」`),
             ),
             h('div', { className: 'ds-hint' }, '怎么继续：'),
@@ -948,7 +949,7 @@ function Drawer({ task, state, onClose, onChanged }) {
               },
                 h('option', { value: '' }, '选一个专家…'),
                 (state.config?.experts ?? []).filter(expert => expert.enabled !== false).map(expert =>
-                  h('option', { key: expert.id, value: expert.id }, `${expert.emoji} ${expert.name}`)),
+                  h('option', { key: expert.id, value: expert.id }, expert.name)),
               ),
               h('button', { className: 'ds-btn', disabled: busy || picked === '', onClick: () => void resolveBlocked('assign', picked) }, '改派给他'),
               h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, onClick: () => void resolveBlocked('clear') }, '只解除，先不派'),
@@ -974,7 +975,7 @@ function Drawer({ task, state, onClose, onChanged }) {
             },
               h('option', { value: '' }, '用本列负责人'),
               (state.config?.experts ?? []).filter(expert => expert.enabled !== false).map(expert =>
-                h('option', { key: expert.id, value: expert.id }, `${expert.emoji} ${expert.name}`)),
+                h('option', { key: expert.id, value: expert.id }, expert.name)),
             ),
           ),
           h('div', { className: 'ds-listrow-actions', style: { marginTop: 8 } },
@@ -1330,10 +1331,10 @@ function Drawer({ task, state, onClose, onChanged }) {
                 ? (coding.verified === null || coding.verified === undefined
                   ? null
                   : h('div', { className: 'ds-hint', 'data-verify': coding.verified.ok ? 'ok' : 'bad', style: { marginTop: 6 } },
-                    `${coding.verified.ok ? '✅' : '⚠'} 上次核对 ${fmtTime(coding.verified.at)}：分支 ${coding.verified.branch} · 提交 ${coding.verified.commitCount.actual} 个 · 改动 ${coding.verified.fileCount.actual} 个文件` +
+                    `${coding.verified.ok ? '' : '注意 · '}上次核对 ${fmtTime(coding.verified.at)}：分支 ${coding.verified.branch} · 提交 ${coding.verified.commitCount.actual} 个 · 改动 ${coding.verified.fileCount.actual} 个文件` +
                     `${coding.verified.missingCommits.length + coding.verified.missingFiles.length === 0 ? '' : ` · ${coding.verified.missingCommits.length + coding.verified.missingFiles.length} 项对不上`}`))
                 : h('div', { className: 'ds-hint', 'data-verify': verify.ok === true ? 'ok' : 'bad', style: { marginTop: 6 } },
-                  `${verify.ok === true ? '✅' : '⚠'} ${verify.line}`),
+                  `${verify.ok === true ? '' : '注意 · '}${verify.line}`),
                               coding.gitlab === null || coding.gitlab === undefined
                 ? null
                 : h('div', null,
@@ -1485,7 +1486,7 @@ function Drawer({ task, state, onClose, onChanged }) {
                 h('div', { className: 'ds-art-ref' }, `正文 ${typeof item.contentLength === 'number' ? item.contentLength : String(item.content ?? '').length} 字${artifactHasBody(item) ? '' : ' · 缺正文'}${item.doc?.url ? '' : ' · 还没归档'}`),
                 item.ref === '' ? null : h('div', { className: 'ds-art-ref' }, item.ref),
                 item.doc?.url
-                  ? h('a', { className: 'ds-art-ref', href: item.doc.url, target: '_blank', rel: 'noreferrer' }, `📄 ${item.doc.name || '云盘文档'}`)
+                  ? h('a', { className: 'ds-art-ref', href: item.doc.url, target: '_blank', rel: 'noreferrer' }, uiIcon(h, 'file'), ` ${item.doc.name || '云盘文档'}`)
                   : (item.doc?.error ? h('div', { className: 'ds-error' }, item.doc.error) : null),
               ),
               /\.(png|jpe?g|webp|gif)$/i.test(String(item.ref ?? ''))
@@ -1582,7 +1583,7 @@ function Drawer({ task, state, onClose, onChanged }) {
             title: '按功能点 / 验收条件生成「标题草稿」：规则推断不出可执行断言，草稿不计入覆盖率。'
               + '要能真的跑，请用测试专家 / studio_task_add_cases 补 method+path 或 command。',
             onClick: () => void generateCases(),
-          }, caseGen.busy ? '生成中…' : '✨ 生成用例草稿'),
+          }, caseGen.busy ? '生成中…' : '生成用例草稿'),
           h('button', {
             className: 'ds-btn ds-btn-ghost',
             disabled: caseRun.busy || cases.filter(item => item.http != null || item.shell != null || item.db != null || item.browser != null).length === 0,
@@ -1622,9 +1623,9 @@ function Drawer({ task, state, onClose, onChanged }) {
                 if (item.http != null) return h('div', { className: 'ds-art-ref' }, `接口：${item.http.method} ${item.http.url} → 期望 ${item.http.expectStatus}${item.http.expectContains ? ` 且含 «${item.http.expectContains}»` : ''}`)
                 return null
               })(),
-                item.lastRun == null ? null : h('div', { className: 'ds-art-ref' }, `${item.lastRun.ok ? '✅' : '❌'} 最近执行：${item.lastRun.status === 0 ? item.lastRun.error : `${item.lastRun.status} · ${item.lastRun.ms}ms`}（${new Date(item.lastRun.at).toLocaleString('zh-CN')}）`),
+                item.lastRun == null ? null : h('div', { className: 'ds-art-ref' }, `${item.lastRun.ok ? '通过' : '不通过'} 最近执行：${item.lastRun.status === 0 ? item.lastRun.error : `${item.lastRun.status} · ${item.lastRun.ms}ms`}（${new Date(item.lastRun.at).toLocaleString('zh-CN')}）`),
                 item.lastRun?.response ? h('div', { className: 'ds-code-note' }, `响应片段：${String(item.lastRun.response).slice(0, 400)}${String(item.lastRun.response).length > 400 ? '…' : ''}`) : null,
-                (item.lastRun?.steps ?? []).length === 0 ? null : h('div', { className: 'ds-art-ref' }, `步骤：${item.lastRun.steps.map(step => `${step.ok ? '✅' : '❌'} ${step.method} ${step.url}${step.status === 0 ? '' : ` → ${step.status}`}`).join('；')}`),
+                (item.lastRun?.steps ?? []).length === 0 ? null : h('div', { className: 'ds-art-ref' }, `步骤：${item.lastRun.steps.map(step => `${step.ok ? '' : '失败 · '}${step.method} ${step.url}${step.status === 0 ? '' : ` → ${step.status}`}`).join('；')}`),
                 (item.http?.steps ?? []).length === 0 ? null : h(ChipField, { className: 'ds-chip ds-chip-soft' }, `多步 ${item.http.steps.length}`),
                 ((state.requirements ?? []).find(entry => entry.id === task.requirementId)?.points ?? []).length === 0
                   ? (item.pointId ? h('div', { className: 'ds-art-ref' }, `功能点：${item.pointId}`) : null)
@@ -1796,7 +1797,7 @@ function Drawer({ task, state, onClose, onChanged }) {
                 'data-role': expert?.role ?? '',
               },
                 h('div', { className: 'ds-cm-avatar' },
-                  human ? h('span', { className: 'ds-cm-initial' }, who.slice(0, 1)) : (expert?.emoji ?? '🤖')),
+                  human ? h('span', { className: 'ds-cm-initial' }, who.slice(0, 1)) : h('span', { className: 'ds-cm-initial-icon' }, uiIcon(h, expertIconName(expert)))),
                 h('div', { className: 'ds-cm-main' },
                   h('div', { className: 'ds-cm-head' },
                     h('span', { className: 'ds-cm-name' }, who),

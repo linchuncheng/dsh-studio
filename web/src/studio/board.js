@@ -82,7 +82,7 @@ function Board({ state, onOpen, onMove, onWip, onCreate }) {
       if (gates.review !== undefined && gates.review.enabled === false) off.push('评审闸门')
       if (off.length === 0) return null
       return h('div', { className: 'ds-hint', 'data-gate-off': '1', style: { padding: '4px 20px 0' } },
-        '⚠ ' + off.join(' / ') + ' 已关闭：卡可以跳过对应的评审直接推进。要打开在「设置 → 每一列由谁负责」。')
+        off.join(' / ') + ' 已关闭：卡可以跳过对应的评审直接推进。要打开在「设置 → 每一列由谁负责」。')
     })(),
     boardEmpty && typeof onCreate === 'function'
       ? h('div', { className: 'ds-empty', style: { margin: '16px 20px 0' } },
@@ -149,7 +149,7 @@ function Board({ state, onOpen, onMove, onWip, onCreate }) {
       },
         h('option', { value: '' }, '全部专家'),
         experts.filter(expert => expert.enabled !== false).map(expert =>
-          h('option', { key: expert.id, value: expert.id }, `${expert.emoji} ${expert.name}`)),
+          h('option', { key: expert.id, value: expert.id }, expert.name)),
       ),
       h('label', { className: 'ds-row', style: { gap: 5, fontSize: 12, cursor: 'pointer', opacity: .8 } },
         h(CheckField, { checked: hideEmpty, onChange: event => setHideEmpty(event.target.checked) }),
@@ -207,8 +207,7 @@ function Board({ state, onOpen, onMove, onWip, onCreate }) {
               })(),
             ),
             h('div', { className: 'ds-col-owner', 'data-empty': owner.length === 0 ? '1' : '0', title: '这一列的默认负责人：卡推进到本列后由它接手' },
-              h('span', { className: 'ds-col-owner-label' }, '负责人'),
-              owner.length === 0 ? h('span', { className: 'ds-col-owner-name' }, '未配置') : h('span', { className: 'ds-col-owner-name' }, owner),
+              h('span', { className: 'ds-col-owner-name' }, owner.length === 0 ? '未配置负责人' : owner),
             ),
           ),
           h('div', { className: 'ds-col-body' },

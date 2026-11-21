@@ -44,6 +44,7 @@
     "verify:toast": "node tools/visual/toast-probe.mjs",
     "verify:auditlog": "node tools/visual/audit-log-probe.mjs",
     "review:components": "node tools/visual/component-audit.mjs",
+    "audit:ui": "node tools/visual/ui-audit.mjs",
     "verify:login": "node tools/visual/login-probe.mjs",
     "verify:facts": "node tools/visual/facts-probe.mjs",
     "release:check": "node tools/release-check.mjs",

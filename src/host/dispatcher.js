@@ -50,7 +50,7 @@ export function resolveOwner(config, owner, domain) {
     const picks = roleCandidates(config, role, domain)
     if (picks.length === 0) return undefined
     const expert = picks[0]
-    return { kind: 'expert', expert, team: undefined, label: `${expert.emoji} ${expert.name}`, viaRole: role }
+    return { kind: 'expert', expert, team: undefined, label: expert.name, viaRole: role }
   }
   if (owner.kind === 'team') {
     const team = (config.teams ?? []).find(entry => entry.id === owner.id)
@@ -62,7 +62,7 @@ export function resolveOwner(config, owner, domain) {
   }
   const expert = (config.experts ?? []).find(entry => entry.id === owner.id)
   if (expert === undefined) return undefined
-  return { kind: 'expert', expert, team: undefined, label: `${expert.emoji} ${expert.name}` }
+  return { kind: 'expert', expert, team: undefined, label: expert.name }
 }
 
 /** 卡片业务领域：卡上写了用卡的，没写就用它所属需求的。 */
@@ -85,7 +85,7 @@ export function ownerFor(config, task, column, load, state) {
     if (sameDomain.length > 0) {
       const byRole = sameDomain.find(entry => (entry.role ?? '') === (column?.role ?? ''))
       const pick = byRole ?? sameDomain[0]
-      return { kind: 'expert', expert: pick, team: undefined, label: `${pick.emoji} ${pick.name}` }
+      return { kind: 'expert', expert: pick, team: undefined, label: pick.name }
     }
   }
   if (resolved !== undefined) return resolved
@@ -110,7 +110,7 @@ export function columnCandidates(config, column, domain) {
         for (const expert of roleCandidates(config, String(member.id ?? ''), domain)) {
           if (seen.has(expert.id)) continue
           seen.add(expert.id)
-          out.push({ kind: 'expert', expert, team: undefined, label: `${expert.emoji} ${expert.name}` })
+          out.push({ kind: 'expert', expert, team: undefined, label: expert.name })
         }
         continue
       }
@@ -902,7 +902,7 @@ export function buildExpertPrompt(task, expert, column, config, team, instructio
       .map(entry => `- @${entry.name}：${entry.description || ROLE_BRIEF[entry.id] || '按分工协作'}`)
       .join('\n')
   return [
-    `你是「${expert.emoji} ${expert.name}」，需求&任务工作空间里的一名专家。现在接手工作看板上的一张卡。`,
+    `你是「${expert.name}」，需求&任务工作空间里的一名专家。现在接手工作看板上的一张卡。`,
     expert.description ? `\n你的定位：${expert.description}` : '',
     expert.domain ? `\n业务领域：${expert.domain}（判断与取舍以这个领域的规范和风险偏好为准）` : '',
     (expert.skills ?? []).length > 0 ? (() => {
