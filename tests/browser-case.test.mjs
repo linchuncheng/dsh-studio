@@ -1,5 +1,6 @@
 // 浏览器用例：形状、可执行判定、默认关闭、以及「真开一个浏览器」跑一遍。
-// 真跑那段在没有浏览器的机器上会自动跳过（CI 里没有 Chrome/Edge），所以两条路径都留着。
+// 真跑那段在本地没有浏览器/依赖时跳过；CI 会安装根依赖（puppeteer-core），
+// ubuntu runner 自带 Google Chrome，所以 CI 上走的是真跑路径。
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { existsSync } from 'node:fs'
@@ -10,8 +11,8 @@ import { resolveBrowserExecutable, runBrowserCase, sanitizeCaseBrowser } from '.
 
 const executablePath = resolveBrowserExecutable({ testing: {} }, existsSync)
 /* 真跑那条要两个条件：这台机器有 Chrome/Edge，**并且**装得上 puppeteer-core。
-   CI 在跑 `npm test` 之前不装依赖（契约测试本来就不该依赖 node_modules），
-   所以那里必然没有 puppeteer-core —— 之前只判了「有没有浏览器」，CI 上就红在真跑那条。 */
+   CI 先 `pnpm install` 再跑测试，ubuntu runner 自带 /usr/bin/google-chrome，
+   所以 CI 会真跑；本地没装依赖/浏览器的机器才跳过。 */
 const puppeteerReady = await (async () => {
   try { await import('puppeteer-core'); return true } catch { return false }
 })()
