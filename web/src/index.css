@@ -2374,3 +2374,25 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
    13px 的负字距也一并归零。 */
 [data-dsh-studio] .ds-col-head { text-transform: none; letter-spacing: 0; }
 [data-dsh-studio] .ds-proj-name { letter-spacing: 0; }
+
+/* ========================================================================
+ * 看板列宽策略
+ *
+ * 原来 8 列一律 288px：1440 的笔记本一屏只放得下 5 列，看流水线得一直横向拖。
+ * 改成「默认可读 + 一键看全」：
+ *   · 默认 flex 1 1 200px：列宽在 200–360 之间自适应，列多就先横向滚；
+ *   · 勾上「适应宽度」后把列压到能一屏放下全部列（1440 下 8 列约 165px），
+ *     代价是标题会换行 —— 由人自己权衡，不替人决定。
+ * ======================================================================== */
+[data-dsh-studio] .ds-col {
+  flex: 1 1 200px;
+  width: auto;
+  min-width: 200px;
+  max-width: 360px;
+}
+
+[data-dsh-studio] .ds-board[data-fit="1"] .ds-col {
+  flex: 1 1 0;
+  min-width: 160px;
+  max-width: none;
+}
