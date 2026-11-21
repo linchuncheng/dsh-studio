@@ -8,7 +8,7 @@ import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from 
 import { Pagination } from '../../components/base/pagination/pagination'
 
 export function AccessPanel({ state, config, onChanged }) {
-  const { h, sessionToken, api, toast, currentUser, confirmDialog, TextField, ChipField, CheckField, SwitchToggle, SelectField , React } = client()
+  const { h, sessionToken, api, apiBase, toast, currentUser, confirmDialog, TextField, ChipField, CheckField, SwitchToggle, SelectField , React } = client()
   const access = config.access ?? { enabled: false, members: [] }
   const audit = state.audit ?? []
   const [draft, setDraft] = React.useState({ name: '', role: 'member' })
@@ -55,7 +55,7 @@ export function AccessPanel({ state, config, onChanged }) {
       token: sessionToken() ?? '',
     })
     const anchor = document.createElement('a')
-    anchor.href = `${API}/audit/export.csv?${params.toString()}`
+    anchor.href = `${apiBase}/audit/export.csv?${params.toString()}`
     anchor.rel = 'noopener'
     document.body.appendChild(anchor)
     anchor.click()
@@ -425,7 +425,7 @@ export function StoragePanel({ state, onChanged }) {
 
 /** 集成健康：哪条通道在掉、什么时候掉的、还能不能补一次。 */
 export function HealthPanel({ state, config, onChanged }) {
-  const { h, sessionToken, api, toast, currentUser, confirmDialog, TextField, ChipField, CheckField, SwitchToggle, SelectField , React } = client()
+  const { h, sessionToken, api, apiBase, toast, currentUser, confirmDialog, TextField, ChipField, CheckField, SwitchToggle, SelectField , React } = client()
   const health = state.integrations ?? { channels: [], broken: 0 }
   const [busy, setBusy] = React.useState('')
   const [note, setNote] = React.useState(null)
@@ -447,7 +447,7 @@ export function HealthPanel({ state, config, onChanged }) {
       q: logQuery.trim(), failed: logFailed ? '1' : '0', token: sessionToken() ?? '',
     })
     const anchor = document.createElement('a')
-    anchor.href = `${API}/export/dispatch.csv?${params.toString()}`
+    anchor.href = `${apiBase}/export/dispatch.csv?${params.toString()}`
     anchor.rel = 'noopener'
     document.body.appendChild(anchor)
     anchor.click()

@@ -1266,7 +1266,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
     const MentionPicker = createMentionPicker({ h, TextField })
     const Drawer = createDrawer({ h, React, api, kit, currentUser, renderMarkdown, tipOf, tipLabel, confirmDialog, promptDialog, TextField, TextAreaField, ChipField, CheckField, SelectField, MdField, MentionPicker })
     const Palette = createPalette({ h, React, TextField })
-    provideClient({ h, React, Editor, api, kit, toast, sessionToken, currentUser, confirmDialog, promptDialog, tipOf, tipLabel, renderMarkdown, SideDrawer, MentionPicker, Card, TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, DateField, MdField })
+    provideClient({ h, React, Editor, api, apiBase: API, kit, toast, sessionToken, currentUser, confirmDialog, promptDialog, tipOf, tipLabel, renderMarkdown, SideDrawer, MentionPicker, Card, TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, DateField, MdField })
 
 
     // -------------------------------------------------------------- market
@@ -1516,6 +1516,9 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         { id: 'health', label: '集成健康', count: state.integrations?.broken ?? 0 },
         { group: '运行' },
         { id: 'agents', label: '自动派单' },
+        /* 面板一直都在（paneFor 里有 models 分支），但导航数组漏了它，页面上永远进不去：
+           全局角色模型只能改 JSON 或调工具。补上入口，计数 = 已单独指定模型的角色数。 */
+        { id: 'models', label: '角色与模型', count: Object.values(config.roles ?? {}).filter(role => String(role?.model ?? '').trim() !== '').length },
         { id: 'testing', label: '测试执行', count: (config.testing?.envs ?? []).length },
         { id: 'costs', label: '成本与预算' },
         { id: 'environments', label: '部署环境', count: (config.environments ?? []).length },
@@ -1837,7 +1840,10 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
       }, [state.revision])
 
       if (error !== null) return h('div', { className: 'ds-body' }, h('div', { className: 'ds-err' }, error))
-      if (metrics === null) return h('div', { className: 'ds-loading' }, '正在统计…')
+      /* /metrics 回包缺 metrics 字段时（版本错配 / 后端换形状）不能整页崩：
+         以前只判 === null，undefined 会走到 metrics.projects 直接抛，
+         React 错误边界把整个工作空间换成「渲染失败」。 */
+      if (metrics === null || metrics === undefined) return h('div', { className: 'ds-loading' }, '正在统计…')
 
       const card = (title, subtitle, data, key) => h('div', { className: 'ds-proj-card', key },
         h('div', { className: 'ds-proj-head' },
@@ -1871,11 +1877,11 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
             project.metrics,
             project.id,
           )),
-          metrics.unassigned !== null && metrics.unassigned.total > 0
+          metrics.unassigned !== null && metrics.unassigned !== undefined && metrics.unassigned.total > 0
             ? card('未归属项目', '还没挂到项目上的卡', metrics.unassigned, '')
             : null,
         ),
-        (metrics.projects ?? []).length === 0 && (metrics.unassigned === null || metrics.unassigned.total === 0)
+        (metrics.projects ?? []).length === 0 && (metrics.unassigned === null || metrics.unassigned === undefined || metrics.unassigned.total === 0)
           ? h('div', { className: 'ds-empty' }, '还没有卡片。先去「设置 → 项目与迭代」建一个项目，再新建任务。')
           : null,
       )

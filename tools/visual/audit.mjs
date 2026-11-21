@@ -3,7 +3,7 @@
  *   STUDIO_TOKEN=xxx node tools/visual/audit.mjs
  *   STUDIO_TOKEN=xxx AUDIT_SHOTS=1 node tools/visual/audit.mjs     # 顺带截图留档
  *
- * 盘点的模块：8 个顶部页签 + 设置里 16 个面板 + 5 个抽屉。
+ * 盘点的模块：8 个顶部页签 + 设置里 18 个面板 + 3 个抽屉。
  * 判据（全部为 0 才算通过，非 0 退出码 1）：
  *   · nativeSelect  可见的原生 <select>（react-aria 的隐藏 select 不算：它在 [data-rac] 里）
  *   · rawField      input / textarea 不在任何 react-aria 组件里（= 还是原生控件）
@@ -26,8 +26,8 @@ const SHOTS = process.env.AUDIT_SHOTS === '1'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const PAGES = ['工作台', '看板', '需求', '用例', '版本', '项目', '效能', '设置']
-const PANELS = ['项目与迭代', '专家', '专家团', '技能库', '列的负责人', '代码仓库', '飞书机器人', '集成健康',
-  '自动派单', '测试执行', '成本与预算', '部署环境', '看板外观', '统一登录（LDAP）', '权限与审计', '数据与备份']
+const PANELS = ['项目与迭代', '专家', '专家团', '技能库', '列的负责人', '代码仓库', '飞书机器人', '文档出口', '集成健康',
+  '自动派单', '角色与模型', '测试执行', '成本与预算', '部署环境', '看板外观', '统一登录（LDAP）', '权限与审计', '数据与备份']
 
 const COUNT = () => {
   const roots = [...document.querySelectorAll('[data-dsh-studio], [data-dsh-studio-portal]')]

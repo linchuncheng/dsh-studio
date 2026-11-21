@@ -129,13 +129,15 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
     }
   }
   const saveSuite = async () => {
-    const name = await promptDialog('套件名字（跑的就是当前筛选里的用例）', { title: '新建回归套件', defaultValue: '默认回归' })
+    const name = await promptDialog('套件名字（按当前需求筛选；接口 / shell / 数据库 / 浏览器用例都会进，草稿除外）', { title: '新建回归套件', defaultValue: '默认回归' })
     if (name === null || String(name).trim() === '') return
     try {
       await api('/suite/save', {
         suite: {
           name: String(name).trim().slice(0, 40),
-          rules: { requirementIds: requirement === '__all__' ? [] : [requirement], httpOnly: true },
+          /* httpOnly:false = 四种能跑的用例都进套件。以前写死 true，
+             抽屉里建的 shell / 数据库 / 浏览器用例永远进不了回归（AGENTS §4 的同类坑）。 */
+          rules: { requirementIds: requirement === '__all__' ? [] : [requirement], httpOnly: false },
           keys: [],
           isDefault: suites.length === 0,
         },

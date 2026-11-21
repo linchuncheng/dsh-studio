@@ -242,6 +242,20 @@ test('client: studio modules only use names they declare, import or receive', ()
     for (const match of code.matchAll(/h\(\s*([A-Z][\w$]*)/g)) check(match[1])
   }
   assert.deepEqual([...offenders], [], 'studio module uses a name it never declared, imported or received')
+  /* 工厂里的 `const API = '/studio-api'` 不在模块作用域里：面板要拼下载地址（CSV 导出）
+     必须从 client() 拿 apiBase。2026-11-21 实测：审计/派单两个导出写 `${API}`，
+     点击抛 ReferenceError，而上面那条 allowlist 把它当成「client.src.js 声明过」放行了。 */
+  const bareApi = modules.filter((name) => /(?<![\w$.])API(?![\w$])/.test(stripCode(read(name))))
+  assert.deepEqual(bareApi, [], 'studio modules must use apiBase from client(), not the factory-local API')
+})
+
+test('ui: settings panes that exist are reachable from the nav', () => {
+  const source = read('client.src.js')
+  /* 2026-11-21：paneFor 里有 models 分支、导航数组却没有它 —— 面板写好了永远打不开。
+     verify:audit 会真点每个面板，这里再加一条便宜的兜底。 */
+  for (const id of ['models', 'docs']) {
+    assert.match(source, new RegExp("\\{ id: '" + id + "', label: "), 'settings nav is missing ' + id)
+  }
 })
 
 test('ui: build-time guard rejects hsl(var( and unscoped portals', () => {
@@ -1015,12 +1029,14 @@ test('host: quality counts rework from backwards moves, failures and reopens', a
 test('host: a suite resolves to keys by rules and keeps hand-picked ones', async () => {
   const { resolveSuiteKeys, sanitizeSuite } = await import('../src/host/cases.js')
   const cases = [
-    { key: 't1:c1', http: true, requirementId: 'r1', priority: 'p0' },
-    { key: 't1:c2', http: false, requirementId: 'r1', priority: 'p0' },
-    { key: 't2:c1', http: true, requirementId: 'r2', priority: 'p2' },
-    { key: 't3:c1', http: true, requirementId: 'r1', priority: 'p2' },
+    { key: 't1:c1', http: true, runnable: true, requirementId: 'r1', priority: 'p0' },
+    { key: 't1:c2', http: false, runnable: true, requirementId: 'r1', priority: 'p0' },
+    { key: 't1:c3', http: false, runnable: false, requirementId: 'r1', priority: 'p0' },
+    { key: 't2:c1', http: true, runnable: true, requirementId: 'r2', priority: 'p2' },
+    { key: 't3:c1', http: true, runnable: true, requirementId: 'r1', priority: 'p2' },
   ]
   assert.deepEqual(resolveSuiteKeys({ rules: { httpOnly: true } }, cases), ['t1:c1', 't2:c1', 't3:c1'])
+  // httpOnly:false = 所有能跑的（接口 / shell / 数据库 / 浏览器）；草稿仍然排除
   assert.deepEqual(resolveSuiteKeys({ rules: { httpOnly: false } }, cases), ['t1:c1', 't1:c2', 't2:c1', 't3:c1'])
   assert.deepEqual(resolveSuiteKeys({ rules: { requirementIds: ['r1'] } }, cases), ['t1:c1', 't3:c1'])
   assert.deepEqual(resolveSuiteKeys({ rules: { priorities: ['p0'] } }, cases), ['t1:c1'])

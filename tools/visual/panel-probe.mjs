@@ -281,6 +281,24 @@ try {
   await saveOnce(providerBefore)
   await new Promise(resolve => setTimeout(resolve, 800))
 
+  // ④d 设置 → 角色与模型：面板能从导航进得去。
+  // 0.9.55 之前 paneFor 里有 models 分支，导航数组却没这一项，面板永远打不开。
+  const modelsNav = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('button, [role="button"], a')]
+      .find(node => (node.textContent ?? '').trim().startsWith('角色与模型'))
+    if (el === undefined || el === null) return false
+    el.click()
+    return true
+  })
+  if (modelsNav === true) await new Promise(resolve => setTimeout(resolve, 700))
+  const modelsPane = await page.evaluate(() => ({
+    text: document.body.innerText,
+    inputs: document.querySelectorAll('[data-dsh-studio] input[placeholder="deepseek-v4.1-flash"]').length,
+  }))
+  check('④d 设置页有「角色与模型」入口', modelsNav === true, modelsNav ? '' : '导航里没有这一项')
+  check('④d 角色与模型面板真的渲染', modelsPane.text.includes('角色与模型') && modelsPane.inputs >= 4, `inputs=${modelsPane.inputs}`)
+  await page.screenshot({ path: join(outDir, 'role-models.png') })
+
   // ⑤ 设置 → 技能库：使用读数
   const skillsNav = await clickExact('技能库')
   if (skillsNav === true) await new Promise(resolve => setTimeout(resolve, 800))

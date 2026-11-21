@@ -1095,25 +1095,37 @@ export function registerTools(ctx, store) {
          以前这里把它当任务对象用，于是写完之后读 task.artifacts 抛 TypeError —— 报错但真写了，
          用户重试一次就多一条重复产物（issue #8）。改成在回调里把任务对象带出来。 */
       let updated = null
+      let touchedId = ''
       await store.mutate(state => {
         const target = state.tasks.find(t => t.id === args.id)
         if (target === undefined) throw new Error(`no task ${args.id}`)
         if (action === 'add') {
+          /* 上限要和路由（/task/artifact）用同一把尺子：以前这里写死 slice(0, 40)，
+             到顶时砍掉的是「刚加的这一件」——工具还回「已更新」，交付物却没了。
+             现在到顶直接报错，让人去删过期的，而不是静默丢数据。 */
+          const maxArtifacts = Math.max(1, Number(state.config?.limits?.artifactsPerTask) || 40)
+          if ((target.artifacts ?? []).length >= maxArtifacts) throw new Error(`一张卡最多 ${maxArtifacts} 个交付物：先删掉过期的再加`)
           const created = sanitizeArtifact({ ...artifact, at: Date.now() }, target.artifacts.length)
           if (created === undefined) throw new Error('交付物至少要有标题')
           created.at = Date.now()
-          target.artifacts = [...target.artifacts, created].slice(0, 40)
+          target.artifacts = [...target.artifacts, created]
+          touchedId = created.id
         } else if (action === 'remove') {
           target.artifacts = target.artifacts.filter(item => item.id !== args.artifactId)
         } else {
-          target.artifacts = target.artifacts.map(item => (item.id === args.artifactId ? { ...item, ...sanitizeArtifact({ ...item, ...artifact }, 0) } : item))
+          const wantedId = String(args.artifactId ?? '')
+          if (!(target.artifacts ?? []).some(item => item.id === wantedId)) throw new Error(`找不到交付物「${wantedId}」`)
+          target.artifacts = target.artifacts.map(item => (item.id === wantedId ? { ...item, ...sanitizeArtifact({ ...item, ...artifact }, 0) } : item))
+          touchedId = wantedId
         }
         target.updatedAt = Date.now()
         updated = target
       })
       const task = updated
       if (task === null) throw new Error(`no task ${args.id}`)
-      const wanted = action === 'remove' ? [] : (task.artifacts ?? []).filter(item => args.artifactId === undefined || item.id === args.artifactId)
+      /* 只同步这一次动过的那一件。以前 add 不带 artifactId 时会把 40 件全部重传一遍，
+         到顶那次还会因为新件被砍掉而"同步了 40 件旧货"。 */
+      const wanted = action === 'remove' || touchedId === '' ? [] : (task.artifacts ?? []).filter(item => item.id === touchedId)
       if (args.sync !== false && wanted.length > 0) {
         const notes = []
         for (const item of wanted) {

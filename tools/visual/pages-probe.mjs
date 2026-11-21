@@ -69,6 +69,17 @@ const analyticsBody = {
     ai: { artifactsTotal: 0, artifactsAi: 0, artifactsEmpty: 0, aiShare: 0, accepted: 0, acceptedRate: 0, emptyBody: 0, aiEmptyBody: 0, codingTasks: 0, codingApproved: 0, codingChanges: 0, codingApprovedRate: 0, unitTests: 0, unitPassed: 0, unitPassRate: 0, merged: 0 },
   },
 }
+// 项目页要的形状（照 /studio-api/metrics 的真实回包给一份最小数据）
+const metricsBody = {
+  ok: true,
+  metrics: {
+    projects: [{
+      id: 'p-1', key: 'PUR', name: '采购履约', iterations: [],
+      metrics: { inProgress: 1, blocked: 0, overdue: 0, done: 1, checklistRate: 50, artifacts: 1, cycleDays: 0, throughput7d: 1 },
+    }],
+    unassigned: { total: 0 },
+  },
+}
 const html = `<!doctype html><html><head><meta charset="utf-8"><title>pages probe</title></head>
 <body><div id="root"></div>
 <script>window.__ModuleLoader__ = { load(entry) { window.__STUDIO_PLUGIN__ = entry.factory(function (name) {
@@ -91,6 +102,7 @@ const server = createServer(async (req, res) => {
   const sendJson = (code, body) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(body)) }
   if (url.pathname === '/studio-api/state') return sendJson(200, { ok: true, state })
   if (url.pathname === '/studio-api/analytics') return sendJson(200, analyticsBody)
+  if (url.pathname === '/studio-api/metrics') return sendJson(200, metricsBody)
   if (url.pathname.startsWith('/studio-api/')) return sendJson(200, { ok: true, state })
   if (url.pathname === '/') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(html); return }
   const file = url.pathname === '/client.js' ? join(REPO, 'client.js')
@@ -118,6 +130,7 @@ const PAGES = [
   ['需求', '.ds-req-grid, [data-empty-state], .ds-req-desc', ''],
   ['用例', '.ds-panel, [data-empty-state], [data-task-row]', ''],
   ['版本', '.ds-panel, [data-empty-state], [data-task-row]', ''],
+  ['项目', '.ds-proj-card, [data-empty-state], .ds-panel', ''],
   ['效能', '[data-stat-card], [data-chart-card]', '[data-task-row]'],
   ['设置', '.ds-panel', ''],
 ]
