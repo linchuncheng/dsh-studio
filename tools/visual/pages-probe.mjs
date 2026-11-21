@@ -121,6 +121,7 @@ const base = `http://127.0.0.1:${server.address().port}`
 const checks = []
 const check = (name, ok, detail = '') => { checks.push({ name, ok: ok === true }); console.log((ok ? 'ok   ' : 'FAIL ') + name + (detail === '' ? '' : ' — ' + detail)) }
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+const AX_ROLES = new Set(['button','link','checkbox','radio','switch','textbox','searchbox','combobox','listbox','menuitem','menuitemcheckbox','menuitemradio','tab','option','spinbutton','slider','dialog','alertdialog'])
 
 // 每页「该有的东西」：至少一个能证明它不是空白页的标记；
 // 第三项是「必须真的存在」的组件标记（用来盯住新换的 BoardUI 组件，别被别的选择器蒙混）
@@ -141,6 +142,7 @@ try {
   await mkdir(outDir, { recursive: true })
   browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'], defaultViewport: { width: 1600, height: 1000 } })
   const page = await browser.newPage()
+  const axSession = await page.createCDPSession()
   const errors = []
   page.on('pageerror', error => errors.push(String(error).slice(0, 200)))
   await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 })
@@ -171,9 +173,22 @@ try {
     check(`切到「${label}」`, clicked === true)
     check(`「${label}」渲染出了内容（${marker}）`, info.marker === true && info.required === true && info.failed === false, `${info.length} 字${info.failed ? ' / ' + info.failText : ''}${info.required ? '' : ' / 缺 ' + mustHave}`)
     check(`「${label}」的页签是高亮状态`, info.selected.includes(label), info.selected.join(','))
+    const axTree = await axSession.send('Accessibility.getFullAXTree')
+    const unnamed = axTree.nodes.filter(node => !node.ignored && AX_ROLES.has(node.role?.value) && String(node.name?.value ?? '').trim() === '').map(node => node.role.value)
+    check(`「${label}」交互节点都有可访问名称`, unnamed.length === 0, unnamed.slice(0, 6).join(','))
     await page.screenshot({ path: join(outDir, `${label}.png`) })
   }
 
+  // 卡片抽屉：dialog 要有名字，里面的交互节点也要有名字（键盘/读屏都能用）
+  await page.evaluate(() => { const tab = [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs [role="tab"]')].find(n => (n.textContent || '').trim() === '看板'); if (tab) tab.click() })
+  await sleep(900)
+  await page.evaluate(() => { const card = document.querySelector('[data-dsh-studio] .ds-card'); if (card) card.click() })
+  await sleep(1200)
+  const drawerAx = await axSession.send('Accessibility.getFullAXTree')
+  const dialogs = drawerAx.nodes.filter(node => !node.ignored && (node.role?.value === 'dialog' || node.role?.value === 'alertdialog'))
+  const drawerUnnamed = drawerAx.nodes.filter(node => !node.ignored && AX_ROLES.has(node.role?.value) && String(node.name?.value ?? '').trim() === '').map(node => node.role.value)
+  check('卡片抽屉的 dialog 有名称', dialogs.length > 0 && String(dialogs[0].name?.value ?? '').trim() !== '', (dialogs[0]?.name?.value ?? '没有 dialog'))
+  check('卡片抽屉交互节点都有可访问名称', drawerUnnamed.length === 0, drawerUnnamed.slice(0, 6).join(','))
   check('全程没有 pageerror', errors.length === 0, errors.join(' | '))
 } catch (error) {
   console.error('探针中断：' + (error?.message ?? error))

@@ -44,3 +44,10 @@ jobs:
           node -e "const c=require('crypto'),f=require('fs');for(const p of ['dist/client.js','client.js']){console.log(p,f.statSync(p).size,c.createHash('sha256').update(f.readFileSync(p)).digest('hex'))}"
           cmp dist/client.js client.js
           git diff --exit-code -- dist/client.js client.js
+
+      # 页面渲染 + 交互节点可访问名称：假宿主 + 真 Chrome，不需要 token。
+      # web 依赖与 Chrome 上一步/runner 已就绪；冒烟挂了会直接红，不再只靠本地探针。
+      - name: Pages and accessibility probe
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm run verify:pages

@@ -239,7 +239,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 
 | 命令 | 覆盖 |
 | --- | --- |
-| `npm run verify:pages` | 8 个页面能进、能渲染、页签高亮、无 pageerror（25 项） |
+| `npm run verify:pages` | 8 个页面能进、能渲染、页签高亮、无 pageerror、每页与卡片抽屉的交互节点都有可访问名称（35 项；CI 也跑） |
 | `npm run verify:audit` | **29 个模块**（8 页签 + 18 设置面板 + 3 抽屉）里还有没有原生下拉/原生输入/老按钮（违规必须为 0） |
 | `npm run verify:selects` | 下拉是否都是官方组件、尺寸是否合规范、弹层是否真的在最上层 |
 | `npm run verify:drawer` | 抽屉打开/聚焦/Esc/取消（15 项） |
@@ -248,7 +248,7 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | `npm run verify:toast` | toast 真的出现在门户容器里、有尺寸、4 秒后消失（7 项） |
 | `npm run verify:cases` | 用例库里草稿看得见、筛得出来：`只看无断言` 选中后只剩草稿，切回全部行数复原（8 项） |
 | `npm run verify:a11y` | 无障碍：6 个页签的正文对比度（WCAG AA）、交互元素可访问名称、Tab 焦点可见、卡片抽屉的 dialog 语义与焦点圈；`A11Y_THEME=dark` 量暗色 |
-| `npm run verify:ax` | 无障碍树（CDP AX tree）：交互节点命名、可聚焦却被 ignored、标题跳级、对话框名称。**暂未接入发版闸门**（还有 1 处未定位的空名称） |
+| `npm run verify:ax` | 无障碍树（CDP AX tree）：交互节点命名、可聚焦却被 ignored、标题跳级、对话框名称。**暂未接入发版闸门**；8 页签 + 抽屉的 AX 命名检查已并入 `verify:pages`，真机 `verify:ax` 仍需 token 复跑 |
 | `npm run review:layout` | 24 个模块的字号/溢出/内联硬编码颜色巡检 |
 | `npm run review:components` | 官方元素 vs 自研元素的分布，看还有哪些组件没换 |
 
