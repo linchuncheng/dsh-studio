@@ -189,6 +189,27 @@ try {
   const drawerUnnamed = drawerAx.nodes.filter(node => !node.ignored && AX_ROLES.has(node.role?.value) && String(node.name?.value ?? '').trim() === '').map(node => node.role.value)
   check('卡片抽屉的 dialog 有名称', dialogs.length > 0 && String(dialogs[0].name?.value ?? '').trim() !== '', (dialogs[0]?.name?.value ?? '没有 dialog'))
   check('卡片抽屉交互节点都有可访问名称', drawerUnnamed.length === 0, drawerUnnamed.slice(0, 6).join(','))
+  // 800px 回归：中窄屏顶栏动作区必须换行，页面不能横向溢出（920px 断点的守门）
+  await page.setViewport({ width: 800, height: 1000 })
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
+  await page.waitForSelector('[data-dsh-studio] .ds-head-tabs [role="tab"]', { timeout: 45000 })
+  await sleep(900)
+  const narrow = await page.evaluate(() => {
+    const brand = document.querySelector('[data-dsh-studio] .ds-brand')
+    const actions = document.querySelector('[data-dsh-studio] .ds-head-actions')
+    const b = brand === null ? null : brand.getBoundingClientRect()
+    const a = actions === null ? null : actions.getBoundingClientRect()
+    return {
+      win: window.innerWidth,
+      doc: document.documentElement.scrollWidth,
+      brandBottom: b === null ? 0 : Math.round(b.bottom),
+      actionsTop: a === null ? 0 : Math.round(a.top),
+      hasActions: a !== null,
+    }
+  })
+  check('800px 没有横向溢出', narrow.doc <= narrow.win + 1, `doc=${narrow.doc} win=${narrow.win}`)
+  check('800px 顶栏动作区换行（不挤标题）', narrow.hasActions && narrow.actionsTop >= narrow.brandBottom - 1, `actionsTop=${narrow.actionsTop} brandBottom=${narrow.brandBottom}`)
+  await page.screenshot({ path: join(outDir, '800-看板.png') })
   check('全程没有 pageerror', errors.length === 0, errors.join(' | '))
 } catch (error) {
   console.error('探针中断：' + (error?.message ?? error))

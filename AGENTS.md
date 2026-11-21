@@ -101,7 +101,7 @@ STUDIO_TOKEN=$(sudo journalctl -u dsh-web -n 50 | grep -o 'token=[A-Za-z0-9_-]*'
 11. 全闭环自检：`STUDIO_BASE=http://<host>:18080 node tools/e2e-loop.mjs [--k 3]`——真建一条需求和卡，跑完澄清门禁→评审→拆卡→各列→代码事实→用例→验收→版本发布；每步都是断言，`--k` 连跑 N 轮看成功率（每轮约 35 秒），任何一轮失败退出码非 0。
     **默认跑完自动删除自己建的数据**（看结果加 `--keep`）。周检用 `npm run selfcheck`（= `--k 3`，连跑三轮看成功率）；定时任务在 2026-11-16 被用户主动删除，不要自动重建，需要时给一条 crontab：`0 9 * * 1 cd <repo> && npm run selfcheck`。
 12. 提示词 A/B：`node tools/prompt-ab.mjs --task <卡 id> --variant '一段追加提示词'` 先看计划（免费），`--setup-only` 验建/删专家通路（免费），`--run` 才真派两次单（花 token）。判据是用例通过数 / 代码事实 / 评论数 / 耗时。
-13. CI 在 `.github/workflows/ci.yml`：语法 → 契约 → `web/` 里 `pnpm install --frozen-lockfile && pnpm build` → `cmp dist/client.js client.js` → `git diff --exit-code`（产物必须可复现，改了前端忘记构建会直接红）→ `npm run verify:pages`（假宿主 + 真 Chrome：8 页渲染 + AX 命名，35 项）
+13. CI 在 `.github/workflows/ci.yml`：语法 → 契约 → `web/` 里 `pnpm install --frozen-lockfile && pnpm build` → `cmp dist/client.js client.js` → `git diff --exit-code`（产物必须可复现，改了前端忘记构建会直接红）→ `npm run verify:pages`（假宿主 + 真 Chrome：8 页渲染 + AX 命名 + 800px 顶栏回归，37 项）
     **推完就等这一提交的结论：`npm run ci:watch`**（= `gh run watch --exit-status`，本机已登录 gh）。
     它阻塞到流水线结束，绿了返回 0；红了自动打印 `--log-failed` 的尾巴，不用去网页翻。
     别再 `sleep` 轮询：以前那样每次多等 1~2 分钟，而且失败时拿不到日志（未认证的日志接口 403）——
