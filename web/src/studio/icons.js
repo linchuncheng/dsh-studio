@@ -10,11 +10,11 @@
  *   2. 状态不用图标表达，用 `.ds-dot`（6px 圆点）+ 文字：形状固定、颜色只表意。
  *
  * 用法（这些模块都是 h() 写法，所以图标也从 h 构造）：
- *   import { icon, dot, expertIconName } from './icons.js'
- *   icon(h, 'file')                      // 14px 线性图标
- *   icon(h, 'checks', { size: 12 })      // 小一号
- *   dot(h, 'danger')                     // 6px 状态点
- *   icon(h, expertIconName(expert))      // 按专家角色取图标
+ *   import { uiIcon, statusDot, expertIconName } from './icons.js'
+ *   uiIcon(h, 'file')                      // 14px 线性图标
+ *   uiIcon(h, 'checks', { size: 12 })      // 小一号
+ *   statusDot(h, 'danger')                     // 6px 状态点
+ *   uiIcon(h, expertIconName(expert))      // 按专家角色取图标
  */
 import {
   Bot, Brain, CircleCheck, CircleDashed, CircleX, ClipboardList, Clock, FileText,
@@ -48,11 +48,11 @@ const GLYPHS = {
 export const ICON_NAMES = Object.keys(GLYPHS)
 
 /** 渲染一个图标；名字不认识时返回 null（宁可不画，也不画错的）。 */
-export function icon(h, name, props = {}) {
+export function uiIcon(createElement, name, props = {}) {
   const glyph = GLYPHS[name]
   if (glyph === undefined) return null
   const className = ['ds-icon', props.className].filter(Boolean).join(' ')
-  return h(glyph, {
+  return createElement(glyph, {
     size: 14,
     strokeWidth: 1.75,
     'aria-hidden': 'true',
@@ -63,8 +63,8 @@ export function icon(h, name, props = {}) {
 }
 
 /** 6px 状态点。kind: ok / warn / danger / info / idle。 */
-export function dot(h, kind, props = {}) {
-  return h('span', { className: 'ds-dot', 'data-kind': kind, 'aria-hidden': 'true', ...props })
+export function statusDot(createElement, kind, props = {}) {
+  return createElement('span', { className: 'ds-dot', 'data-kind': kind, 'aria-hidden': 'true', ...props })
 }
 
 const ROLE_ICON = {

@@ -58,13 +58,13 @@ test('roster: owner labels cover role, team, expert and pool shapes', () => {
     teams: [{ id: 'team-1', name: '支付小队' }],
   }
   assert.equal(ownerLabel(config, null), '')
-  assert.equal(memberLabel(config, { kind: 'role', id: 'qa' }), '🎯 测试')
-  assert.equal(memberLabel(config, { kind: 'team', id: 'team-1' }), '👥 支付小队')
-  assert.equal(memberLabel(config, { kind: 'expert', id: 'expert-a' }), '📦 支付产品经理')
-  assert.equal(ownerLabel(config, { kind: 'role', id: 'dev' }), '🎯 研发')
+  assert.equal(memberLabel(config, { kind: 'role', id: 'qa' }), '测试')
+  assert.equal(memberLabel(config, { kind: 'team', id: 'team-1' }), '支付小队')
+  assert.equal(memberLabel(config, { kind: 'expert', id: 'expert-a' }), '支付产品经理')
+  assert.equal(ownerLabel(config, { kind: 'role', id: 'dev' }), '研发')
   assert.equal(
     ownerLabel(config, { kind: 'pool', members: [{ kind: 'role', id: 'product' }, { kind: 'expert', id: 'expert-qa' }] }),
-    '🎯 产品 等 2 位',
+    '产品 等 2 位',
   )
   assert.equal(ownerLabel(config, { kind: 'pool', members: [] }), '')
 })
@@ -280,7 +280,7 @@ test('palette: skills from the library are searchable and open the right pane', 
   }
   const records = searchItems(state)
   assert.deepEqual(records.map((item) => item.kind), ['skill', 'skill'])
-  assert.equal(records[0].label, '🧩 gitlab-mr-review')
+  assert.equal(records[0].label, 'gitlab-mr-review')
   assert.equal(records[0].hint, '技能 · 已启用 · 1 位专家在用')
   assert.equal(records[1].hint, '技能 · 已停用 · 2 位专家在用')
 
@@ -307,8 +307,8 @@ test('palette: experts, teams and projects are searchable too', async () => {
   const records = searchItems(state)
   assert.deepEqual(records.map((item) => item.kind), ['expert', 'expert', 'team', 'project'])
   assert.equal(records[0].hint, '专家 · 架构 · 支付')
-  assert.equal(records[1].label, '💳 支付产品经理')
-  assert.equal(records[2].label, '👥 支付方案组')
+  assert.equal(records[1].label, '支付产品经理')
+  assert.equal(records[2].label, '支付方案组')
   assert.equal(records[3].hint, '项目 · 1 个服务 · 1 个迭代')
   const all = paletteItems(state)
   assert.equal(filterItems(all, '支付产品')[0].kind, 'expert')

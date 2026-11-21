@@ -1,6 +1,6 @@
 /* The @ expert picker shown above the comment box in the card drawer. */
 
-import { icon } from './icons.js'
+import { uiIcon } from './icons.js'
 import { filterRoster } from './roster.js'
 
 export function createMentionPicker({ h, TextField }) {
@@ -33,7 +33,7 @@ function MentionPicker({ roster, query, active, onQuery, onActive, onPick, onClo
               key: item.key, className: 'ds-mention-item', 'data-active': index === active ? '1' : '0',
               onMouseEnter: () => onActive(index),
               onClick: () => onPick(item.name),
-            }, item.icon === undefined ? null : icon(h, item.icon), h('span', null, item.name), h('span', { className: 'ds-hint' }, item.hint)),
+            }, item.icon === undefined ? null : uiIcon(h, item.icon), h('span', null, item.name), h('span', { className: 'ds-hint' }, item.hint)),
           ]
         }).flat().filter(Boolean),
     ),

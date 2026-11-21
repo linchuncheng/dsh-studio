@@ -1,6 +1,6 @@
 /* Card detail drawer: overview, content, plan, artifacts, tests, runs and talk. */
 
-import { icon, expertIconName } from './icons.js'
+import { uiIcon, expertIconName } from './icons.js'
 import { ARTIFACT_KINDS, ARTIFACT_KIND_LABEL, ARTIFACT_STATUS, ARTIFACT_STATUS_LABEL, CASE_PRIORITIES, CASE_RESULT_LABEL, CASE_RESULTS, CASE_TYPES, CASE_TYPE_LABEL, CODING_REVIEW_LABEL, PRIORITY_LABEL, ROLE_LABEL, SEVERITY_LABEL, TYPE_LABEL } from './labels.js'
 import { artifactsWithoutBody, buildRoster, cardOwner, caseSummaryOf, checkSummaryOf, commentCountOf, filterRoster, fromDateInput, ownerLabel, toDateInput } from './roster.js'
 import { fmtTime } from './format.js'
@@ -1486,7 +1486,7 @@ function Drawer({ task, state, onClose, onChanged }) {
                 h('div', { className: 'ds-art-ref' }, `正文 ${typeof item.contentLength === 'number' ? item.contentLength : String(item.content ?? '').length} 字${artifactHasBody(item) ? '' : ' · 缺正文'}${item.doc?.url ? '' : ' · 还没归档'}`),
                 item.ref === '' ? null : h('div', { className: 'ds-art-ref' }, item.ref),
                 item.doc?.url
-                  ? h('a', { className: 'ds-art-ref', href: item.doc.url, target: '_blank', rel: 'noreferrer' }, icon(h, 'file'), ` ${item.doc.name || '云盘文档'}`)
+                  ? h('a', { className: 'ds-art-ref', href: item.doc.url, target: '_blank', rel: 'noreferrer' }, uiIcon(h, 'file'), ` ${item.doc.name || '云盘文档'}`)
                   : (item.doc?.error ? h('div', { className: 'ds-error' }, item.doc.error) : null),
               ),
               /\.(png|jpe?g|webp|gif)$/i.test(String(item.ref ?? ''))
@@ -1797,7 +1797,7 @@ function Drawer({ task, state, onClose, onChanged }) {
                 'data-role': expert?.role ?? '',
               },
                 h('div', { className: 'ds-cm-avatar' },
-                  human ? h('span', { className: 'ds-cm-initial' }, who.slice(0, 1)) : h('span', { className: 'ds-cm-initial-icon' }, icon(h, expertIconName(expert)))),
+                  human ? h('span', { className: 'ds-cm-initial' }, who.slice(0, 1)) : h('span', { className: 'ds-cm-initial-icon' }, uiIcon(h, expertIconName(expert)))),
                 h('div', { className: 'ds-cm-main' },
                   h('div', { className: 'ds-cm-head' },
                     h('span', { className: 'ds-cm-name' }, who),

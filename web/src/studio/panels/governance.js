@@ -1,6 +1,6 @@
 /* Settings panels lifted out of client.src.js; shared handles come from the studio context. */
 
-import { icon } from '../icons.js'
+import { uiIcon } from '../icons.js'
 import { ROLE_LABEL, ACCESS_ROLE_OPTIONS, STRATEGIES, ROUTE_LABEL } from '../labels.js'
 import { buildRoster, filterRoster } from '../roster.js'
 import { fmtTime } from '../format.js'
@@ -342,7 +342,7 @@ export function ColumnsPanel({ state, onChanged }) {
                   ? h('div', { className: 'ds-mention-empty' }, '没有匹配的专家或专家团')
                   : filterRoster(roster, query).map(item => h('button', {
                     key: item.key, className: 'ds-mention-item', onClick: () => add(column.id, item),
-                  }, item.icon === undefined ? null : icon(h, item.icon), h('span', null, item.name), h('span', { className: 'ds-hint' }, item.hint))),
+                  }, item.icon === undefined ? null : uiIcon(h, item.icon), h('span', null, item.name), h('span', { className: 'ds-hint' }, item.hint))),
               ),
             )
             : null,
