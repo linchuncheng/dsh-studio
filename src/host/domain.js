@@ -6,7 +6,7 @@ export { sanitizeProjectFolders }
 import { sanitizeAcceptanceItem } from './acceptance.js'
 import { qualityFields } from './card-quality.js'
 import { resolveCaseResult } from './case-strength.js'
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 import { sanitizeDbCase } from './db-runner.js'
 import { sanitizeDiscovery } from './discovery.js'
 import { sanitizeOverride } from './override.js'

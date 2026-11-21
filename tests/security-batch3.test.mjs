@@ -27,6 +27,12 @@ test('access: 配置类与破坏性路由升到 admin 档', () => {
   assert.equal(toolLevel('studio_project_save'), 'admin', '工具层与路由层保持一致')
 })
 
+test('access: 同一工具的动作可以更严——merge 是 admin，publish 仍是 write', () => {
+  assert.equal(toolLevel('studio_merge_gate'), 'write', '默认动作仍然给评审/测试用')
+  assert.equal(toolLevel('studio_merge_gate', { action: 'publish' }), 'write')
+  assert.equal(toolLevel('studio_merge_gate', { action: 'merge' }), 'admin', '真合并必须是管理员')
+})
+
 test('access: 只读 POST 不再误判成写操作（只读成员可用）', () => {
   for (const route of ['/release/get', '/requirement/get', '/requirement/matrix', '/requirement/impact', '/contexts', '/contexts/session', '/access/explain']) {
     assert.ok(READ_ONLY_POST_ROUTES.has(route), `${route} 应该是只读 POST`)

@@ -51,7 +51,7 @@
 ### 默认账号
 
 - 账号 `admin`，口令 `admin`（`config.localAuth.password === null` 表示「还是默认口令」，这样默认值稳定、不随服务启动变化）。页头会显示「· 默认口令」提醒；改掉之后这个标记消失。
-- 改过密码之后，库里只存 `{ salt, hash, at }`（`scryptSync` + 16 字节随机盐），`/state` 只下发 `{ enabled, username, hasPassword, mustChange, updatedAt }`，**永远不下发口令或哈希**。
+- 改过密码之后，`{ salt, hash, at }`（`scryptSync` + 16 字节随机盐）只存在 **0600 的密钥文件** `~/.dsh/dsh-studio.secrets.json` 里；台账与快照只留 `password: null`（加载时补回内存，老库在下一次写盘时自动迁走）。`/state` 只下发 `{ enabled, username, hasPassword, mustChange, updatedAt }`，**永远不下发口令或哈希**。
 - 官方建议：进「设置 → 安全 → 统一登录（LDAP）」把默认口令改掉，或直接点一下「重置为默认口令」（需要知道当前口令）。
 
 ### 什么时候要登录
