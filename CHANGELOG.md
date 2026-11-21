@@ -1,6 +1,23 @@
 # 更新日志
 
 
+## [0.9.58] — 2026-11-22
+
+### 安全：对外配置不再返回 WeKnora API Key
+
+`studio_config_get` / `/state` 以前把 `docs.weknora.apiKey` 明文返回，和工具描述「只给 presence flag」不符。现在对外配置里 `apiKey` 永远为空、只给 `apiKeySet`；设置面板回显为空，保存时留空表示保持原值，输入新值才覆盖。
+
+**已暴露过的 key 需要在 WeKnora 侧轮换**，代码修复不能收回旧 key。
+
+### 门禁：有 MR 但没有执行记录不再放行
+
+真机 GitLab 联调（`xiaoyu/test` MR !4）发现：卡上只挂 `gitlabMR`、没有任何 `studio_task_coding` 记录时，合并门禁会跳过评审/提交/改动文件检查并返回「通过」。现在 `coding === null` 且有 MR 时直接加 blocker：必须先登记编码代理、分支、提交与改动文件。
+
+### 工程
+
+- `pages-probe` 增到 **45 项**：8 页 + 卡片抽屉的 AX 命名、可聚焦却被 `aria-hidden` 的节点、800px 顶栏回归，CI 每次跑
+- compatibility 增加「验证范围」：0.9.58 本机 + CI 已验，Linux 目标机待部署后跑 `release:preflight`
+
 ## [0.9.57] — 2026-11-21
 
 ### 窄屏顶栏：标题独占一行
