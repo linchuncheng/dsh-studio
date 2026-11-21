@@ -34,10 +34,24 @@ export function sanitizeDocsConfig(raw, base = {}) {
       if (id !== '' && picked !== '') perProject[id] = picked
     }
   }
+  const baseSink = sanitizeWeKnoraSink(fallback.weknora)
+  const sink = sanitizeWeKnoraSink(src.weknora ?? fallback.weknora)
+  /* 面板回显的 apiKey 已被抹掉；保存时留空表示「不修改」，不能把已有 key 冲成空串。
+     要换 key 就直接输入新值。 */
+  if (sink.apiKey === '' && baseSink.apiKey !== '') sink.apiKey = baseSink.apiKey
   return {
     provider,
     perProject,
-    weknora: sanitizeWeKnoraSink(src.weknora ?? fallback.weknora),
+    weknora: sink,
+  }
+}
+
+/** 对外配置：apiKey 只给 presence flag，正文永远不下发（工具/`/state` 都走这里）。 */
+export function publicDocsConfig(raw) {
+  const safe = sanitizeDocsConfig(raw)
+  return {
+    ...safe,
+    weknora: { ...safe.weknora, apiKey: '', apiKeySet: safe.weknora.apiKey !== '' },
   }
 }
 

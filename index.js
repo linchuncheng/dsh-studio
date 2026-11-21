@@ -48,7 +48,7 @@ import { sanitizeLimits } from './src/host/limits.js'
 import { attachWebhooks, sanitizeWebhooks } from './src/host/webhooks.js'
 import { updateTaskComment, removeTaskComment } from './src/host/comments.js'
 import { deleteProjectFolder, deleteRequirementFolder } from './src/host/drive-sync.js'
-import { sanitizeDocsConfig } from './src/host/doc-sink.js'
+import { publicDocsConfig, sanitizeDocsConfig } from './src/host/doc-sink.js'
 import { addAssertedCases, addDraftCases, buildDashboard, codingVerifyLine, commentTask, configureExecutor, larkJson, ensureReqFolder, larkCliReady, invalidateLarkProbe, larkProbeCache, mutateReqDoc, probeEnv, pullFeishuDoc, requirementGate, requirementMatrix, requirementProgress, requirementRollup, runCommand, runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask, verifyCodingRecord } from './src/host/executor.js'
 import { configureAuthRoutes, handleAuthRoute } from './src/host/routes/auth.js'
 import { configureExportRoutes, handleExportRoute } from './src/host/routes/exports.js'
@@ -411,7 +411,7 @@ function publicConfig(config) {
     sla: config.sla,
     design: config.design,
     reviewGate: config.reviewGate,
-    docs: config.docs,
+    docs: publicDocsConfig(config.docs),
     limits: config.limits,
     webhooks: config.webhooks,
     costs: config.costs,

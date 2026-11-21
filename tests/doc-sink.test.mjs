@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { artifactDocKey, docProviderFor, docSinksFor, sanitizeDocsConfig } from '../src/host/doc-sink.js'
+import { artifactDocKey, docProviderFor, docSinksFor, publicDocsConfig, sanitizeDocsConfig } from '../src/host/doc-sink.js'
 
 test('配置：默认 feishu；垃圾值回落；未知项目不写进表', () => {
   assert.equal(sanitizeDocsConfig({}).provider, 'feishu')
@@ -16,6 +16,24 @@ test('WeKnora 连接形状：字段截断、空串保留', () => {
   const sink = sanitizeDocsConfig({ weknora: { baseUrl: ' http://h:8080 ', apiKey: 'k', tenantId: '10000', knowledgeBaseId: 'kb' } }).weknora
   assert.deepEqual(sink, { baseUrl: 'http://h:8080', apiKey: 'k', tenantId: '10000', knowledgeBaseId: 'kb' })
   assert.deepEqual(sanitizeDocsConfig({}).weknora, { baseUrl: '', apiKey: '', tenantId: '', knowledgeBaseId: '' })
+})
+
+test('对外配置不泄露 apiKey：只给 apiKeySet', () => {
+  const raw = sanitizeDocsConfig({ weknora: { baseUrl: 'http://h', apiKey: 'sk-secret', tenantId: '1', knowledgeBaseId: 'kb' } })
+  const pub = publicDocsConfig(raw)
+  assert.equal(pub.weknora.apiKey, '')
+  assert.equal(pub.weknora.apiKeySet, true)
+  assert.equal(pub.weknora.baseUrl, 'http://h')
+  assert.ok(!JSON.stringify(pub).includes('sk-secret'), 'apiKey 不能出现在对外配置里')
+})
+
+test('保存时 apiKey 留空 = 保持原值；输入新值才覆盖', () => {
+  const base = sanitizeDocsConfig({ weknora: { baseUrl: 'http://h', apiKey: 'sk-old', tenantId: '1', knowledgeBaseId: 'kb' } })
+  const kept = sanitizeDocsConfig({ weknora: { baseUrl: 'http://h2', apiKey: '', tenantId: '1', knowledgeBaseId: 'kb' } }, base)
+  assert.equal(kept.weknora.apiKey, 'sk-old', '面板回显是空的，保存不能把 key 冲掉')
+  assert.equal(kept.weknora.baseUrl, 'http://h2')
+  const changed = sanitizeDocsConfig({ weknora: { baseUrl: 'http://h2', apiKey: 'sk-new', tenantId: '1', knowledgeBaseId: 'kb' } }, base)
+  assert.equal(changed.weknora.apiKey, 'sk-new')
 })
 
 test('优先级：需求级 > 项目级 > 全局', () => {
