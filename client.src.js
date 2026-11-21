@@ -923,6 +923,8 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
    一行放不下时会把标题挤到只剩几十像素；先让动作区换行，标题保持可读。 */
 @media (max-width:920px) {
   .ds-head-top { flex-wrap:wrap; gap:8px; }
+  /* 标题独占一行，动作区换到下一行——不依赖字体宽度，Linux/Windows 结果一致。 */
+  .ds-brand { flex:1 0 100%; }
   .ds-head-actions { flex-wrap:wrap; gap:6px; margin-left:0; }
 }
 /* ---- 窄屏（平板竖屏 / 手机）：单列、卡片占满、按钮换行 ---- */
