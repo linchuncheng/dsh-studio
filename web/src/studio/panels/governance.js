@@ -1,6 +1,6 @@
 /* Settings panels lifted out of client.src.js; shared handles come from the studio context. */
 
-import { uiIcon } from '../icons.js'
+import { statusDot, uiIcon } from '../icons.js'
 import { ROLE_LABEL, ACCESS_ROLE_OPTIONS, STRATEGIES, ROUTE_LABEL } from '../labels.js'
 import { buildRoster, filterRoster } from '../roster.js'
 import { fmtTime } from '../format.js'
@@ -491,9 +491,6 @@ export function HealthPanel({ state, config, onChanged }) {
   }
 
   const LABEL = { ok: '正常', error: '异常', idle: '还没用过' }
-  // 这三个颜色只用来画「●」这个字符（等于文字），所以取的是过 AA 的那一档，不是图表的鲜艳色。
-  // 用 CSS 变量而不是写死 hex：这是内联样式，写死就不会跟着深色主题变（实测深色下只有 3.0:1）。
-  const COLOR = { ok: 'var(--ds-ok-text)', error: 'var(--ds-danger-text)', idle: 'var(--ds-muted)' }
 
   return h('div', { className: 'ds-pane-stack' },
     h('div', { className: 'ds-panel' },
@@ -562,7 +559,7 @@ export function HealthPanel({ state, config, onChanged }) {
           : health.channels.map(item => h('div', { key: item.channel, className: 'ds-listrow' },
               h('div', { className: 'ds-listrow-main' },
                 h('div', null,
-                  h('span', { style: { color: COLOR[item.state], fontWeight: 700 } }, '● '),
+                  statusDot(h, item.state === 'ok' ? 'ok' : item.state === 'error' ? 'danger' : 'idle', { style: { marginRight: 6 } }),
                   item.label,
                   h(ChipField, { className: 'ds-chip ds-chip-soft', style: { marginLeft: 6 } }, LABEL[item.state])),
                 h('div', { className: 'ds-hint' }, item.hint),
