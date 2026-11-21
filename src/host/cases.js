@@ -81,8 +81,9 @@ export function collectCases(state) {
 
 const SUITES_KEY = 'suites'
 
-/** 建套件时的默认规则：只跑有 http 定义的，按卡串行。 */
-export const SUITE_DEFAULTS = { rules: { requirementIds: [], priorities: [], httpOnly: true }, keys: [] }
+/** 建套件时的默认规则：老口径是只跑接口（httpOnly=true）；新套件由界面显式传 false。
+ *  false 的含义是「所有能跑的用例」——接口 / shell / 数据库 / 浏览器，草稿仍然排除。 */
+export const SUITE_DEFAULTS = { rules: { requirementIds: [], priorities: [], httpOnly: false }, keys: [] }
 
 /** 套件清洗：名字必有、规则白名单、手工键只留 "taskId:caseId" 形状的。 */
 export function sanitizeSuite(raw) {
@@ -108,7 +109,10 @@ export function sanitizeSuite(raw) {
   }
 }
 
-/** 套件解析成具体的用例键（去重）。 */
+/** 套件解析成具体的用例键（去重）。
+ *  httpOnly=true 是历史口径（只跑接口用例）；false = 所有**能跑**的用例
+ *  （接口 / shell / 数据库 / 浏览器），草稿（没有可执行断言）仍然排除：
+ *  草稿跑不出结论，混进回归只会制造假失败。 */
 export function resolveSuiteKeys(suite, cases) {
   const rules = suite?.rules ?? {}
   const requirementIds = Array.isArray(rules.requirementIds) ? rules.requirementIds.map(String) : []
@@ -118,7 +122,9 @@ export function resolveSuiteKeys(suite, cases) {
   const out = new Set()
   for (const row of Array.isArray(cases) ? cases : []) {
     if (picked.has(row.key)) { out.add(row.key); continue }
-    if (httpOnly && row.http !== true) continue
+    if (httpOnly) {
+      if (row.http !== true) continue
+    } else if (row.runnable !== true) continue
     if (requirementIds.length > 0 && !requirementIds.includes(row.requirementId)) continue
     if (priorities.length > 0 && !priorities.includes(row.priority)) continue
     out.add(row.key)

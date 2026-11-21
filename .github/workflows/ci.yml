@@ -25,6 +25,11 @@ jobs:
       - name: Repository contract
         run: npm test
 
+      # node --check 查不出「同作用域内先用后声明」（issue #6：空看板第一行崩），
+      # 这一步把 web/src 与 client.src.js 都扫一遍。不装依赖也能跑。
+      - name: TDZ scan
+        run: npm run verify:tdz
+
       - name: Build bundle
         working-directory: web
         run: pnpm install --frozen-lockfile && pnpm build

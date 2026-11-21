@@ -195,7 +195,13 @@ try {
   await page.screenshot({ path: join(outDir, 'board.png') })
 
   // ② 抽屉：用例归功能点
-  await page.evaluate(() => document.querySelector('.ds-card')?.click())
+  // 必须点探针自己造的那张卡：看板上还有真实卡片，点第一张会打开别人的卡（没有 pointId），
+  // 于是这条断言永远失败，看起来像产品 bug。2026-11-21 真机定位到这里。
+  await page.evaluate(() => {
+    const card = [...document.querySelectorAll('.ds-card')]
+      .find(node => (node.textContent ?? '').includes('（探针）看板卡片'))
+    ;(card ?? document.querySelector('.ds-card'))?.click()
+  })
   await new Promise(resolve => setTimeout(resolve, 900))
   const sections = await page.evaluate(() => [...document.querySelectorAll('.ds-sec-head')].map(node => String(node.textContent ?? '')))
   check('② 抽屉打开且有分区', sections.length > 0, `${sections.length} 个分区`)
@@ -280,6 +286,24 @@ try {
   check('④c 文档出口「保存」真的写进 config.docs', writeAttempt.ok === true && backOk === true && providerAfter === providerTarget, `期望 ${providerTarget}，回读 ${providerAfter}${writeAttempt.ok === true ? '' : '（' + writeAttempt.reason + '）'}`)
   await saveOnce(providerBefore)
   await new Promise(resolve => setTimeout(resolve, 800))
+
+  // ④d 设置 → 角色与模型：面板能从导航进得去。
+  // 0.9.55 之前 paneFor 里有 models 分支，导航数组却没这一项，面板永远打不开。
+  const modelsNav = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('button, [role="button"], a')]
+      .find(node => (node.textContent ?? '').trim().startsWith('角色与模型'))
+    if (el === undefined || el === null) return false
+    el.click()
+    return true
+  })
+  if (modelsNav === true) await new Promise(resolve => setTimeout(resolve, 700))
+  const modelsPane = await page.evaluate(() => ({
+    text: document.body.innerText,
+    inputs: document.querySelectorAll('[data-dsh-studio] input[placeholder="deepseek-v4.1-flash"]').length,
+  }))
+  check('④d 设置页有「角色与模型」入口', modelsNav === true, modelsNav ? '' : '导航里没有这一项')
+  check('④d 角色与模型面板真的渲染', modelsPane.text.includes('角色与模型') && modelsPane.inputs >= 4, `inputs=${modelsPane.inputs}`)
+  await page.screenshot({ path: join(outDir, 'role-models.png') })
 
   // ⑤ 设置 → 技能库：使用读数
   const skillsNav = await clickExact('技能库')

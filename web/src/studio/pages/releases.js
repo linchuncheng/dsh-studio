@@ -98,7 +98,6 @@ export function ReleasesPage({ state, onOpenTask }) {
       const out = await api(path, body)
       setNotice(done ?? '已保存')
       toast(done ?? '已保存')
-      toast(done ?? '已保存')
       await refresh(out.release?.id ?? selected)
     } catch (cause) {
       const verb = cause instanceof Error ? cause.message : String(cause)
@@ -224,7 +223,16 @@ export function ReleasesPage({ state, onOpenTask }) {
                 h('button', { className: 'ds-btn', disabled: busy || !gate?.ready, onClick: () => void act('/release/approve', { id: form.id, by: '人' }, '已审批，可以发布了') }, '审批通过'),
               ),
               h('div', { className: 'ds-action-bar-right' },
-              h('button', { className: 'ds-btn ds-btn-primary', disabled: busy || !gate?.ready || release.status === 'released', onClick: () => void act('/release/publish', { id: form.id, by: '人' }, '已发布') }, release.status === 'released' ? '已发布' : '发布'),
+              h('button', {
+                className: 'ds-btn ds-btn-primary',
+                disabled: busy || !gate?.ready || release.status === 'released',
+                onClick: async () => {
+                  const label = release.version || release.name || '这个版本'
+                  const ok = await confirmDialog(`发布「${label}」？发布后状态变成已发布，版本号不能再改；这一步会写进部署日志。`, { title: '发布版本', okText: '发布' })
+                  if (!ok) return
+                  void act('/release/publish', { id: form.id, by: '人' }, '已发布')
+                },
+              }, release.status === 'released' ? '已发布' : '发布'),
               tipOf('发布准入（预发部署 / 需求签字）没过时也要发：必须写原因，会记进部署日志', h('button', {
                 className: 'ds-btn ds-btn-ghost',
                 disabled: busy || !gate?.ready || release.status === 'released',
