@@ -473,7 +473,7 @@ export function registerTools(ctx, store) {
 
   register(defineStudioTool({
     name: 'studio_task_update',
-    description: 'Move a task forward: change status, owning role, priority, artifacts or GitLab links, or flag it as blocked. A blocked card stays in its column and waits for a human; every change is recorded in the task history.',
+    description: 'Move a task forward: change status, owning role, priority, artifacts or GitLab links, write the handoff contract, or flag it as blocked. A blocked card stays in its column and waits for a human; every change is recorded in the task history.',
     parameters: {
       id: { type: 'string', required: true, description: 'Task id.' },
       status: { type: 'string', description: `New column: ${STATUS_IDS.join(' / ')}` },
@@ -494,6 +494,19 @@ export function registerTools(ctx, store) {
       dueAt: { type: 'number', description: '期望完成时间（epoch 毫秒）。' },
       releaseId: { type: 'string', description: '挂到哪个版本（版本 id；空字符串 = 脱离版本）。' },
       title: { type: 'string', description: 'Replace the title.' },
+      /* 交接契约（产品定义 V1 必做第 5 条）：交给下一棒之前写清这五段；
+         传 null 清空；不传就不动。派单提示词会先读它，再读最近评论。 */
+      handoff: {
+        type: 'object',
+        description: '交接契约：{decision, assumptions, openQuestions, risks, impactScope}。交给下一棒前写清这五段；传 null 清空。',
+        properties: {
+          decision: { type: 'string', description: '这一棒定下来的关键决策（选了什么、为什么）' },
+          assumptions: { type: 'string', description: '依赖的假设（不成立会怎样）' },
+          openQuestions: { type: 'string', description: '还没定的问题 / 需要谁拍板' },
+          risks: { type: 'string', description: '风险与缓解办法' },
+          impactScope: { type: 'string', description: '影响面：模块 / 接口 / 数据 / 用户' },
+        },
+      },
     },
     async execute(args) {
       const { id, ...rest } = args
@@ -568,7 +581,7 @@ export function registerTools(ctx, store) {
 
   register(defineStudioTool({
     name: 'studio_task_generate_cases',
-    description: '按需求的「功能点 + 验收条件」为这张卡生成测试用例草稿（按标题去重，不覆盖已有用例）。',
+    description: '按需求的「功能点 + 验收条件」为这张卡生成测试用例**草稿**（按标题去重，不覆盖已有用例）。草稿只有标题、不计入覆盖率；要能真的跑，请用 studio_task_add_cases 补 method+path / command。',
     parameters: {
       id: { type: 'string', required: true, description: 'Task id.' },
       by: { type: 'string', description: '谁生成的，默认人。' },
@@ -576,7 +589,7 @@ export function registerTools(ctx, store) {
     async execute(args) {
       const result = await host.addDraftCases(store, String(args.id ?? ''), String(args.by ?? '人').slice(0, 40))
       if (result.added === 0 && result.reason !== '') return `没生成用例：${result.reason}`
-      return `已生成 ${result.added} 条用例，这张卡现在共 ${result.total} 条。`
+      return `已生成 ${result.added} 条用例草稿（只有标题，不计入覆盖率；要能跑请补 method+path 或 command），这张卡现在共 ${result.total} 条。`
     },
   }))
 

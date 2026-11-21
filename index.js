@@ -1272,6 +1272,8 @@ async function createTask(store, input) {
     reqBaseline: baseline === null ? null : { version: baseline.version, at: baseline.at, title: baseline.title },
     worktree: null,
     signoff: null,
+    /* 交接契约：决策 / 假设 / 未决 / 风险 / 影响面。建卡时为空，交给第一棒之后由专家写。 */
+    handoff: patch.handoff ?? null,
     status: initialStatus,
     role: initialRole,
     priority: patch.priority ?? (patch.type === 'bug' && (patch.severity ?? '') === 'p0' ? 'urgent' : 'normal'),

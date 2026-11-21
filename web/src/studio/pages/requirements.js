@@ -96,6 +96,23 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
       const requirements = state.requirements ?? []
       const projects = state.config.projects ?? []
       const [selected, setSelected] = React.useState(requirements.length > 0 ? requirements[0].id : null)
+      /* 来源筛选与搜索：以前「来源」按钮只写 localStorage + dispatchEvent('resize')，
+         全站没有 resize 监听，点了标签变、列表不变（死交互）。改成真 state。 */
+      const [reqSource, setReqSource] = React.useState(() => {
+        try {
+          const saved = window.localStorage.getItem('dsh-studio:reqsrc') ?? 'all'
+          return ['all', 'business', 'internal'].includes(saved) ? saved : 'all'
+        } catch { return 'all' }
+      })
+      const [reqQuery, setReqQuery] = React.useState('')
+      /* 排序沿用老口径：按 RICE 分从高到低（reqsort 从来没有写入点，别再假装可切）。 */
+      const reqQueryText = reqQuery.trim().toLowerCase()
+      const visibleRequirements = requirements
+        .filter(item => reqSource === 'all' || (item.source === 'business' ? 'business' : 'internal') === reqSource)
+        .filter(item => reqQueryText === '' || [item.code, item.title, item.owner, item.requester?.name]
+          .filter(Boolean).join(' ').toLowerCase().includes(reqQueryText))
+        .slice()
+        .sort((left, right) => (right.pool?.score ?? 0) - (left.pool?.score ?? 0))
       // 从顶部「＋ 新建 → 新建需求」进来时，展开新建表单（form 为 null 时不显示面板）。
       const openNew = () => {
         setForm({ title: '', description: '', project: '', iteration: '', owner: '', priority: 'normal', status: 'draft', links: {} })
@@ -1208,19 +1225,30 @@ return h('div', { className: 'ds-body' },
           
           h('div', { className: 'ds-req-list' },
             h('div', { className: 'ds-req-list-head' },
-              h('span', null, `需求 ${requirements.length}`),
+              h('span', null, `需求 ${visibleRequirements.length}${visibleRequirements.length === requirements.length ? '' : ` / ${requirements.length}`}`),
               h('button', {
                 className: 'ds-btn ds-btn-ghost',
                 style: { marginLeft: 8 },
                 title: '按来源筛选：全部 / 业务提单 / 内部',
-                onClick: () => { const cur = window.localStorage.getItem('dsh-studio:reqsrc') ?? 'all'; window.localStorage.setItem('dsh-studio:reqsrc', cur === 'all' ? 'business' : cur === 'business' ? 'internal' : 'all'); window.dispatchEvent(new Event('resize')) },
-              }, (window.localStorage.getItem('dsh-studio:reqsrc') ?? 'all') === 'all' ? '来源：全部' : (window.localStorage.getItem('dsh-studio:reqsrc') === 'business' ? '来源：业务提单' : '来源：内部')),
+                onClick: () => {
+                  const next = reqSource === 'all' ? 'business' : reqSource === 'business' ? 'internal' : 'all'
+                  setReqSource(next)
+                  try { window.localStorage.setItem('dsh-studio:reqsrc', next) } catch { /* 隐私模式写不了 localStorage，不影响本次筛选 */ }
+                },
+              }, reqSource === 'all' ? '来源：全部' : reqSource === 'business' ? '来源：业务提单' : '来源：内部'),
+              h(TextField, {
+                className: 'ds-input',
+                style: { marginLeft: 8, width: 190, height: 28 },
+                placeholder: '搜编号 / 标题 / 负责人',
+                value: reqQuery,
+                onChange: event => setReqQuery(event.target.value),
+              }),
             ),
-            requirements.length === 0
-              ? h('div', { className: 'ds-empty' }, '还没有需求。先建一条——后面所有的卡、用例、缺陷、MR 都会挂在它下面。')
-              : ((window.localStorage.getItem('dsh-studio:reqsort') ?? 'score') === 'score' ? requirements.slice().sort((left, right) => (right.pool?.score ?? 0) - (left.pool?.score ?? 0)) : requirements).map(req => {
-                  const src = window.localStorage.getItem('dsh-studio:reqsrc') ?? 'all'
-                  if (src !== 'all' && (req.source === 'business' ? 'business' : 'internal') !== src) return null
+            visibleRequirements.length === 0
+              ? h('div', { className: 'ds-empty' }, requirements.length === 0
+                ? '还没有需求。先建一条——后面所有的卡、用例、缺陷、MR 都会挂在它下面。'
+                : '没有符合筛选的需求：清掉搜索词，或把来源切回「全部」。')
+              : visibleRequirements.map(req => {
                   const tasks = tasksOf(req.id)
                   const reqDone = tasks.filter(task => task.status === 'done').length
                   const pct = req.progress?.progress ?? (tasks.length === 0 ? 0 : Math.round((reqDone / tasks.length) * 100))

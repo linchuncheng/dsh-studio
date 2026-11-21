@@ -1237,6 +1237,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
     const MentionPicker = createMentionPicker({ h, TextField })
     const Drawer = createDrawer({ h, React, api, kit, currentUser, renderMarkdown, tipOf, tipLabel, confirmDialog, promptDialog, TextField, TextAreaField, ChipField, CheckField, SelectField, MdField, MentionPicker })
     const Palette = createPalette({ h, React, TextField })
+    const RunTray = createRunTray({ h, React, api })
     provideClient({ h, React, Editor, api, apiBase: API, kit, toast, sessionToken, currentUser, confirmDialog, promptDialog, tipOf, tipLabel, renderMarkdown, SideDrawer, MentionPicker, Card, TextField, TextAreaField, ChipField, CheckField, SelectField, SwitchToggle, DateField, MdField })
 
 
@@ -2261,6 +2262,7 @@ function installKeyboardActivation() {
               ),
             ),
             h('div', { className: 'ds-head-actions' },
+              h(RunTray, { state }),
               authUser() === null
                 ? h(ChipField, {
                     className: 'ds-chip',
