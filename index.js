@@ -52,6 +52,7 @@ import { sanitizeDocsConfig } from './src/host/doc-sink.js'
 import { addAssertedCases, addDraftCases, buildDashboard, codingVerifyLine, commentTask, configureExecutor, larkJson, ensureReqFolder, larkCliReady, invalidateLarkProbe, larkProbeCache, mutateReqDoc, probeEnv, pullFeishuDoc, requirementGate, requirementMatrix, requirementProgress, requirementRollup, runCommand, runSuite, runTaskCases, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask, verifyCodingRecord } from './src/host/executor.js'
 import { configureAuthRoutes, handleAuthRoute } from './src/host/routes/auth.js'
 import { configureExportRoutes, handleExportRoute } from './src/host/routes/exports.js'
+import { findSession, sessionKeyFor, sessionTokenHash } from './src/host/sessions.js'
 import { INTAKE_HTML, MINE_HTML, STATUS_HTML } from './src/host/intake-pages.js'
 import { configureTaskRoutes, handleTaskRoute } from './src/host/routes/tasks.js'
 import { configureRequirementRoutes, handleRequirementRoute } from './src/host/routes/requirements.js'
@@ -1975,7 +1976,7 @@ function issueSession(user, ip) {
     expiresAt,
     ip: String(ip ?? '').slice(0, 60),
   }
-  SESSIONS.set(token, session)
+  SESSIONS.set(sessionTokenHash(token), session)
   if (SESSION_STORE !== null) SESSION_STORE.saveSession({ token, ...session })
   return { token, expiresAt }
 }
@@ -1985,13 +1986,8 @@ function sessionOf(req, config) {
   const raw = req.headers['x-studio-session']
   const token = String((Array.isArray(raw) ? raw[0] : raw) ?? '').trim()
   if (token === '') return null
-  const session = SESSIONS.get(token)
-  if (session === undefined) return null
-  if (Number(session.expiresAt) <= Date.now()) {
-    SESSIONS.delete(token)
-    if (SESSION_STORE !== null) SESSION_STORE.dropSession(token)
-    return null
-  }
+  const session = findSession(SESSIONS, token)
+  if (session === null) return null
   /* 本地超管不在 config.users 里，会话本身就带名字与角色，不再依赖名单。 */
   const stored = (config?.users ?? []).find(item => item.id === session.userId)
   const user = stored ?? {
@@ -2601,7 +2597,7 @@ export function apply(ctx) {
     configureIntegrations({ newTaskId, serviceOf, getStore: () => activeStore })
   // 集成健康是旁路数据，启动时读回来，重启后不再显示成「还没用过」。
   restoreHealth()
-    configureExportRoutes({ sendCsv, requirementProgress, sessions: SESSIONS })
+    configureExportRoutes({ sendCsv, requirementProgress, sessions: SESSIONS, sessionKeyFor })
     configureStateRoutes({ publicState, getDispatcher: () => activeDispatcher, sendJson })
     configureCodingRoutes({
   gitlabRequest,
@@ -2633,7 +2629,7 @@ export function apply(ctx) {
       publicState,
       upsertById,
     })
-    configureAuthRoutes({ sendJson, readJsonBody, recordAudit, recordLogin, issueSession, sessionOf, operatorOf, ldapAuthenticate, ldapLookup, ldapAttr, sessions: SESSIONS, dropSession: token => SESSION_STORE?.dropSession?.(token), hasSessionStore: () => SESSION_STORE !== null, publicState })
+    configureAuthRoutes({ sendJson, readJsonBody, recordAudit, recordLogin, issueSession, sessionOf, operatorOf, ldapAuthenticate, ldapLookup, ldapAttr, sessions: SESSIONS, sessionKeyFor, clearSessions: () => { SESSIONS.clear(); SESSION_STORE?.clearSessions?.() }, dropSession: token => SESSION_STORE?.dropSession?.(token), hasSessionStore: () => SESSION_STORE !== null, publicState })
     dispatcher = new Dispatcher(dispatcherCtx, store)
     activeDispatcher = dispatcher
     dispatcher.start()

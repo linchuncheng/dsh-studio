@@ -1,6 +1,6 @@
 import { REQ_STATUS_LABEL, STATUSES } from '../domain.js'
 
-let host = { sendCsv: () => {}, requirementProgress: () => null, sessions: new Map() }
+let host = { sendCsv: () => {}, requirementProgress: () => null, sessions: new Map(), sessionKeyFor: token => token }
 
 /** 导出类路由（CSV）。宿主能力由 configureExportRoutes() 注入，避免反向 import index.js。 */
 export function configureExportRoutes(services) {
@@ -70,7 +70,7 @@ export function handleExportRoute({ method, route, url, res, store, sendJson }) 
       /* 优先认请求头（x-studio-session），URL 里的 token 只作锚点下载的兜底。 */
       const header = String(req.headers['x-studio-session'] ?? '').trim()
       const token = header !== '' ? header : String(url.searchParams.get('token') ?? '')
-      const session = token === '' ? null : host.sessions.get(token)
+      const session = token === '' ? null : host.sessions.get(host.sessionKeyFor(token))
       if (session === null || (Number(session.expiresAt) || 0) <= Date.now()) {
         sendJson(res, 401, { ok: false, error: '导出审计日志要先登录' })
         return
@@ -102,7 +102,7 @@ export function handleExportRoute({ method, route, url, res, store, sendJson }) 
       /* 优先认请求头（x-studio-session），URL 里的 token 只作锚点下载的兜底。 */
       const header = String(req.headers['x-studio-session'] ?? '').trim()
       const token = header !== '' ? header : String(url.searchParams.get('token') ?? '')
-      const session = token === '' ? null : host.sessions.get(token)
+      const session = token === '' ? null : host.sessions.get(host.sessionKeyFor(token))
       if (session === null || (Number(session.expiresAt) || 0) <= Date.now()) {
         sendJson(res, 401, { ok: false, error: '导出派单日志要先登录' })
         return

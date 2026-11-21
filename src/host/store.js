@@ -28,6 +28,7 @@ import {
 import { sanitizeQuality } from './card-quality.js'
 import { sanitizeMergeGate } from './merge-gate.js'
 import { sanitizeDesign } from './design.js'
+import { looksHashed, sessionTokenHash } from './sessions.js'
 
 /** 持久化层：SQLite 台账（单写者 + 快照）与 0600 密钥文件。 */
 
@@ -104,16 +105,32 @@ export class StudioStore {
       const rows = this.db
         .prepare('SELECT token, user_id, name, role, source, at, expires_at, ip FROM sessions WHERE expires_at > ?')
         .all(now)
-      return rows.map(row => ({
-        token: row.token,
-        userId: row.user_id,
-        name: row.name,
-        role: row.role,
-        source: row.source,
-        at: row.at,
-        expiresAt: row.expires_at,
-        ip: row.ip,
-      }))
+      const out = []
+      for (const row of rows) {
+        const token = String(row.token ?? '')
+        const hashed = looksHashed(token) ? token : sessionTokenHash(token)
+        /* 升级前台账里是明文 token：第一次读到就改写成哈希，之后重启不需要用户重新登录。 */
+        if (hashed !== token) {
+          try {
+            this.db.prepare('INSERT OR REPLACE INTO sessions (token, user_id, name, role, source, at, expires_at, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+              .run(hashed, row.user_id, row.name, row.role, row.source, row.at, row.expires_at, row.ip)
+            this.db.prepare('DELETE FROM sessions WHERE token = ?').run(token)
+          } catch (error) {
+            console.warn('[dsh-studio] session token migration failed:', error?.message ?? error)
+          }
+        }
+        out.push({
+          token: hashed,
+          userId: row.user_id,
+          name: row.name,
+          role: row.role,
+          source: row.source,
+          at: row.at,
+          expiresAt: row.expires_at,
+          ip: row.ip,
+        })
+      }
+      return out
     } catch (error) {
       console.warn('[dsh-studio] listSessions failed:', error?.message ?? error)
       return []
@@ -123,9 +140,11 @@ export class StudioStore {
   saveSession(session) {
     if (this.db === null) return
     try {
+      const key = sessionTokenHash(session.token)
+      if (key === '') return
       this.db
         .prepare('INSERT OR REPLACE INTO sessions (token, user_id, name, role, source, at, expires_at, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-        .run(session.token, session.userId, session.name, session.role, session.source, session.at, session.expiresAt, session.ip)
+        .run(key, session.userId, session.name, session.role, session.source, session.at, session.expiresAt, session.ip)
     } catch (error) {
       console.warn('[dsh-studio] saveSession failed:', error?.message ?? error)
     }
@@ -134,9 +153,21 @@ export class StudioStore {
   dropSession(token) {
     if (this.db === null) return
     try {
-      this.db.prepare('DELETE FROM sessions WHERE token = ?').run(token)
+      const key = sessionTokenHash(token)
+      if (key === '') return
+      this.db.prepare('DELETE FROM sessions WHERE token = ?').run(key)
     } catch (error) {
       console.warn('[dsh-studio] dropSession failed:', error?.message ?? error)
+    }
+  }
+
+  /** 清空全部会话（改口令后调用：旧会话不能继续用旧口令的授权）。 */
+  clearSessions() {
+    if (this.db === null) return
+    try {
+      this.db.prepare('DELETE FROM sessions').run()
+    } catch (error) {
+      console.warn('[dsh-studio] clearSessions failed:', error?.message ?? error)
     }
   }
 
@@ -164,6 +195,11 @@ export class StudioStore {
       db.exec('CREATE TABLE IF NOT EXISTS locks (name TEXT PRIMARY KEY, owner TEXT NOT NULL, at INTEGER NOT NULL)')
       this.db = db
       this.engine = 'sqlite'
+      /* 台账里有会话行、需求全文与审计，默认权限别让同机其他账号随便读；
+         POSIX 上收紧到 0600。WAL/SHM 由 SQLite 自己建，能改就一起改。 */
+      for (const file of [this.dbFile, `${this.dbFile}-wal`, `${this.dbFile}-shm`]) {
+        try { await chmod(file, 0o600) } catch { /* 文件还不存在或非 POSIX 平台 */ }
+      }
     } catch (error) {
       console.warn(`[dsh-studio] sqlite unavailable, falling back to ${this.file}:`, error?.message ?? error)
       this.db = null
