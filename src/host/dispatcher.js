@@ -2,10 +2,11 @@
 import { DEFAULT_ROLES, FALLBACK_AGENT_MODEL, ROLE_IDS, SANDBOX_MODES, STATUSES, codingSummary, normalizeStrategy, worktreeRoot } from './domain.js'
 import { effectiveConcurrency } from './parallel-guard.js'
 import { abandonedRetry } from './dispatch-state.js'
+import { driftNote, isModelDrift, sessionDirOf } from './model-drift.js'
 import { handoffBlock } from './handoff.js'
 import { emitEvent } from './events.js'
 import { loadTeamMemory, teamMemoryBlock } from './team-memory.js'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, rename } from 'node:fs/promises'
 import { randomBytes } from 'node:crypto'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -737,6 +738,38 @@ export class Dispatcher {
   }
 
   /**
+   * 会话的模型是否和配置对不上；对不上就 abort + 归档目录 + 重建一次。
+   * 只重建一次：重建后仍不一致说明宿主把型号固定在别处（例如 preset），
+   * 那种情况给出明确提示让人重启 dsh，而不是无限重建把卡拖死。
+   */
+  async guardModelDrift({ handle, sessionId, dir, agentOptions, task, openSession }) {
+    const readModel = candidate => candidate?.agent?.session?.requestContext?.()
+    const current = readModel(handle)
+    if (isModelDrift(current, agentOptions) === false) return handle
+    this.note(driftNote(current, agentOptions))
+    await this.commentDrift(task, driftNote(current, agentOptions))
+    try { await handle.dispose?.() } catch (error) { this.note(`dispose 失败：${error?.message ?? error}`) }
+    const from = sessionDirOf(homedir(), dir, sessionId)
+    if (from !== '') {
+      try { await rename(from, `${from}.stale-${Date.now()}`) } catch (error) { this.note(`归档旧会话失败：${error?.message ?? error}`) }
+    }
+    const rebuilt = await openSession()
+    const after = readModel(rebuilt)
+    if (isModelDrift(after, agentOptions)) {
+      this.note(`重建后仍是 ${after?.provider ?? '?'}/${after?.model ?? '?'}：宿主可能把型号固定在别处，需要重启 dsh`)
+    } else {
+      this.note(`已按配置重建会话（${agentOptions?.provider ?? ''}/${agentOptions?.model ?? ''}）`)
+    }
+    return rebuilt
+  }
+
+  /** 漂移写进卡上：否则只有翻会话日志才知道「配置是 Flash、实际跑 Pro」。 */
+  async commentDrift(task, note) {
+    if (typeof host.commentTask !== 'function' || task === undefined) return
+    try { await host.commentTask(this.store, task.id, note, '系统', 'agent') } catch { /* 留言失败不影响派单 */ }
+  }
+
+  /**
    * Open the card's Session through the Agent factory. `agents.create` starts
    * the driver loop, so a followup message actually wakes a turn; the session
    * controller alone only records the conversation.
@@ -776,16 +809,26 @@ export class Dispatcher {
       ...(composition !== undefined ? { setup: composition.setup } : {}),
       ...(agentOptions !== undefined ? { agentOptions } : {}),
     }
-    try {
-      agent = (await ctx.agents.create(options)).agent
-    } catch (error) {
-      this.note(`create fell back to resume: ${error?.message ?? error}`)
-      agent = (await ctx.agents.resume({
-        resumeSessionId: sessionId,
-        ...(composition !== undefined ? { setup: composition.setup } : {}),
-        ...(agentOptions !== undefined ? { agentOptions } : {}),
-      })).agent
+    /* 开一次会话：先 create，撞到同名会话就退回 resume。两条路都返回 handle ——
+       漂移守卫要靠 handle.dispose() 才能真正把这轮会话换掉。 */
+    const openSession = async () => {
+      try {
+        return await ctx.agents.create(options)
+      } catch (error) {
+        this.note(`create fell back to resume: ${error?.message ?? error}`)
+        return await ctx.agents.resume({
+          resumeSessionId: sessionId,
+          ...(composition !== undefined ? { setup: composition.setup } : {}),
+          ...(agentOptions !== undefined ? { agentOptions } : {}),
+        })
+      }
     }
+    let handle = await openSession()
+    /* 模型漂移守卫：宿主把模型固化在会话创建时，改专家设置不影响老会话；
+       create 撞到老会话又会静默 resume。于是「配 Flash、实际跑 Pro」能一直存在，
+       直到有人去解会话日志才发现。这里每次派单前比一次，不一致就归档旧会话重建。 */
+    handle = await this.guardModelDrift({ handle, sessionId, dir, agentOptions, task, openSession })
+    agent = handle.agent
     // 沙箱档位：专家自己的设置优先，否则跟随全局。解析不出可用档位时落到
     // workspace-write（安全默认）——绝不因为「没配」而悄悄全开。
     const wanted = String(expert?.sandbox ?? '').trim() || String(cfg.sandbox ?? '').trim()
