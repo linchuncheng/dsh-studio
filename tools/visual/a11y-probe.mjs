@@ -187,9 +187,9 @@ try {
       if (((await tab.evaluate(node => node.textContent)) || '').trim() === '设置') { await tab.click(); break }
     }
     await sleep(1500)
-    const panels = await page.$$eval('[data-dsh-studio] .ds-settings-nav button', nodes => nodes.map(node => node.textContent.trim()).filter(Boolean))
+    const panels = await page.$$eval('[data-dsh-studio] [data-settings-nav] button', nodes => nodes.map(node => node.textContent.trim()).filter(Boolean))
     for (const name of panels.slice(0, 20)) {
-      for (const button of await page.$$('[data-dsh-studio] .ds-settings-nav button')) {
+      for (const button of await page.$$('[data-dsh-studio] [data-settings-nav] button')) {
         if (((await button.evaluate(node => node.textContent)) || '').trim() === name) { await button.click(); break }
       }
       await sleep(700)

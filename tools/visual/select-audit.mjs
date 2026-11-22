@@ -131,11 +131,11 @@ for (const tab of ['看板', '需求', '用例', '版本', '项目', '效能', '
 /* 设置里的 16 个面板：下拉总量必须 ≥ 9（自动派单/部署环境/权限与审计各 3 个），
    并且每一个都要过触发器尺寸的断言 —— 面板是逐个点开的，不是靠「默认页签」抽样。 */
 await clickTab('设置')
-const panels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')].map((n) => (n.querySelector('span')?.textContent || '').trim()))
+const panels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] [data-settings-nav] [data-settings-nav-item]')].map((n) => (n.querySelector('span')?.textContent || '').trim()))
 let panelSelects = 0
 for (const label of panels) {
   await page.evaluate((want) => {
-    [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')]
+    [...document.querySelectorAll('[data-dsh-studio] [data-settings-nav] [data-settings-nav-item]')]
       .find((n) => (n.querySelector('span')?.textContent || '').trim() === want)?.click()
   }, label)
   await sleep(750)

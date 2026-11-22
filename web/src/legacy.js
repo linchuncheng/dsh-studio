@@ -692,27 +692,15 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-form-panel .ds-panel-body > .ds-row:last-child { border-top:1px solid var(--ds-line); padding-top:12px; margin-top:2px; }
 .ds-form-panel .ds-panel-body > .ds-row:last-child .ds-btn-primary { min-width:88px; }
 /* Settings: a fixed section rail plus one pane, instead of one long scroll. */
-.ds-settings { display:grid; grid-template-columns:186px minmax(0,1fr); gap:20px; align-items:start; width:100%; }
-.ds-settings-nav { position:sticky; top:8px; display:flex; flex-direction:column; gap:1px;
   border-right:1px solid var(--ds-line); padding:0 12px 12px 0; }
-.ds-settings-nav-group { font-size:12px; letter-spacing:0; color:var(--ds-muted); padding:12px 12px 4px; }
-.ds-nav-item { display:flex; align-items:center; gap:8px; width:100%; text-align:left; font:inherit; color:inherit;
   border:0; background:none; padding:8px 12px; border-radius:10px; cursor:pointer; font-size:13px; line-height:1.2; }
-.ds-nav-item:hover { background:var(--ds-soft2); }
-.ds-nav-item[data-active="1"] { background:var(--ds-accent); color:#fff; }
-.ds-nav-item[data-active="1"] .ds-nav-count { opacity:.85; }
-.ds-nav-count { margin-left:auto; font-size:11px; opacity:.5; font-variant-numeric:tabular-nums; }
 .ds-settings-pane { min-width:0; width:100%; max-width:1060px; padding-bottom:24px; }
 .ds-pane-head { margin:0 0 16px; display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 .ds-pane-title { font-size:13px; font-weight:600; letter-spacing:0; }
 .ds-pane-desc { font-size:11px; opacity:.55; margin-top:4px; max-width:62ch; line-height:1.55; }
 .ds-settings-pane > .ds-panel:last-child { margin-bottom:0; }
 @media (max-width: 760px) {
-  .ds-settings { grid-template-columns:1fr; gap:12px; }
-  .ds-settings-nav { position:static; flex-direction:row; flex-wrap:wrap; gap:8px; border-right:0;
     border-bottom:1px solid var(--ds-line); padding:0 0 12px; }
-  .ds-settings-nav-group { display:none; }
-  .ds-nav-item { width:auto; }
 }
 .ds-field { display:flex; flex-direction:column; gap:4px; }
 .ds-label { font-size:11px; opacity:.6; }
@@ -1658,27 +1646,37 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         )
       }
 
-      return h('div', { className: 'ds-settings' },
-        h('div', { className: 'ds-settings-nav' },
+      /* 设置页外壳改用 BoardUI token（2026-11-23 起基线是 BoardUI）：
+         左栏导航 + 右栏标题/说明，不再用 .ds-settings / .ds-nav-item 那套手写样式。
+         面板内部还挂着 .ds-panel 壳，那一层按「壳 + 面板」整批迁，不在这里半途改。 */
+      const navItemClass = active => [
+        'flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-body-2-regular',
+        active ? 'bg-background-tertiary-default font-medium text-text-primary' : 'text-text-secondary hover:bg-background-secondary-default',
+      ].join(' ')
+
+      return h('div', { className: 'grid w-full items-start gap-5 lg:grid-cols-[186px_minmax(0,1fr)]', 'data-settings': '' },
+        h('nav', { className: 'sticky top-2 flex flex-col gap-px', 'data-settings-nav': '' },
           nav.map((item, index) => item.group !== undefined
-            ? h('div', { className: 'ds-settings-nav-group', key: `group-${index}` }, item.group)
+            ? h('div', { className: 'px-3 pb-1 pt-3 text-caption-1-regular text-text-tertiary', key: `group-${index}` }, item.group)
             : tipOf(
               (PANE_META[item.id] ?? [item.label, ''])[1] || item.label,
               h('button', {
                 key: item.id,
-                className: 'ds-nav-item',
+                type: 'button',
+                className: navItemClass(section === item.id),
                 'data-active': section === item.id ? '1' : '0',
+                'data-settings-nav-item': item.id,
                 onClick: () => pickSection(item.id),
               },
-                h('span', {}, item.label),
-                item.count === undefined ? null : h('span', { className: 'ds-nav-count' }, String(item.count))))),
+                h('span', { className: 'truncate' }, item.label),
+                item.count === undefined
+                  ? null
+                  : h('span', { className: 'shrink-0 text-caption-1-regular tabular-nums text-text-tertiary' }, String(item.count))))),
         ),
-        h('div', { className: 'ds-settings-pane' },
-          h('div', { className: 'ds-pane-head' },
-            h('div', null,
-              h('div', { className: 'ds-pane-title' }, (PANE_META[section] ?? ['设置'])[0]),
-              h('div', { className: 'ds-pane-desc' }, (PANE_META[section] ?? ['', ''])[1]),
-            ),
+        h('div', { className: 'flex min-w-0 flex-col gap-4', 'data-settings-pane': section },
+          h('div', { className: 'flex flex-col gap-1' },
+            h('div', { className: 'text-title-2-semibold text-text-primary' }, (PANE_META[section] ?? ['设置'])[0]),
+            h('div', { className: 'text-caption-1-regular text-text-tertiary' }, (PANE_META[section] ?? ['', ''])[1]),
           ),
           paneFor(section)),
       )

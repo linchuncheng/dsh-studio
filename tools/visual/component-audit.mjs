@@ -75,9 +75,9 @@ for (const label of PAGES) {
   await page.evaluate((w) => [...document.querySelectorAll('[data-dsh-studio] [role="tab"]')].find((n) => (n.textContent || '').trim() === w)?.click(), label)
   await snap()
   if (label === '设置') {
-    const panels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')].map((n) => (n.querySelector('span')?.textContent || '').trim()))
+    const panels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] [data-settings-nav] [data-settings-nav-item]')].map((n) => (n.querySelector('span')?.textContent || '').trim()))
     for (const p of panels) {
-      await page.evaluate((w) => [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')].find((n) => (n.querySelector('span')?.textContent || '').trim() === w)?.click(), p)
+      await page.evaluate((w) => [...document.querySelectorAll('[data-dsh-studio] [data-settings-nav] [data-settings-nav-item]')].find((n) => (n.querySelector('span')?.textContent || '').trim() === w)?.click(), p)
       await snap()
     }
   }

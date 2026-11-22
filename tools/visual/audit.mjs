@@ -102,13 +102,13 @@ for (const label of PAGES) {
   await snap(label)
 }
 
-// 设置里的每个面板：左栏是 button.ds-nav-item
+// 设置里的每个面板：左栏是 button[data-settings-nav-item]
 await clickTab('设置')
 await sleep(900)
-const panels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')].map((n) => (n.querySelector('span')?.textContent || '').trim()))
+const panels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] [data-settings-nav] [data-settings-nav-item]')].map((n) => (n.querySelector('span')?.textContent || '').trim()))
 for (const label of panels) {
   await page.evaluate((want) => {
-    const btn = [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')]
+    const btn = [...document.querySelectorAll('[data-dsh-studio] [data-settings-nav] [data-settings-nav-item]')]
       .find((n) => (n.querySelector('span')?.textContent || '').trim() === want)
     btn?.click()
   }, label)

@@ -59,7 +59,7 @@ await sleep(1800)
 
 // 左栏切到「专家」（people.js 的角色模板保存就在这里）
 await page.evaluate(() => {
-  const item = [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')]
+  const item = [...document.querySelectorAll('[data-dsh-studio] [data-settings-nav] [data-settings-nav-item]')]
     .find((n) => (n.querySelector('span')?.textContent || '').trim() === '专家')
   item?.click()
 })
