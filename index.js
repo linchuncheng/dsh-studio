@@ -739,7 +739,24 @@ function buildAnalytics(state, options = {}) {
     ),
     // 用例覆盖强度（产品定义第 8 条）：带可执行断言的用例 ÷ 全部。
     // 口径只在 src/host/case-strength.js 里定义一份，这里不另算。
-    cases: coverageStrength(inScope.flatMap(task => Array.isArray(task.cases) ? task.cases : [])),
+    cases: (() => {
+      const all = inScope.flatMap(task => Array.isArray(task.cases) ? task.cases : [])
+      const strength = coverageStrength(all)
+      // 缺口清单：哪些卡的用例还没有可执行断言（按缺得多排序）。覆盖率低的时候，
+      // 光给一个百分比没法行动，得告诉人先补哪几张。
+      const byCard = inScope.map(task => {
+        const own = coverageStrength(Array.isArray(task.cases) ? task.cases : [])
+        return {
+          id: task.id,
+          code: task.code ?? '',
+          title: task.title,
+          total: own.total,
+          executable: own.executable,
+          missing: own.total - own.executable,
+        }
+      }).filter(row => row.missing > 0).sort((a, b) => b.missing - a.missing).slice(0, 10)
+      return { ...strength, byCard }
+    })(),
     cycle: {
       count: cycleValues.length,
       avgDays: cycleValues.length > 0 ? cycleValues.reduce((sum, value) => sum + value, 0) / cycleValues.length / DAY : 0,

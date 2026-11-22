@@ -2443,3 +2443,29 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
 [data-dsh-studio] .ds-proj-iter-bar > span[data-full="1"] { opacity: 1; }
 
 [data-dsh-studio] .ds-proj-iter-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* 效能页「用例缺口」：可执行覆盖低于目标时，直接列出该补的卡（点一行跳过去） */
+[data-dsh-studio] .ds-case-gap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+[data-dsh-studio] .ds-case-gap:hover { background: var(--muted); }
+
+[data-dsh-studio] .ds-case-gap-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

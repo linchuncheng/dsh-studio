@@ -233,6 +233,29 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
         return kpi('派单周活', weeks.length === 0 ? '—' : String(thisWeek), weeks.length === 0 ? '还没有派单记录' : `本周有 AI 评论的卡 · 近 ${weeks.length} 周平均 ${avg}（目标 ≥15）`, weeks.length > 0 && thisWeek < 15)
       })(),
     ),
+    (() => {
+      const cases = data.cases ?? {}
+      const rows = Array.isArray(cases.byCard) ? cases.byCard : []
+      if (rows.length === 0) return null
+      return h('div', { className: 'ds-panel', style: { marginTop: 12 } },
+        h('div', { className: 'ds-panel-head' },
+          '用例缺口',
+          h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } }, '点一行跳到那张卡去补可执行断言')),
+        h('div', { className: 'ds-panel-body' },
+          h('div', { className: 'ds-an-foot' },
+            `可执行覆盖 ${cases.rate === null || cases.rate === undefined ? '—' : pct(cases.rate)}（目标 ≥60%）· ${rows.length} 张卡的用例还没有可执行断言`),
+          rows.map(row => h('button', {
+            key: row.id,
+            className: 'ds-case-gap',
+            onClick: () => onOpenTask(row.id),
+          },
+            h('span', { className: 'ds-req-code' }, row.code || row.id),
+            h('span', { className: 'ds-case-gap-title' }, row.title),
+            h('span', { className: 'ds-hint' }, `${row.missing}/${row.total} 条待补`),
+          )),
+        ),
+      )
+    })(),
     h('div', { className: 'ds-an-sec', style: { marginTop: 16 } }, h('span', {}, '其它读数（不进门槛，供参考）')),
     h('div', { className: 'ds-kpi-grid' },
       kpi('一次通过率', pct(data.rework.firstPassRate), '完成的卡里，从没被退回过的比例', data.rework.firstPassRate < 0.6),
