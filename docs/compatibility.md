@@ -11,7 +11,7 @@
 | Node | `v24.22.2`（Linux 目标机）；本机 Windows `v24.19.0` |
 | 目标系统 | Ubuntu 24.04，`dsh web` 监听 `18080`，nginx `:80` 反代并注入 `dsh-auth-*` cookie |
 | 插件安装方式 | npm：`dsh plugin --profile web add @marsken/dsh-studio`；本地开发：`add link:~/dsh-studio`（profile `web`） |
-| 验证范围 | 0.9.59：**本机 Windows desktop + CI**（378 单测 / 45 项页面与 AX 探针 / 32 面界面审计）；Linux 目标机（Ubuntu 24.04 / `18080`）**尚未部署 0.9.59**，部署后跑 `release:preflight` 再更新本行 |
+| 验证范围 | 0.9.59：**本机 Windows desktop + CI**（378 单测 / 45 项页面与 AX 探针 / 32 面界面审计）**+ Linux 目标机已部署**（Ubuntu 24.04 / `192.168.120.218:18080`）：`release:preflight` **13 项**（含 pages 45 / toast 7 / drawer 15 / cases 8 / a11y 对比度 0 处 / 空数据 11）与 `smoke` **9 项**全过 |
 | 兼容声明 | `engines.dsh: ">=0.2.2-rc.1"`、`dsh.compatibility.dshReleases: { "0.2.2-rc.1+": "compatible" }` |
 
 > 结论：只在 **0.2.2-rc.1** 上做过端到端验证。0.2.2 正式版、以及 `<0.2.2` 均未验证。
