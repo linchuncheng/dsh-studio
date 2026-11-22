@@ -42,7 +42,6 @@ export function Drawer({ title, hint, onClose, footer, children }: DrawerProps) 
         if (!open) onClose();
       }}
       className="bg-background-primary-default text-text-primary"
-      overlayClassName="ds-drawer-overlay"
     >
       {/* 这一层只负责「焦点落点」与「最上层浮层标记」，不参与布局 */}
       <div

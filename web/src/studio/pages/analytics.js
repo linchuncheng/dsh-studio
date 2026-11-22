@@ -427,7 +427,7 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
             ? h(EmptyState, { title: '还没有启用的专家。' })
             : (load?.experts ?? []).filter(item => item.enabled).map(item => h('div', { key: item.id, className: 'grid grid-cols-[106px_minmax(0,1fr)_84px] items-center gap-2 py-1 text-body-2-regular' },
               h('span', { className: 'text-text-secondary' }, `${item.name}`),
-              // 这里原来是自己画的 .ds-an-track/.ds-an-fill —— 同一页里出现了两条进度条实现
+              // 这里原来是自己画的轨道/填充 —— 同一页里出现了两条进度条实现
               // （另一条走 kit('ProgressBar')）。统一交给 ProgressField，它渲染官方 Meter。
               h(ProgressField, {
                 value: Math.round((item.open / Math.max(1, ...(load.experts ?? []).map(entry => entry.open))) * 100),

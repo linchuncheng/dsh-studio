@@ -24,8 +24,8 @@ function injectStyles() {
   style.id = STYLE_ID
   style.textContent = tailwindCss
   // Appended to <body> on purpose: the legacy panel injects its own <style>
-  // (all the .ds-* rules) when the plugin applies, and equal-specificity rules
-  // resolve in document order. Keeping ours last lets the token layer win.
+  // (its hand-written rules) when the plugin applies, and equal-specificity
+  // rules resolve in document order. Keeping ours last lets the token layer win.
   ;(document.body ?? document.head).appendChild(style)
 }
 

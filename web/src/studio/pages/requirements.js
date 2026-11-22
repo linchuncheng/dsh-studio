@@ -1098,7 +1098,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
               h('div', { className: HINT, style: { marginBottom: 8 } },
                 '覆盖率按功能点算：一个功能点可以对应多张卡、多条用例。用例自带的 pointId 优先——同一张卡上的用例可以分别覆盖不同功能点（没填就沿用卡上的功能点）。'),
               /* 官方 Table：需求矩阵本来就是一张表（编号 / 功能点 / 覆盖 / 卡与用例 / 操作），
-                 原来是一串 div 拼的 .ds-pt-row。RAC 的 collection 组件不能被自定义组件包住，
+                 原来是一串 div 拼的功能点行。RAC 的 collection 组件不能被自定义组件包住，
                  所以直接用 table.tsx 的再导出。 */
               h(Table, { size: 'sm', 'aria-label': '需求追溯矩阵' },
                 h(TableHeader, null,

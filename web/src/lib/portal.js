@@ -14,7 +14,7 @@ export function portalRoot() {
   if (node === null) {
     node = document.createElement('div')
     node.setAttribute('data-dsh-studio-portal', '')
-    // 同时挂上 data-dsh-studio：抽屉/弹窗里的 legacy 组件（.ds-btn/.ds-chip…）
+    // 同时挂上 data-dsh-studio：抽屉/弹窗里的 legacy 组件（手写按钮/徽章那一族）
     // 与手写 CSS 都以 [data-dsh-studio] 为前缀，缺这个属性就会退回浏览器默认样式。
     node.setAttribute('data-dsh-studio', '')
     document.body.appendChild(node)

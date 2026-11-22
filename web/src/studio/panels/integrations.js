@@ -1,14 +1,14 @@
 /* Settings panels lifted out of client.src.js; shared handles come from the studio context.
  *
- * 面板内部已经全部换成 BoardUI（Tailwind v4 token + 4px 档位），不再用 .ds-* 手写类：
+ * 面板内部已经全部换成 BoardUI（Tailwind v4 token + 4px 档位），不再用手写类：
  *   - 分区 = 卡片：rounded-xl + border-separator-border + bg-background-primary-default + p-4
  *   - 小节标题 text-title-2-semibold、说明 text-caption-1-regular text-text-tertiary
  *   - 行 = 分隔线（1px + 末行去掉），动作用 BoardUI Button，状态用 Chip
  *   - 空态用 boardui/empty-state（BoardUI 没有空态组件，这是它的 token 拼的等价物）
  *   - 表单控件仍走 TextField / SelectField / ChipField / CheckField / SwitchToggle 适配器
- *   - 列表分区不再走共享的 Editor（那是 ds-panel 那套），这里按同一套 token 内联
+ *   - 列表分区不再走共享的 Editor（那是旧的 panel 那套），这里按同一套 token 内联
  *
- * 最外层容器是纯 Tailwind（设置页外壳已迁 BoardUI），不再借 `.ds-panel` 过渡。原注释：
+ * 最外层容器是纯 Tailwind（设置页外壳已迁 BoardUI），不再借旧的 panel 类过渡。原注释：
  * 分区卡片自带描边与底色，容器不再叠加表面。
  */
 
@@ -35,7 +35,7 @@ const LISTROW_TITLE = 'flex flex-wrap items-center gap-2 text-body-2-medium text
 const LISTROW_ACTIONS = 'flex shrink-0 flex-wrap items-center gap-2'
 
 /* 列表分区：标题 + 说明 + 新增按钮，下面是行；没有行就是空态。
-   以前这里调共享 Editor（ds-panel / ds-panel-head / ds-panel-body），迁移后由面板自己拼。 */
+   以前这里调共享 Editor（panel 壳 / 头 / 体三层），迁移后由面板自己拼。 */
 function listSection({ h, title, hint, addLabel, onAdd, rows, empty, hook }) {
   return h('div', { className: SECTION, 'data-section': hook },
     h('div', { className: SECTION_HEAD },
@@ -423,7 +423,7 @@ export function SkillsPanel({ config, onChanged }) {
       ? h('div', { className: HINT }, `磁盘上还有 ${stray.length} 个不归这里管的技能目录：${stray.join('、')}`)
       : null,
     h('div', { className: ROW },
-      // 以前把 <input type=file> 藏在 <label class="ds-btn"> 里：长得像按钮，但
+      // 以前把 <input type=file> 藏进长得像按钮的 <label> 里：看起来能点，但
       // **键盘根本到不了**（label 不可聚焦，Tab 跳过它），屏幕阅读器也只报一个标签。
       // 改成正常按钮 + 隐藏的文件输入框：按钮能被 Tab 聚焦、Enter/Space 触发，
       // 真正去点的是那个 1px 的 input。
@@ -527,7 +527,7 @@ export function DocsSinkPanel({ config, onChanged }) {
       await onChanged()
     } catch (cause) { setNote(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
-  /* 出口选择：以前是原生 <select class="ds-input">，现在走 SelectField（BoardUI 的
+  /* 出口选择：以前是原生 <select>，现在走 SelectField（BoardUI 的
      react-aria Select）。探针靠面板根上的 data-docs-sink 读出口，不依赖控件长相。 */
   return h('div', { className: PANE, 'data-docs-sink': provider, 'data-panel': 'integrations-docs' },
     h('div', { className: SECTION, 'data-section': 'provider' },

@@ -61,14 +61,14 @@ window.__ModuleLoader__.load({
     }
 
     /* 表单控件的 shadcn 适配层。
-       legacy 代码全是 h(SelectField, { className:'ds-select', value, onChange(e) }, option…)
+       legacy 代码全是 h(SelectField, { className:'…', value, onChange(e) }, option…)
        这类写法；有了 UIKIT 就换成 Radix 版本，没有就原样用原生控件（单文件产物）。 */
 
 
 
 
-/* 徽章。legacy 写法是 h(ChipField, { className: 'ds-chip', ...rest }, 内容)；
-       有 UIKIT 就渲染成 shadcn Badge（variant 按语义映射），没有就还是 span.ds-chip。 */
+/* 徽章。legacy 写法是 h(ChipField, { className: '…', ...rest }, 内容)；
+       有 UIKIT 就渲染成 shadcn Badge（variant 按语义映射），没有就还是普通 span。 */
 
     /* 布尔开关。legacy 写法是 h(CheckField, { checked, onChange(e) })， */
     /* 换了 UIKIT 就渲染成 Radix Switch，没有就还是原生 checkbox。 */
@@ -196,7 +196,7 @@ window.__ModuleLoader__.load({
       toastEmit()
     }
     const TOAST_STATUS = { success: 'success', error: 'error', info: 'info', warn: 'warning' }
-    /* 轻提示宿主：用官方 Notification 渲染（原来是自己写的 .ds-toast div）。 */
+    /* 轻提示宿主：用官方 Notification 渲染（原来是自己写的 toast div）。 */
     function ToastHost() {
       const Notification = kit('Notification')
       const [items, setItems] = React.useState(() => TOAST_ITEMS.slice())
@@ -1102,7 +1102,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         return h(AutoDispatchPane, { form, setForm, saveBar })
       }
       /* 设置页外壳用 BoardUI token（2026-11-23 起基线是 BoardUI）：
-         左栏导航 + 右栏标题/说明，不再用 .ds-settings / .ds-nav-item 那套手写样式。
+         左栏导航 + 右栏标题/说明，不再用那套手写样式。
          面板本体在 web/src/studio/panels/** 与 panels/settings-panes.js 里，同样只走 token。 */
       const navItemClass = active => [
         'flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-body-2-regular',
@@ -1217,7 +1217,7 @@ function installBoardWheel() {
     if (event.shiftKey) return
     if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return
     /* 列里的卡片溢出时，滚轮应该滚这一列，而不是把整个看板横向推走。
-       列容器在 board.js 里是 [data-board-column-body]（.ds-col-body 是迁移前的类名）。 */
+       列容器在 board.js 里是 [data-board-column-body]（迁移前的类名已删）。 */
     const columnBody = target.closest('[data-board-column-body]')
     if (columnBody !== null && columnBody.scrollHeight > columnBody.clientHeight + 1) return
     /* 已经推到最左/最右就不要再 preventDefault，否则整页也滚不动 */
@@ -1302,7 +1302,7 @@ function installKeyboardActivation() {
      * 这里就盖一层登录框。用户名 = LDAP 账号（sAMAccountName / uid / mail 都试）。
      */
     /* 登录卡：BoardUI token + 4px 档位。`data-login` 是新的探针钩子
-       （tools/visual/login-probe.mjs 还在等旧的 .ds-login，换成 [data-login] 后 legacy 规则可删）。 */
+       （tools/visual/login-probe.mjs 还在等旧的登录节点，换成 [data-login] 后 legacy 规则可删）。 */
     const LOGIN_CARD = 'flex w-full max-w-[380px] flex-col gap-3 rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xl'
     const LOGIN_MODES = 'flex items-center gap-1 self-start rounded-lg border border-separator-border bg-background-secondary-default p-1'
     const LOGIN_MODE = on => [

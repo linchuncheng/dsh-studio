@@ -2,9 +2,9 @@
  *
  * 外观全部走 BoardUI token：
  *   - 进度条：宿主的 ProgressBar（BoardUI Meter）在就用它；取不到时用同一条轨道 + token 底色，
- *     不再写 .ds-an-track / .ds-an-fill 那套手写类；
+ *     不再自己写轨道 / 填充那套手写类；
  *   - 燃尽图：SVG 的填充/描边走 Tailwind 的 fill-* / stroke-*（accent 色族），
- *     不再依赖 legacy CSS 里的 .ds-burn-* 规则；
+ *     不再依赖 legacy CSS 里的手写规则；
  *   - 空态：boardui/empty-state。
  */
 

@@ -9,7 +9,7 @@ import { Button } from '../boardui/index'
 import { EmptyState } from '../boardui/empty-state'
 import { ProgressTrack } from '../components/base/progress/progress'
 
-/* 抽屉版面：token + Tailwind（4px 档）。这一版起不再用手写 .ds-* 类：
+/* 抽屉版面：token + Tailwind（4px 档）。这一版起不再用手写类：
    小节是圆角卡片，说明文字是 caption-1，字段是「标签 + 控件」两行。
    常量集中在这里，改一处全抽屉一致；探针靠 data-drawer-* 钩子定位，不拿样式类名当判据。 */
 const HINT = 'text-caption-1-regular text-text-tertiary'

@@ -482,7 +482,7 @@ export function createPalette({ h, React, TextField }) {
         CARD_FLOWS[flow.action].title + (flow.step === 'expert' ? ' → 选一位专家' : flow.step === 'column' ? ' → 选一列' : ' → 选一张卡片'))
 
     /* 遮罩的定位（fixed / 顶部让开桌面标题栏 / 层级 / 不吃窗口拖拽）用内联样式写死：
-       这是 issue #4 的修复点，不能依赖 legacy 的 `.ds-palette-veil` 规则（那条 CSS 会被删）。
+       这是 issue #4 的修复点，遮罩的底色/层级由这里内联给定，不依赖 overlay 白名单那条规则。
        外观（底色、居中、留白）走 token 工具类。 */
     return h('div', {
       className: 'flex items-start justify-center bg-black/40 pt-[12vh] dark:bg-black/60',
