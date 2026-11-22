@@ -229,6 +229,9 @@ studio_task_check          { id, itemId, note }         // 清单逐项勾，附
 | 合并按钮/命令被拒 | 抽屉「合并门禁」与 GitLab | GitLab CE 没有状态检查，合并不由按钮拦，而是平台调 merge API：评审、可执行用例、项目检查、代码事实任一项没过都拒绝，并给出具体原因；合并动作要管理员 |
 | 浏览器用例跑不了 | 设置 → 测试执行、`allowBrowser` | 需要开 `allowBrowser` + 本机有 Chrome/Edge + 装得上 puppeteer-core；相对地址要配测试环境 baseUrl。CI 里 ubuntu runner 自带 Chrome，所以那边会真跑 |
 | 技能库显示「还没被用上」 | 专家是否挂了该技能 | 这是相关性统计，不是因果；挂了技能后接过卡才会出现在计数里 |
+| 部署说成功，但界面还是旧的 | `deploy.mjs` 输出里的 `restart=` 与 `version=` | `restart=NOT-APPLIED` 说明文件传上去了、服务没重启（key 模式下 sudo 要密码就会这样），脚本会以退出码 4 结束；到目标机 `sudo systemctl restart dsh-web`，或用密码模式重跑。`version=` 应等于 `package.json` 的版本（2026-11-22 前 deploy 不传元数据，目标机会一直显示老版本） |
+| 准出被「这张是代码/测试类卡，但一条测试用例都没有」拦住 | 卡的「测试」页签 | 补一条**带可执行定义**的用例（http / shell / db / 浏览器任一）并跑通；产品或设计卡不会撞这条。确实不适用时，管理员可在「设置 → 列的负责人 → 用例闸门」关掉，关掉后只是 warning |
+| `npm run shots` 拍出来的图是全白的 | 构建时有没有 console 报错、harness 的 `/react.js` 是否 404 | 工作树的 `web/node_modules` 不全时，假宿主的 React UMD 加载失败 → 面板渲染成空白（`pageerror` 不报）。补齐依赖后重跑；`capture.mjs` 现在会把 console error 也记进错误列表 |
 
 ---
 
