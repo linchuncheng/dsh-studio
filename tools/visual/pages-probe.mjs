@@ -75,7 +75,7 @@ const metricsBody = {
   metrics: {
     projects: [{
       id: 'p-1', key: 'PUR', name: '采购履约', iterations: [],
-      metrics: { inProgress: 1, blocked: 0, overdue: 0, done: 1, checklistRate: 50, artifacts: 1, cycleDays: 0, throughput7d: 1 },
+      metrics: { total: 2, inProgress: 1, blocked: 0, overdue: 0, done: 1, checklistRate: 50, artifacts: 1, cycleDays: 0, throughput7d: 1, created7d: 0 },
     }],
     unassigned: { total: 0 },
   },
@@ -131,7 +131,7 @@ const PAGES = [
   ['需求', '.ds-req-grid, [data-empty-state], .ds-req-desc', ''],
   ['用例', '.ds-panel, [data-empty-state], [data-task-row]', ''],
   ['版本', '.ds-panel, [data-empty-state], [data-task-row]', ''],
-  ['项目', '.ds-proj-card, [data-empty-state], .ds-panel', ''],
+  ['项目', '[data-project-card], [data-empty-state], .ds-panel', ''],
   ['效能', '[data-stat-card], [data-chart-card]', '[data-task-row]'],
   ['设置', '.ds-panel', ''],
 ]

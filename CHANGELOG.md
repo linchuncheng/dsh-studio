@@ -1,6 +1,35 @@
 # 更新日志
 
 
+## [0.9.73] — 2026-11-23
+
+### 界面体系定了：全面转 BoardUI（第一块：项目页）
+
+两套视觉长期并存（BoardUI 与手写 `.ds-*`，后者 3364 处引用）。现在方向定死为 **BoardUI 一条**，
+`.ds-*` **迁一块删一块**，不再把 BoardUI 的 token 反向映射进 `.ds-*`。
+
+这一版迁移第一块——**项目页**（`web/src/studio/pages/projects.js`）：
+
+| 元素 | 原来 | 现在 |
+| --- | --- | --- |
+| 卡片表面 | `.ds-proj-card`（自写描边/圆角/投影） | `rounded-xl + border-separator-border + bg-background-primary-default` |
+| 数字/标签 | `.ds-proj-stats b`（16px 硬编码） | `text-title-2-semibold` + `text-caption-1-regular`，数字一律 `tabular-nums` |
+| 进度条 | `.ds-proj-bar` + 内联 `<span width>` | BoardUI `ProgressTrack` |
+| 空态 | `.ds-empty` 虚线框 | `boardui/empty-state`（BoardUI token 拼的等价物） |
+| 按钮 | `h('button', { className: 'ds-btn' })` | `boardui/index` 的 `Button` |
+
+**同时删干净**：`client.src.js` 里 10 条 `.ds-proj-*` 规则、`web/src/index.css` 里 24 处引用
+（与市场页共用的选择器只摘掉项目页那一段，市场页不动）。
+
+顺带修：`/metrics` 回包缺字段时页面会把 `undefined` 画到界面上（探针夹具就是这么暴露的），
+现在数字与「N 张卡」都有兜底。
+
+探针判据跟着改：项目页用 `data-project-card` / `data-projects-page` 定位，不再拿样式类名当判据。
+
+**为什么集成面板这一版没做**：它的外层是 `.ds-panel / .ds-panel-head / .ds-panel-body`，
+14 个设置面板共用这一个壳。单独迁一个面板会和另外 13 个不一致，所以设置区按「壳 + 14 面板」
+整批做，排在下一批。
+
 ## [0.9.72] — 2026-11-23
 
 ### 备注补成的评论，标题跟着来源走

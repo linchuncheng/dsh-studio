@@ -1,6 +1,20 @@
 /* 项目页：业务项目 / 迭代 / 每个服务的本机目录与卡数。
- * 从 client.src.js 抬出来，给 2500 行闸门留空间；组合根只留一行工厂调用。
+ *
+ * 这一版整页改用 BoardUI（Tailwind v4 + token + 4px 档位），不再用 .ds-proj-* 那套手写类：
+ *   - 卡片表面：rounded-xl + border-separator-border + bg-background-primary-default
+ *   - 数字/标签：text-title-2-semibold / text-caption-1-regular / tabular-nums
+ *   - 进度条：BoardUI 的 ProgressTrack（轨道与填充都来自 theme.css，不再自己写 .ds-check-bar）
+ *   - 空态：boardui/empty-state（BoardUI 没有空态组件，这是它家 token 拼的等价物）
+ *   - 动作：boardui/index 的 Button（variant/size 由适配层翻译）
  */
+import { Button } from '../../boardui/index'
+import { EmptyState } from '../../boardui/empty-state'
+import { ProgressTrack } from '../../components/base/progress/progress'
+
+const SURFACE = 'flex min-w-0 flex-col gap-3 rounded-xl border border-separator-border bg-background-primary-default p-4'
+const STAT_LABEL = 'text-caption-1-regular text-text-tertiary'
+const STAT_VALUE = 'text-title-2-semibold text-text-primary tabular-nums'
+const HINT = 'text-caption-1-regular text-text-tertiary'
 
 export function createProjectsPage({ h, React, api }) {
   return function ProjectsOverview({ state, onOpenBoard }) {
@@ -14,71 +28,91 @@ export function createProjectsPage({ h, React, api }) {
       return () => { alive = false }
     }, [state.revision])
 
-    if (error !== null) return h('div', { className: 'ds-body' }, h('div', { className: 'ds-err' }, error))
+    if (error !== null) {
+      return h('div', { className: 'p-6' },
+        h('div', { className: 'rounded-xl border border-separator-border bg-background-primary-default p-4 text-body-2-regular text-text-error-primary' }, error),
+      )
+    }
     /* /metrics 回包缺 metrics 字段时（版本错配 / 后端换形状）不能整页崩：
        以前只判 === null，undefined 会走到 metrics.projects 直接抛，
        React 错误边界把整个工作空间换成「渲染失败」。 */
-    if (metrics === null || metrics === undefined) return h('div', { className: 'ds-loading' }, '正在统计…')
+    if (metrics === null || metrics === undefined) {
+      return h('div', { className: 'p-6 text-body-2-regular text-text-secondary', 'data-projects-loading': '' }, '正在统计…')
+    }
 
-    const card = (title, subtitle, data, key, iterationNode) => h('div', { className: 'ds-proj-card', key },
-      h('div', { className: 'ds-proj-head' },
-        h('div', null,
-          h('div', { className: 'ds-proj-name' }, title),
-          h('div', { className: 'ds-hint' }, subtitle),
+    const stat = (value, label, warn) => h('div', { className: 'flex flex-col gap-1' },
+      h('span', { className: warn === true ? `${STAT_VALUE} text-text-error-primary` : STAT_VALUE }, value),
+      h('span', { className: STAT_LABEL }, label),
+    )
+
+    const card = (title, subtitle, data, key, iterationNode) => h('div', { className: SURFACE, key, 'data-project-card': '' },
+      h('div', { className: 'flex items-start justify-between gap-3' },
+        h('div', { className: 'flex min-w-0 flex-col gap-1' },
+          h('div', { className: 'truncate text-body-2-medium text-text-primary', title }, title),
+          h('div', { className: HINT }, subtitle),
         ),
-        h('button', { className: 'ds-btn', onClick: () => onOpenBoard(key) }, '看这些卡'),
+        h(Button, { variant: 'secondary', size: 'sm', onClick: () => onOpenBoard(key) }, '看这些卡'),
       ),
-      h('div', { className: 'ds-proj-stats' },
-        h('div', null, h('b', {}, data.inProgress), h('span', {}, '进行中')),
-        h('div', null, h('b', { 'data-warn': data.blocked > 0 ? '1' : '0' }, data.blocked), h('span', {}, '阻塞')),
-        h('div', null, h('b', { 'data-warn': data.overdue > 0 ? '1' : '0' }, data.overdue), h('span', {}, '逾期')),
-        h('div', null, h('b', {}, data.done), h('span', {}, '已完成')),
-        h('div', null, h('b', {}, `${data.checklistRate}%`), h('span', {}, '清单完成')),
-        h('div', null, h('b', {}, data.artifacts), h('span', {}, '交付物')),
+      h('div', { className: 'grid grid-cols-3 gap-3' },
+        stat(data.inProgress ?? 0, '进行中'),
+        stat(data.blocked ?? 0, '阻塞', Number(data.blocked) > 0),
+        stat(data.overdue ?? 0, '逾期', Number(data.overdue) > 0),
+        stat(data.done ?? 0, '已完成'),
+        stat(`${data.checklistRate ?? 0}%`, '清单完成'),
+        stat(data.artifacts ?? 0, '交付物'),
       ),
-      h('div', { className: 'ds-proj-bar' },
-        h('div', { className: 'ds-check-bar', 'data-full': data.checklistRate === 100 ? '1' : '0' },
-          h('span', { style: { width: `${data.checklistRate}%` } }),
-        ),
-      ),
+      h(ProgressTrack, { percentage: Number(data.checklistRate) || 0, size: 'sm' }),
       iterationNode,
-      h('div', { className: 'ds-hint' },
-        `近 7 天 新增 ${data.created7d ?? 0} · 完成 ${data.throughput7d}`
+      h('div', { className: HINT },
+        `近 7 天 新增 ${data.created7d ?? 0} · 完成 ${data.throughput7d ?? 0}`
         + (data.cycleDays > 0 ? ` · 平均周期 ${data.cycleDays} 天` : '')),
     )
 
-    return h('div', { className: 'ds-body' },
-      h('div', { className: 'ds-proj-grid' },
-        (metrics.projects ?? []).map(project => card(
+    const iterationList = project => {
+      const iterations = project.iterations ?? []
+      if (iterations.length === 0) {
+        return h('div', { className: HINT }, '还没建迭代：设置 → 项目与迭代里给这个项目加一条')
+      }
+      return h('div', { className: 'flex flex-col gap-2' },
+        iterations.slice(0, 5).map(iteration => {
+          const total = Number(iteration.total) || 0
+          const done = Number(iteration.done) || 0
+          const rate = total === 0 ? 0 : Math.round((done / total) * 100)
+          return h('div', { className: 'flex min-w-0 items-center gap-3', key: iteration.id },
+            h('span', {
+              className: 'min-w-0 flex-1 truncate text-caption-1-regular text-text-secondary',
+              title: `${iteration.start || '未定'} → ${iteration.due || '未定'}`,
+            }, iteration.name || iteration.id),
+            h('div', { className: 'w-24 shrink-0' }, h(ProgressTrack, { percentage: rate, size: 'sm' })),
+            h('span', { className: 'shrink-0 text-caption-1-medium text-text-secondary tabular-nums' }, `${done}/${total}`),
+          )
+        }),
+      )
+    }
+
+    const projects = metrics.projects ?? []
+    const unassigned = metrics.unassigned
+    const hasUnassigned = unassigned !== null && unassigned !== undefined && unassigned.total > 0
+
+    return h('div', { className: 'flex flex-col gap-4 p-4', 'data-projects-page': '' },
+      h('div', { className: 'grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3' },
+        projects.map(project => card(
           `${project.key ? `[${project.key}] ` : ''}${project.name}`,
-          `${(project.iterations ?? []).length} 个迭代 · ${project.metrics.total} 张卡`,
+          `${(project.iterations ?? []).length} 个迭代 · ${project.metrics.total ?? 0} 张卡`,
           project.metrics,
           project.id,
           // 迭代进度：每个迭代一行（名字 · 进度条 · 完成/总数）。数据来自 /metrics 的 iterations[].total/done，
           // 以前这里只数「有几个迭代」，看不出做到哪一步，首屏大半是空的。
-          (project.iterations ?? []).length === 0
-            ? h('div', { className: 'ds-hint' }, '还没建迭代：设置 → 项目与迭代里给这个项目加一条')
-            : h('div', { className: 'ds-proj-iters' },
-              (project.iterations ?? []).slice(0, 5).map(iteration => {
-                const total = Number(iteration.total) || 0
-                const done = Number(iteration.done) || 0
-                const rate = total === 0 ? 0 : Math.round((done / total) * 100)
-                return h('div', { className: 'ds-proj-iter', key: iteration.id },
-                  h('span', { className: 'ds-proj-iter-name', title: `${iteration.start || '未定'} → ${iteration.due || '未定'}` }, iteration.name || iteration.id),
-                  h('div', { className: 'ds-proj-iter-bar' },
-                    h('span', { style: { width: `${rate}%` }, 'data-full': rate === 100 ? '1' : '0' }),
-                  ),
-                  h('span', { className: 'ds-proj-iter-num' }, `${done}/${total}`),
-                )
-              }),
-            ),
+          iterationList(project),
         )),
-        metrics.unassigned !== null && metrics.unassigned !== undefined && metrics.unassigned.total > 0
-          ? card('未归属项目', '还没挂到项目上的卡', metrics.unassigned, '')
-          : null,
+        hasUnassigned ? card('未归属项目', '还没挂到项目上的卡', unassigned, '', null) : null,
       ),
-      (metrics.projects ?? []).length === 0 && (metrics.unassigned === null || metrics.unassigned === undefined || metrics.unassigned.total === 0)
-        ? h('div', { className: 'ds-empty' }, '还没有卡片。先去「设置 → 项目与迭代」建一个项目，再新建任务。')
+      projects.length === 0 && hasUnassigned === false
+        ? h(EmptyState, {
+          title: '还没有卡片',
+          hint: '先去「设置 → 项目与迭代」建一个项目，再新建任务。',
+          action: h(Button, { variant: 'secondary', size: 'sm', onClick: () => onOpenBoard('') }, '先去建卡'),
+        })
         : null,
     )
   }
