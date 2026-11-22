@@ -73,20 +73,20 @@ check('需求页无 pageerror', errors.length === 0, errors.join(' | '))
 await goTab('看板')
 await page.waitForSelector('[data-dsh-studio] .ds-card', { timeout: 20000 })
 await page.evaluate(() => document.querySelector('[data-dsh-studio] .ds-card')?.click())
-await page.waitForSelector('[data-dsh-studio] .ds-drawer', { timeout: 20000 })
+await page.waitForSelector('[data-dsh-studio] [data-drawer]', { timeout: 20000 })
 await sleep(900)
-const paneLabels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] .ds-drawer [role="tab"]')].map((n) => (n.textContent || '').trim()))
+const paneLabels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] [data-drawer] [role="tab"]')].map((n) => (n.textContent || '').trim()))
 let paneOk = true
 for (const label of paneLabels) {
   const clicked = await page.evaluate((want) => {
-    const b = [...document.querySelectorAll('[data-dsh-studio] .ds-drawer [role="tab"]')].find((n) => (n.textContent || '').trim() === want)
+    const b = [...document.querySelectorAll('[data-dsh-studio] [data-drawer] [role="tab"]')].find((n) => (n.textContent || '').trim() === want)
     if (!b) return false
     b.click()
     return true
   }, label)
   await sleep(700)
   const info = await page.evaluate(() => {
-    const body = document.querySelector('[data-dsh-studio] .ds-drawer')
+    const body = document.querySelector('[data-dsh-studio] [data-drawer]')
     return { text: (body?.innerText ?? '').length, broken: (document.body.innerText || '').includes('渲染失败') }
   })
   if (!clicked || info.text < 30 || info.broken) { paneOk = false; console.log(`  页签「${label}」异常：clicked=${clicked} text=${info.text} broken=${info.broken}`) }

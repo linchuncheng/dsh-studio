@@ -248,16 +248,16 @@ try {
 
   // ---- 4) 多行输入：抽屉里的 textarea
   await page.evaluate(() => document.querySelector('[data-dsh-studio] .ds-card')?.click())
-  await page.waitForSelector('[data-dsh-studio] .ds-drawer textarea', { timeout: 30000 })
+  await page.waitForSelector('[data-dsh-studio] [data-drawer] textarea', { timeout: 30000 })
   const areaShape = await page.evaluate(() => {
-    const area = document.querySelector('[data-dsh-studio] .ds-drawer textarea')
+    const area = document.querySelector('[data-dsh-studio] [data-drawer] textarea')
     const field = area?.closest('[data-input-size]')
     return { found: area !== null, reactAria: field !== null, rows: area?.getAttribute('rows') ?? '' }
   })
   check('抽屉里的多行输入是 BoardUI 的 Textarea', areaShape.found === true && areaShape.reactAria === true, `rows=${areaShape.rows}`)
-  const areaSel = '[data-dsh-studio] .ds-drawer textarea'
+  const areaSel = '[data-dsh-studio] [data-drawer] textarea'
   const focused = await page.evaluate(() => {
-    const area = [...document.querySelectorAll('[data-dsh-studio] .ds-drawer textarea')]
+    const area = [...document.querySelectorAll('[data-dsh-studio] [data-drawer] textarea')]
       .find(node => node.offsetParent !== null && node.getBoundingClientRect().height > 0)
     if (!area) return false
     area.focus()
@@ -267,7 +267,7 @@ try {
   await page.keyboard.type('走查通过', { delay: 30 })
   await sleep(400)
   const areaValue = await page.evaluate(() => {
-    const area = [...document.querySelectorAll('[data-dsh-studio] .ds-drawer textarea')]
+    const area = [...document.querySelectorAll('[data-dsh-studio] [data-drawer] textarea')]
       .find(node => node.offsetParent !== null && node.getBoundingClientRect().height > 0)
     return area?.value ?? ''
   })
@@ -275,7 +275,7 @@ try {
 
   // ---- 4) 日期输入：react-aria 对 type=date 有专门处理，单独看一眼
   const planTab = await page.evaluate(() => {
-    const tab = [...document.querySelectorAll('[data-dsh-studio] .ds-drawer [role="tab"]')].find(node => (node.textContent || '').trim() === '计划')
+    const tab = [...document.querySelectorAll('[data-dsh-studio] [data-drawer] [role="tab"]')].find(node => (node.textContent || '').trim() === '计划')
     if (!tab) return false
     tab.click()
     return true
@@ -283,7 +283,7 @@ try {
   if (planTab) {
     await sleep(600)
     const plan = await page.evaluate(() => {
-      const drawer = document.querySelector('[data-dsh-studio] .ds-drawer')
+      const drawer = document.querySelector('[data-dsh-studio] [data-drawer]')
       return {
         text: (drawer?.innerText ?? '').length,
         broken: (document.body.innerText || '').includes('渲染失败'),

@@ -35,7 +35,7 @@ await sleep(1500)
 await page.evaluate(() => document.querySelector('[data-dsh-studio] .ds-card')?.click())
 await sleep(1800)
 
-const SCOPE = '[data-dsh-studio-portal] [role="dialog"], [data-dsh-studio] .ds-drawer'
+const SCOPE = '[data-dsh-studio-portal] [role="dialog"], [data-dsh-studio] [data-drawer]'
 const tabs = await page.evaluate((sel) => {
   const root = document.querySelector(sel)
   if (!root) return null

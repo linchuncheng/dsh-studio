@@ -159,7 +159,7 @@ try {
   await page.evaluate(() => document.querySelector('[data-dsh-studio] .ds-card')?.click())
   await page.waitForSelector('[data-gitlab-facts]', { timeout: 30000 }).catch(async error => {
     const dump = await page.evaluate(() => ({
-      drawer: document.querySelector('.ds-drawer') !== null,
+      drawer: document.querySelector('[data-drawer]') !== null,
       text: (document.body.innerText || '').slice(0, 700),
     }))
     console.error('抽屉里没看到 GitLab 核对行：' + JSON.stringify(dump, null, 1))
@@ -179,7 +179,7 @@ try {
   check('GitLab 核对行写到了 CI 单测', facts.line.includes('CI 单测 11/12'), facts.line.slice(-40))
   check('逐条提交都列出来了', facts.hasCommits === true)
   check('自报里找不到的提交被点名', facts.missing === true)
-  await page.evaluate(() => { document.querySelector('.ds-drawer-wrap')?.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+  await page.evaluate(() => { document.querySelector('[data-drawer-overlay]')?.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
 
   check('页面没有 pageerror', errors.length === 0, errors.join(' | '))
   await page.screenshot({ path: join(REPO, 'tmp', 'facts-probe.png') })

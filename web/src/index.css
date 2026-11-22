@@ -558,12 +558,12 @@
 [data-dsh-studio] .ds-card[data-running="1"][data-blocked="1"]::after {
   background: var(--destructive);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--destructive) 16%, transparent);
-}[data-dsh-studio] .ds-composer { display:flex; flex-direction:column; gap:8px; padding:8px 8px; border:1px solid var(--border); border-radius:10px; background:var(--card); box-shadow:var(--ds-shadow); transition:border-color .15s, box-shadow .15s; }
-[data-dsh-studio] .ds-composer:focus-within { border-color:color-mix(in srgb, currentColor 26%, transparent); box-shadow:0 0 0 3px color-mix(in srgb, currentColor 9%, transparent); }
+}
+
 [data-dsh-studio] .ds-composer .ds-textarea { border:0 !important; box-shadow:none !important; background:transparent !important; padding:2px 0; resize:vertical; }
-[data-dsh-studio] .ds-composer-bar { display:flex; align-items:center; gap:8px; border-top:1px solid color-mix(in srgb, currentColor 10%, transparent); padding-top:8px; }
+
 [data-dsh-studio] .ds-composer-bar .ds-hint { margin-right:auto; }
-[data-dsh-studio] .ds-composer-count { font-size:11px; color:var(--muted-foreground); font-variant-numeric:tabular-nums; white-space:nowrap; }
+
 [data-dsh-studio] .ds-toasts { position:fixed; right:16px; bottom:16px; z-index:120; display:flex; flex-direction:column; gap:8px; align-items:flex-end; pointer-events:none; }
 [data-dsh-studio] .ds-toast { pointer-events:auto; display:flex; align-items:flex-start; gap:8px; max-width:340px; padding:8px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); box-shadow:0 8px 24px -12px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.08); font-size:12px; animation:ds-toast-in .18s ease-out; }
 [data-dsh-studio] .ds-toast[data-tone="error"] { border-color:color-mix(in srgb, #dc2626 40%, var(--border)); }
@@ -1259,17 +1259,17 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 @media (max-width: 1100px) { [data-dsh-studio] .ds-req-grid { grid-template-columns: minmax(0, 1fr) !important; } }
 
 /* 业务提单条带与内嵌表单：条带横排换行；提单/查进度改成浮层，避免挤在窄列里 */
-[data-dsh-studio] .ds-biz-strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 8px;border:1px solid var(--border);border-radius:10px;background:var(--muted);margin-bottom:8px}
-[data-dsh-studio] .ds-biz-rows{display:flex;flex-direction:column;gap:4px;width:100%;margin-top:2px}
+
+
 
 /* 业务提单：从需求列表的窄列里抽出来，改成顶部浮条，不再占列宽 */
-[data-dsh-studio] .ds-biz-strip{position:fixed;left:50%;top:88px;transform:translateX(-50%);width:min(760px,94vw);z-index:65;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 8px;border:1px solid var(--border);border-radius:10px;background:var(--card);box-shadow:0 14px 36px -16px rgba(0,0,0,.5)}
-[data-dsh-studio] .ds-biz-strip .ds-biz-rows{max-height:132px;overflow-y:auto}
+
+
 [data-dsh-studio] .ds-req-list > .ds-biz-strip{display:flex}
 
 /* 业务提单独立页签：原条带从需求页移除 */
-[data-dsh-studio] .ds-biz-strip{display:none!important}
-[data-dsh-studio] .ds-biz-result{padding:4px 8px;border:1px solid var(--border);border-radius:10px;background:var(--muted);font-size:12px;margin-top:8px}
+
+
 
 /* 业务提单页签：说明文字不要 nowrap，避免溢出压到相邻元素 */
 [data-dsh-studio] .ds-hint{white-space:normal}
@@ -1467,15 +1467,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
    结果连 `.border`、`.bg-background-primary-default` 这类工具类都被它盖掉，
    看板工具栏的下拉变成了没框没底色的裸文字。放进 base 就只清 UA 默认值。 */
 @layer base {
-  [data-dsh-studio] .ds-pill {
-    appearance: none;
-    -webkit-appearance: none;
-    border: 0;
-    background: transparent;
-    padding: 4px 8px;
-    font: inherit;
-    color: inherit;
-  }
+  
 }
 
 /* 「流程与产出」那组数字：原来跟标签一个字号，看着像没写完 */
@@ -2154,11 +2146,7 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
 [data-dsh-studio] .ds-card[data-stalled='1'] {
   border-color: color-mix(in srgb, var(--color-notification-warning-foreground, #d97706) 45%, var(--ds-line));
 }
-[data-dsh-studio] .ds-chip-warn {
-  color: var(--ds-warn-text, #a26100);
-  border-color: color-mix(in srgb, var(--color-notification-warning-foreground, #d97706) 45%, transparent);
-  background: color-mix(in srgb, var(--color-notification-warning-foreground, #d97706) 12%, transparent);
-}
+
 [data-dsh-studio] .ds-stalled-line {
   margin-top: 4px;
   padding: 4px 8px;
@@ -2288,7 +2276,7 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
 [data-dsh-studio] .ds-meta span { display: inline-flex; align-items: center; gap: 4px; }
 
 /* 评论头像里只放图标时，用同一套底色，不再回退成 emoji */
-[data-dsh-studio] .ds-cm-initial-icon { display: inline-flex; align-items: center; justify-content: center; }
+
 
 /* ========================================================================
  * unslop pass 4 —— 字号阶梯 / 字重 / 数字对齐
