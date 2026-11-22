@@ -1,6 +1,30 @@
 # 更新日志
 
 
+## [0.9.80] — 2026-11-23
+
+### 无障碍：表单内层 `<input>` 没有名字
+
+真机 `ax-tree-probe` 抓到需求页搜索框是「1 个交互节点没有名字」：
+BoardUI 的 `TextField` 外壳挂了 `aria-label`，但无障碍树里真正被读出的是内层 `<input>`，它没有名字。
+
+修法：`web/src/boardui/index.tsx` 的 `Input` / `Textarea` 适配层把 `aria-label` 同时传给内层元素。
+影响面是**所有用这两个适配层的表单**（项目页、需求页、设置面板…），一次修完。
+
+### 发版自检加了两支真机探针
+
+0.9.79 的教训（假宿主夹具太简单，`PANE is not defined` 一路过了 `npm test` 与 `verify:pages`）：
+`release:preflight` 现在会跑 `tools/visual/smoke.mjs` 与 `tools/visual/sweep.mjs`——它们要
+`STUDIO_TOKEN`，而 preflight 本来就要求这个 token，所以只是把已有条件用起来。
+
+另加 `tools/visual/real-host-suite.mjs`：一次跑完所有「按 ok/FAIL 输出」的真机探针并汇总，
+本次用它跑出 28 个脚本的结论（含发现上面那条 a11y 问题）。诊断/审计类脚本（打印统计、要参数）
+不进这一批，免得把它们的输出误判成失败。
+
+### 顺带
+
+`client.src.js` 的键盘补全选择器里还挂着 `[class*="ds-"]`——迁移后 markup 已无此类名，删掉。
+
 ## [0.9.79] — 2026-11-23
 
 ### 修复：设置页四个面板整块崩（`PANE is not defined`）
