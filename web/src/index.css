@@ -677,14 +677,12 @@
 }
 
 /* 市场页与项目页的卡片一致性（2026-11-10）：与看板卡片、面板同一套圆角/描边/投影 */
-[data-dsh-studio] .ds-market-grid,
-[data-dsh-studio] .ds-proj-grid {
+[data-dsh-studio] .ds-market-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
 }
-[data-dsh-studio] .ds-market-card,
-[data-dsh-studio] .ds-proj-card {
+[data-dsh-studio] .ds-market-card {
   background: var(--ds-surface);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -692,77 +690,44 @@
   padding: 12px 12px;
   transition: box-shadow .16s ease, border-color .16s ease, transform .16s ease;
 }
-[data-dsh-studio] .ds-market-card:hover,
-[data-dsh-studio] .ds-proj-card:hover {
+[data-dsh-studio] .ds-market-card:hover {
   border-color: color-mix(in srgb, var(--border) 55%, var(--foreground));
   box-shadow: 0 6px 16px -10px rgba(15, 23, 42, .45);
 }
-[data-dsh-studio] .ds-mc-head,
-[data-dsh-studio] .ds-proj-head {
+[data-dsh-studio] .ds-mc-head {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
 }
-[data-dsh-studio] .ds-mc-name,
-[data-dsh-studio] .ds-proj-name {
+[data-dsh-studio] .ds-mc-name {
   font-size: 13px;
   font-weight: 600;
   letter-spacing: -.005em;
 }
-[data-dsh-studio] .ds-proj-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  margin: 8px 0 8px;
-  font-size: 12px;
-  color: var(--muted-foreground);
-}
-[data-dsh-studio] .ds-proj-bar {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--muted);
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-[data-dsh-studio] .ds-market-grid + .ds-hint,
-[data-dsh-studio] .ds-proj-grid + .ds-hint {
+[data-dsh-studio] .ds-market-grid + .ds-hint {
   margin-top: 12px;
 }
 
 /* 项目页 / 市场页的容器：外层 .ds-body 若参与父级网格会把卡片挤成窄列，
    这里显式让这两个页面回到整行块级布局（:has 在 Chrome 105+ 可用）。 */
-[data-dsh-studio] .ds-body:has(> .ds-proj-grid),
 [data-dsh-studio] .ds-body:has(> .ds-market-grid) {
   display: block;
   width: 100%;
   min-width: 0;
 }
-[data-dsh-studio] .ds-proj-grid,
 [data-dsh-studio] .ds-market-grid {
   width: 100%;
   grid-auto-flow: row;
 }
 
 /* 再兜一层：项目/市场页里 .ds-body 的直接子 div 若是内容宽度，会把栅格压窄 */
-[data-dsh-studio] .ds-body:has(.ds-proj-grid) > div,
 [data-dsh-studio] .ds-body:has(.ds-market-grid) > div {
   display: block;
   width: 100%;
   min-width: 0;
 }
-[data-dsh-studio] .ds-proj-grid {
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  min-width: 100%;
-}
 
-/* 项目卡在宽屏上两列更平衡（一列 1200px 会显得很空） */
-[data-dsh-studio] .ds-proj-grid {
-  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-}
-@media (max-width: 900px) {
-  [data-dsh-studio] .ds-proj-grid { grid-template-columns: 1fr; }
-}
 
 /* 效能页的条形：计数为 0 时画虚线基线，避免空轨道被误读成满格；
    非零但很小时给 2px 最小宽度，肉眼能看见 */
@@ -811,7 +776,6 @@
 [data-dsh-studio][data-theme="dark"] .ds-chip[data-sla="due_soon"] { color: #fbbf24; }
 [data-dsh-studio][data-theme="dark"] .ds-card-warn,
 [data-dsh-studio][data-theme="dark"] .ds-case-fail,
-[data-dsh-studio][data-theme="dark"] .ds-proj-stats b[data-warn="1"],
 [data-dsh-studio][data-theme="dark"] .ds-an-kv b[data-warn="1"],
 [data-dsh-studio][data-theme="dark"] .ds-kpi[data-warn="1"] .ds-kpi-value { color: #ff9a9d; }
 [data-dsh-studio][data-theme="dark"] .ds-card[data-blocked="1"] { background: color-mix(in srgb, #e5484d 10%, var(--ds-surface)); }
@@ -2362,7 +2326,6 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
 /* 计数与指标一律等宽数字，扫一列的时候不会跳 */
 [data-dsh-studio] .ds-count,
 [data-dsh-studio] .ds-kpi-value,
-[data-dsh-studio] .ds-proj-stats b,
 [data-dsh-studio] .ds-stat-box b,
 [data-dsh-studio] .ds-an-kv b { font-variant-numeric: tabular-nums; }
 
@@ -2373,7 +2336,6 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
 /* 列头的「大写字距标签」去掉：中文本来没有大小写，宽字距只会让小字更松。
    13px 的负字距也一并归零。 */
 [data-dsh-studio] .ds-col-head { text-transform: none; letter-spacing: 0; }
-[data-dsh-studio] .ds-proj-name { letter-spacing: 0; }
 
 /* ========================================================================
  * 看板列宽策略
@@ -2397,52 +2359,6 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
   max-width: none;
 }
 
-/* ========================================================================
- * 项目页：迭代进度
- * 以前只数「有几个迭代」，首屏 900px 里 370px 是空的；现在每个迭代一行
- * （名字 · 进度条 · 完成/总数），另外补了「近 7 天 新增/完成」。
- * ======================================================================== */
-[data-dsh-studio] .ds-proj-iters {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 12px 0 4px;
-}
-
-[data-dsh-studio] .ds-proj-iter {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 96px auto;
-  align-items: center;
-  gap: 12px;
-  font-size: 12px;
-  color: var(--ds-muted, var(--muted-foreground));
-}
-
-[data-dsh-studio] .ds-proj-iter-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--foreground);
-}
-
-[data-dsh-studio] .ds-proj-iter-bar {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--muted);
-  overflow: hidden;
-}
-
-[data-dsh-studio] .ds-proj-iter-bar > span {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--primary);
-  opacity: .55;
-}
-
-[data-dsh-studio] .ds-proj-iter-bar > span[data-full="1"] { opacity: 1; }
-
-[data-dsh-studio] .ds-proj-iter-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* 效能页「用例缺口」：可执行覆盖低于目标时，直接列出该补的卡（点一行跳过去） */
 [data-dsh-studio] .ds-case-gap {

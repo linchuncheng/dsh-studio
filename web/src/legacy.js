@@ -562,16 +562,6 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-chip[data-kind="design"] { color:#0f9d58; border-color:#0f9d5855; }
 .ds-btn-ghost { background:transparent; border-color:transparent; color:inherit; opacity:.45; padding:2px 8px; }
 .ds-btn-ghost:hover { opacity:.9; }
-.ds-proj-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:16px; }
-.ds-proj-card { border:1px solid var(--ds-line); border-radius:10px; background:var(--ds-card); padding:16px 16px; display:flex; flex-direction:column; gap:12px; }
-.ds-proj-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
-.ds-proj-name { font-size:13px; font-weight:600; }
-.ds-proj-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px 12px; }
-.ds-proj-stats > div { display:flex; flex-direction:column; }
-.ds-proj-stats b { font-size:16px; font-weight:600; line-height:1.2; }
-.ds-proj-stats b[data-warn="1"] { color:var(--ds-danger-text); }
-.ds-proj-stats span { font-size:11px; opacity:.6; }
-.ds-proj-bar { margin-top:2px; }
 .ds-card-title { font-size:13px; font-weight:600; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .ds-card-foot { display:flex; align-items:center; gap:8px; font-size:11px; opacity:.5; }
 .ds-meta { display:flex; flex-wrap:wrap; gap:4px; align-items:center; font-size:11px; opacity:.75; }
@@ -1112,7 +1102,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 [data-dsh-studio] .ds-kpi-value { font-size:24px; font-weight:600; font-variant-numeric:tabular-nums; }
 [data-dsh-studio] .ds-kpi-label { font-size:12px; font-weight:500; color:var(--muted-foreground); }
 [data-dsh-studio] .ds-kpi-hint { font-size:12px; color:var(--muted-foreground); }
-[data-dsh-studio] .ds-stat-box, [data-dsh-studio] .ds-proj-card, [data-dsh-studio] .ds-market-card,
+[data-dsh-studio] .ds-stat-box, [data-dsh-studio] .ds-market-card,
 [data-dsh-studio] .ds-req-item, [data-dsh-studio] .ds-gate, [data-dsh-studio] .ds-base-box {
   background:var(--card); border:1px solid var(--border); border-radius:10px; box-shadow:var(--ds-shadow); }
 
