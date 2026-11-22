@@ -70,7 +70,7 @@ flowchart LR
 
 ## 它长什么样
 
-| 工作台：今天该做什么、谁在忙 | 看板：八列、角色负责人、卡片带进度/用例 |
+| 工作台：今天该做什么、谁在忙 | 看板：八列、角色负责人、卡片带进度/用例、列宽可一屏看全 |
 | --- | --- |
 | ![workbench](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/workbench.png) | ![board](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/board.png) |
 

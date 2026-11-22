@@ -162,7 +162,7 @@ export const ACTION_ITEMS = [
   { id: 'card-dispatch', shortcut: shortcutById.get('card-dispatch'), label: '把卡片派给专家', hint: '选一张卡 → 选一位专家跑起来', keys: '派单 dispatch assign 执行 run 专家 expert card' },
   { id: 'card-comment', label: '给卡片留言', hint: '选一张卡 → 写一句讨论', keys: '留言 comment 讨论 评论 card' },
   { id: 'clear-recents', label: '忘掉最近用过的动作', hint: '清空这台电脑上记的最近动作顺序', keys: '清除 清空 忘掉 重置 最近 recent clear reset' },
-  { id: 'column-advance', label: '整列推进一列', hint: '选一列 → 把这一列的卡批量推进到下一列', keys: '整列 批量 批量推进 column batch advance' },
+  { id: 'column-advance', label: '整列推进一列', hint: '选一列，批量推进到下一列', keys: '整列 批量 批量推进 column batch advance' },
   { id: 'refresh', label: '刷新数据', hint: '重新拉一次看板与需求', keys: '刷新 refresh 重载 同步' },
   ...SETTINGS_PANES.map((pane) => ({ id: 'settings:' + pane.id, label: '打开设置：' + pane.label, hint: '设置 → ' + pane.label, keys: '设置 settings 配置 ' + pane.label + ' ' + pane.id })),
 ]
