@@ -95,11 +95,11 @@ try {
   await page.waitForSelector('[data-dsh-studio]', { timeout: 30000 })
   await sleep(1500)
 
-  const tabs = await page.$$eval('[data-dsh-studio] .ds-head-tabs button', nodes => nodes.map(node => node.textContent.trim()))
+  const tabs = await page.$$eval('[data-dsh-studio] [data-head-tabs] button', nodes => nodes.map(node => node.textContent.trim()))
   check('面板能起来', tabs.length > 0, tabs.join('/'))
 
   for (const name of tabs) {
-    for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
+    for (const tab of await page.$$('[data-dsh-studio] [data-head-tabs] button')) {
       if (((await tab.evaluate(node => node.textContent)) || '').trim() === name) { await tab.click(); break }
     }
     await sleep(900)
@@ -108,7 +108,7 @@ try {
   }
 
   // 看板这一屏单独盯：issue #6 就发生在"0 张卡"这个分支
-  for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
+  for (const tab of await page.$$('[data-dsh-studio] [data-head-tabs] button')) {
     if (((await tab.evaluate(node => node.textContent)) || '').trim() === '看板') { await tab.click(); break }
   }
   await sleep(1000)

@@ -61,7 +61,7 @@ const page = await browser.newPage()
 const errors = []
 page.on('pageerror', (e) => errors.push(String(e).slice(0, 160)))
 await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 })
-await page.waitForSelector('[data-dsh-studio] .ds-login', { timeout: 45000 }).catch(() => {})
+await page.waitForSelector('[data-dsh-studio] form', { timeout: 45000 }).catch(() => {})
 await sleep(800)
 console.log('页面文本：' + (await page.evaluate(() => (document.body.innerText || '').slice(0, 160).replace(/\s+/g, ' '))))
 
@@ -98,7 +98,7 @@ const submitted = await page.evaluate(() => {
 await sleep(2000)
 const after = await page.evaluate(() => ({
   gate: document.querySelector('[data-dsh-studio] [data-field="input"]') !== null,
-  panel: document.querySelector('[data-dsh-studio] .ds-head-tabs') !== null,
+  panel: document.querySelector('[data-dsh-studio] [data-head-tabs]') !== null,
 }))
 check('点得到「登录」按钮', submitted === true)
 check('登录后进到面板', after.gate === false && after.panel === true)

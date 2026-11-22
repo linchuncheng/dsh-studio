@@ -1,10 +1,9 @@
 /* The board itself: filters, eight columns, drag & drop and WIP limits.
    Data comes in as props; every mutation is a callback from the panel.
  *
- * 外观整块交给 BoardUI（Tailwind v4 + token + 4px 档位），手写 .ds-* 类只剩
- * 三个「探针锚点」（ds-board / ds-board-bar / ds-col / ds-count）：tools/visual/*.mjs
- * 还按这些类名定位列与筛选条，等探针改成 data-* 钩子后可以一起删。
- * 新写的钩子：data-board / data-board-toolbar / data-board-column / data-board-column-body。
+ * 外观整块交给 BoardUI（Tailwind v4 + token + 4px 档位），一个手写类名都不留：
+ * 定位只认 data-* 钩子 —— data-board / data-board-toolbar / data-board-column /
+ * data-board-column-body / data-wip-count，探针按这些钩子取列、筛选条与计数。
  */
 
 import { ROLE_LABEL, TYPE_LABEL } from './labels.js'
@@ -22,12 +21,12 @@ const TOOLBAR = 'flex flex-none flex-wrap items-center gap-2 border-b border-sep
    · 默认 flex 1 1 200px，列宽在 200–360 之间自适应（列多就先横向滚）；
    · 勾上「适应宽度」压到 flex 1 1 0 / min 160，一屏放下全部列。
    用 arbitrary 的 flex 简写，避免 w-[282px] 与 flex-1 同时在场时谁赢说不清。 */
-const COLUMN_BASE = 'ds-col flex flex-col overflow-hidden rounded-2xl border border-separator-border bg-background-secondary-default data-[drag-over="1"]:border-accent-500 data-[drag-over="1"]:bg-accent-50'
+const COLUMN_BASE = 'flex flex-col overflow-hidden rounded-2xl border border-separator-border bg-background-secondary-default data-[drag-over="1"]:border-accent-500 data-[drag-over="1"]:bg-accent-50'
 const COLUMN_FIXED = 'w-auto min-w-[200px] max-w-[360px] flex-[1_1_200px]'
 const COLUMN_FIT = 'min-w-[160px] max-w-none flex-[1_1_0]'
 const COLUMN_HEAD = 'flex flex-none items-center gap-2 border-b border-separator-border bg-background-primary-default px-3 py-2'
 const COLUMN_TITLE = 'min-w-0 truncate text-body-2-semibold text-text-primary'
-const COLUMN_COUNT = 'ds-count ml-auto min-w-6 shrink-0 rounded-full bg-background-secondary-default px-2 text-center text-caption-1-medium tabular-nums text-text-secondary data-[zero="1"]:opacity-50 data-[over="1"]:bg-status-rose-background data-[over="1"]:text-status-rose-text'
+const COLUMN_COUNT = 'ml-auto min-w-6 shrink-0 rounded-full bg-background-secondary-default px-2 text-center text-caption-1-medium tabular-nums text-text-secondary data-[zero="1"]:opacity-50 data-[over="1"]:bg-status-rose-background data-[over="1"]:text-status-rose-text'
 const COLUMN_OWNER = 'flex-none truncate px-3 pb-2 text-caption-1-regular text-text-tertiary'
 const COLUMN_BODY = 'flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2'
 const BOARD_ROW = 'flex min-h-0 flex-1 items-stretch gap-3 overflow-x-auto overflow-y-hidden p-3'
@@ -143,7 +142,7 @@ function Board({ state, onOpen, onMove, onWip, onCreate }) {
           action: h(Button, { variant: 'primary', size: 'sm', onClick: () => onCreate() }, '建第一张卡'),
         }))
       : null,
-    h('div', { className: `ds-board-bar ${TOOLBAR}`, 'data-board-toolbar': '' },
+    h('div', { className: TOOLBAR, 'data-board-toolbar': '' },
       /* 搜索用官方 SearchField：放大镜与清除键都是组件自带的，以前是给普通 Input 用 ::before 画了个假放大镜。 */
       h(SearchField, {
         style: { width: 200 }, value: query, placeholder: '搜标题 / 需求 / 领域 / 编号',
@@ -249,7 +248,7 @@ function Board({ state, onOpen, onMove, onWip, onCreate }) {
         `${total} 张卡 · ${designPending > 0 ? `${designPending} 个设计待评审 · ` : ''}${bugCount > 0 ? `${bugCount} 个缺陷` : `${columns.length} 列`}`),
     ),
     h('div', {
-      className: `ds-board ${BOARD_ROW}`,
+      className: BOARD_ROW,
       'data-fit': fitWidth ? '1' : '0',
       tabIndex: 0,
       'aria-label': '看板列，左右滚动或用方向键',

@@ -210,7 +210,7 @@ export function AccessPanel({ state, config, onChanged }) {
               h(TableColumn, { id: 'status' }, '结果'),
             ),
             h(TableBody, null,
-              pageRows.map(item => h(TableRow, { key: item.id, id: item.id, 'data-ok': item.ok ? '1' : '0' },
+              pageRows.map(item => h(TableRow, { key: item.id, id: item.id, 'data-ok': item.ok ? '1' : '0', 'data-audit-row': item.id },
                 h(TableCell, null, fmtTime(item.at)),
                 h(TableCell, null, item.by),
                 h(TableCell, null, ROUTE_LABEL[item.route] ?? item.route),

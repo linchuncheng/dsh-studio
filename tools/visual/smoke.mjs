@@ -72,22 +72,22 @@ try {
   await sleep(1500)
   check('面板挂载（[data-dsh-studio]）', true)
 
-  const tabs = await page.$$eval('[data-dsh-studio] .ds-head-tabs button', nodes => nodes.map(n => n.textContent.trim()))
+  const tabs = await page.$$eval('[data-dsh-studio] [data-head-tabs] button', nodes => nodes.map(n => n.textContent.trim()))
   check('六个页签都在', ['工作台', '看板', '需求', '用例', '版本', '项目'].every(name => tabs.includes(name)), tabs.join('/'))
 
   // Radix Tabs 不认 DOM .click()，必须用 elementHandle.click()
-  for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
+  for (const tab of await page.$$('[data-dsh-studio] [data-head-tabs] button')) {
     if ((((await tab.evaluate(n => n.textContent)) || '').trim()) === '看板') { await tab.click(); break }
   }
   await sleep(1500)
   const cards = await page.$$eval('[data-dsh-studio] [data-kanban-card]', nodes => nodes.length)
   check('看板有卡', cards > 0, `${cards} 张`)
 
-  for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
+  for (const tab of await page.$$('[data-dsh-studio] [data-head-tabs] button')) {
     if ((((await tab.evaluate(n => n.textContent)) || '').trim()) === '用例') { await tab.click(); break }
   }
   await sleep(2000)
-  // 用例库早就换成官方 Table 了，.ds-case-lib-row 这个类不存在 —— 以前这里永远数到 0，
+  // 用例库早就换成官方 Table 了，旧的 div 网格类不存在 —— 以前这里永远数到 0，
   // 只是没人对着真机跑 smoke。现在数真实表格行（表格没了再退回 ARIA row）。
   const rows = await page.evaluate(() => {
     const table = document.querySelectorAll('[data-dsh-studio] table tbody tr').length
@@ -95,7 +95,7 @@ try {
   })
   check('用例库有行', rows > 0, `${rows} 行`)
 
-  const suite = await page.$$eval('[data-dsh-studio] .ds-suite', nodes => nodes.length)
+  const suite = await page.$$eval('[data-dsh-studio] [data-suite]', nodes => nodes.length)
   check('回归套件渲染', suite > 0, `${suite} 个`)
 
   const crash = await page.evaluate(() => {

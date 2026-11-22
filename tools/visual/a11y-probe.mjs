@@ -319,7 +319,7 @@ try {
     }
     await sleep(1500)
     // 版本页的按钮要先选中一个版本才出现（中间那块详情区）
-    await page.evaluate(() => { const row = document.querySelector('[data-dsh-studio] .ds-req-item'); if (row !== null) row.click() })
+    await page.evaluate(() => { const row = document.querySelector('[data-dsh-studio] [data-requirement-row]'); if (row !== null) row.click() })
     await sleep(1200)
     // 动作按钮在「⋯」菜单里：先点开菜单，再从菜单项里找会弹确认框的那几个
     const moreButton = await page.evaluate(() => {

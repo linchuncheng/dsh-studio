@@ -9,7 +9,7 @@
  * 吞在自己的渲染树里，pageerror 是空的（见 AGENTS.md §11）。所以必须看 innerText。
  *
  * 页签换成了 BoardUI 的胶囊（button[aria-pressed]），不再是 role=tab，
- * 所以这里按文案点 .ds-head-tabs 下的 button。
+ * 所以这里按文案点 [data-head-tabs] 下的 button。
  *
  *   node tools/visual/pages-probe.mjs
  */
@@ -129,9 +129,9 @@ const PAGES = [
   ['工作台', '[data-insights-page], [data-stat-section], [data-regression-banner], [data-empty-state]', ''],
   ['看板', '[data-board-column] [data-kanban-card], [data-board-column]', ''],
   ['需求', '[data-requirements-page], [data-requirement-row], [data-requirement-desc], [data-empty-state]', ''],
-  ['用例', '.ds-panel, [data-empty-state], [data-task-row]', ''],
-  ['版本', '.ds-panel, [data-empty-state], [data-task-row]', ''],
-  ['项目', '[data-project-card], [data-empty-state], .ds-panel', ''],
+  ['用例', '[data-cases-page], [data-empty-state], [data-task-row]', ''],
+  ['版本', '[data-releases-page], [data-empty-state], [data-task-row]', ''],
+  ['项目', '[data-project-card], [data-empty-state], [data-projects-page]', ''],
   ['效能', '[data-stat-card], [data-chart-card]', '[data-task-row]'],
   ['设置', '[data-settings] [data-panel], [data-settings], [data-empty-state]', ''],
 ]

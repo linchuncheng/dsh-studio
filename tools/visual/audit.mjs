@@ -7,7 +7,7 @@
  * 判据（全部为 0 才算通过，非 0 退出码 1）：
  *   · nativeSelect  可见的原生 <select>（react-aria 的隐藏 select 不算：它在 [data-rac] 里）
  *   · rawField      input / textarea 不在任何 react-aria 组件里（= 还是原生控件）
- *   · legacyBtn     button/a/label 上的 [data-variant]（老按钮）
+ *   · legacyBtn     button/a/label 上还挂着的手写 legacy 类（ds-*，迁移已清零；BoardUI 按钮走 data-variant 不算）
  *   · radixSelect   手写的 radix 下拉触发器（button[aria-haspopup=listbox] 但没 data-rac）
  *   · foreignTab    不在 .studio-tabs / BoardUI Tabs 里的 [role=tab]（第三种页签实现）
  *
@@ -49,7 +49,9 @@ const COUNT = () => {
   }
   const nativeSelect = hits((el) => el.tagName === 'SELECT' && outside(el))
   const rawField = hits((el) => (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.type !== 'hidden' && outside(el))
-  const legacyBtn = hits((el) => ['BUTTON', 'A', 'LABEL'].includes(el.tagName) && el.classList.contains('ds-btn'))
+  // 迁移完成后手写类应全站为 0：这里不再点名某个具体类，只查 button/a/label 上还有没有 ds-* 类
+  // （BoardUI 自己的控件不挂 ds-*，它们走 data-variant / data-field）。
+  const legacyBtn = hits((el) => ['BUTTON', 'A', 'LABEL'].includes(el.tagName) && /(^|\s)ds-[a-z]/.test((el.className || '').toString()))
   const radixSelect = hits((el) => el.tagName === 'BUTTON' && el.getAttribute('aria-haspopup') === 'listbox' && el.closest('[data-rac]') === null)
   const foreignTab = hits((el) => el.getAttribute('role') === 'tab' && el.closest('.studio-tabs') === null && el.closest('[data-boardui-tabs]') === null)
   const out = {

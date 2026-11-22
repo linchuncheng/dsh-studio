@@ -136,9 +136,9 @@ try {
   const errors = []
   page.on('pageerror', error => errors.push(String(error).slice(0, 160)))
   await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 })
-  await page.waitForSelector('[data-dsh-studio] .ds-head-tabs button', { timeout: 45000 })
+  await page.waitForSelector('[data-dsh-studio] [data-head-tabs] button', { timeout: 45000 })
   // 切到「效能」
-  for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
+  for (const tab of await page.$$('[data-dsh-studio] [data-head-tabs] button')) {
     const label = ((await tab.evaluate(node => node.textContent)) ?? '').trim()
     if (label === '效能') { await tab.click(); break }
   }
