@@ -87,7 +87,12 @@ try {
     if ((((await tab.evaluate(n => n.textContent)) || '').trim()) === '用例') { await tab.click(); break }
   }
   await sleep(2000)
-  const rows = await page.$$eval('[data-dsh-studio] .ds-case-lib-row', nodes => nodes.length)
+  // 用例库早就换成官方 Table 了，.ds-case-lib-row 这个类不存在 —— 以前这里永远数到 0，
+  // 只是没人对着真机跑 smoke。现在数真实表格行（表格没了再退回 ARIA row）。
+  const rows = await page.evaluate(() => {
+    const table = document.querySelectorAll('[data-dsh-studio] table tbody tr').length
+    return table > 0 ? table : document.querySelectorAll('[data-dsh-studio] [role="row"]').length
+  })
   check('用例库有行', rows > 0, `${rows} 行`)
 
   const suite = await page.$$eval('[data-dsh-studio] .ds-suite', nodes => nodes.length)
