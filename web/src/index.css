@@ -174,109 +174,8 @@
    and font sizes now fight the new tokens. Normalise them here so every screen
    (dashboard, board, requirement, settings) shares one visual language. */
 
-[data-dsh-studio] .ds-panel,
-[data-dsh-studio] .ds-card {
-  background: var(--color-background-primary-default, var(--card));
-  border: 1px solid var(--color-border-button-default, var(--border));
-  border-radius: var(--radius-2lg, 12px);
-  box-shadow: 0 1px 2px 0 color-mix(in srgb, var(--foreground) 5%, transparent);
-  overflow: hidden;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
-}
 
 /* BoardUI 的卡片是「静止时几乎无阴影、悬停才浮起来」——照这个来。 */
-[data-dsh-studio] .ds-card:hover {
-  border-color: var(--color-border-button-hover, var(--border));
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--foreground) 16%, transparent);
-}
-
-[data-dsh-studio] .ds-panel-body,
-[data-dsh-studio] .ds-card-body {
-  padding: 12px 12px !important;
-}
-
-[data-dsh-studio] .ds-panel-body > :first-child,
-[data-dsh-studio] .ds-card-body > :first-child {
-  margin-top: 0;
-}
-
-[data-dsh-studio] .ds-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 34px;
-  padding: 0 12px;
-  border-radius: var(--radius-2lg, 10px);
-  border: 1px solid var(--color-border-button-default, var(--input));
-  background: var(--color-background-primary-default, var(--card));
-  color: var(--color-text-primary, var(--foreground));
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1;
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow: 0 1px 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
-  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
-}
-
-[data-dsh-studio] .ds-btn:hover {
-  border-color: var(--color-border-button-hover, var(--input));
-  background: var(--color-background-primary-hover, var(--muted));
-}
-
-[data-dsh-studio] .ds-btn-primary {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-foreground);
-}
-
-[data-dsh-studio] .ds-btn-primary:hover {
-  background: color-mix(in srgb, var(--primary) 90%, transparent);
-  border-color: color-mix(in srgb, var(--primary) 90%, transparent);
-}
-
-[data-dsh-studio] .ds-btn-ghost {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-}
-
-[data-dsh-studio] .ds-btn-ghost:hover {
-  background: var(--muted);
-}
-
-[data-dsh-studio] .ds-btn[disabled] {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-[data-dsh-studio] .ds-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--muted);
-  color: var(--muted-foreground);
-  font-size: 12px;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-[data-dsh-studio] .ds-chip[data-on="1"] {
-  border-color: color-mix(in srgb, var(--primary) 28%, transparent);
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
-  color: var(--foreground);
-}
-
-[data-dsh-studio] .ds-chip[data-blocked="1"] {
-  border-color: color-mix(in srgb, var(--destructive) 35%, transparent);
-  background: color-mix(in srgb, var(--destructive) 10%, transparent);
-  color: var(--destructive);
-}
 
 
 
@@ -284,68 +183,33 @@
 
 
 
-[data-dsh-studio] .ds-hint,
-[data-dsh-studio] .ds-muted {
-  color: var(--muted-foreground);
-  font-size: 12px;
-}
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* ------------------------------------------------------------ board cards --- */
 /* shadcn Card anatomy: rounded container, 1px border, card background, small
    shadow on rest and a slightly stronger one on hover; title 13/600, muted meta
    row, chips at 18px. Keeps the legacy .ds-card class so no call sites change. */
 
-[data-dsh-studio] .ds-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px 12px 8px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--card);
-  box-shadow: 0 1px 2px 0 color-mix(in srgb, var(--foreground) 5%, transparent);
-  cursor: pointer;
-  transition: box-shadow 140ms ease, border-color 140ms ease, transform 140ms ease;
-}
-
-[data-dsh-studio] .ds-card:hover {
-  border-color: var(--input);
-  box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--foreground) 18%, transparent), 0 1px 2px 0 color-mix(in srgb, var(--foreground) 6%, transparent);
-}
-
-[data-dsh-studio] .ds-card[data-urgent="1"] {
-  border-left: 3px solid var(--destructive);
-  padding-left: 8px;
-}
-
-[data-dsh-studio] .ds-card[data-blocked="1"] {
-  border-color: color-mix(in srgb, var(--destructive) 45%, transparent);
-  background: linear-gradient(0deg, color-mix(in srgb, var(--destructive) 4%, transparent), color-mix(in srgb, var(--destructive) 4%, transparent)), var(--card);
-}
-
-[data-dsh-studio] .ds-card[data-running="1"]::after {
-  content: "";
-  position: absolute;
-  top: 9px;
-  right: 9px;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent);
-}
 
 
 
 
 
-[data-dsh-studio] .ds-meta .ds-chip {
-  height: 18px;
-  padding: 0 4px;
-  font-size: 11px;
-  border-radius: 10px;
-}
+
+
+
+
 
 [data-dsh-studio] .ds-dot {
   width: 7px;
@@ -354,244 +218,48 @@
   flex: none;
 }
 
-[data-dsh-studio] .ds-col {
-  border: 1px solid var(--color-border-button-default, var(--border));
-  border-radius: var(--radius-2lg, 12px);
-  background: var(--color-background-secondary-default, color-mix(in srgb, var(--muted) 55%, transparent));
-  padding: 8px;
-  gap: 8px;
-}
 
-[data-dsh-studio] .ds-col-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 2px 2px 4px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary, var(--foreground));
-}
 
-[data-dsh-studio] .ds-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--muted-foreground);
-  font-size: 11px;
-  font-weight: 500;
-}
 
 /* ------------------------------------------------------- board toolbar --- */
 /* The board filter bar is a plain block in the legacy CSS; Radix triggers are
    width:100%, so every select claimed a full row. Make the bar a wrapping flex
    row and let the inline width from the call sites decide each control's size. */
 
-[data-dsh-studio] .ds-board-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 12px 20px 8px;
-  border-bottom: 1px solid var(--border);
-}
 
-[data-dsh-studio] .ds-board-bar > * {
-  flex: 0 0 auto;
-}
 
-[data-dsh-studio] .ds-board-bar .ds-input {
-  height: 32px;
-}
 
 
 
 /* Column header: 11px muted text was almost unreadable on the muted column. */
-[data-dsh-studio] .ds-col-head {
-  color: var(--foreground);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
 
-[data-dsh-studio] .ds-col-head .ds-count {
-  color: var(--muted-foreground);
-  font-weight: 500;
-}
 
 /* ------------------------------------------------- list rows & density --- */
 /* Row action buttons ("编辑 / 删除") were rendered as ghost buttons with no
    resting affordance, so they read as plain text next to the row content. */
-[data-dsh-studio] .ds-listrow .ds-btn {
-  height: 32px;
-  padding: 0 8px;
-  font-size: 12px;
-  border-radius: 10px;
-}
 
-[data-dsh-studio] .ds-listrow .ds-btn-ghost {
-  color: var(--muted-foreground);
-  border: 1px solid transparent;
-}
 
-[data-dsh-studio] .ds-listrow .ds-btn-ghost:hover {
-  color: var(--foreground);
-  background: var(--muted);
-  border-color: var(--border);
-}
 
-[data-dsh-studio] .ds-listrow .ds-btn-ghost[data-danger='1'],
-[data-dsh-studio] .ds-dw-foot .ds-btn-ghost[data-danger='1'] {
-  color: var(--destructive);
-}
 
-[data-dsh-studio] .ds-listrow .ds-btn-ghost[data-danger='1']:hover {
-  color: var(--destructive);
-  background: color-mix(in srgb, var(--destructive) 10%, transparent);
-  border-color: color-mix(in srgb, var(--destructive) 30%, transparent);
-}
 
 /* Keep the rows breathing: 12px content with 14px vertical padding. */
-[data-dsh-studio] .ds-listrow {
-  padding: 12px 12px;
-}
 
-[data-dsh-studio] .ds-audit-row {
-  padding: 8px 12px;
-  font-size: 12px;
-}
 
 /* ------------------------------------------------------ spark on mobile --- */
-@media (max-width: 900px) {
-  
-}
-
-@media (max-width: 760px) {
-  /* The 14-day spark is unreadable at phone width: keep the bars, drop every
-     other label (the JS already blanks odd days, this covers older renders). */
-  
-}
-﻿
-/* 燃尽：折线 + 面积（2026-11-10） */
 
 
 
 
-
-
-﻿
-/* 卡片详情页签：给 Radix TabsList 补上轨道外观（2026-11-10） */
-
-/* 看板卡片的状态点：运行中=绿、阻塞=红（2026-11-10） */
-[data-dsh-studio] .ds-card[data-running="1"]::after {
-  background: hsl(152 62% 38%);
-  box-shadow: 0 0 0 3px hsl(152 62% 38% / 0.18);
-}
-[data-dsh-studio][data-theme="dark"] .ds-card[data-running="1"]::after {
-  background: hsl(152 60% 56%);
-  box-shadow: 0 0 0 3px hsl(152 60% 56% / 0.22);
-}
-[data-dsh-studio] .ds-card[data-blocked="1"]::after {
-  content: "";
-  position: absolute;
-  top: 9px;
-  right: 9px;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--destructive);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--destructive) 16%, transparent);
-}
-[data-dsh-studio] .ds-card[data-running="1"][data-blocked="1"]::after {
-  background: var(--destructive);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--destructive) 16%, transparent);
-}
-
-[data-dsh-studio] .ds-composer .ds-textarea { border:0 !important; box-shadow:none !important; background:transparent !important; padding:2px 0; resize:vertical; }
-
-[data-dsh-studio] .ds-composer-bar .ds-hint { margin-right:auto; }
-
-[data-dsh-studio] .ds-toasts { position:fixed; right:16px; bottom:16px; z-index:120; display:flex; flex-direction:column; gap:8px; align-items:flex-end; pointer-events:none; }
-[data-dsh-studio] .ds-toast { pointer-events:auto; display:flex; align-items:flex-start; gap:8px; max-width:340px; padding:8px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); box-shadow:0 8px 24px -12px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.08); font-size:12px; animation:ds-toast-in .18s ease-out; }
-[data-dsh-studio] .ds-toast[data-tone="error"] { border-color:color-mix(in srgb, #dc2626 40%, var(--border)); }
-[data-dsh-studio] .ds-toast-text { flex:1 1 auto; line-height:1.5; word-break:break-word; }
 @keyframes ds-toast-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-[data-dsh-studio] .ds-ok, [data-dsh-studio] .ds-err { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; font-size:12px; line-height:1.35; border:1px solid transparent; }
-[data-dsh-studio] .ds-ok { color:#15803d; background:color-mix(in srgb, #16a34a 10%, transparent); border-color:color-mix(in srgb, #16a34a 26%, transparent); }
-[data-dsh-studio] .ds-ok::before { content:'✓'; font-weight:700; }
-[data-dsh-studio] .ds-err { color:#b91c1c; background:color-mix(in srgb, #dc2626 10%, transparent); border-color:color-mix(in srgb, #dc2626 26%, transparent); }
-[data-dsh-studio] .ds-err::before { content:'!'; font-weight:700; }
-[data-dsh-studio][data-theme="dark"] .ds-ok { color:#6ee7a8; background:color-mix(in srgb, #16a34a 22%, transparent); border-color:color-mix(in srgb, #4ade80 34%, transparent); }
-[data-dsh-studio][data-theme="dark"] .ds-err { color:#fca5a5; background:color-mix(in srgb, #dc2626 24%, transparent); border-color:color-mix(in srgb, #f87171 34%, transparent); }
 
 
 
-[data-dsh-studio] .ds-btn[data-force="1"] { color:var(--ds-warn-text); border-color:color-mix(in srgb, #f59e0b 40%, transparent); }
-[data-dsh-studio] .ds-btn[data-force="1"]:hover:not([disabled]) { background:color-mix(in srgb, #f59e0b 12%, transparent); }
-[data-dsh-studio][data-theme="dark"] .ds-btn[data-force="1"] { color:#fbbf24; border-color:color-mix(in srgb, #f59e0b 45%, transparent); }
 
-[data-dsh-studio] .ds-req-actions .ds-select { width:auto; min-width:96px; }
-[data-dsh-studio] .ds-btn-ghost[data-danger="1"] { color:#b91c1c; border-color:color-mix(in srgb, #dc2626 26%, transparent); }
-[data-dsh-studio] .ds-btn-ghost[data-danger="1"]:hover:not([disabled]) { background:color-mix(in srgb, #dc2626 10%, transparent); }
-[data-dsh-studio][data-theme="dark"] .ds-btn-ghost[data-danger="1"] { color:#fca5a5; border-color:color-mix(in srgb, #f87171 30%, transparent); }
-[data-dsh-studio] .ds-btn[data-warn="1"] { color:var(--ds-warn-text); border-color:color-mix(in srgb, #d97706 30%, transparent); }
-[data-dsh-studio] .ds-btn[data-warn="1"]:hover:not([disabled]) { background:color-mix(in srgb, #d97706 10%, transparent); }
-[data-dsh-studio][data-theme="dark"] .ds-btn[data-warn="1"] { color:#fbbf24; border-color:color-mix(in srgb, #f59e0b 32%, transparent); }
-[data-dsh-studio] .ds-listrow-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
 
 /* 主/次/危险按钮的最终裁定（2026-11-10）：用 .ds-btn.<variant> 提高特异性，
    压过 legacy 与自己前几层里所有等价声明，保证「一屏一个主操作」真的看得见。 */
-[data-dsh-studio] .ds-btn.ds-btn-primary {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-foreground);
-}
-[data-dsh-studio] .ds-btn.ds-btn-primary:hover:not([disabled]) {
-  background: color-mix(in srgb, var(--primary) 90%, transparent);
-  border-color: color-mix(in srgb, var(--primary) 90%, transparent);
-}
-[data-dsh-studio] .ds-btn.ds-btn-primary[disabled] {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-[data-dsh-studio] .ds-btn.ds-btn-ghost {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-  color: var(--muted-foreground);
-}
-[data-dsh-studio] .ds-btn.ds-btn-ghost:hover:not([disabled]) {
-  background: var(--muted);
-  border-color: var(--border);
-  color: var(--foreground);
-}
-[data-dsh-studio] .ds-btn[data-danger="1"] { color: #b91c1c; }
-[data-dsh-studio] .ds-btn.ds-btn-ghost[data-danger="1"]:hover:not([disabled]) {
-  background: color-mix(in srgb, #dc2626 10%, transparent);
-  border-color: color-mix(in srgb, #dc2626 26%, transparent);
-  color: #b91c1c;
-}
-[data-dsh-studio][data-theme="dark"] .ds-btn[data-danger="1"] { color: #fca5a5; }
-[data-dsh-studio] .ds-btn[data-warn="1"] { color: var(--ds-warn-text); border-color: color-mix(in srgb, #d97706 30%, transparent); }
-[data-dsh-studio] .ds-btn[data-warn="1"]:hover:not([disabled]) { background: color-mix(in srgb, #d97706 10%, transparent); }
-[data-dsh-studio][data-theme="dark"] .ds-btn[data-warn="1"] { color: #fbbf24; border-color: color-mix(in srgb, #f59e0b 32%, transparent); }
 
 /* 主/次/危险按钮用实色，不依赖 CSS 变量（2026-11-10） */
-[data-dsh-studio] .ds-btn.ds-btn-primary { background: #18181b; border-color: #18181b; color: #fafafa; }
-[data-dsh-studio] .ds-btn.ds-btn-primary:hover:not([disabled]) { background: #27272a; border-color: #27272a; }
-[data-dsh-studio][data-theme="dark"] .ds-btn.ds-btn-primary { background: #fafafa; border-color: #fafafa; color: #09090b; }
-[data-dsh-studio] .ds-btn.ds-btn-primary[disabled] { opacity: .45; }
-[data-dsh-studio] .ds-btn.ds-btn-ghost { background: transparent; border-color: transparent; color: #71717a; box-shadow: none; }
-[data-dsh-studio] .ds-btn.ds-btn-ghost:hover:not([disabled]) { background: #f4f4f5; border-color: #e4e4e7; color: #18181b; }
-[data-dsh-studio][data-theme="dark"] .ds-btn.ds-btn-ghost { color: #a1a1aa; }
-[data-dsh-studio][data-theme="dark"] .ds-btn.ds-btn-ghost:hover:not([disabled]) { background: #27272a; border-color: #3f3f46; color: #fafafa; }
 
 /* 深色下的旧表面变量（2026-11-10）：legacy CSS 把 --ds-surface 定成了字面白色，
    暗色主题下抽屉/面板因此仍是白底，这里统一改回深色表面色。 */
@@ -606,93 +274,24 @@
   background: #0e1014;
 }
 [data-dsh-studio][data-theme="dark"] .ds-drawer,
-[data-dsh-studio][data-theme="dark"] .ds-side,
-[data-dsh-studio][data-theme="dark"] .ds-modal,
-[data-dsh-studio][data-theme="dark"] .ds-panel,
-[data-dsh-studio][data-theme="dark"] .ds-card,
-[data-dsh-studio][data-theme="dark"] .ds-dw-col,
-[data-dsh-studio][data-theme="dark"] .ds-code-box {
+[data-dsh-studio][data-theme="dark"] .ds-side{
   background: var(--ds-surface);
   border-color: var(--ds-line);
   color: #e6e8ee;
 }
 
 /* 空状态（2026-11-10）：统一成虚线框 + 淡底 + 居中说明，替代原本 40% 透明度的弱提示 */
-[data-dsh-studio] .ds-empty {
-  opacity: 1;
-  color: var(--muted-foreground);
-  border: 1px dashed var(--border);
-  background: color-mix(in srgb, var(--muted) 38%, transparent);
-  border-radius: 10px;
-  padding: 16px 12px;
-  font-size: 12px;
-  line-height: 1.65;
-  text-align: center;
-}
 
 /* 市场页与项目页的卡片一致性（2026-11-10）：与看板卡片、面板同一套圆角/描边/投影 */
-[data-dsh-studio] .ds-market-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-}
-[data-dsh-studio] .ds-market-card {
-  background: var(--ds-surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: var(--ds-shadow);
-  padding: 12px 12px;
-  transition: box-shadow .16s ease, border-color .16s ease, transform .16s ease;
-}
-[data-dsh-studio] .ds-market-card:hover {
-  border-color: color-mix(in srgb, var(--border) 55%, var(--foreground));
-  box-shadow: 0 6px 16px -10px rgba(15, 23, 42, .45);
-}
-[data-dsh-studio] .ds-mc-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-[data-dsh-studio] .ds-mc-name {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -.005em;
-}
-[data-dsh-studio] .ds-market-grid + .ds-hint {
-  margin-top: 12px;
-}
 
 /* 项目页 / 市场页的容器：外层 .ds-body 若参与父级网格会把卡片挤成窄列，
    这里显式让这两个页面回到整行块级布局（:has 在 Chrome 105+ 可用）。 */
-[data-dsh-studio] .ds-body:has(> .ds-market-grid) {
-  display: block;
-  width: 100%;
-  min-width: 0;
-}
-[data-dsh-studio] .ds-market-grid {
-  width: 100%;
-  grid-auto-flow: row;
-}
 
 /* 再兜一层：项目/市场页里 .ds-body 的直接子 div 若是内容宽度，会把栅格压窄 */
-[data-dsh-studio] .ds-body:has(.ds-market-grid) > div {
-  display: block;
-  width: 100%;
-  min-width: 0;
-}
 
 
 /* 效能页的条形：计数为 0 时画虚线基线，避免空轨道被误读成满格；
    非零但很小时给 2px 最小宽度，肉眼能看见 */
-[data-dsh-studio] .ds-an-track { position: relative; }
-[data-dsh-studio] .ds-an-track[data-empty="1"] {
-  background: transparent;
-  border-top: 1px dashed var(--border);
-  height: 6px;
-}
-[data-dsh-studio] .ds-an-track[data-empty="1"] .ds-an-fill { display: none; }
-[data-dsh-studio] .ds-an-fill { min-width: 2px; }
 
 /* 派单运行状态里的日志行（2026-11-10） */
 
@@ -700,103 +299,30 @@
 
 
 /* 深色下把小字号的「彩色语义」提亮一档：它们在白底上足够，落到 #181b22 上会糊。 */
-[data-dsh-studio][data-theme="dark"] .ds-chip[data-on="1"],
-[data-dsh-studio][data-theme="dark"] .ds-audit-status,
-[data-dsh-studio][data-theme="dark"] .ds-chip-case[data-r="pass"],
-[data-dsh-studio][data-theme="dark"] .ds-chip[data-role="dev"],
-[data-dsh-studio][data-theme="dark"] .ds-chip[data-kind="design"] { color: #6ee7a8; }
-[data-dsh-studio][data-theme="dark"] .ds-chip[data-role="product"],
-[data-dsh-studio][data-theme="dark"] .ds-chip[data-kind="mr"] { color: #9ec1ff; }
-[data-dsh-studio][data-theme="dark"] .ds-chip[data-role="architect"],
-[data-dsh-studio][data-theme="dark"] .ds-chip[data-req="1"] { color: #c4b5fd; }
-[data-dsh-studio][data-theme="dark"] .ds-chip[data-role="qa"],
-[data-dsh-studio][data-theme="dark"] .ds-chip[data-kind="cases"],
-[data-dsh-studio][data-theme="dark"] .ds-chip[data-sla="due_soon"] { color: #fbbf24; }
-[data-dsh-studio][data-theme="dark"] .ds-card-warn,
-[data-dsh-studio][data-theme="dark"] .ds-case-fail,
-[data-dsh-studio][data-theme="dark"] .ds-an-kv b[data-warn="1"],
-[data-dsh-studio][data-theme="dark"] .ds-kpi[data-warn="1"] .ds-kpi-value { color: #ff9a9d; }
-[data-dsh-studio][data-theme="dark"] .ds-card[data-blocked="1"] { background: color-mix(in srgb, #e5484d 10%, var(--ds-surface)); }
-[data-dsh-studio][data-theme="dark"] .ds-audit-row[data-ok="0"],
-[data-dsh-studio][data-theme="dark"] .ds-art-row[data-result="fail"] { background: color-mix(in srgb, #e5484d 12%, transparent); }
 
 
 /* 深色下页签：轨道与选中项在 #181b22/#1e222a 上几乎同色，选中态看不出来。
    这里给「轨道压暗、选中提亮 + 内描边」一组显式值，明暗两侧都不依赖尾类的相近色。 */
 
-[data-dsh-studio][data-theme="dark"] .ds-hint { color: #9aa1ad; }
 
 /* ------------------------------------------------ board scrolling --- */
 /* 8 columns × 282px ≈ 2256px：任何笔记本宽度都放不下，看板本来就要横向滚动。
    把这件事做“看得见”：列对齐吸附、滚动条跟主题、卡片绝不溢出列外。 */
-[data-dsh-studio] .ds-board {
-  scroll-snap-type: x proximity;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-[data-dsh-studio] .ds-board:focus-visible { outline: 2px solid color-mix(in srgb, var(--ring) 55%, transparent); outline-offset: -2px; }
-[data-dsh-studio] .ds-board::-webkit-scrollbar { height: 10px; }
-[data-dsh-studio] .ds-board::-webkit-scrollbar-track { background: transparent; }
-[data-dsh-studio] .ds-board::-webkit-scrollbar-thumb {
-  background: var(--border); border-radius: 10px; border: 2px solid transparent; background-clip: content-box;
-}
-[data-dsh-studio][data-theme="dark"] .ds-board::-webkit-scrollbar-thumb { background: #3a404b; background-clip: content-box; }
-[data-dsh-studio] .ds-col { scroll-snap-align: start; min-width: 0; }
-[data-dsh-studio] .ds-col-body { overflow-x: hidden; }
-[data-dsh-studio] .ds-card { min-width: 0; max-width: 100%; }
 
 
 
 /* 列必须“看得出来是列”：之前用 muted 55% 透明叠在白色上几乎和背景同色，
    卡片像是浮在白纸上。改成实色底 + 明确描边，头部略提亮。 */
-[data-dsh-studio] .ds-col {
-  background: var(--muted);
-  border-color: var(--border);
-}
-[data-dsh-studio] .ds-col-head {
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
-  border-radius: 10px;
-}
 
-[data-dsh-studio][data-theme="dark"] .ds-col {
-  background: #14171d;
-  border-color: #262a33;
-}
-[data-dsh-studio][data-theme="dark"] .ds-col-head {
-  background: #1a1e25;
-  border-bottom-color: #262a33;
-  color: #e6e8ee;
-}
 
 /* --------------------------------------------------- form rows/fields --- */
 /* legacy 只写了 `.ds-row{min-width:0}` / `.ds-field{min-width:0}`，没有 display：
    97 处 ds-row、151 处 ds-field 全都退化成块级堆叠，行内 style 的 gap/alignItems
    和 child 的 flex 全都失效——专家编辑里标签、下拉、提示互相压住就是这个原因。 */
-[data-dsh-studio] .ds-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  min-width: 0;
-}
-[data-dsh-studio] .ds-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-[data-dsh-studio] .ds-row > .ds-field {
-  flex: 1 1 220px;
-}
-[data-dsh-studio] .ds-field > .ds-label { margin-bottom: 1px; }
-[data-dsh-studio] .ds-field > .ds-hint { margin-left: 0; }
-[data-dsh-studio] .ds-field > .ds-hint + .ds-hint { margin-top: -2px; }
 
 /* Markdown 内容字段：工具行 + 预览 */
 [data-dsh-studio] .ds-md-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 [data-dsh-studio] .ds-md-bar { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
-[data-dsh-studio] .ds-md-bar .ds-hint { margin-left: 0; opacity: .62; }
 [data-dsh-studio] .ds-md-preview {
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -808,7 +334,6 @@
 /* 直接阅读：交付物/文档正文展开区 */
 
 
-[data-dsh-studio] .ds-reader .ds-md { margin: 0; }
 
 /* 顶部导航的 Tabs 轨道：浅色下 --muted 与页面底几乎同色，看不出是 Tabs，这里给一层可见轨道 */
 
@@ -817,65 +342,11 @@
 /* 顶部导航/抽屉页签的选中态兜底：不依赖 data-state，用 aria-selected 再兜一层 */
 
 /* 统一全站“选中/开启”观感：分段按钮、开关型 chip、页签选中，一律实心高对比 */
-[data-dsh-studio] .ds-seg-btn[data-on="1"],
-[data-dsh-studio] .ds-chip[data-on="1"],
-[data-dsh-studio] .ds-btn[data-on="1"] {
-  background: #18181b !important;
-  color: #fafafa !important;
-  border-color: #18181b !important;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18) !important;
-}
-[data-dsh-studio][data-theme="dark"] .ds-seg-btn[data-on="1"],
-[data-dsh-studio][data-theme="dark"] .ds-chip[data-on="1"],
-[data-dsh-studio][data-theme="dark"] .ds-btn[data-on="1"] {
-  background: #fafafa !important;
-  color: #09090b !important;
-  border-color: #fafafa !important;
-}
 /* 悬停时仍要保持“已选中”的实心感，不要退回淡底 */
-[data-dsh-studio] .ds-seg-btn[data-on="1"]:hover,
-[data-dsh-studio] .ds-chip[data-on="1"]:hover {
-  background: #27272a !important;
-  color: #fafafa !important;
-}
-[data-dsh-studio][data-theme="dark"] .ds-seg-btn[data-on="1"]:hover,
-[data-dsh-studio][data-theme="dark"] .ds-chip[data-on="1"]:hover {
-  background: #e4e4e7 !important;
-  color: #09090b !important;
-}
 
 /* 卡片详情上半部分：把操作区压紧成“一条一条”，不再四排按钮各占一行 */
-[data-dsh-studio] .ds-drawer .ds-sec > .ds-row,
-[data-dsh-studio] .ds-drawer .ds-sec .ds-row {
-  gap: 8px;
-  margin-top: 8px;
-}
-[data-dsh-studio] .ds-drawer .ds-sec .ds-btn {
-  height: 28px;
-  padding: 0 8px;
-  font-size: 12px;
-  border-radius: 10px;
-}
-[data-dsh-studio] .ds-drawer .ds-sec > .ds-hint,
-[data-dsh-studio] .ds-drawer .ds-sec .ds-hint {
-  display: block;
-  margin: 4px 0 0;
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--muted-foreground);
-}
 /* 段与段之间给一条分隔，滚动时能看出“这是另一件事” */
-[data-dsh-studio] .ds-drawer .ds-sec {
-  padding: 12px 0;
-  border-bottom: 1px dashed var(--border);
-}
-[data-dsh-studio] .ds-drawer .ds-sec:last-of-type {
-  border-bottom: 0;
-}
 /* 操作按钮的“已选中/禁用”别和正文抢注意力 */
-[data-dsh-studio] .ds-drawer .ds-sec .ds-btn[disabled] {
-  opacity: 0.45;
-}
 
 /* 卡片详情：页签不要贴着标题，给头部与页签之间留出呼吸 */
 [data-dsh-studio] .ds-drawer > *:first-child {
@@ -886,146 +357,48 @@
 [data-dsh-studio] .ds-drawer [aria-selected="true"] {
   margin-top: 0;
 }
-[data-dsh-studio] .ds-drawer .ds-dw-body,
-[data-dsh-studio] .ds-drawer .ds-dw-cols {
-  padding-top: 8px;
-}
 
 /* 泳道优化：列色条 / 吸顶列头 / 更宽的列与更松的间距 / 空列提示 */
-[data-dsh-studio] .ds-col {
-  position: relative;
-  min-width: 300px;
-  border-radius: 10px;
-  overflow: hidden;
-}
-[data-dsh-studio] .ds-col::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 3px;
-  background: var(--col-accent, var(--border));
-  z-index: 3;
-}
 
-[data-dsh-studio] .ds-col-head {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  padding-top: 8px;
-  backdrop-filter: blur(2px);
-}
 
-[data-dsh-studio] .ds-col-body {
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-[data-dsh-studio] .ds-col-body:empty::after {
-  content: '还没有卡，拖一张过来';
-  display: block;
-  padding: 12px 8px;
-  border: 1px dashed var(--border);
-  border-radius: 10px;
-  font-size: 12px;
-  color: var(--muted-foreground);
-  text-align: center;
-}
 
 /* 列色条按状态（而不是按列的位置） */
-[data-dsh-studio] .ds-col[data-col] { --col-accent: var(--border); }
-[data-dsh-studio] .ds-col[data-col="clarify"]   { --col-accent: #a1a1aa; }
-[data-dsh-studio] .ds-col[data-col="design"]    { --col-accent: #8b5cf6; }
-[data-dsh-studio] .ds-col[data-col="dev_ready"] { --col-accent: #3b82f6; }
-[data-dsh-studio] .ds-col[data-col="dev"]       { --col-accent: #06b6d4; }
-[data-dsh-studio] .ds-col[data-col="review"]    { --col-accent: #eab308; }
-[data-dsh-studio] .ds-col[data-col="test"]      { --col-accent: #f97316; }
-[data-dsh-studio] .ds-col[data-col="accept"]    { --col-accent: #10b981; }
-[data-dsh-studio] .ds-col[data-col="done"]      { --col-accent: #52525b; }
 
 /* 抽屉：状态推进与操作区排布（2026-11-10） */
-[data-dsh-studio] .ds-drawer .ds-listrow-actions, [data-dsh-studio] .ds-side .ds-listrow-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center }
-[data-dsh-studio] .ds-drawer .ds-listrow-actions > .ds-select { min-width:190px }
-[data-dsh-studio] .ds-drawer .ds-sec-head { margin-bottom:8px }
-[data-dsh-studio] .ds-drawer .ds-sec-head .ds-hint { font-size:11px }
-[data-dsh-studio] .ds-drawer .ds-sec + .ds-sec { margin-top:2px }
 
 /* 准出检查里的签字区：单独成块，和清单分开（2026-11-10） */
 
 
-[data-dsh-studio] .ds-gate .ds-row { margin-top:12px; padding-top:12px; border-top:1px dashed var(--border) }
-[data-dsh-studio] .ds-gate .ds-row .ds-btn { white-space:nowrap }
 
 /* 卡片上的「负责人」标签：限宽 + 省略号，完整信息放 title（2026-11-10） */
-[data-dsh-studio] .ds-meta .ds-chip[data-role] { max-width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; line-height: 18px }
-[data-dsh-studio] .ds-meta .ds-chip[data-open="1"] { border-style: dashed; color: #8b5cf6 }
-[data-dsh-studio][data-theme="dark"] .ds-meta .ds-chip[data-open="1"] { color: #c4b5fd }
-[data-dsh-studio] .ds-drawer .ds-chip[data-role] { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 
 /* 看板卡片：负责人当成「卡片右下角的经办人」来排（2026-11-10） */
 
-[data-dsh-studio] .ds-meta .ds-chip[data-role] {
-  margin-left: auto; order: 99;
-  max-width: 120px; height: 20px; line-height: 18px; padding: 0 8px;
-  border-radius: 999px; border-color: transparent;
-  background: color-mix(in srgb, currentColor 12%, transparent);
-  font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis
-}
-[data-dsh-studio] .ds-meta .ds-chip[data-role]:hover { background: color-mix(in srgb, currentColor 18%, transparent) }
-[data-dsh-studio] .ds-meta .ds-chip[data-role][data-open="1"] {
-  margin-left: auto; background: transparent; border: 1px dashed currentColor; opacity: .85
-}
-[data-dsh-studio][data-theme="dark"] .ds-meta .ds-chip[data-role] { background: color-mix(in srgb, currentColor 18%, transparent) }
 
 /* 看板：列定宽 + 卡片内信息不重叠（2026-11-10） */
-[data-dsh-studio] .ds-board { gap: 12px; padding: 12px 16px 16px; align-items: flex-start }
-[data-dsh-studio] .ds-col { flex: 0 0 288px; width: 288px; min-width: 288px; max-width: 288px }
-[data-dsh-studio] .ds-col-body { display: flex; flex-direction: column; gap: 8px; padding: 8px; overflow-x: hidden }
-[data-dsh-studio] .ds-card { width: 100%; min-width: 0 }
-
-[data-dsh-studio] .ds-meta .ds-chip { height: 18px; line-height: 16px; font-size: 11px; padding: 0 4px}
 
 
 
-@media (max-width: 900px) {
-  [data-dsh-studio] .ds-col { flex: 0 0 86vw; width: 86vw; min-width: 86vw; max-width: 86vw }
-}
+
 
 /* 看板列头：名称 + 计数一行，负责人一行（2026-11-10） */
-[data-dsh-studio] .ds-col { border-radius: 10px; overflow: hidden }
-[data-dsh-studio] .ds-col-head {
-  display: flex; flex-direction: column; gap: 4px; padding: 8px 8px 8px;
-  background: var(--card); border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 2
-}
 
 
 
 
 
-[data-dsh-studio][data-theme="dark"] .ds-col-head { background: #1a1e25 }
-[data-dsh-studio] .ds-col-body { padding-top: 8px }
 
 /* 列头左对齐修正（上面的 .ds-col-head 曾被居中） */
-[data-dsh-studio] .ds-col-head { align-items: stretch; text-align: left }
 
 
 
 
 /* 列头对齐：用更高特异性 + !important 压过旧规则 */
-[data-dsh-studio] .ds-board .ds-col .ds-col-head { align-items: stretch !important; text-align: left !important }
-[data-dsh-studio] .ds-board .ds-col .ds-col-title { display: flex !important; width: 100% !important; align-items: center !important; justify-content: space-between !important }
-[data-dsh-studio] .ds-board .ds-col .ds-col-owner { display: flex !important; width: 100% !important; justify-content: flex-start !important; gap: 8px !important }
 
 /* 列是纵向 flex：头部必须撑满列宽（此前被居中成窄条） */
-[data-dsh-studio] .ds-board .ds-col { display: flex !important; flex-direction: column !important; align-items: stretch !important }
-[data-dsh-studio] .ds-board .ds-col .ds-col-head { width: 100% !important; box-sizing: border-box !important }
-[data-dsh-studio] .ds-board .ds-col .ds-col-body { width: 100% !important; box-sizing: border-box !important }
 
 /* 工作区不再撑高宿主页面：滚动发生在 .ds-body 内部（2026-11-10） */
 [data-dsh-studio] { height: 100% !important; min-height: 0 !important; max-height: 100% !important; overflow: hidden !important }
-[data-dsh-studio] > .ds-head { flex: 0 0 auto }
-[data-dsh-studio] > .ds-body { flex: 1 1 auto !important; min-height: 0 !important; overflow: auto !important }
 
 /* 工作区改成真正的一屏布局：head 固定 + body 内部滚动（2026-11-10 修正） */
 html body [data-dsh-studio] {
@@ -1033,12 +406,6 @@ html body [data-dsh-studio] {
   height: 100vh !important; max-height: 100vh !important; min-height: 0 !important;
   overflow: hidden !important
 }
-html body [data-dsh-studio] > .ds-body {
-  flex: 1 1 auto !important; min-height: 0 !important;
-  overflow-y: auto !important; overflow-x: hidden !important
-}
-html body [data-dsh-studio] > .ds-body > * { min-height: 0 !important }
-html body [data-dsh-studio] .ds-empty, html body [data-dsh-studio] .ds-hint { max-width: 100% }
 
 /* 门户容器不能参与布局：它同时带 [data-dsh-studio]，会被上面的 100vh 规则撑成一屏空白
    （需求/版本页滚到底的一整屏空白就是这个 900px 的空节点）。 */
@@ -1061,32 +428,17 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] input:disabled, [data-dsh-studio-portal] input:disabled {
   background: var(--muted) !important; opacity: 1 !important; cursor: not-allowed
 }
-[data-dsh-studio] .ds-field > .ds-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 /* 效能页：同一行的面板等高、标题与说明分两行，避免标题被说明挤成 "团队负载0 位在跑" */
-[data-dsh-studio] .ds-an-grid { align-items: stretch }
-[data-dsh-studio] .ds-an-grid > * { min-width: 0 }
-[data-dsh-studio] .ds-an-grid > .ds-panel { height: 100% }
-[data-dsh-studio] .ds-an-grid > .ds-panel > .ds-panel-body { flex: 1 1 auto; min-height: 0 }
-[data-dsh-studio] .ds-an-grid .ds-panel-head { flex-direction: column; align-items: flex-start; gap: 4px }
-[data-dsh-studio] .ds-an-grid .ds-panel-head .ds-hint { margin-left: 0 }
-[data-dsh-studio] .ds-an-grid .ds-an-foot { margin-top: auto }
 /* 设置页统一（2026-11-10）：面板成栈、内边距一致、输入控件在设置里也看得见边框 */
 
-[data-dsh-studio] .ds-pane-stack > .ds-panel { margin: 0 }
-[data-dsh-studio] .ds-pane-stack > .ds-panel > .ds-panel-head { padding: 8px 12px; border-bottom: 1px solid var(--border) }
-[data-dsh-studio] .ds-pane-stack > .ds-panel > .ds-panel-body { padding: 12px 12px}
-[data-dsh-studio] .ds-pane input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-[data-dsh-studio] .ds-pane textarea,
 [data-dsh-studio-portal] input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-[data-dsh-studio-portal] textarea {
+[data-dsh-studio-portal] textarea{
   border: 1px solid var(--border) !important; border-radius: 6px !important; background: var(--card) !important
 }
-[data-dsh-studio] .ds-pane input:focus, [data-dsh-studio] .ds-pane textarea:focus,
-[data-dsh-studio-portal] input:focus, [data-dsh-studio-portal] textarea:focus {
+[data-dsh-studio-portal] input:focus,
+[data-dsh-studio-portal] textarea:focus{
   outline: none !important; border-color: var(--ring) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 28%, transparent) !important
 }
-[data-dsh-studio] .ds-pane .ds-field > .ds-label { font-size: 12px; color: var(--muted-foreground) }
-[data-dsh-studio] .ds-pane .ds-sec-head { margin-bottom: 8px }
 /* 顶部页签：逐个都有内边距与最小宽度，不再挤成一排文字 */
 /* 主题三档（Radix ToggleGroup）：同样给足内边距与最小宽度，避免挤成一行文字 */
 /* 设置页：侧导航条目被 UA 复位压成 20px 高，补回内边距 */
@@ -1097,11 +449,6 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
    这里带 !important 才压得住组件类。 */
 
 /* 设置页列表行：提示词/技能预览只占一行，超出省略，动作按钮不被挤压 */
-[data-dsh-studio] .ds-listrow { display: flex; align-items: center; gap: 12px; padding: 8px 12px}
-[data-dsh-studio] .ds-listrow-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto }
-[data-dsh-studio] .ds-listrow-main > div { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
-[data-dsh-studio] .ds-listrow-main [data-prompt="1"] { color: var(--muted-foreground); font-size: 12px }
-[data-dsh-studio] .ds-listrow-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 8px }
 /* 勾选开关：用 flex 自动外边距代替 translate，避免滑块跑到轨道外 */
 [data-dsh-studio] [role="switch"] { display: inline-flex !important; align-items: center; padding: 2px !important; box-sizing: border-box }
 [data-dsh-studio] [role="switch"] > span {
@@ -1149,12 +496,6 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   border-color: #3d434e !important;
 }
 
-[data-dsh-studio] .ds-count[data-over="1"] {
-  background: color-mix(in srgb, #e5484d 14%, var(--card));
-  border-color: color-mix(in srgb, #e5484d 45%, var(--border));
-  color: #b42318;
-}
-[data-dsh-studio][data-theme="dark"] .ds-count[data-over="1"] { color: #ff9a9d; }
 
 /* 列负责人选择器：不要被列的 overflow 裁掉，列表可滚 */
 
@@ -1163,23 +504,14 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 
 
 /* 需求页：列表/详情两栏收敛，杜绝横向溢出（2026-11-11） */
-[data-dsh-studio] .ds-req-grid { grid-template-columns: 300px minmax(0, 1fr) !important; gap: 16px !important; align-items: start; min-width: 0; }
-[data-dsh-studio] .ds-req-grid > * { min-width: 0; max-width: 100%; }
-[data-dsh-studio] .ds-req-list { max-height: calc(100vh - 220px); overflow-y: auto; overflow-x: hidden; padding-right: 2px; }
-
-[data-dsh-studio] .ds-req-list-head > .ds-btn { flex: 0 0 auto; margin-left: 0 !important; }
-[data-dsh-studio] .ds-req-item { overflow: hidden; }
 
 
 
 
 
-[data-dsh-studio] .ds-body { overflow-x: hidden; min-width: 0; }
-[data-dsh-studio] .ds-pane-stack, [data-dsh-studio] .ds-panel, [data-dsh-studio] .ds-panel-body { min-width: 0; max-width: 100%; }
-[data-dsh-studio] .ds-panel-head { flex-wrap: wrap; row-gap: 4px; }
 
 
-@media (max-width: 1100px) { [data-dsh-studio] .ds-req-grid { grid-template-columns: minmax(0, 1fr) !important; } }
+
 
 /* 业务提单条带与内嵌表单：条带横排换行；提单/查进度改成浮层，避免挤在窄列里 */
 
@@ -1188,39 +520,24 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 /* 业务提单：从需求列表的窄列里抽出来，改成顶部浮条，不再占列宽 */
 
 
-[data-dsh-studio] .ds-req-list > .ds-biz-strip{display:flex}
 
 /* 业务提单独立页签：原条带从需求页移除 */
 
 
 
 /* 业务提单页签：说明文字不要 nowrap，避免溢出压到相邻元素 */
-[data-dsh-studio] .ds-hint{white-space:normal}
 
 /* 需求页：列表固定左栏 + 详情自适应右栏 */
-@media (min-width:1100px){
-  [data-dsh-studio] .ds-body > div:has(> .ds-req-list){display:flex;gap:12px;align-items:flex-start;min-height:0}
-  [data-dsh-studio] .ds-req-list{flex:0 0 340px;max-width:340px;max-height:calc(100vh - 210px);overflow-y:auto}
-  [data-dsh-studio] .ds-body > div:has(> .ds-req-list) > div:not(.ds-req-list){flex:1 1 auto;min-width:0;max-height:calc(100vh - 210px);overflow-y:auto}
-}
 
 /* 业务提单：右侧抽屉形态，内部单列 */
 [data-dsh-studio] #ds-intake-overlay{display:flex;flex-direction:column}
-[data-dsh-studio] #ds-intake-overlay .ds-body{overflow:visible}
-[data-dsh-studio] #ds-intake-overlay .ds-body > div{grid-template-columns:minmax(0,1fr)!important;padding:0 12px 20px!important}
 [data-dsh-studio] #ds-intake-overlay > div:first-child{padding:8px 12px;border-bottom:1px solid var(--border);background:var(--card);position:sticky;top:0;z-index:2}
 
 /* 业务提单抽屉：加宽、字段满宽、加遮罩 */
 [data-dsh-studio] #ds-intake-overlay{width:min(640px,96vw)!important;z-index:95!important}
 [data-dsh-studio] #ds-intake-overlay::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(9,9,11,.38);z-index:-1}
-[data-dsh-studio] #ds-intake-overlay .ds-field{flex:1 1 100%!important;min-width:0}
-[data-dsh-studio] #ds-intake-overlay .ds-body > div > div{min-width:0}
 
 /* 需求页：动作条独占整行，避免在 flex 行里占出一列空白 */
-@media (min-width:1100px){
-  [data-dsh-studio] .ds-body > div:has(> .ds-req-list){flex-wrap:wrap;align-items:flex-start}
-  
-}
 
 /* 业务提单抽屉：按模式只显示对应面板 */
 [data-dsh-studio] [data-mode="form"] [data-panel="status"]{display:none!important}
@@ -1228,8 +545,6 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] [data-mode="status"] [data-panel="list"]{display:none!important}
 
 /* 拖拽反馈 */
-[data-dsh-studio] .ds-card[data-dragging="1"] { opacity: .55; transform: rotate(-.5deg) }
-[data-dsh-studio] .ds-col[data-drag-over="1"] { outline: 2px dashed var(--ds-accent); outline-offset: -3px; background: color-mix(in srgb, var(--ds-accent) 8%, var(--muted)) }
 
 /* 全局搜索（⌘K / Ctrl+K） */
 [data-dsh-studio] .ds-palette-veil { position: fixed; inset: 0; top: max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px)); z-index: 120; -webkit-app-region: no-drag; background: rgba(9, 9, 11, .38); display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh }
@@ -1246,9 +561,6 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 
 
 
-[data-dsh-studio] .ds-palette-kind { flex: 0 0 auto; font-size: 11px; padding: 2px 4px; border-radius: 999px; background: var(--ds-surface-2, #f4f4f5); color: var(--ds-muted, #6b6b74) }
-[data-dsh-studio] .ds-palette-kind[data-kind="action"] { background: color-mix(in srgb, #7c3aed 16%, transparent); color: var(--ds-violet-text, #6d28d9) }
-[data-theme="dark"] .ds-palette-kind[data-kind="action"] { background: color-mix(in srgb, #a78bfa 22%, transparent); color: #c4b5fd }
 
 
 
@@ -1259,12 +571,9 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 
 
 
-[data-dsh-studio] .ds-suite { display: inline-flex; align-items: center; gap: 8px; padding: 2px 8px; border: 1px solid var(--ds-line, #e4e4e7); border-radius: 999px; background: var(--ds-surface-2, #f4f4f5); font-size: 12px }
-[data-dsh-studio] .ds-suite[data-default="1"] { border-color: #a5b4fc; background: #eef2ff; color: #3730a3 }
 
 
 
-[data-dsh-studio] .ds-case-lib { display: flex; flex-direction: column }
 
 
 
@@ -1278,43 +587,10 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
  * 每个变量都带旧值兜底，token 缺失时行为与替换前一致。
  * ======================================================================== */
 
-[data-dsh-studio] .ds-input,
-[data-dsh-studio] .ds-textarea,
-[data-dsh-studio] .ds-select {
-  height: 34px;
-  padding: 0 8px;
-  border-radius: var(--radius-2lg, 10px);
-  border: 1px solid var(--color-border-button-default, var(--input));
-  background: var(--color-background-primary-default, var(--card));
-  color: var(--color-text-primary, var(--foreground));
-  font-size: 13px;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
-}
 
-[data-dsh-studio] .ds-input:hover,
-[data-dsh-studio] .ds-textarea:hover,
-[data-dsh-studio] .ds-select:hover {
-  border-color: var(--color-border-button-hover, var(--input));
-}
 
-[data-dsh-studio] .ds-input:focus-visible,
-[data-dsh-studio] .ds-textarea:focus-visible,
-[data-dsh-studio] .ds-select:focus-visible {
-  outline: none;
-  border-color: var(--color-border-focus-ring, var(--ring));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-border-focus-ring, var(--ring)) 30%, transparent);
-}
 
-[data-dsh-studio] .ds-label {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--color-text-secondary, var(--muted-foreground));
-}
 
-[data-dsh-studio] .ds-hint {
-  color: var(--color-text-tertiary, var(--muted-foreground));
-}
 
 [data-dsh-studio] .ds-drawer {
   background: var(--color-background-primary-default, var(--card));
@@ -1327,20 +603,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
  * 同样追加在末尾，整段可回退；变量都带旧值兜底。
  * ======================================================================== */
 
-[data-dsh-studio] .ds-panel {
-  border: 1px solid var(--color-border-button-default, var(--border));
-  border-radius: var(--radius-2lg, 12px);
-  background: var(--color-background-primary-default, var(--card));
-  box-shadow: 0 1px 2px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
-}
 
-[data-dsh-studio] .ds-panel-head {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--color-text-primary, var(--foreground));
-  border-bottom: 1px solid var(--color-border-button-default, var(--border));
-}
 
 [data-dsh-studio] [role="tablist"] {
   gap: 2px;
@@ -1364,8 +627,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   background: var(--color-background-primary-hover, var(--muted));
 }
 
-[data-dsh-studio-portal] [role="dialog"],
-[data-dsh-studio] .ds-modal {
+[data-dsh-studio-portal] [role="dialog"]{
   border: 1px solid var(--color-border-button-default, var(--border));
   border-radius: var(--radius-2lg, 14px);
   background: var(--color-background-primary-default, var(--card));
@@ -1382,9 +644,6 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
    **未分层的规则永远压过分层规则**（跟特异性无关）—— 上一版把它写在最外层，
    结果连 `.border`、`.bg-background-primary-default` 这类工具类都被它盖掉，
    看板工具栏的下拉变成了没框没底色的裸文字。放进 base 就只清 UA 默认值。 */
-@layer base {
-  
-}
 
 /* 「流程与产出」那组数字：原来跟标签一个字号，看着像没写完 */
 
@@ -1426,11 +685,6 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
    2) 表单（抽屉里）→ 全部灰底填充（跟着输入框走，行看起来是「一块填写区」） */
 
 /* 1) 工具栏：输入框改成白底 + 内描边（用 outline 而不是 border，不改变 36px 的高度） */
-[data-dsh-studio] .ds-board-bar [data-field="input"] > div:first-child {
-  background-color: var(--color-background-primary-default, #fff);
-  outline: 1px solid var(--color-border-button-default, var(--ds-line));
-  outline-offset: -1px;
-}
 
 /* 2) 抽屉表单：下拉触发器改成灰底填充，和同一列的输入框一致 */
 [data-dsh-studio] .ds-drawer [data-field="select"] button {
@@ -1470,19 +724,6 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
    算下来超过剩余空间就直接换行了。
    修法：基准改成 0（`flex-basis: 0`），宽度只由剩余空间决定；再兜一层 overflow，
    内容再宽也只在自身内部横向滚动，不会把邻居顶走。 */
-@media (min-width: 1100px) {
-  [data-dsh-studio] .ds-body > div:has(> .ds-req-list) > div.ds-req-detail {
-    flex: 1 1 0%;
-    min-width: 0;
-    max-width: none;
-    overflow-x: auto;
-  }
-
-  /* 左栏给一点呼吸，别贴着边框 */
-  [data-dsh-studio] .ds-req-list {
-    padding-right: 4px;
-  }
-}
 
 /* ------------------------------------------------------------ 灰字统一调深 --- */
 /* 之前的问题：`.ds-hint` 是 10.5px + **0.5 透明**，在白底上基本看不清；
@@ -1497,20 +738,8 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   --color-text-tertiary: var(--color-neutral-500);
 }
 
-[data-dsh-studio] .ds-hint {
-  font-size: 12px;
-  line-height: 1.5;
-  opacity: 1;
-  color: var(--muted-foreground);
-}
 
 /* 面板头里那句说明、以及各处的次要说明，别再靠 opacity 压灰 */
-[data-dsh-studio] .ds-panel-head > .ds-hint,
-[data-dsh-studio] .ds-an-sec .ds-hint,
-[data-dsh-studio] .ds-req-list-head {
-  opacity: 1;
-  color: var(--muted-foreground);
-}
 
 
 
@@ -1520,86 +749,19 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
      · .ds-btn    灰底小按钮 → 白底描边 32px（与 BoardUI secondary 对齐），primary/ghost 各自跟随
      · .ds-listrow 带分隔线的表格行 → 无边框、悬停变色的行卡片，和 TaskRow 一致 */
 
-html body [data-dsh-studio] .ds-empty {
-  border: 1px solid var(--color-separator-border, var(--ds-line));
-  border-radius: 16px;
-  background: var(--color-background-secondary-default, #fafafa);
-  padding: 16px 16px;
-  text-align: center;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--muted-foreground);
-}
 
-html body [data-dsh-studio] .ds-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 32px;
-  padding: 0 8px;
-  border: 1px solid var(--color-border-button-default, var(--ds-line));
-  border-radius: 10px;
-  background: var(--color-background-primary-default, #fff);
-  color: var(--color-text-primary, inherit);
-  font: inherit;
-  font-size: 13px;
-  line-height: 1;
-  cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
-}
 
-html body [data-dsh-studio] .ds-btn:hover {
-  background: var(--color-background-primary-hover, var(--ds-soft));
-}
 
-html body [data-dsh-studio] .ds-btn[disabled] {
-  opacity: 0.45;
-  cursor: default;
-}
 
 /* 用 BoardUI 的主按钮渐变 token。之前引用的 --color-button-primary-background
    全仓库没有定义，回退值让主 CTA 永远是近黑 —— 全站唯一的主行动不跟随品牌色，
    还和旁边官方 ghost 按钮的蓝不同源。 */
-html body [data-dsh-studio] .ds-btn-primary {
-  border-color: transparent;
-  background-color: transparent;
-  background-image: var(--gradient-button-primary-default, linear-gradient(180deg, #3b82f6 0%, #2563eb 100%));
-  color: #fff;
-}
 
-html body [data-dsh-studio] .ds-btn-primary:hover {
-  background-image: var(--gradient-button-primary-hover, linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%));
-}
 
-html body [data-dsh-studio] .ds-btn-ghost {
-  border-color: transparent;
-  background: transparent;
-  color: var(--muted-foreground);
-}
 
-html body [data-dsh-studio] .ds-btn-ghost:hover {
-  background: var(--color-background-primary-hover, var(--ds-soft));
-  color: var(--color-text-primary, inherit);
-}
 
-html body [data-dsh-studio] .ds-listrow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 8px;
-  border: 0;
-  border-radius: 10px;
-  transition: background-color 120ms ease;
-}
 
-html body [data-dsh-studio] .ds-listrow:hover {
-  background: var(--color-background-primary-hover, var(--ds-soft));
-}
 
-html body [data-dsh-studio] .ds-listrow + .ds-listrow {
-  border-top: 1px solid var(--color-separator-border, var(--ds-line));
-}
 
 /* --------------------------------------------------- 把 Tailwind 的边框开关补上 --- */
 /* Tailwind v4 的 `.border` 长这样：`border-style: var(--tw-border-style); border-width: 1px`。
@@ -1690,68 +852,14 @@ html body [data-dsh-studio] .ds-listrow + .ds-listrow {
    目标是把卡片/列从「灰底 + 细线」换成 BoardUI 的「白卡 + 柔和描边 + 轻阴影」，
    顺便把两处 50% 透明的灰字（卡片脚注、列负责人）提到可读。 */
 
-html body [data-dsh-studio] .ds-col {
-  border: 1px solid var(--color-separator-border, var(--ds-line));
-  border-radius: 16px;
-  background: var(--color-background-secondary-default, #fafafa);
-  overflow: hidden;
-}
 
-html body [data-dsh-studio] .ds-col-head {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--color-separator-border, var(--ds-line));
-  background: var(--color-background-primary-default, #fff);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-primary, inherit);
-}
 
-html body 
 
-html body [data-dsh-studio] .ds-col-body {
-  padding: 8px;
-  gap: 8px;
-}
 
-html body [data-dsh-studio] .ds-card {
-  border: 1px solid var(--color-separator-border, var(--ds-line));
-  border-radius: 16px;
-  background: var(--color-background-primary-default, #fff);
-  padding: 8px 12px;
-  box-shadow: 0 1px 2px color-mix(in srgb, #101828 5%, transparent);
-  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
-}
 
-html body [data-dsh-studio] .ds-card:hover {
-  border-color: var(--color-border-button-hover, var(--ds-accent));
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, #101828 22%, transparent);
-  transform: translateY(-1px);
-}
-
-html body 
-
-html body 
-
-html body 
-
-/* 暗色主题下「只看阻塞 / 只看缺正文」这类红色筛选标签：浅色主题那套深红 #c0392b
-   在深色底上几乎看不见，换成浅一档的红。 */
-[data-dsh-studio][data-theme="dark"] .ds-board-bar label[title] {
-  color: #f87171 !important;
-}
 
 /* 登录门的字段：不再用 .ds-field（它会连带把内部 input 一起重绘，和 BoardUI 的壳子打架） */
-html body [data-dsh-studio] .ds-login-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 
-html body [data-dsh-studio] .ds-login-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted-foreground);
-}
 
 /* 选项卡：自己按 BoardUI Tabs 的视觉实现。不能用 .ds-tab / .ds-tabs 这类 legacy 类名，
    那些规则后注入，会把 padding 与选中底色一起盖掉（实测页签挤成一坨）。 */
@@ -1906,16 +1014,6 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
 /* --------------------------------------------- 工作台首屏：两级指标 --- */
 /* 一级只有四项「今天要动手」的（逾期/阻塞/缺陷超时/准出被拦），数字放大到 24px；
    其余是背景数字，保持原样。以前 8 个平铺，20px 与 18px 差 2px，读不出层级。 */
-[data-dsh-studio] .ds-kpi-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  /* 这一节自己没有下边距、面板只有 margin-bottom，于是「整体情况」的底边和紧跟的「流程与产出」
-     面板是 0 距离：落单的那张 KPI 卡直接压在面板上边线上（真机 2414px 宽量到 gap=0）。
-     统一成和面板间距相同的 14px，几组块之间就有了同一套节奏。 */
-  margin-bottom: 16px;
-}
 
 /* StatCard 的结构固定：卡片 > 标签 > 数值 > 提示，所以 nth-child(2) 就是那个大数字 */
 
@@ -1923,84 +1021,17 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
    集成异常/强制放行/AI 在跑），固定 4 列必然落单一张；落单那张在第二节末尾，底边正好压在
    下面的「流程与产出」面板上（真机 2414px 宽量到 gap=0）。
    宽屏一行 5 张，窄屏退成 3 列 → 2 列，不留孤零零的第 5 张。效能页的 7 张卡不受影响。 */
-[data-dsh-studio] .ds-kpi-section .ds-kpi-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-}
-@media (max-width: 1200px) {
-  [data-dsh-studio] .ds-kpi-section .ds-kpi-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@media (max-width: 720px) {
-  [data-dsh-studio] .ds-kpi-section .ds-kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 480px) {
-  [data-dsh-studio] .ds-kpi-section .ds-kpi-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
 
 /* 两个 KPI 区块之间靠上面那条 margin-bottom 撑开；这里只把历史上那条 6px 归零，
    免得两处分间距叠出 20px。 */
-[data-dsh-studio] .ds-kpi-section + .ds-kpi-section {
-  margin-top: 0;
-}
 
 /* ---------------------------------------------------- 顶栏「⋯」菜单 --- */
 /* 低频动作（刷新 / 导出）收进来，顶栏只留 品牌｜状态｜⋯｜＋新建。
    用原生 details：展开收起、键盘、焦点全是浏览器原生行为，不引入状态。 */
-[data-dsh-studio] .ds-more {
-  position: relative;
-  display: inline-flex;
-}
-[data-dsh-studio] .ds-more > summary {
-  list-style: none;
-  cursor: pointer;
-  min-width: 32px;
-  justify-content: center;
-  font-size: 16px;
-  line-height: 1;
-  user-select: none;
-}
-[data-dsh-studio] .ds-more > summary::-webkit-details-marker { display: none }
-[data-dsh-studio] .ds-more[open] > summary { background: var(--ds-soft2, #f4f4f5) }
-[data-dsh-studio] .ds-more-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 60;
-  min-width: 168px;
-  display: flex;
-  flex-direction: column;
-  padding: 4px;
-  border: 1px solid var(--color-border-button-default, var(--ds-line));
-  border-radius: 10px;
-  background: var(--color-background-primary-default, #fff);
-  box-shadow: 0 12px 32px -12px color-mix(in srgb, #000 30%, transparent);
-}
-[data-dsh-studio] .ds-more-item {
-  display: block;
-  width: 100%;
-  padding: 8px 8px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  font-size: 12px;
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-}
-[data-dsh-studio] .ds-more-item:hover { background: var(--ds-soft2, #f4f4f5) }
 
 /* ------------------------------------------------ 卡片停摆态（AI 已中断）--- */
 /* 崩溃重启后 reconcile 把 state 改成 stopped，但印记仍匹配当前列 ——
    这种卡既不在跑、也不会再被自动派单。以前和「排队中」长得一样，看不出来。 */
-[data-dsh-studio] .ds-card[data-stalled='1'] {
-  border-color: color-mix(in srgb, var(--color-notification-warning-foreground, #d97706) 45%, var(--ds-line));
-}
 
 
 
@@ -2028,31 +1059,13 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
  * [data-dsh-studio] 规则（那是运行时注入、同特异性会赢）。
  * ======================================================================== */
 
-[data-dsh-studio] .ds-body { padding: 24px; }
 
-html body [data-dsh-studio] .ds-head { padding: 16px 24px 0; }
 
-[data-dsh-studio] .ds-panel { border-radius: 12px; margin-bottom: 16px; }
 
-[data-dsh-studio] .ds-card { border-radius: 10px; padding: 12px; }
 
-[data-dsh-studio] .ds-panel-head {
-  padding: 12px 16px;
-  min-height: 48px;
-  gap: 8px;
-}
 
-[data-dsh-studio] .ds-panel-body {
-  padding: 16px !important;
-  gap: 12px;
-}
 
-[data-dsh-studio] .ds-btn { border-radius: 8px; gap: 8px; }
 
-[data-dsh-studio] .ds-chip {
-  border-radius: 6px;
-  padding: 0 8px;
-}
 
 /* 抽屉头/内层页签：跟控件同一档圆角，不再用 10px */
 
@@ -2060,37 +1073,23 @@ html body [data-dsh-studio] .ds-head { padding: 16px 24px 0; }
 
 
 /* 弹窗与 KPI 卡：这两处被 client.src.js 的 [data-dsh-studio] 规则覆盖过 */
-html body [data-dsh-studio] .ds-modal { border-radius: 12px; }
-html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
 
 /* 新建弹窗 2 列装 7 张，末行永远落单一张 —— 让最后一张跨两列 */
-[data-dsh-studio] .ds-modal-grid > :last-child:nth-child(odd) { grid-column: span 2; }
 
 /* 需求详情 7 个统计格：auto-fit 在宽屏会挤出第 8、9 个空列，固定 7 列一行 */
 
-@media (max-width: 1100px) {  }
-@media (max-width: 720px) {  }
 
-[data-dsh-studio] .ds-kpi-section { margin-bottom: 16px; }
 
 /* 次要文字用颜色表达层级，不用 opacity —— .5 的 11px 字实际对比度只有 2.6:1，
    量不出来是因为脚本只看 color、不看元素 opacity。 */
-[data-dsh-studio] .ds-hint { opacity: 1; color: var(--ds-muted, var(--muted-foreground)); }
 
 
 /* 胶囊不是只有 .ds-chip 一个类：全站 253 个 999px 分布在下面这一族里。
    除了真正的状态点（6px）与进度条，其余统一收到 6px。 */
-[data-dsh-studio] .ds-ok,
-[data-dsh-studio] .ds-err,
-[data-dsh-studio] .ds-suite,
-[data-dsh-studio] .ds-reg-item,
-[data-dsh-studio] .ds-palette-kind { border-radius: 6px; padding: 0 8px; }
 
-[data-dsh-studio] .ds-meta .ds-chip[data-role] { border-radius: 6px; }
 
 
 /* 计数徽标：18px 的小方块比胶囊更安静（看板列头的那个数字） */
-[data-dsh-studio] .ds-count { border-radius: 6px; }
 
 /* ========================================================================
  * unslop pass 2 —— 一套线性图标（lucide）+ 状态点
@@ -2129,16 +1128,10 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
  * 定档：11 元信息 / 12 次要 / 13 正文 / 16 小节 / 20·24 数字。
  * ======================================================================== */
 
-[data-dsh-studio] .ds-btn { font-size: 13px; }
 
-[data-dsh-studio] .ds-hint { font-size: 12px; }
 
 
 /* 计数与指标一律等宽数字，扫一列的时候不会跳 */
-[data-dsh-studio] .ds-count,
-[data-dsh-studio] .ds-kpi-value,
-[data-dsh-studio] .ds-stat-box b,
-[data-dsh-studio] .ds-an-kv b { font-variant-numeric: tabular-nums; }
 
 /* 粗体不再是浏览器默认的 700：全站只用 600，标题层级靠字号与颜色 */
 [data-dsh-studio] b,
@@ -2146,7 +1139,6 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
 
 /* 列头的「大写字距标签」去掉：中文本来没有大小写，宽字距只会让小字更松。
    13px 的负字距也一并归零。 */
-[data-dsh-studio] .ds-col-head { text-transform: none; letter-spacing: 0; }
 
 /* ========================================================================
  * 看板列宽策略
@@ -2157,18 +1149,7 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
  *   · 勾上「适应宽度」后把列压到能一屏放下全部列（1440 下 8 列约 165px），
  *     代价是标题会换行 —— 由人自己权衡，不替人决定。
  * ======================================================================== */
-[data-dsh-studio] .ds-col {
-  flex: 1 1 200px;
-  width: auto;
-  min-width: 200px;
-  max-width: 360px;
-}
 
-[data-dsh-studio] .ds-board[data-fit="1"] .ds-col {
-  flex: 1 1 0;
-  min-width: 160px;
-  max-width: none;
-}
 
 
 /* 效能页「用例缺口」：可执行覆盖低于目标时，直接列出该补的卡（点一行跳过去） */

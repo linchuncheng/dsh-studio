@@ -43,18 +43,15 @@ export function Button({ variant = "default", size = "default", ...rest }: any) 
 export { BoarduiButton as ButtonBase, BoarduiButtonLink as ButtonLink };
 
 /* -------------------------------------------------------------------------- */
-/* 表单控件：把 legacy 的 value / onChange(e) / className:'ds-input' 语义      */
-/* 翻译成 react-aria 的 value / onChange(string) / 组件 className。            */
-/* 组件本体仍是 BoardUI 源码（TextField + InputBase），一行没改。                */
+/* 表单控件：把 legacy 的 value / onChange(e) 语义翻译成 react-aria 的           */
+/* value / onChange(string)。组件本体仍是 BoardUI 源码（TextField + InputBase）。 */
+/* 迁移已收官，调用点不再传手写样式类，这里只保留传入的 Tailwind 类。             */
 /* -------------------------------------------------------------------------- */
-
-/** legacy 的样式类由我们自己的 CSS 负责，不往 BoardUI 的壳子上挂。 */
-const LEGACY_CLASS = new Set(["ds-input", "ds-textarea", "ds-field", "ds-select"]);
 
 function extraClasses(className: unknown): string {
   return String(className ?? "")
     .split(/\s+/)
-    .filter((name) => name !== "" && !LEGACY_CLASS.has(name))
+    .filter((name) => name !== "")
     .join(" ");
 }
 
@@ -214,17 +211,15 @@ export function Select({
 }
 
 /* -------------------------------------------------------------------------- */
-/*  状态标签：legacy 用 ds-chip / ds-chip-blocked / ds-chip-bug / ds-chip-code   */
-/*  这类 class 表达语义，这里翻译成 BoardUI Chip 的 color + variant。            */
+/*  状态标签：颜色由 variant / data-* 语义决定（迁移前是 ds-chip-* 这类 class）。  */
 /* -------------------------------------------------------------------------- */
 
-export function Chip({ className, variant, ...rest }: any) {
-  const into = String(className ?? "");
+export function Chip({ variant, ...rest }: any) {
   const color =
     variant ??
-    (into.includes("ds-chip-blocked") || into.includes("ds-chip-bug") || rest["data-blocked"] === "1" || rest["data-danger"] === "1"
+    (rest["data-blocked"] === "1" || rest["data-danger"] === "1"
       ? "rose"
-      : into.includes("ds-chip-code") || rest["data-svc-missing"] === "1"
+      : rest["data-svc-missing"] === "1"
         ? "soft"
         : "gray");
   // caption 是 12/16/500 —— 与原来 11px 的小标签最接近，换 bold(14) 会把行高撑起来
