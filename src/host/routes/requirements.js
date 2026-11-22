@@ -5,6 +5,8 @@ import { splitRequirement } from '../split.js'
 import { resolveSigner } from '../access.js'
 import { rejectUnknownFields } from '../route-contract.js'
 import { signoffActorKind } from '../intervention.js'
+import { publishNoteMentions } from '../mention-note.js'
+import { parseMentions } from '../dispatcher.js'
 import {
   REQ_STATUS_LABEL,
   cleanId,
@@ -26,7 +28,7 @@ import {
   taskExitGate,
 } from '../executor.js'
 import { randomBytes } from 'node:crypto'
-const INJECTED = ["createTask","deleteRequirementFolder","publicState","readJsonBody","sendJson"]
+const INJECTED = ["commentTask","createTask","deleteRequirementFolder","getDispatcher","publicState","readJsonBody","sendJson"]
 let host = {
   createTask: () => {},
   deleteRequirementFolder: async () => ({}),
@@ -173,7 +175,15 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     })
     void task
     const signed = store.snapshot().tasks.find(item => item.id === id)
-    host.sendJson(res, 200, { ok: true, task: signed, gate: taskExitGate(store.snapshot(), signed), state: host.publicState(store) })
+    /* 签字备注里 @某人（例如「遗留问题 @开发工程师」）也要能叫起人。
+       签字结论本来就会显示在卡上，所以只在真的 @ 了某人的时候才补评论。 */
+    const noteOut = action === 'sign'
+      ? await publishNoteMentions(
+        { store, commentTask: host.commentTask, dispatcher: typeof host.getDispatcher === 'function' ? host.getDispatcher() : undefined, parseMentions },
+        { taskId: id, note, by, commentMode: 'mentions' },
+      )
+      : { mentions: [], dispatched: [], commented: false }
+    host.sendJson(res, 200, { ok: true, task: signed, gate: taskExitGate(store.snapshot(), signed), ...noteOut, state: host.publicState(store) })
     return true
   }
   if (method === 'POST' && route === '/requirement/save') {
