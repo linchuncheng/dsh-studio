@@ -35,9 +35,13 @@ export async function publishNoteMentions(deps, options = {}) {
   const mentions = parseMentions(note, config)
   const looksLikeReview = /评审|驳回|打回|要改|不通过/.test(note) || mentions.length > 0
   if (looksLikeReview === false) return { mentions: [], dispatched: [], commented: false }
-  /* 评审意见要能在讨论区看到：以前它只躺在 coding.review.note 里，对方读卡时看不到。 */
+  /* 评审意见要能在讨论区看到：以前它只躺在 coding.review.note 里，对方读卡时看不到。
+     commentMode='mentions' 时只在有人被 @ 的情况才补评论（验收签字 / 清单备注这类
+     本来就会显示在卡上的文字，不必每条都复制成评论）。 */
+  const commentMode = String(options.commentMode ?? 'always')
+  const shouldComment = commentMode === 'mentions' ? mentions.length > 0 : true
   let commented = false
-  if (typeof commentTask === 'function') {
+  if (shouldComment && typeof commentTask === 'function') {
     try {
       await commentTask(store, taskId, `**评审意见（${by}）**\n\n${note}`, by, 'human')
       commented = true

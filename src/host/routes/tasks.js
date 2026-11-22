@@ -542,7 +542,15 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
       return task
     })
     const task = snapshot.tasks.find(entry => entry.id === id)
-    host.sendJson(res, 200, { ok: true, task, state: host.publicState(store) })
+    /* 勾/取消清单时写的备注里 @某人（例如「这条 @开发工程师 补一下」）也要能叫起人。
+       备注本身会挂在清单项上，所以只在真的 @ 了某人的时候才补评论。 */
+    const noteOut = action === 'toggle' && String(body.note ?? '').trim() !== ''
+      ? await publishNoteMentions(
+        { store, commentTask: host.commentTask, dispatcher: host.getDispatcher(), parseMentions },
+        { taskId: id, note: String(body.note ?? ''), by, commentMode: 'mentions' },
+      )
+      : { mentions: [], dispatched: [], commented: false }
+    host.sendJson(res, 200, { ok: true, task, ...noteOut, state: host.publicState(store) })
     return true
   }
   if (method === 'POST' && route === '/task/case') {

@@ -86,3 +86,24 @@ test('publishNoteMentions：派单失败要如实记下来，不吞掉', async (
   assert.equal(out.dispatched.length, 1)
   assert.match(out.dispatched[0], /failed.*额度不足/)
 })
+
+test('publishNoteMentions：commentMode=mentions 时，没 @ 就不补评论（签字/清单备注本来就在卡上）', async () => {
+  let commented = false
+  const out = await publishNoteMentions({
+    store: makeStore(),
+    commentTask: async () => { commented = true },
+    dispatcher: {},
+    parseMentions,
+  }, { taskId: 't-1', note: '验收通过，功能符合预期', by: '张三', commentMode: 'mentions' })
+  assert.equal(commented, false, '普通签字结论不该被复制成评论')
+  assert.equal(out.commented, false)
+
+  const withMention = await publishNoteMentions({
+    store: makeStore(),
+    commentTask: async () => { commented = true },
+    dispatcher: { dispatchMention: async () => {} },
+    parseMentions,
+  }, { taskId: 't-1', note: '遗留：库存回滚没覆盖 @开发工程师 跟进', by: '张三', commentMode: 'mentions' })
+  assert.equal(withMention.commented, true, '真 @ 了人才补评论')
+  assert.deepEqual(withMention.mentions.map(m => m.name), ['开发工程师'])
+})
