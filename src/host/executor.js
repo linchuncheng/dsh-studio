@@ -152,6 +152,23 @@ export function resolveCaseUrl(http, env, config) {
   return resolveAllowedUrl(raw, env.baseUrl, config.testing.allowHosts)
 }
 
+/**
+ * 每一步实际发出的请求头 = 环境头 → 用例顶层 headers → 该步 headers（后者覆盖前者），
+ * 三层都做变量替换。以前只认顶层 headers：多步用例里「登录步不该带业务 cookie」这类需求
+ * 无解，写了 step.headers 也会被静默丢弃（sanitize 不收、执行器不读）。
+ */
+export function stepHeaders(envHeaders, caseHeaders, stepHeadersRaw, vars) {
+  const out = {}
+  for (const source of [envHeaders ?? {}, caseHeaders ?? {}, stepHeadersRaw ?? {}]) {
+    for (const [key, value] of Object.entries(source)) {
+      const name = String(key).trim()
+      if (name === '') continue
+      out[name] = substituteVars(value, vars)
+    }
+  }
+  return out
+}
+
 /** 跑一条接口用例：发请求、比状态码、比响应体片段。 */
 /** 把 {{变量}} 换成当前上下文里的值；没有的变量原样留着，方便一眼看出漏配。 */
 export function substituteVars(text, vars) {
@@ -279,8 +296,7 @@ async function runHttpCase(item, env, config, seedVars) {
       stepResults.push({ i: index + 1, method: step.method, url: renderedUrl, ok: false, status: 0, ms: Date.now() - stepStarted, error: error.message, preview: '' })
       break
     }
-    const headers = { ...env.headers }
-    for (const [key, value] of Object.entries(item.http.headers ?? {})) headers[key] = substituteVars(value, vars)
+    const headers = stepHeaders(env.headers, item.http.headers, step.headers, vars)
     /* redirect: 'manual' —— 302 到 169.254.169.254 这类内网地址时不要把请求跟过去，
        直接把 3xx 当结果返回（用例自己判断）。 */
     const init = { method: step.method, headers, signal: AbortSignal.timeout(timeout), redirect: 'manual' }

@@ -1236,6 +1236,9 @@ export function sanitizeCaseHttp(raw) {
           expectStatus: Number.isInteger(Number(target.expectStatus)) ? Math.max(0, Math.min(599, Number(target.expectStatus))) : 0,
           expectContains: String(target.expectContains ?? '').slice(0, 300),
           extract: pickVars(target.extract),
+          // 每一步可以带自己的请求头，执行时覆盖顶层 headers：
+          // 「先登录拿会话、再用会话打业务接口」这类链式用例，登录步不该带业务 cookie。
+          headers: pickVars(target.headers),
         }
       }).filter(step => step.url !== '')
     : []

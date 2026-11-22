@@ -12,7 +12,13 @@
 export function isExecutable(testCase) {
   const item = testCase ?? {}
   const http = item.http
-  if (http !== null && typeof http === 'object' && String(http.url ?? '').trim() !== '') return true
+  if (http !== null && typeof http === 'object') {
+    if (String(http.url ?? '').trim() !== '') return true
+    /* 多步用例常常只写 steps、不写顶层 url（顶层只是第一步的重复）。
+       以前这种直接判成草稿 —— 明明跑得动、也会真开缺陷卡，覆盖率却不认它。 */
+    const steps = Array.isArray(http.steps) ? http.steps : []
+    if (steps.length > 0 && steps.every(step => String(step?.url ?? '').trim() !== '')) return true
+  }
   const shell = item.shell
   if (shell !== null && typeof shell === 'object' && String(shell.command ?? '').trim() !== '') return true
   if (item.db !== null && item.db !== undefined && typeof item.db === 'object') return true
