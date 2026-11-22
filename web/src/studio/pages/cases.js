@@ -265,7 +265,7 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
           h('button', { className: 'ds-btn ds-btn-ghost', disabled: currentPage <= 1, onClick: () => setPage(currentPage - 1) }, '上一页'),
           h('button', { className: 'ds-btn ds-btn-ghost', disabled: currentPage >= totalPages, onClick: () => setPage(currentPage + 1) }, '下一页'),
         ),
-        note === '' ? null : h('div', { className: 'ds-hint', style: { marginTop: 6 } }, note),
+        note === '' ? null : h('div', { className: 'ds-hint', style: { marginTop: 8 } }, note),
         regressions.length === 0 ? null : h('div', { className: 'ds-reg-list' },
           h('span', { className: 'ds-hint' }, '最近回归：'),
           regressions.slice(0, 4).map(item => h('span', {

@@ -117,7 +117,7 @@ export function ReleasesPage({ state, onOpenTask }) {
 
   const listPane = h('div', { className: 'ds-req-list' },
           
-    h('div', { className: 'ds-row', style: { justifyContent: 'space-between', marginBottom: 6 } },
+    h('div', { className: 'ds-row', style: { justifyContent: 'space-between', marginBottom: 8 } },
       h('span', { className: 'ds-hint' }, `${items.length} 个版本`),
       h('button', { className: 'ds-btn', onClick: createNew }, '＋ 新建版本'),
     ),
@@ -356,7 +356,7 @@ export function ReleasesPage({ state, onOpenTask }) {
             h('div', { style: { borderTop: '1px solid var(--ds-line)', margin: '10px 0' } }),
             // 部署环境：这里只留痕，平台不接 CD，也不会去调任何部署脚本。
             h('div', { className: 'ds-hint' }, '上过哪些环境（只登记，不触发部署）'),
-            (release.deploys ?? []).length === 0 ? null : h('div', { className: 'ds-row', style: { flexWrap: 'wrap', gap: 8, marginTop: 6 } },
+            (release.deploys ?? []).length === 0 ? null : h('div', { className: 'ds-row', style: { flexWrap: 'wrap', gap: 8, marginTop: 8 } },
               release.deploys.map(item => h('span', {
                 key: item.id,
                 className: 'ds-chip',
@@ -386,7 +386,7 @@ export function ReleasesPage({ state, onOpenTask }) {
                 },
               }, '登记部署'),
             ),
-            h('div', { className: 'ds-hint', style: { marginTop: 10 } }, '部署与灰度记录（最近 8 条）'),
+            h('div', { className: 'ds-hint', style: { marginTop: 12 } }, '部署与灰度记录（最近 8 条）'),
             (() => {
               const GRAY = { pending: '待开始', running: '灰度中', passed: '已通过', rolled_back: '已回滚' }
               const rows = [
@@ -395,7 +395,7 @@ export function ReleasesPage({ state, onOpenTask }) {
               ].filter(entry => entry.at).sort((a, b) => a.at - b.at).slice(-8).reverse()
               if (rows.length === 0) return h('div', { className: 'ds-empty' }, '还没有部署或灰度记录。')
               return rows.map(entry => h('div', { key: `${entry.at}-${entry.kind}-${entry.text}`, className: 'ds-hint' },
-                h('span', { className: 'ds-chip', style: { marginRight: 6 } }, entry.kind === 'gray' ? '灰度' : '部署'),
+                h('span', { className: 'ds-chip', style: { marginRight: 8 } }, entry.kind === 'gray' ? '灰度' : '部署'),
                 `${fmtDate(entry.at)} · ${entry.text} · ${entry.by}${entry.note === '' || entry.note === undefined ? '' : `：${entry.note}`}`))
             })(),
           ),

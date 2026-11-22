@@ -1183,11 +1183,11 @@ function Drawer({ task, state, onClose, onChanged }) {
         h('div', { className: 'ds-sec-body' },
           designDrafts.length === 0
             ? h('div', { className: 'ds-empty' }, '还没有设计稿：加两稿以上才好比较')
-            : h('div', null, designDrafts.map(item => h('div', { key: item.id, className: 'ds-listrow', style: { marginBottom: 6 } },
+            : h('div', null, designDrafts.map(item => h('div', { key: item.id, className: 'ds-listrow', style: { marginBottom: 8 } },
               h('div', { className: 'ds-listrow-main' },
                 h('div', null,
                   h(ChipField, { className: 'ds-chip', 'data-on': item.id === task.design?.chosenId ? '1' : '0' }, item.id === task.design?.chosenId ? '已定案' : '待选'),
-                  h('span', { style: { marginLeft: 6 } }, item.name),
+                  h('span', { style: { marginLeft: 8 } }, item.name),
                 ),
                 item.link === '' ? null : h('a', { className: 'ds-art-ref', href: item.link, target: '_blank', rel: 'noreferrer' }, item.link),
                 item.note === '' ? null : h('div', { className: 'ds-hint' }, item.note),
@@ -1205,9 +1205,9 @@ function Drawer({ task, state, onClose, onChanged }) {
             h('button', { className: 'ds-btn', disabled: busy, onClick: () => void designAction('changes') }, '要求修改'),
             h('button', { className: 'ds-btn', disabled: busy, onClick: () => void editDesignMetrics() }, '还原度/规范体检'),
           ),
-          task.design?.note ? h('div', { className: 'ds-hint', style: { marginTop: 6 } }, `评审意见：${task.design.note}`) : null,
-          task.design?.diff == null ? null : h('div', { className: 'ds-hint', style: { marginTop: 6 } }, `还原度差异 ${task.design.diff.percent}%（越高越不还原）`),
-          task.design?.spec == null ? null : h('div', { className: 'ds-hint', style: { marginTop: 6 } }, `规范体检：查了 ${task.design.spec.checked} 个元素，${task.design.spec.violations} 处野值`),
+          task.design?.note ? h('div', { className: 'ds-hint', style: { marginTop: 8 } }, `评审意见：${task.design.note}`) : null,
+          task.design?.diff == null ? null : h('div', { className: 'ds-hint', style: { marginTop: 8 } }, `还原度差异 ${task.design.diff.percent}%（越高越不还原）`),
+          task.design?.spec == null ? null : h('div', { className: 'ds-hint', style: { marginTop: 8 } }, `规范体检：查了 ${task.design.spec.checked} 个元素，${task.design.spec.violations} 处野值`),
         ),
       ),
       h('div', { className: 'ds-sec', style: hideWhen('coding') },
@@ -1219,7 +1219,7 @@ function Drawer({ task, state, onClose, onChanged }) {
               mine.busy ? '汇总中…' : '把这张卡沉淀成技能'),
             h('span', { className: 'ds-hint' }, '只搬已有的验收锚点、跑过的命令、踩过的坑，不做推断；没有证据的卡不给沉淀。'),
           ),
-          mine.line === '' ? null : h('div', { className: 'ds-hint', style: { marginTop: 6 } }, mine.line),
+          mine.line === '' ? null : h('div', { className: 'ds-hint', style: { marginTop: 8 } }, mine.line),
         ),
       ),
       h('div', { className: 'ds-sec', style: hideWhen('coding') },
@@ -1255,7 +1255,7 @@ function Drawer({ task, state, onClose, onChanged }) {
               ),
               qualityRun.line === ''
                 ? null
-                : h('div', { className: 'ds-hint', 'data-quality': quality?.ok === true ? 'ok' : 'bad', style: { marginTop: 6 } }, qualityRun.line),
+                : h('div', { className: 'ds-hint', 'data-quality': quality?.ok === true ? 'ok' : 'bad', style: { marginTop: 8 } }, qualityRun.line),
               quality === null || quality.output === ''
                 ? null
                 : h('pre', {
@@ -1287,7 +1287,7 @@ function Drawer({ task, state, onClose, onChanged }) {
               ),
               (mergeGate.blockers ?? []).length === 0
                 ? null
-                : h('div', { className: 'ds-hint', 'data-warn': '1', style: { marginTop: 6 } },
+                : h('div', { className: 'ds-hint', 'data-warn': '1', style: { marginTop: 8 } },
                   mergeGate.blockers.slice(0, 5).map((item, index) => h('div', { key: 'mg-' + index }, `· ${item}`))),
             ),
           h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' } },
@@ -1301,7 +1301,7 @@ function Drawer({ task, state, onClose, onChanged }) {
             }, '合并 MR'),
             h('span', { className: 'ds-hint' }, '需要卡片关联 MR、且配了 GitLab 项目。'),
           ),
-          mergeRun.line === '' ? null : h('div', { className: 'ds-hint', style: { marginTop: 6 } }, mergeRun.line),
+          mergeRun.line === '' ? null : h('div', { className: 'ds-hint', style: { marginTop: 8 } }, mergeRun.line),
         ),
       ),
       h('div', { className: 'ds-sec', style: hideWhen('coding') },
@@ -1330,10 +1330,10 @@ function Drawer({ task, state, onClose, onChanged }) {
               verify.line === ''
                 ? (coding.verified === null || coding.verified === undefined
                   ? null
-                  : h('div', { className: 'ds-hint', 'data-verify': coding.verified.ok ? 'ok' : 'bad', style: { marginTop: 6 } },
+                  : h('div', { className: 'ds-hint', 'data-verify': coding.verified.ok ? 'ok' : 'bad', style: { marginTop: 8 } },
                     `${coding.verified.ok ? '' : '注意 · '}上次核对 ${fmtTime(coding.verified.at)}：分支 ${coding.verified.branch} · 提交 ${coding.verified.commitCount.actual} 个 · 改动 ${coding.verified.fileCount.actual} 个文件` +
                     `${coding.verified.missingCommits.length + coding.verified.missingFiles.length === 0 ? '' : ` · ${coding.verified.missingCommits.length + coding.verified.missingFiles.length} 项对不上`}`))
-                : h('div', { className: 'ds-hint', 'data-verify': verify.ok === true ? 'ok' : 'bad', style: { marginTop: 6 } },
+                : h('div', { className: 'ds-hint', 'data-verify': verify.ok === true ? 'ok' : 'bad', style: { marginTop: 8 } },
                   `${verify.ok === true ? '' : '注意 · '}${verify.line}`),
                               coding.gitlab === null || coding.gitlab === undefined
                 ? null
@@ -1480,7 +1480,7 @@ function Drawer({ task, state, onClose, onChanged }) {
                 h('div', { className: 'ds-art-title' },
                   artifactHasBody(item)
                     ? null
-                    : h('span', { className: 'ds-card-warn', title: '这条交付物还没写正文，云盘文档里只有标题' }, statusDot(h, 'warn', { style: { marginRight: 6 } })),
+                    : h('span', { className: 'ds-card-warn', title: '这条交付物还没写正文，云盘文档里只有标题' }, statusDot(h, 'warn', { style: { marginRight: 8 } })),
                   item.title,
                 ),
                 h('div', { className: 'ds-art-ref' }, `正文 ${typeof item.contentLength === 'number' ? item.contentLength : String(item.content ?? '').length} 字${artifactHasBody(item) ? '' : ' · 缺正文'}${item.doc?.url ? '' : ' · 还没归档'}`),
@@ -1540,7 +1540,7 @@ function Drawer({ task, state, onClose, onChanged }) {
               placeholder: '写清楚做了什么、结论、风险。这段会原样写进云盘文档正文。',
               onChange: event => setArtEdit({ ...artEdit, content: event.target.value }),
             }),
-            h('div', { className: 'ds-row', style: { justifyContent: 'flex-end', marginTop: 6 } },
+            h('div', { className: 'ds-row', style: { justifyContent: 'flex-end', marginTop: 8 } },
               h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, onClick: () => setArtEdit(null) }, '取消'),
               h('button', { className: 'ds-btn ds-btn-primary', disabled: busy, onClick: () => void saveArtifactContent({ id: artEdit.id }) }, '保存正文并同步'),
             ),
@@ -1560,11 +1560,11 @@ function Drawer({ task, state, onClose, onChanged }) {
             }),
           ),
           h(MdField, {
-            className: 'ds-input', style: { width: '100%', marginTop: 6 }, rows: 5, value: artifact.content,
+            className: 'ds-input', style: { width: '100%', marginTop: 8 }, rows: 5, value: artifact.content,
             placeholder: '交付物正文（Markdown）。这段会原样写成云盘文档的正文：做什么、怎么做、结论、风险。留空也能登记，但云盘里只有标题。',
             onChange: event => setArtifact({ ...artifact, content: event.target.value }),
           }),
-          h('div', { className: 'ds-row', style: { justifyContent: 'flex-end', marginTop: 6 } },
+          h('div', { className: 'ds-row', style: { justifyContent: 'flex-end', marginTop: 8 } },
             h('button', {
               className: 'ds-btn', disabled: busy || artifact.title.trim() === '',
               onClick: () => void addArtifact(),
@@ -1680,7 +1680,7 @@ function Drawer({ task, state, onClose, onChanged }) {
           (() => {
             const points = (state.requirements ?? []).find(entry => entry.id === task.requirementId)?.points ?? []
             if (points.length === 0) return null
-            return h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', marginTop: 6 } },
+            return h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', marginTop: 8 } },
               h('span', { className: 'ds-hint' }, '这条用例算在'),
               h(SelectField, {
                 className: 'ds-select', style: { width: 240, height: 28 }, value: newCase.pointId ?? '',
@@ -1692,7 +1692,7 @@ function Drawer({ task, state, onClose, onChanged }) {
               h('span', { className: 'ds-hint' }, '默认跟卡上的功能点；改这里只影响新加的这条'),
             )
           })(),
-          h('div', { className: 'ds-row', style: { gap: 8, flexWrap: 'wrap', marginTop: 6 } },
+          h('div', { className: 'ds-row', style: { gap: 8, flexWrap: 'wrap', marginTop: 8 } },
             h(SelectField, {
               className: 'ds-select', style: { width: 96 }, value: newCase.type ?? 'functional',
               onChange: event => setNewCase({ ...newCase, type: event.target.value }),

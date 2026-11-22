@@ -155,7 +155,7 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
     const engineLine = engine === null
       ? null
       : h('div', { className: 'ds-hint', style: { marginTop: 4 } }, '引擎计量（派单收尾取自宿主 tokenMeasurement）：total ' + Math.round(engine.total / 1000) + 'k · 输入 ' + Math.round(engine.input / 1000) + 'k · 缓存读 ' + Math.round(engine.cacheRead / 1000) + 'k · 输出 ' + Math.round(engine.output / 1000) + 'k')
-    return h('div', { style: CTX_DETAIL }, h('div', { className: 'ds-hint', style: { marginBottom: 6 } }, head), stack, legend, engineLine,
+    return h('div', { style: CTX_DETAIL }, h('div', { className: 'ds-hint', style: { marginBottom: 8 } }, head), stack, legend, engineLine,
       h('div', { className: 'ds-hint', style: { margin: '10px 0 2px' } }, '每轮上下文增长'), chart,
       h('div', { className: 'ds-hint' }, trend.length + ' 个采样点 · ' + (drops.length === 0 ? '全程没有压缩' : '压缩 ' + drops.length + ' 次（虚线处掉了 ' + drops.map(drop => drop.drop + '%').join(' / ') + '）')))
   }
@@ -381,7 +381,7 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
                   h('b', { 'data-warn': item.reworkRate !== null && item.reworkRate >= 40 ? '1' : '0' },
                     `${item.done}/${item.cards} 完成 · 一次过 ${item.firstPassRate === null ? '—' : item.firstPassRate + '%'}`),
                 )),
-                h('div', { className: 'ds-hint', style: { marginTop: 6 } },
+                h('div', { className: 'ds-hint', style: { marginTop: 8 } },
                   `合计：派单 ${quality.totals.dispatched} 次 · 平均耗时 ${quality.totals.avgMs > 0 ? Math.round(quality.totals.avgMs / 1000) + ' 秒' : '—'} · 返工率 ${quality.totals.reworkRate === null ? '—' : quality.totals.reworkRate + '%'} · AI 失败 ${quality.totals.failures} 次 · 缺陷重开 ${quality.totals.reopens} 次`),
                 h('div', { className: 'ds-hint' }, quality.cost?.note ?? ''),
               ),
