@@ -47,8 +47,9 @@ const clientPath = join(root, 'client.src.js')
 const clientLines = readFileSync(clientPath, 'utf8').split(/\r?\n/)
 const clientDefs = []
 clientLines.forEach((line, index) => {
-  const m = /^(\s*)\.(ds-[a-z0-9-]+)[^{]*\{/.exec(line)
-  if (m !== null) clientDefs.push({ index, name: m[2], line })
+  if (!/^\s*[.\[]/.test(line) || !line.includes('{')) return
+  const head = line.slice(0, line.indexOf('{'))
+  for (const m of head.matchAll(/\.(ds-[a-z0-9-]+)/g)) clientDefs.push({ index, name: m[1], line })
 })
 
 /* 定义面 2：index.css 里 [data-dsh-studio] 选择器块 */
@@ -64,6 +65,13 @@ const cssBlocks = []
   }
 }
 
+/* 永远不自动删：Markdown 排版作用域、以及 tests/overlay-titlebar.test.mjs 断言「规则必须存在」的那几条。
+   覆盖层迁到 BoardUI 后这些类可能已无消费者，但删了会让测试红；要删得先改测试判据。 */
+const NEVER_DELETE = new Set([
+  'ds-md', 'ds-md-field', 'ds-md-bar', 'ds-md-preview',
+  'ds-drawer', 'ds-drawer-wrap', 'ds-modal-wrap', 'ds-side-wrap', 'ds-side-mask', 'ds-side', 'ds-palette-veil',
+])
+
 const countReferences = name => {
   const total = referenceCount.get(name) ?? 0
   const definedInClient = clientDefs.filter(d => d.name === name).length
@@ -71,8 +79,8 @@ const countReferences = name => {
   return total - definedInClient - definedInCss
 }
 
-const deadInClient = clientDefs.filter(d => countReferences(d.name) <= 0)
-const deadCssBlocks = cssBlocks.filter(b => b.names.every(n => countReferences(n) <= 0))
+const deadInClient = clientDefs.filter(d => !NEVER_DELETE.has(d.name) && countReferences(d.name) <= 0)
+const deadCssBlocks = cssBlocks.filter(b => b.names.every(n => !NEVER_DELETE.has(n) && countReferences(n) <= 0))
 
 console.log(`引用面 ${sourceFiles.length} 个文件；动态拼类名前缀 ${dynamicPrefixes.size} 个`)
 if (dynamicPrefixes.size > 0) console.log('  需人工确认（动态）：', [...dynamicPrefixes].join(' '))
