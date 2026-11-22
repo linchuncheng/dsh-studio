@@ -875,7 +875,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
             h('div', { className: PANEL_BODY },
               h('div', { className: ROW },
                 h('span', { className: HINT }, '排序号'),
-                h(TextField, { style: { width: 90 }, value: reqOrder, onChange: e => setReqOrder(e.target.value) }),
+                h(TextField, { 'aria-label': '排序号', style: { width: 90 }, value: reqOrder, onChange: e => setReqOrder(e.target.value) }),
                 h('span', { className: HINT }, '被依赖的需求没交付，这条需求的准出会被拦'),
               ),
               h('div', { className: ROW, style: { flexWrap: 'wrap', gap: 12 } },
