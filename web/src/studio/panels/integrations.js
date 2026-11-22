@@ -8,8 +8,8 @@
  *   - 表单控件仍走 TextField / SelectField / ChipField / CheckField / SwitchToggle 适配器
  *   - 列表分区不再走共享的 Editor（那是 ds-panel 那套），这里按同一套 token 内联
  *
- * 最外层容器暂时保留 `ds-panel` 类：设置页的壳由主会话统一迁移，这里只留类名、
- * 视觉上由 SHELL_STYLE 抵消 `.ds-panel` 的描边/底色/外边距，避免分区卡片套卡片。
+ * 最外层容器是纯 Tailwind（设置页外壳已迁 BoardUI），不再借 `.ds-panel` 过渡。原注释：
+ * 分区卡片自带描边与底色，容器不再叠加表面。
  */
 
 import { client } from '../context.js'
@@ -17,9 +17,7 @@ import { Button } from '../../boardui/index'
 import { EmptyState } from '../../boardui/empty-state'
 
 /* 过渡期的壳：类名留给 pages-probe 的「设置」判据与主会话的壳迁移，
-   视觉归 SHELL_STYLE（内联样式优先级高于 .ds-panel 的样式表规则）。 */
-const SHELL_STYLE = { border: 'none', background: 'none', borderRadius: 0, marginBottom: 0, overflow: 'visible' }
-const PANE = 'ds-panel flex min-w-0 flex-col gap-3'
+const PANE = 'flex min-w-0 flex-col gap-3'
 
 const SECTION = 'flex min-w-0 flex-col gap-3 rounded-xl border border-separator-border bg-background-primary-default p-4'
 const SECTION_HEAD = 'flex flex-wrap items-start justify-between gap-3'
@@ -115,7 +113,7 @@ export function ReposPanel({ config, onChanged }) {
     ),
   ))
 
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'integrations-repos' },
+  return h('div', { className: PANE, 'data-panel': 'integrations-repos' },
     listSection({
       h, hook: 'repos',
       title: '代码仓库（GitLab，可以有多个）',
@@ -240,7 +238,7 @@ export function BotsPanel({ config, onChanged }) {
     ),
   ))
 
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'integrations-bots' },
+  return h('div', { className: PANE, 'data-panel': 'integrations-bots' },
     listSection({
       h, hook: 'bots',
       title: '飞书机器人（可以有多个）',
@@ -412,7 +410,7 @@ export function SkillsPanel({ config, onChanged }) {
 
   const stray = onDisk.filter(name => !skills.some(skill => skill.name === name))
 
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'integrations-skills' },
+  return h('div', { className: PANE, 'data-panel': 'integrations-skills' },
     listSection({
       h, hook: 'skills',
       title: '技能库（skills-manager）',
@@ -531,7 +529,7 @@ export function DocsSinkPanel({ config, onChanged }) {
   }
   /* 出口选择：以前是原生 <select class="ds-input">，现在走 SelectField（BoardUI 的
      react-aria Select）。探针靠面板根上的 data-docs-sink 读出口，不依赖控件长相。 */
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-docs-sink': provider, 'data-panel': 'integrations-docs' },
+  return h('div', { className: PANE, 'data-docs-sink': provider, 'data-panel': 'integrations-docs' },
     h('div', { className: SECTION, 'data-section': 'provider' },
       h('div', { className: SECTION_TITLE }, '文档出口'),
       h('div', { className: DESC }, '交付物永远以本地 artifact 为真源；这里只决定同步时投递到哪。both 时飞书为主，WeKnora 失败只记 error、不阻塞交付物登记。'),

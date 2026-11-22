@@ -695,24 +695,8 @@
 [data-dsh-studio] .ds-an-fill { min-width: 2px; }
 
 /* 派单运行状态里的日志行（2026-11-10） */
-[data-dsh-studio] .ds-log {
-  margin-top: 8px;
-  border-top: 1px dashed var(--border);
-  padding-top: 8px;
-  display: grid;
-  gap: 4px;
-  max-height: 168px;
-  overflow: auto;
-}
-[data-dsh-studio] .ds-log-line {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--muted-foreground);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+
+
 
 
 /* 深色下把小字号的「彩色语义」提亮一档：它们在白底上足够，落到 #181b22 上会糊。 */
@@ -1087,7 +1071,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] .ds-an-grid .ds-panel-head .ds-hint { margin-left: 0 }
 [data-dsh-studio] .ds-an-grid .ds-an-foot { margin-top: auto }
 /* 设置页统一（2026-11-10）：面板成栈、内边距一致、输入控件在设置里也看得见边框 */
-[data-dsh-studio] .ds-pane-stack { display: flex; flex-direction: column; gap: 12px }
+
 [data-dsh-studio] .ds-pane-stack > .ds-panel { margin: 0 }
 [data-dsh-studio] .ds-pane-stack > .ds-panel > .ds-panel-head { padding: 8px 12px; border-bottom: 1px solid var(--border) }
 [data-dsh-studio] .ds-pane-stack > .ds-panel > .ds-panel-body { padding: 12px 12px}
@@ -1173,12 +1157,10 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio][data-theme="dark"] .ds-count[data-over="1"] { color: #ff9a9d; }
 
 /* 列负责人选择器：不要被列的 overflow 裁掉，列表可滚 */
-[data-dsh-studio] .ds-colpick { position: relative; z-index: 30; margin-top: 8px; }
-[data-dsh-studio] .ds-colpick-list { max-height: 220px; overflow-y: auto; border: 1px solid var(--border);
-  border-radius: 10px; background: var(--card); box-shadow: var(--ds-shadow); padding: 4px; }
-[data-dsh-studio] .ds-colpick .ds-mention-item { display: flex; gap: 8px; align-items: center; width: 100%;
-  padding: 4px 8px; border-radius: 10px; background: transparent; border: 0; text-align: left; cursor: pointer; font-size: 13px; }
-[data-dsh-studio] .ds-colpick .ds-mention-item:hover { background: var(--muted); }
+
+
+
+
 
 /* 需求页：列表/详情两栏收敛，杜绝横向溢出（2026-11-11） */
 [data-dsh-studio] .ds-req-grid { grid-template-columns: 300px minmax(0, 1fr) !important; gap: 16px !important; align-items: start; min-width: 0; }
@@ -1195,8 +1177,8 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] .ds-body { overflow-x: hidden; min-width: 0; }
 [data-dsh-studio] .ds-pane-stack, [data-dsh-studio] .ds-panel, [data-dsh-studio] .ds-panel-body { min-width: 0; max-width: 100%; }
 [data-dsh-studio] .ds-panel-head { flex-wrap: wrap; row-gap: 4px; }
-[data-dsh-studio] .ds-kv { min-width: 0; }
-[data-dsh-studio] .ds-kv dd { overflow-wrap: anywhere; }
+
+
 @media (max-width: 1100px) { [data-dsh-studio] .ds-req-grid { grid-template-columns: minmax(0, 1fr) !important; } }
 
 /* 业务提单条带与内嵌表单：条带横排换行；提单/查进度改成浮层，避免挤在窄列里 */
@@ -1428,24 +1410,11 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 
 /* 「列的负责人」：原来每个分组只有一条细分隔线，八个分组连成一片，扫读容易串行。
    改成一张张小卡片（描边 + 圆角 + 白底 + 一点点阴影），分组边界一眼看得见。 */
-[data-dsh-studio] .ds-colrow {
-  border: 1px solid var(--color-separator-border, var(--ds-line));
-  border-radius: 16px;
-  padding: 12px 12px;
-  margin-bottom: 12px;
-  background: var(--color-background-primary-default, var(--ds-card));
-  box-shadow: 0 1px 2px color-mix(in srgb, #101828 6%, transparent);
-}
 
-[data-dsh-studio] .ds-colrow:last-of-type {
-  border-bottom: 1px solid var(--color-separator-border, var(--ds-line));
-  margin-bottom: 0;
-}
 
-[data-dsh-studio] .ds-colrow-name {
-  font-size: 13px;
-  font-weight: 600;
-}
+
+
+
 
 /* ------------------------------------------- 同一行里只用一种控件语言 --- */
 /* BoardUI 自己的规矩是：**输入框灰底填充**（bg-background-tertiary-default），

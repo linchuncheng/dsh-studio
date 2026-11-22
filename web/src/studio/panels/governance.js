@@ -7,7 +7,7 @@
  *   - 审计日志用官方 Table + Pagination（真 <table> 语义，键盘可达）
  *   - 空态用 boardui/empty-state
  *
- * 最外层容器暂时保留 `ds-panel` 类：设置页的壳由主会话统一迁移；视觉由 SHELL_STYLE 抵消。
+ * 最外层容器是纯 Tailwind（设置页外壳已迁 BoardUI），不再借 `.ds-panel` 过渡。
  * 探针靠 data-* 钩子（data-design-gate / data-review-gate / data-case-gate / data-isolation-warning），
  * 不依赖样式类名。
  */
@@ -21,9 +21,8 @@ import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from 
 import { Pagination } from '../../components/base/pagination/pagination'
 import { Button } from '../../boardui/index'
 import { EmptyState } from '../../boardui/empty-state'
-
-const SHELL_STYLE = { border: 'none', background: 'none', borderRadius: 0, marginBottom: 0, overflow: 'visible' }
-const PANE = 'ds-panel flex min-w-0 flex-col gap-3'
+
+const PANE = 'flex min-w-0 flex-col gap-3'
 const SECTION = 'flex min-w-0 flex-col gap-3 rounded-xl border border-separator-border bg-background-primary-default p-4'
 const SECTION_HEAD = 'flex flex-wrap items-start justify-between gap-3'
 const SECTION_TITLE = 'text-title-2-semibold text-text-primary'
@@ -96,7 +95,7 @@ export function AccessPanel({ state, config, onChanged }) {
     toast(`正在导出 ${matched.length} 条审计记录`)
   }
 
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'governance-access' },
+  return h('div', { className: PANE, 'data-panel': 'governance-access' },
     h('div', { className: SECTION, 'data-section': 'members' },
       h('div', { className: SECTION_HEAD },
         h('div', { className: 'flex min-w-0 flex-col gap-1' },
@@ -313,7 +312,7 @@ export function ColumnsPanel({ state, onChanged }) {
   }
   const remove = (status, index) => void save(status, membersOf(status).filter((_, i) => i !== index), strategyOf(status))
 
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'governance-columns' },
+  return h('div', { className: PANE, 'data-panel': 'governance-columns' },
     h('div', { className: SECTION, 'data-section': 'gates' },
       h('div', { className: SECTION_TITLE }, '派活闸门'),
       h('div', { className: HINT }, '设计闸门：打开后，卡片进下面选中的列之前设计必须评审通过（验收时可 override 强推）。'),
@@ -464,7 +463,7 @@ export function StoragePanel({ state, onChanged }) {
     h('b', { className: 'min-w-0 break-all text-body-2-medium text-text-primary' }, value),
   )
 
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'governance-storage' },
+  return h('div', { className: PANE, 'data-panel': 'governance-storage' },
     h('div', { className: SECTION, 'data-section': 'ledger' },
       h('div', { className: SECTION_HEAD },
         h('div', { className: SECTION_TITLE }, '台账存储'),
@@ -573,7 +572,7 @@ export function HealthPanel({ state, config, onChanged }) {
     h('dd', { className: 'm-0 min-w-0 break-all text-body-2-regular text-text-primary' }, node),
   )
 
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'governance-health' },
+  return h('div', { className: PANE, 'data-panel': 'governance-health' },
     h('div', { className: SECTION, 'data-section': 'dispatch' },
       h('div', { className: SECTION_HEAD },
         h('div', { className: 'flex min-w-0 flex-col gap-1' },

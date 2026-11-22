@@ -6,7 +6,7 @@
  *   - 行 = 分隔线（1px + 末行去掉），动作用 BoardUI Button，状态用 Chip
  *   - 空态用 boardui/empty-state；列表分区不再走共享 Editor（ds-panel 那套）
  *
- * 最外层容器暂时保留 `ds-panel` 类：设置页的壳由主会话统一迁移；视觉由 SHELL_STYLE 抵消，
+ * 最外层容器是纯 Tailwind（设置页外壳已迁 BoardUI），不再借 `.ds-panel` 过渡。
  * 免得分区卡片外面再套一层卡片边框。
  */
 
@@ -17,8 +17,7 @@ import { client } from '../context.js'
 import { Button } from '../../boardui/index'
 import { EmptyState } from '../../boardui/empty-state'
 
-const SHELL_STYLE = { border: 'none', background: 'none', borderRadius: 0, marginBottom: 0, overflow: 'visible' }
-const PANE = 'ds-panel flex min-w-0 flex-col gap-3'
+const PANE = 'flex min-w-0 flex-col gap-3'
 const SECTION = 'flex min-w-0 flex-col gap-3 rounded-xl border border-separator-border bg-background-primary-default p-4'
 const SECTION_HEAD = 'flex flex-wrap items-start justify-between gap-3'
 const SECTION_TITLE = 'text-title-2-semibold text-text-primary'
@@ -155,7 +154,7 @@ export function LdapPanel({ config, onChanged }) {
     }
   }
 
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'platform-ldap' },
+  return h('div', { className: PANE, 'data-panel': 'platform-ldap' },
     h('div', { className: SECTION, 'data-section': 'ldap' },
       h('div', { className: SECTION_HEAD },
         h('div', { className: 'flex min-w-0 flex-col gap-1' },
@@ -347,7 +346,7 @@ export function CostsPanel({ config, onChanged, suggestModels }) {
       await onChanged()
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'platform-costs' },
+  return h('div', { className: PANE, 'data-panel': 'platform-costs' },
     h('div', { className: SECTION, 'data-section': 'budget' },
       h('div', { className: SECTION_TITLE }, '成本预算'),
       h('div', { className: GRID2 },
@@ -464,7 +463,7 @@ export function BusinessPanel({ config, onChanged }) {
     ),
   ))
 
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'platform-business' },
+  return h('div', { className: PANE, 'data-panel': 'platform-business' },
     listSection({
       h, hook: 'projects',
       title: '业务项目（一个项目可以挂很多张卡和很多个迭代）',

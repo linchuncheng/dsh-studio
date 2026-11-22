@@ -8,7 +8,7 @@
  *     （以前是 <label><控件/><span> 的嵌套 label，读屏念不出名字，点文字也不生效）
  *   - 列表分区不再走共享 Editor（ds-panel 那套），这里按同一套 token 内联
  *
- * 最外层容器暂时保留 `ds-panel` 类：设置页的壳由主会话统一迁移；视觉由 SHELL_STYLE 抵消，
+ * 最外层容器是纯 Tailwind（设置页外壳已迁 BoardUI），不再借 `.ds-panel` 过渡。
  * 免得分区卡片外面再套一层卡片边框。
  */
 
@@ -18,10 +18,9 @@ import { client } from '../context.js'
 import { Button } from '../../boardui/index'
 import { EmptyState } from '../../boardui/empty-state'
 
-/* 过渡期的壳类名（`ds-panel`）留给设置页的壳迁移，视觉归 SHELL_STYLE ——
+/* 容器是纯 Tailwind（设置页外壳已迁 BoardUI）。
    内联样式优先级高于样式表规则，正好把 `.ds-panel` 的描边/底色/外边距抵消掉。 */
-const SHELL_STYLE = { border: 'none', background: 'none', borderRadius: 0, marginBottom: 0, overflow: 'visible' }
-const PANE = 'ds-panel flex min-w-0 flex-col gap-3'
+const PANE = 'flex min-w-0 flex-col gap-3'
 /* 分区：面板里的一块内容 */
 const SECTION = 'flex min-w-0 flex-col gap-3 rounded-xl border border-separator-border bg-background-primary-default p-4'
 const SECTION_HEAD = 'flex flex-wrap items-start justify-between gap-3'
@@ -185,7 +184,7 @@ export function ExpertsPanel({ config, onChanged }) {
     ),
   ))
 
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'people-experts' },
+  return h('div', { className: PANE, 'data-panel': 'people-experts' },
     h('div', { className: SECTION, 'data-section': 'role-templates' },
       h('div', { className: SECTION_HEAD },
         h('div', { className: 'flex min-w-0 flex-col gap-1' },
@@ -393,7 +392,7 @@ export function TeamsPanel({ config, onChanged }) {
     ),
   ))
 
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'people-teams' },
+  return h('div', { className: PANE, 'data-panel': 'people-teams' },
     listSection({
       h, hook: 'teams',
       title: '专家团（一起干活）',
@@ -545,7 +544,7 @@ export function TestingPanel({ config, onChanged }) {
     ),
   )
 
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'people-testing' },
+  return h('div', { className: PANE, 'data-panel': 'people-testing' },
     form,
     h('div', { className: SECTION, 'data-section': 'run-flags' },
       h('div', { className: SECTION_HEAD },
@@ -677,7 +676,7 @@ export function EscalatePanel({ config, onChanged }) {
       await onChanged()
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
-  return h('div', { className: PANE, style: { ...SHELL_STYLE, marginTop: 16 }, 'data-panel': 'people-escalate' },
+  return h('div', { className: PANE, style: { marginTop: 16 }, 'data-panel': 'people-escalate' },
     h('div', { className: SECTION, 'data-section': 'escalate' },
       h('div', { className: SECTION_TITLE }, '通知升级'),
       fieldOf(h, '升级群 Webhook',
@@ -736,7 +735,7 @@ export function EnvironmentsPanel({ config, onChanged }) {
       setBusy(false)
     }
   }
-  return h('div', { className: PANE, style: SHELL_STYLE, 'data-panel': 'people-environments' },
+  return h('div', { className: PANE, 'data-panel': 'people-environments' },
     h('div', { className: SECTION, 'data-section': 'environments' },
       h('div', { className: SECTION_HEAD },
         h('div', { className: 'flex min-w-0 flex-col gap-1' },

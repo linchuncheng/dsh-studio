@@ -133,7 +133,7 @@ const PAGES = [
   ['版本', '.ds-panel, [data-empty-state], [data-task-row]', ''],
   ['项目', '[data-project-card], [data-empty-state], .ds-panel', ''],
   ['效能', '[data-stat-card], [data-chart-card]', '[data-task-row]'],
-  ['设置', '.ds-panel', ''],
+  ['设置', '[data-settings] [data-panel], [data-settings], [data-empty-state]', ''],
 ]
 
 let browser
