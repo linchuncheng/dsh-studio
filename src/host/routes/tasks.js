@@ -144,7 +144,7 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
     /* 设计评审备注里的 @ 同样要能叫起人（以前只有评论解析 @）。 */
     const noteOut = await publishNoteMentions(
       { store, commentTask: host.commentTask, dispatcher: host.getDispatcher(), parseMentions },
-      { taskId: id, note: String(incoming.note ?? ''), by },
+      { taskId: id, note: String(incoming.note ?? ''), by, label: '设计评审' },
     )
     host.sendJson(res, 200, { ok: true, design, ...noteOut, state: host.publicState(store) })
     return true
@@ -547,7 +547,7 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
     const noteOut = action === 'toggle' && String(body.note ?? '').trim() !== ''
       ? await publishNoteMentions(
         { store, commentTask: host.commentTask, dispatcher: host.getDispatcher(), parseMentions },
-        { taskId: id, note: String(body.note ?? ''), by, commentMode: 'mentions' },
+        { taskId: id, note: String(body.note ?? ''), by, commentMode: 'mentions', label: '清单备注' },
       )
       : { mentions: [], dispatched: [], commented: false }
     host.sendJson(res, 200, { ok: true, task, ...noteOut, state: host.publicState(store) })

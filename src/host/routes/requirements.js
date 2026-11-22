@@ -180,7 +180,7 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     const noteOut = action === 'sign'
       ? await publishNoteMentions(
         { store, commentTask: host.commentTask, dispatcher: typeof host.getDispatcher === 'function' ? host.getDispatcher() : undefined, parseMentions },
-        { taskId: id, note, by, commentMode: 'mentions' },
+        { taskId: id, note, by, commentMode: 'mentions', label: '验收签字' },
       )
       : { mentions: [], dispatched: [], commented: false }
     host.sendJson(res, 200, { ok: true, task: signed, gate: taskExitGate(store.snapshot(), signed), ...noteOut, state: host.publicState(store) })
