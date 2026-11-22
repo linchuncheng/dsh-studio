@@ -126,9 +126,9 @@ const AX_ROLES = new Set(['button','link','checkbox','radio','switch','textbox',
 // 每页「该有的东西」：至少一个能证明它不是空白页的标记；
 // 第三项是「必须真的存在」的组件标记（用来盯住新换的 BoardUI 组件，别被别的选择器蒙混）
 const PAGES = [
-  ['工作台', '.ds-body, [data-stat-card], .ds-reg-banner', ''],
+  ['工作台', '[data-insights-page], [data-stat-section], [data-regression-banner], [data-empty-state]', ''],
   ['看板', '.ds-col .ds-card, .ds-col', ''],
-  ['需求', '.ds-req-grid, [data-empty-state], .ds-req-desc', ''],
+  ['需求', '[data-requirements-page], [data-requirement-row], [data-requirement-desc], [data-empty-state]', ''],
   ['用例', '.ds-panel, [data-empty-state], [data-task-row]', ''],
   ['版本', '.ds-panel, [data-empty-state], [data-task-row]', ''],
   ['项目', '[data-project-card], [data-empty-state], .ds-panel', ''],

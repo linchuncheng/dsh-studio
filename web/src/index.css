@@ -278,32 +278,11 @@
   color: var(--destructive);
 }
 
-[data-dsh-studio] .ds-dw-tabs {
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--muted);
-}
 
-[data-dsh-studio] .ds-dw-tab {
-  height: 26px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--muted-foreground);
-  font-size: 12px;
-  cursor: pointer;
-}
 
-[data-dsh-studio] .ds-dw-tab[data-on="1"] {
-  background: var(--card);
-  color: var(--foreground);
-  font-weight: 600;
-  box-shadow: 0 1px 2px 0 color-mix(in srgb, var(--foreground) 6%, transparent);
-}
+
+
+
 
 [data-dsh-studio] .ds-hint,
 [data-dsh-studio] .ds-muted {
@@ -511,18 +490,13 @@
 
 /* ------------------------------------------------------ spark on mobile --- */
 @media (max-width: 900px) {
-  [data-dsh-studio] .ds-spark-day {
-    font-size: 9px;
-    letter-spacing: -0.02em;
-  }
+  
 }
 
 @media (max-width: 760px) {
   /* The 14-day spark is unreadable at phone width: keep the bars, drop every
      other label (the JS already blanks odd days, this covers older renders). */
-  [data-dsh-studio] .ds-spark-day:nth-child(even) {
-    visibility: hidden;
-  }
+  
 }
 ﻿
 /* 燃尽：折线 + 面积（2026-11-10） */
@@ -576,13 +550,13 @@
 [data-dsh-studio] .ds-err::before { content:'!'; font-weight:700; }
 [data-dsh-studio][data-theme="dark"] .ds-ok { color:#6ee7a8; background:color-mix(in srgb, #16a34a 22%, transparent); border-color:color-mix(in srgb, #4ade80 34%, transparent); }
 [data-dsh-studio][data-theme="dark"] .ds-err { color:#fca5a5; background:color-mix(in srgb, #dc2626 24%, transparent); border-color:color-mix(in srgb, #f87171 34%, transparent); }
-[data-dsh-studio] .ds-action-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid color-mix(in srgb, currentColor 10%, transparent); }
-[data-dsh-studio] .ds-action-bar-left, [data-dsh-studio] .ds-action-bar-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-[data-dsh-studio] .ds-action-bar-right { margin-left:auto; }
+
+
+
 [data-dsh-studio] .ds-btn[data-force="1"] { color:var(--ds-warn-text); border-color:color-mix(in srgb, #f59e0b 40%, transparent); }
 [data-dsh-studio] .ds-btn[data-force="1"]:hover:not([disabled]) { background:color-mix(in srgb, #f59e0b 12%, transparent); }
 [data-dsh-studio][data-theme="dark"] .ds-btn[data-force="1"] { color:#fbbf24; border-color:color-mix(in srgb, #f59e0b 45%, transparent); }
-[data-dsh-studio] .ds-req-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
 [data-dsh-studio] .ds-req-actions .ds-select { width:auto; min-width:96px; }
 [data-dsh-studio] .ds-btn-ghost[data-danger="1"] { color:#b91c1c; border-color:color-mix(in srgb, #dc2626 26%, transparent); }
 [data-dsh-studio] .ds-btn-ghost[data-danger="1"]:hover:not([disabled]) { background:color-mix(in srgb, #dc2626 10%, transparent); }
@@ -868,14 +842,8 @@
 }
 
 /* 直接阅读：交付物/文档正文展开区 */
-[data-dsh-studio] .ds-art-wrap,
-[data-dsh-studio] .ds-doc-wrap { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-[data-dsh-studio] .ds-reader {
-  margin: 0 0 8px;
-  max-height: 360px;
-  overflow: auto;
-  font-size: 13px;
-}
+
+
 [data-dsh-studio] .ds-reader .ds-md { margin: 0; }
 
 /* 顶部导航的 Tabs 轨道：浅色下 --muted 与页面底几乎同色，看不出是 Tabs，这里给一层可见轨道 */
@@ -1019,8 +987,8 @@
 [data-dsh-studio] .ds-drawer .ds-sec + .ds-sec { margin-top:2px }
 
 /* 准出检查里的签字区：单独成块，和清单分开（2026-11-10） */
-[data-dsh-studio] .ds-gate-sign { display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border); font-size:12px; color:var(--foreground) }
-[data-dsh-studio] .ds-gate-sign > span { min-width:0; overflow-wrap:anywhere }
+
+
 [data-dsh-studio] .ds-gate .ds-row { margin-top:12px; padding-top:12px; border-top:1px dashed var(--border) }
 [data-dsh-studio] .ds-gate .ds-row .ds-btn { white-space:nowrap }
 
@@ -1243,14 +1211,14 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] .ds-req-grid { grid-template-columns: 300px minmax(0, 1fr) !important; gap: 16px !important; align-items: start; min-width: 0; }
 [data-dsh-studio] .ds-req-grid > * { min-width: 0; max-width: 100%; }
 [data-dsh-studio] .ds-req-list { max-height: calc(100vh - 220px); overflow-y: auto; overflow-x: hidden; padding-right: 2px; }
-[data-dsh-studio] .ds-req-list-head { flex-wrap: wrap; row-gap: 8px; }
+
 [data-dsh-studio] .ds-req-list-head > .ds-btn { flex: 0 0 auto; margin-left: 0 !important; }
 [data-dsh-studio] .ds-req-item { overflow: hidden; }
-[data-dsh-studio] .ds-req-item-title { white-space: normal; overflow-wrap: anywhere; }
-[data-dsh-studio] .ds-req-item-meta { row-gap: 4px; }
-[data-dsh-studio] .ds-req-headline { flex-wrap: wrap; min-width: 0; }
-[data-dsh-studio] .ds-req-headline > * { min-width: 0; }
-[data-dsh-studio] .ds-req-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+
+
+
+
+
 [data-dsh-studio] .ds-body { overflow-x: hidden; min-width: 0; }
 [data-dsh-studio] .ds-pane-stack, [data-dsh-studio] .ds-panel, [data-dsh-studio] .ds-panel-body { min-width: 0; max-width: 100%; }
 [data-dsh-studio] .ds-panel-head { flex-wrap: wrap; row-gap: 4px; }
@@ -1296,7 +1264,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 /* 需求页：动作条独占整行，避免在 flex 行里占出一列空白 */
 @media (min-width:1100px){
   [data-dsh-studio] .ds-body > div:has(> .ds-req-list){flex-wrap:wrap;align-items:flex-start}
-  [data-dsh-studio] .ds-intake-launch{flex:0 0 100%;width:100%;padding:0 0 8px}
+  
 }
 
 /* 业务提单抽屉：按模式只显示对应面板 */
@@ -1334,23 +1302,23 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] .ds-palette-kind[data-kind="action"] { background: color-mix(in srgb, #7c3aed 16%, transparent); color: var(--ds-violet-text, #6d28d9) }
 [data-theme="dark"] .ds-palette-kind[data-kind="action"] { background: color-mix(in srgb, #a78bfa 22%, transparent); color: #c4b5fd }
 [data-dsh-studio] .ds-palette-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-[data-dsh-studio] .ds-diff { margin-top: 12px; border: 1px solid var(--ds-line, #e4e4e7); border-radius: 10px; overflow: hidden }
-[data-dsh-studio] .ds-diff-head { display: flex; align-items: center; gap: 12px; padding: 8px 8px; background: var(--ds-surface-2, #f4f4f5); font-size: 12px }
-[data-dsh-studio] .ds-diff-body { max-height: 340px; overflow: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.55 }
-[data-dsh-studio] .ds-diff-line { padding: 2px 8px; white-space: pre-wrap; word-break: break-word }
-[data-dsh-studio] .ds-diff-line[data-kind="add"] { background: #e9f7ef; color: #11623b }
-[data-dsh-studio] .ds-diff-line[data-kind="del"] { background: #fdecec; color: #a4232b }
-[data-dsh-studio] .ds-diff-line[data-kind="same"] { color: var(--ds-muted, #6b6b74) }
+
+
+
+
+
+
+
 [data-dsh-studio] .ds-reg-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 12px; margin-bottom: 12px; border: 1px solid var(--ds-line, #e4e4e7); border-radius: 10px; background: var(--ds-surface-2, #f4f4f5); font-size: 12px }
 [data-dsh-studio] .ds-reg-banner[data-bad="1"] { border-color: #f3c0c2; background: #fdf2f2; color: #b42318 }
 [data-dsh-studio] .ds-suite { display: inline-flex; align-items: center; gap: 8px; padding: 2px 8px; border: 1px solid var(--ds-line, #e4e4e7); border-radius: 999px; background: var(--ds-surface-2, #f4f4f5); font-size: 12px }
 [data-dsh-studio] .ds-suite[data-default="1"] { border-color: #a5b4fc; background: #eef2ff; color: #3730a3 }
-[data-dsh-studio] .ds-reg-list { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px }
-[data-dsh-studio] .ds-reg-item { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--ds-line, #e4e4e7); background: var(--ds-surface-2, #f4f4f5); color: var(--ds-muted, #6b6b74); white-space: nowrap }
-[data-dsh-studio] .ds-reg-item[data-bad="1"] { border-color: #f3c0c2; background: #fdf2f2; color: #b42318 }
+
+
+
 [data-dsh-studio] .ds-case-lib { display: flex; flex-direction: column }
-[data-dsh-studio] .ds-case-lib-detail { padding: 8px 12px 8px 36px; background: var(--ds-surface-2, #f4f4f5); font-size: 12px; line-height: 1.6; color: var(--ds-muted, #6b6b74) }
-[data-dsh-studio] .ds-case-lib-preview { margin: 8px 0 0; padding: 8px 8px; max-height: 180px; overflow: auto; background: var(--ds-surface, #fff); border: 1px solid var(--ds-line, #e4e4e7); border-radius: 10px; font-size: 11px; white-space: pre-wrap; word-break: break-word }
+
+
 [data-dsh-studio] .ds-palette-hint { flex: 0 0 auto; max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ds-muted, #6b6b74); font-size: 12px }
 [data-dsh-studio] .ds-palette-key { flex: 0 0 auto; font-size: 11px; line-height: 16px; padding: 2px 4px; border-radius: 10px; border: 1px solid var(--ds-line, #e4e4e7); background: var(--ds-surface-2, #f4f4f5); color: var(--ds-muted, #6b6b74); white-space: nowrap }
 [data-dsh-studio][data-theme="dark"] .ds-palette-key { border-color: #3f3f46; background: #27272a; color: #a1a1aa }
@@ -1471,13 +1439,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 }
 
 /* 「流程与产出」那组数字：原来跟标签一个字号，看着像没写完 */
-[data-dsh-studio] .ds-flow-num {
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-  color: var(--color-text-primary, var(--foreground));
-}
+
 
 /* BoardUI 的 ghost 按钮不写 border/bg 类（它靠 token 给底色），于是裸 `<button>` 的
    UA 默认样式（`border: 2px outset`）又冒出来 —— 真机上「打开 / 去看板」全带着一圈 3D 灰边。
@@ -1615,9 +1577,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   color: var(--muted-foreground);
 }
 
-[data-dsh-studio] .ds-req-list-head {
-  font-size: 12px;
-}
+
 
 /* --------------------------------------------------- 空态 / 按钮 / 列表行 --- */
 /* 这三样是最后还在说「换皮前语言」的地方，统一往 BoardUI 靠：
@@ -2022,23 +1982,8 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
 /* ------------------------------------------------- 需求矩阵：描述摘要两行 --- */
 /* 功能点描述是一整段 markdown，全渲染会把表格行撑到半屏高（一屏只看得下两三行）。
    默认只显示两行摘要，右侧「全文」按钮展开。 */
-[data-dsh-studio] .ds-pt-summary {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin-top: 2px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--muted-foreground);
-}
-[data-dsh-studio] .ds-pt-more {
-  margin-top: 2px;
-  height: auto;
-  padding: 0 4px;
-  font-size: 11px;
-  min-width: 0;
-}
+
+
 
 /* --------------------------------------------- 工作台首屏：两级指标 --- */
 /* 一级只有四项「今天要动手」的（逾期/阻塞/缺陷超时/准出被拦），数字放大到 24px；
@@ -2053,17 +1998,9 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
      统一成和面板间距相同的 14px，几组块之间就有了同一套节奏。 */
   margin-bottom: 16px;
 }
-[data-dsh-studio] .ds-kpi-title {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--color-text-secondary, var(--muted-foreground));
-}
+
 /* StatCard 的结构固定：卡片 > 标签 > 数值 > 提示，所以 nth-child(2) 就是那个大数字 */
-[data-dsh-studio] .ds-kpi-primary [data-stat-card] > div:nth-child(2) {
-  font-size: 24px;
-  line-height: 1.15;
-}
+
 /* KPI 不写死 4 列：工作台这两组各 5 张卡（逾期/阻塞/停摆/缺陷超时/准出被拦、在办卡/流水线失败/
    集成异常/强制放行/AI 在跑），固定 4 列必然落单一张；落单那张在第二节末尾，底边正好压在
    下面的「流程与产出」面板上（真机 2414px 宽量到 gap=0）。
@@ -2208,9 +2145,9 @@ html body [data-dsh-studio] .ds-head { padding: 16px 24px 0; }
 }
 
 /* 抽屉头/内层页签：跟控件同一档圆角，不再用 10px */
-[data-dsh-studio] .ds-dw-head { gap: 8px; }
-[data-dsh-studio] .ds-dw-tabs { padding: 4px; gap: 4px; border-radius: 8px; }
-[data-dsh-studio] .ds-dw-tab { border-radius: 6px; height: 28px; }
+
+
+
 
 /* 弹窗与 KPI 卡：这两处被 client.src.js 的 [data-dsh-studio] 规则覆盖过 */
 html body [data-dsh-studio] .ds-modal { border-radius: 12px; }
@@ -2220,12 +2157,9 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
 [data-dsh-studio] .ds-modal-grid > :last-child:nth-child(odd) { grid-column: span 2; }
 
 /* 需求详情 7 个统计格：auto-fit 在宽屏会挤出第 8、9 个空列，固定 7 列一行 */
-[data-dsh-studio] .ds-req-stats {
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 12px;
-}
-@media (max-width: 1100px) { [data-dsh-studio] .ds-req-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-@media (max-width: 720px) { [data-dsh-studio] .ds-req-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+@media (max-width: 1100px) {  }
+@media (max-width: 720px) {  }
 
 [data-dsh-studio] .ds-kpi-section { margin-bottom: 16px; }
 
@@ -2329,27 +2263,8 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
 
 
 /* 效能页「用例缺口」：可执行覆盖低于目标时，直接列出该补的卡（点一行跳过去） */
-[data-dsh-studio] .ds-case-gap {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 6px 8px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
 
-[data-dsh-studio] .ds-case-gap:hover { background: var(--muted); }
 
-[data-dsh-studio] .ds-case-gap-title {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+
+
+
