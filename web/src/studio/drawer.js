@@ -1588,7 +1588,7 @@ function Drawer({ task, state, onClose, onChanged }) {
             className: 'ds-btn ds-btn-ghost',
             disabled: caseRun.busy || cases.filter(item => item.http != null || item.shell != null || item.db != null || item.browser != null).length === 0,
             onClick: () => void runCases(undefined),
-          }, caseRun.busy ? '运行中…' : '▶ 跑用例')),
+          }, caseRun.busy ? '运行中…' : [uiIcon(h, 'run'), ' 跑用例'])),
         h('div', { className: 'ds-sec-body', 'data-scroll': '1' },
           caseRun.note === '' ? null : h('div', { className: 'ds-hint' }, caseRun.note),
           caseGen.note === '' ? null : h('div', { className: 'ds-hint' }, caseGen.note),
@@ -1653,7 +1653,7 @@ function Drawer({ task, state, onClose, onChanged }) {
                 : h('button', { className: 'ds-btn ds-btn-ghost', disabled: busy, title: '改这条用例的定义（地址 / 命令 / SQL / 断言）；lastRun 与历史保留', onClick: () => void editCaseDefinition(item) }, '改定义'),
               (item.http == null && item.shell == null && item.db == null && item.browser == null)
                 ? null
-                : h('button', { className: 'ds-btn ds-btn-ghost', disabled: caseRun.busy, onClick: () => void runCases(item.id) }, '▶'),
+                : h('button', { className: 'ds-btn ds-btn-ghost', disabled: caseRun.busy, onClick: () => void runCases(item.id) }, uiIcon(h, 'run')),
               h('button', {
                 className: 'ds-btn ds-btn-ghost',
                 disabled: busy,
