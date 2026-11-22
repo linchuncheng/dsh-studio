@@ -343,7 +343,9 @@ const COLLECTOR = `(() => {
   while (walker.nextNode() !== null) {
     const node = walker.currentNode
     const text = node.textContent ?? ''
-    const hits = text.match(/[\\u{1F300}-\\u{1FAFF}\\u{2600}-\\u{27BF}\\u{FE0F}]/gu)
+    // 用 Unicode 属性而不是窄字符集：以前写的是 1F300-1FAFF / 2600-27BF，
+    // 把 ▶ ▼ ▲ ↔ 这类「几何符号当图标」全漏了（▶ 是 Extended_Pictographic 但不在那些区段里）。
+    const hits = text.match(/\\p{Extended_Pictographic}/gu)
     if (hits === null) continue
     for (const hit of hits) {
       const key = hit + '|' + text.replace(/\s+/g, ' ').trim().slice(0, 24)

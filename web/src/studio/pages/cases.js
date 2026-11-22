@@ -2,6 +2,7 @@
    "what cases do we have and what did they do last time" is answerable without
    opening twenty drawers. Read-only for now; the regression runner is next. */
 
+import { uiIcon } from '../icons.js'
 import { client } from '../context.js'
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '../../components/base/table/table'
 import { CASE_RESULTS, CASE_RESULT_LABEL } from '../labels.js'
@@ -231,8 +232,8 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
         h('div', { className: 'ds-row', style: { marginTop: 8 } },
           h(BoarduiButton, { variant: 'secondary', size: 'small', disabled: running || runnable.length === 0, onClick: selectAllRunnable }, `全选可跑的 ${runnable.length} 条`),
           h(BoarduiButton, { variant: 'secondary', size: 'small', disabled: running || selected.size === 0, onClick: clearSelection }, '清空选择'),
-          h(BoarduiButton, { variant: 'primary', size: 'small', disabled: running || picked.length === 0, onClick: () => void runSelected() }, running ? '跑着…' : `▶ 跑选中的 ${picked.length} 条`),
-          h(BoarduiButton, { variant: 'secondary', size: 'small', disabled: running || failedRunnable.length === 0, title: '只补跑上次不通过、且有接口定义的用例', onClick: () => void runFailed() }, `↻ 只跑上次失败的 ${failedRunnable.length} 条`),
+          h(BoarduiButton, { variant: 'primary', size: 'small', disabled: running || picked.length === 0, onClick: () => void runSelected() }, running ? '跑着…' : [uiIcon(h, 'run'), ` 跑选中的 ${picked.length} 条`]),
+          h(BoarduiButton, { variant: 'secondary', size: 'small', disabled: running || failedRunnable.length === 0, title: '只补跑上次不通过、且有接口定义的用例', onClick: () => void runFailed() }, [uiIcon(h, 'retry'), ` 只跑上次失败的 ${failedRunnable.length} 条`]),
           h('span', { className: 'ds-hint' }, `按卡串行跑，每张卡一轮；失败的照旧自动开缺陷（最多一次 60 条）。${bareCount > 0 ? `另有 ${bareCount} 条没有可执行断言，跑不了也不计入覆盖率。` : ''}`),
         ),
         h('div', { className: 'ds-row', style: { marginTop: 8, flexWrap: 'wrap', gap: 8 } },
@@ -245,7 +246,7 @@ export function CasesPage({ state, onOpenTask, onOpenBoard }) {
                 title: '点一下只看这个套件里的用例，再点一次取消',
                 onClick: () => setSuiteFilter(current => (current === suite.id ? null : suite.id)),
               }, `${suite.name}${suite.isDefault ? ' · 默认' : ''} · ${suiteCounts[suite.id] ?? 0} 条${suiteFilter === suite.id ? '（只看中）' : ''}`),
-              h('button', { className: 'ds-btn ds-btn-ghost', disabled: running || (suiteCounts[suite.id] ?? 0) === 0, onClick: () => void runSuite(suite) }, '▶ 跑'),
+              h('button', { className: 'ds-btn ds-btn-ghost', disabled: running || (suiteCounts[suite.id] ?? 0) === 0, onClick: () => void runSuite(suite) }, uiIcon(h, 'run'), ' 跑'),
               suite.isDefault ? null : h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => void makeDefault(suite) }, '设为默认'),
               h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => void removeSuite(suite), 'data-danger': '1' }, '删除'),
             )),

@@ -254,6 +254,8 @@ GitHub Actions（`.github/workflows/release.yml`）会依次：校验 tag 与 `p
 | `npm run audit:ui` | unslop 口径的界面体检：32 个面（7 页签 + 设置 18 分区 + 抽屉 5 页签 + 命令面板 + 新建抽屉）逐面截图 + 采 computed style 指标（4px 网格、字号档位、颜色 token、emoji、圆角、对比度、首屏空白、网格落单、文字截断）。**只出证据不改代码**，结论见 `docs/ui-audit-2026-11-22.md` |
 | `npm run audit:overlays` | 浮层/交互态体检：确认框 / 输入框 / 下拉 / @ 选择器 / 新建技能 / 新增专家 / 登录，逐层截图并量字号档位、非 4px 网格、emoji、可关闭入口 |
 | `npm run audit:static` | 三个公开页（提单 / 我提过的 / 查进度）在 1200 与 390 两种宽度下的渲染体检（字号档位、非网格、溢出） |
+| `npm run audit:state` | 空态 / 登录页 / 大数据量 / 375 宽：改写 `/state` 响应造状态，逐面截图并量字号、非 4px 网格、溢出、截断 |
+| `npm run audit:interact` | 交互细节：Tab 焦点环是否可见、禁用态、卡片悬停、拖拽是否进入 dragging |
 
 `pnpm build` 已串上守卫（`make-legacy → guard --pre → vite build → sync-client → guard --post`），CI 也会跑：忘记构建或写出上面两类样式，流水线直接红。
 
