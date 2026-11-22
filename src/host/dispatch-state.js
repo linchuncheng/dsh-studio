@@ -20,23 +20,42 @@
  *  queued   没有被本列派过（或印记已清），下一轮 tick 会拾起它
  *  done     本列派完了（这里不区分结果，只看「要不要再派」）
  */
-export function dispatchPhase(task) {
+/* 2026-11-22 补第三种坑：**state 写着 running，会话其实早就没了**。
+   本机实测：派单记录 status=review / state=running，会话文件只有头，18 分钟没有任何输出。
+   因为 state 仍是 running，既不算 stalled（不提示）、也不会被下一轮 tick 拾起（永不重派）——
+   比「stopped 停摆」更隐蔽。
+
+   ctx（可不传，不传就按 10 分钟兜底）：
+     now               当前时间戳
+     runningTimeoutMs  running 多久没动静算挂死
+     isLive(sessionId) 会话是否真的活着；传了就以它为准（真会话表比时间戳可靠）
+*/
+export const RUNNING_TIMEOUT_MS = 10 * 60 * 1000
+
+export function dispatchPhase(task, ctx = {}) {
   const dispatch = task?.dispatch ?? null
   if (dispatch === null || typeof dispatch !== 'object') return 'queued'
   if (dispatch.status !== task?.status) return 'queued'
-  return dispatch.state === 'running' ? 'running' : 'stalled'
+  if (dispatch.state !== 'running') return 'stalled'
+  const isLive = typeof ctx.isLive === 'function' ? ctx.isLive : null
+  if (isLive !== null) return isLive(dispatch.sessionId) ? 'running' : 'stalled'
+  const now = Number(ctx.now ?? Date.now())
+  const timeout = Number(ctx.runningTimeoutMs ?? RUNNING_TIMEOUT_MS)
+  const at = Number(dispatch.at ?? 0)
+  if (timeout > 0 && at > 0 && now - at > timeout) return 'stalled'
+  return 'running'
 }
 
 /** 停摆判定：印记匹配当前列，但会话已经不在跑。
  *  看板上出现任何一张这样的卡都算异常 —— 它们不会自己恢复，也不会再被派单。 */
-export function isStalled(task) {
-  return dispatchPhase(task) === 'stalled'
+export function isStalled(task, ctx = {}) {
+  return dispatchPhase(task, ctx) === 'stalled'
 }
 
 /** 统计停摆的卡（给探针与工作台用）。 */
-export function countStalled(tasks) {
+export function countStalled(tasks, ctx = {}) {
   const list = Array.isArray(tasks) ? tasks : []
-  return list.filter(isStalled).length
+  return list.filter(task => isStalled(task, ctx)).length
 }
 
 /** 进程重启把「跑着的派单」收掉时，这张卡该记成第几次尝试。

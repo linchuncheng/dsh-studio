@@ -903,8 +903,17 @@ function requirementDeploys(state, requirement) {
 }
 
 /** Everything the panel needs in one poll. */
+/* 活会话集合由 dispatcher 在运行时提供；拿不到就返回 null，让 isStalled 退回「多久没动静」兜底。
+   为什么不等 publicState 自己去问 dispatcher：启动阶段 dispatcher 还没建，直接引用会踩 TDZ。 */
+let liveSessionsProvider = () => null
+
 function publicState(store) {
   const state = store.snapshot()
+  /* 一次请求只取一次活会话集合：running 挂死的卡要能被判成停摆（否则既不会重派、
+     界面上也和「正在跑」一模一样）。拿不到 dispatcher（启动阶段）就传 undefined，
+     isStalled 会退回「running 超过 10 分钟没动静」兜底。 */
+  const live = liveSessionsProvider()
+  const stalledCtx = live === null || live === undefined ? {} : { isLive: id => live.has(String(id ?? '')) }
   return {
     revision: state.revision,
     updatedAt: state.updatedAt,
@@ -940,7 +949,7 @@ function publicState(store) {
         /* 停摆：派单印记还在这一列但会话已经不在跑（崩过 / 被中断）。
            这种卡不会自己恢复，也不再被自动派单——以前界面上和「排队中」一模一样，
            2026-11-18 线上一次发现 5 张，最早卡了 8 天。 */
-        stalled: isStalled(task),
+        stalled: isStalled(task, stalledCtx),
         // 正文太占地方，轮询只下发长度；抽屉点「阅读 / 正文」时走 /task/artifact 的 get 单独取。
         artifacts: (task.artifacts ?? []).map(publicArtifact),
       }
@@ -2571,6 +2580,10 @@ export function apply(ctx) {
     configureAuthRoutes({ sendJson, readJsonBody, recordAudit, recordLogin, issueSession, sessionOf, operatorOf, ldapAuthenticate, ldapLookup, ldapAttr, sessions: SESSIONS, sessionKeyFor, clearSessions: () => { SESSIONS.clear(); SESSION_STORE?.clearSessions?.() }, dropSession: token => SESSION_STORE?.dropSession?.(token), hasSessionStore: () => SESSION_STORE !== null, publicState })
     dispatcher = new Dispatcher(dispatcherCtx, store)
     activeDispatcher = dispatcher
+    // 让 publicState 能问到「这个会话是不是真的还在跑」（running 挂死的识别靠它）
+    liveSessionsProvider = () => {
+      try { return new Set((activeDispatcher?.status?.().running ?? []).map(info => String(info.sessionId ?? ""))) } catch { return null }
+    }
     dispatcher.start()
     const offStatus = dispatcherCtx.on('agent/status', ({ agent, status }) => {
       if (status === 'idle') dispatcher?.settle(agent.id)
