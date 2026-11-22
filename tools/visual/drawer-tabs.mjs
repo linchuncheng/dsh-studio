@@ -54,7 +54,7 @@ const audit = () => page.evaluate((sel) => {
   const vis = (el) => { const r = el.getBoundingClientRect(); return r.width > 4 && r.height > 4 }
   const nativeSelect = q('select').filter((el) => vis(el) && el.closest('[data-testid="hidden-select-container"]') === null).length
   const rawField = q('input, textarea').filter((el) => vis(el) && el.type !== 'hidden' && el.closest('[data-rac]') === null).length
-  const legacyBtn = q('button.ds-btn, a.ds-btn, label.ds-btn').filter(vis).length
+  const legacyBtn = q('[data-variant], a[data-variant], label[data-variant]').filter(vis).length
   return { crashed, nativeSelect, rawField, legacyBtn, controls: q('[data-field="select"], [data-rac]').length }
 }, SCOPE)
 

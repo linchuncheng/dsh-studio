@@ -315,8 +315,6 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 
 .ds-empty { opacity:.4; font-size:12px; padding:16px 8px; text-align:center; border:1px dashed var(--ds-line); border-radius:10px; }
 
-.ds-body { flex:1; min-height:0; overflow:auto; padding:16px 20px; }
-
 .ds-panel { border:1px solid var(--ds-line); border-radius:10px; overflow:hidden; margin-bottom:16px; background:var(--ds-card);
   box-shadow:var(--ds-shadow); }
 

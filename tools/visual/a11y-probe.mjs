@@ -171,9 +171,9 @@ try {
   await enterPanel()
 
   // 1) 每个页签的可访问性巡检
-  const tabs = await page.$$eval('[data-dsh-studio] .ds-head-tabs button', nodes => nodes.map(node => node.textContent.trim()))
+  const tabs = await page.$$eval('[data-dsh-studio] [data-head-tabs] button', nodes => nodes.map(node => node.textContent.trim()))
   for (const name of tabs) {
-    for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
+    for (const tab of await page.$$('[data-dsh-studio] [data-head-tabs] button')) {
       if (((await tab.evaluate(node => node.textContent)) || '').trim() === name) { await tab.click(); break }
     }
     await sleep(1800)
@@ -181,9 +181,9 @@ try {
   }
 
   // 1b) 设置页的 17 个面板逐屏扫（这页是最容易被漏掉的：左栏一堆导航 + 密集表单）
-  const settingsTab = await page.$$eval('[data-dsh-studio] .ds-head-tabs button', nodes => nodes.map(node => node.textContent.trim()))
+  const settingsTab = await page.$$eval('[data-dsh-studio] [data-head-tabs] button', nodes => nodes.map(node => node.textContent.trim()))
   if (settingsTab.includes('设置')) {
-    for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
+    for (const tab of await page.$$('[data-dsh-studio] [data-head-tabs] button')) {
       if (((await tab.evaluate(node => node.textContent)) || '').trim() === '设置') { await tab.click(); break }
     }
     await sleep(1500)
@@ -228,7 +228,7 @@ try {
   report.keyboard = { trail: focusTrail, invisible: focusTrail.filter(item => item.tag !== 'body' && item.visible !== true).length }
 
   // 3) 抽屉：能不能打开、焦点是否被困在里面、Esc 能不能关
-  for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
+  for (const tab of await page.$$('[data-dsh-studio] [data-head-tabs] button')) {
     if (((await tab.evaluate(node => node.textContent)) || '').trim() === '看板') { await tab.click(); break }
   }
   await sleep(1500)
@@ -297,7 +297,7 @@ try {
   await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }])
   await sleep(400)
   report.reducedMotion = await page.evaluate(() => {
-    const sample = document.querySelector('[data-dsh-studio] [data-kanban-card], [data-dsh-studio] .ds-btn, [data-dsh-studio] .ds-panel')
+    const sample = document.querySelector('[data-dsh-studio] [data-kanban-card], [data-dsh-studio] [data-variant], [data-dsh-studio] [data-settings-page], [data-market-page]')
     if (sample === null) return { supported: false }
     const style = getComputedStyle(sample)
     const toMs = value => {
@@ -314,7 +314,7 @@ try {
   try {
     // 4) 弹窗：版本页的确认框 / 输入框（弹层最容易漏，而且它盖住整页）
     report.dialogs = { opened: 0, audits: [], names: [] }
-    for (const tab of await page.$('[data-dsh-studio] .ds-head-tabs button')) {
+    for (const tab of await page.$('[data-dsh-studio] [data-head-tabs] button')) {
       if (((await tab.evaluate(node => node.textContent)) || '').trim() === '版本') { await tab.click(); break }
     }
     await sleep(1500)
@@ -323,14 +323,14 @@ try {
     await sleep(1200)
     // 动作按钮在「⋯」菜单里：先点开菜单，再从菜单项里找会弹确认框的那几个
     const moreButton = await page.evaluate(() => {
-      const btn = [...document.querySelectorAll('[data-dsh-studio] .ds-btn')].find(node => (node.textContent || '').trim() === '⋯')
+      const btn = [...document.querySelectorAll('[data-dsh-studio] [data-variant]')].find(node => (node.textContent || '').trim() === '⋯')
       if (btn === undefined) return false
       btn.click()
       return true
     })
     await sleep(800)
     const menuItems = moreButton
-      ? await page.$eval('[role="menuitem"], [data-dsh-studio] .ds-menu-item, [data-dsh-studio] [role="menuitem"]', nodes => nodes.map(node => node.textContent.trim()))
+      ? await page.$eval('[role="menuitem"], [data-dsh-studio] [role="menuitem"], [data-dsh-studio] [role="menuitem"]', nodes => nodes.map(node => node.textContent.trim()))
       : []
     const dialogTriggers = []
     for (const label of menuItems) {
@@ -354,7 +354,7 @@ try {
         await sleep(500)
         // 菜单关掉了，为下一个触发项重新展开
         await page.evaluate(() => {
-          const btn = [...document.querySelectorAll('[data-dsh-studio] .ds-btn')].find(node => (node.textContent || '').trim() === '⋯')
+          const btn = [...document.querySelectorAll('[data-dsh-studio] [data-variant]')].find(node => (node.textContent || '').trim() === '⋯')
           if (btn !== undefined) btn.click()
         })
         await sleep(600)
