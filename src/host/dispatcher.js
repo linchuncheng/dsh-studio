@@ -3,6 +3,7 @@ import { DEFAULT_ROLES, FALLBACK_AGENT_MODEL, ROLE_IDS, SANDBOX_MODES, STATUSES,
 import { effectiveConcurrency } from './parallel-guard.js'
 import { abandonedRetry } from './dispatch-state.js'
 import { driftNote, isModelDrift, sessionDirOf } from './model-drift.js'
+import { stripQuotedCode } from './mention-note.js'
 import { handoffBlock } from './handoff.js'
 import { emitEvent } from './events.js'
 import { loadTeamMemory, teamMemoryBlock } from './team-memory.js'
@@ -177,7 +178,9 @@ export function matchScore(entry, task, column) {
  * Sorting by length keeps `@架构师助理` from also firing `@架构师`.
  */
 export function parseMentions(body, config) {
-  const source = String(body ?? '')
+  /* 先剥掉代码块与行内代码：里面写的 @架构师 通常是在**引用**规则或别人的话，
+     真机踩过——开发工程师在评论里转述「@开发工程师」的用法，平台又派了一轮单。 */
+  const source = stripQuotedCode(body)
   if (source.length === 0) return []
   const candidates = [
     ...(config.experts ?? []).filter(expert => expert.enabled).map(expert => ({ kind: 'expert', id: expert.id, name: expert.name })),

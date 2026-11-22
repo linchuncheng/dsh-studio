@@ -3,11 +3,15 @@ import { isSelfReview, reviewDecision } from '../quality.js'
 import { clearAgentFailure, noteAgentFailure } from '../dispatcher.js'
 import { codingVerifyLine, qualitySummary, runCommand, runTaskQuality, taskExitGate, verifyCodingRecord } from '../executor.js'
 import { compareCodingFacts } from '../gitlab-facts.js'
+import { publishNoteMentions } from '../mention-note.js'
+import { parseMentions } from '../dispatcher.js'
 import { mergeGateFor } from '../merge-gate.js'
 import { rejectUnknownFields } from '../route-contract.js'
-const INJECTED = ["applyConfig","deleteProjectFolder","ensureWorktree","mergeMergeRequest","publicState","publishMergeGate","readJsonBody","removeWorktree","sendJson","serviceOf","upsertById","workProjectOf"]
+const INJECTED = ["applyConfig","commentTask","deleteProjectFolder","ensureWorktree","getDispatcher","mergeMergeRequest","publicState","publishMergeGate","readJsonBody","removeWorktree","sendJson","serviceOf","upsertById","workProjectOf"]
 let host = {
   applyConfig: () => {},
+  commentTask: undefined,
+  getDispatcher: () => undefined,
   deleteProjectFolder: async () => ({}),
   ensureWorktree: () => {},
   mergeMergeRequest: async () => ({}),
@@ -96,7 +100,12 @@ if (method === 'POST' && route === '/task/coding') {
     return task
   })
   const task = snapshot.tasks.find(entry => entry.id === id)
-  host.sendJson(res, 200, { ok: true, task, state: host.publicState(store) })
+  /* 评审备注里的 @ 以前不生效（只有评论才解析）：评审不通过时写「@开发工程师 这里要改」
+     对方根本收不到。现在把备注补成评论并逐个派单。 */
+  const noteOut = action === 'review'
+    ? await publishNoteMentions({ store, commentTask: host.commentTask, dispatcher: host.getDispatcher(), parseMentions }, { taskId: id, note: String(body.note ?? ''), by })
+    : { mentions: [], dispatched: [], commented: false }
+  host.sendJson(res, 200, { ok: true, task, ...noteOut, state: host.publicState(store) })
   return true
 }
 if (method === 'POST' && route === '/task/coding/verify') {
