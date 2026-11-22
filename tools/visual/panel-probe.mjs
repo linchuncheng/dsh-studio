@@ -223,7 +223,7 @@ try {
     ;(card ?? document.querySelector('.ds-card'))?.click()
   })
   await new Promise(resolve => setTimeout(resolve, 900))
-  const sections = await page.evaluate(() => [...document.querySelectorAll('.ds-sec-head')].map(node => String(node.textContent ?? '')))
+  const sections = await page.evaluate(() => [...document.querySelectorAll('[data-drawer-section]')].map(node => String(node.textContent ?? '')))
   check('② 抽屉打开且有分区', sections.length > 0, `${sections.length} 个分区`)
   check('② 抽屉里有「测试用例」区', sections.some(text => text.includes('测试用例')))
   const casePoint = await page.evaluate(() => {

@@ -69,7 +69,7 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
 /** 只量浮层本身：优先 role=dialog，其次 portal 里面积最大的可见容器。 */
 const COLLECT = () => {
   const visible = el => { const cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden') return false; const r = el.getBoundingClientRect(); return r.width > 20 && r.height > 20 }
-  const dialogs = [...document.querySelectorAll('[role="dialog"], .ds-drawer, .ds-modal, .ds-menu, [role="listbox"]')].filter(visible)
+  const dialogs = [...document.querySelectorAll('[role="dialog"], [data-drawer], .ds-modal, .ds-menu, [role="listbox"]')].filter(visible)
   const portals = [...document.querySelectorAll('[data-dsh-studio-portal]')].filter(visible)
   const picks = dialogs.length > 0 ? dialogs.sort((a, b) => {
     const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect()
