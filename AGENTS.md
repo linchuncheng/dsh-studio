@@ -245,6 +245,7 @@ README 里还写着旧行为（"安全边界"、"发版流程"、"探针清单"�
 | 页面白屏 | 浏览器 console 的 `ReferenceError`（`node --check` 抓不到）；派生变量必须 null 兜底 |
 | 面板里一行「渲染失败：xxx is not defined」 | 组件里引用了当前作用域没有的变量（典型：把 `state.tasks` 写成 `tasks`）。`pageerror` 不会有记录，只能靠截图或 `innerText` 里找「渲染失败」 |
 | 改了没生效 | 先跑 `npm run sync:profile` 看 profile 里的版本对不对（本地加载的是 profile 里的**拷贝**，不是仓库）；再查是否改了 `client.src.js` 却没跑 `make-legacy`；`cmp` 确认产物；浏览器强刷 |
+| 部署说成功、目标机还是旧界面 | `tools/deploy.mjs` 输出里的 `restart=` 和 `version=`：`restart=NOT-APPLIED` = 文件传上去了但服务没重启（key 模式下 sudo 要密码就是这样，脚本退出码 4）；`version=` 对不上说明元数据没传（0.9.60 之前的脚本不传 `package.json`） |
 | 主按钮只剩文字 | 是否又用了 `hsl(var(--primary))`；改实色 |
 | 弹窗/抽屉看不见 | Portal 容器是否缺 `data-dsh-studio` 属性 |
 | 拖拽没反应 | 卡片是否有 `draggable`、列上是否有 `onDragOver/onDrop`、路由是否是 `/task/update` |
