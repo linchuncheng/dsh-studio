@@ -33,6 +33,21 @@ const WARN_TEXT = 'whitespace-nowrap text-caption-1-semibold text-text-error-pri
 const LIST_LINE = 'flex min-w-0 items-center gap-2 border-b border-separator-border py-2 last:border-b-0'
 const NOTE_BOX = 'rounded-lg bg-background-secondary-default p-2 text-caption-1-regular text-text-secondary'
 const LINK = 'text-caption-1-regular text-accent-600 hover:underline'
+/* 列表行：交付物、用例都用它；左边一条竖线表示结果（失败红、通过绿、未跑灰）。 */
+const LIST_ROW = 'flex min-w-0 items-center gap-2 border-b border-l-2 border-separator-border py-2 last:border-b-0 border-l-separator-border'
+const CASE_RESULT_RAIL = {
+  fail: 'border-l-border-error-default bg-background-tertiary-error',
+  pass: 'border-l-state-success-base',
+  pending: 'border-l-separator-border',
+  skip: 'border-l-separator-border',
+}
+const COMMENT_ROLE_RAIL = {
+  product: 'border-l-status-blue-text',
+  architect: 'border-l-status-purple-text',
+  dev: 'border-l-status-lime-text',
+  qa: 'border-l-status-yellow-text',
+}
+const EMPTY_BOX = 'flex min-w-0 flex-col gap-1 rounded-xl border border-separator-border bg-background-secondary-default p-3'
 
 const DESIGN_LABEL = { approved: '已通过', pending: '待评审', changes_requested: '要改' }
 
@@ -961,12 +976,16 @@ function Drawer({ task, state, onClose, onChanged }) {
             ? h('div', { className: ROW, style: { gap: 8, alignItems: 'center' } },
                 h(Button, { variant: 'secondary', size: 'sm', onClick: () => void checkGate() }, '检查一下'),
                 h('span', { className: HINT }, '点一下看这张卡还差什么才能收口'))
-            : h('div', { className: 'ds-gate', 'data-ready': gate.ready ? '1' : '0' },
-                h('div', { className: 'ds-gate-head' },
+            : h('div', {
+                className: EMPTY_BOX + (gate.ready ? ' border-separator-border-strong' : ' border-border-error-default'),
+                'data-ready': gate.ready ? '1' : '0',
+                'data-drawer-gate': '',
+              },
+                h('div', { className: 'flex min-w-0 flex-wrap items-center justify-between gap-2 text-body-2-semibold text-text-primary' },
                   h('b', null, gate.ready ? '可以进「已完成」' : `还差 ${gate.blockers.length} 项`),
                   h(Button, { variant: 'ghost', size: 'sm', onClick: () => void checkGate() }, '重新检查')),
-                (gate.blockers ?? []).map(line => h('div', { key: line, className: 'ds-gate-item', 'data-kind': 'block' }, `${line}`)),
-                (gate.warnings ?? []).map(line => h('div', { key: line, className: 'ds-gate-item', 'data-kind': 'warn' }, `${line}`)),
+                (gate.blockers ?? []).map(line => h('div', { key: line, className: 'text-caption-1-regular text-text-error-primary', 'data-kind': 'block' }, `${line}`)),
+                (gate.warnings ?? []).map(line => h('div', { key: line, className: 'text-caption-1-regular text-text-secondary', 'data-kind': 'warn' }, `${line}`)),
                 (gate.blockers ?? []).length === 0 && (gate.warnings ?? []).length === 0
                   ? h('div', { className: HINT }, '没有遗留项。') : null),
           task.signoff === null || task.signoff === undefined
@@ -978,8 +997,8 @@ function Drawer({ task, state, onClose, onChanged }) {
                   onChange: event => setGateNote(event.target.value),
                 }),
                 h(Button, { variant: 'primary', size: 'sm', disabled: busy, onClick: () => void signOff('sign') }, '签字确认'))
-            : h('div', { className: 'ds-gate-sign' },
-                h('span', null, `${task.signoff.by} 于 ${new Date(task.signoff.at).toLocaleString()} 签字：${task.signoff.note}`),
+            : h('div', { className: 'flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl bg-background-secondary-default p-3 text-caption-1-regular text-text-primary', 'data-drawer-signoff': '' },
+                h('span', { className: 'min-w-0 break-words' }, `${task.signoff.by} 于 ${new Date(task.signoff.at).toLocaleString()} 签字：${task.signoff.note}`),
                 h(Button, { variant: 'ghost', size: 'sm', onClick: () => void signOff('clear') }, '取消签字')),
         ),
       ),
@@ -994,8 +1013,8 @@ function Drawer({ task, state, onClose, onChanged }) {
             ),
           )
           : h('div', { className: SECTION_BODY },
-            h('div', { className: 'ds-blocked-box' },
-              h('div', { style: { fontWeight: 600 } }, `${blocked.reason || '未填写原因'}`),
+            h('div', { className: 'flex min-w-0 flex-col gap-1 rounded-xl border border-border-error-default bg-background-secondary-default p-3', 'data-drawer-blocked': '' },
+              h('div', { className: 'text-body-2-semibold text-text-error-primary' }, `${blocked.reason || '未填写原因'}`),
               h('div', { className: HINT }, `${blocked.by || '人'} · ${fmtTime(blocked.at)} · 停在「${state.statuses.find(c => c.id === task.status)?.label ?? task.status}」`),
             ),
             h('div', { className: HINT }, '怎么继续：'),
@@ -1053,7 +1072,7 @@ function Drawer({ task, state, onClose, onChanged }) {
         h('div', { className: LABEL }, '需求 / 背景 / 验收标准'),
         String(draft.requirement ?? '').trim() === ''
           ? null
-          : h('div', { className: 'ds-md-preview ds-reader', 'data-task-md': '1', style: { maxHeight: 220 } }, renderMarkdown(draft.requirement)),
+          : h('div', { className: 'ds-md min-h-[84px] overflow-auto rounded-xl border border-separator-border bg-background-primary-default px-3 py-2', 'data-task-md': '1', style: { maxHeight: 220 } }, renderMarkdown(draft.requirement)),
         h(MdField, {
           rows: String(draft.requirement ?? '').trim() === '' ? 4 : 8,
           value: draft.requirement,
@@ -1088,7 +1107,7 @@ function Drawer({ task, state, onClose, onChanged }) {
         h('div', { className: FIELD, style: { flex: 1 } },
           h('div', { className: LABEL }, 'GitLab MR'),
           (task.gitlabMR?.iid ?? 0) > 0
-            ? h('div', { className: 'ds-art-row', style: { padding: '8px 0', borderBottom: 'none' } },
+            ? h('div', { className: 'flex min-w-0 items-center gap-2', 'data-drawer-mr': '' },
                 h(ChipField, { variant: 'gray', 'data-on': task.gitlabMR.state === 'opened' ? '1' : undefined }, `MR !${task.gitlabMR.iid} · ${task.gitlabMR.state}`),
                 h('div', { className: GROW },
                   h('div', { className: ART_TITLE }, task.gitlabMR.title || `MR !${task.gitlabMR.iid}`),
@@ -1106,7 +1125,7 @@ function Drawer({ task, state, onClose, onChanged }) {
       ),
       h('div', { className: ROW },
         h(Button, { variant: 'primary', size: 'sm', disabled: busy, onClick: () => void push((task.gitlabMR?.iid ?? 0) > 0 ? { ...draft, gitlabMR: undefined } : draft) }, '保存改动'),
-        h(Button, { variant: 'secondary', size: 'sm', disabled: busy, onClick: remove }, '只删卡'),
+        h(Button, { variant: 'danger', size: 'sm', disabled: busy, 'data-danger': '1', onClick: remove }, '只删卡'),
       ),
       ),
       h(Section, { pane: 'plan', current: pane, id: 'plan' },
@@ -1207,7 +1226,7 @@ function Drawer({ task, state, onClose, onChanged }) {
               h('div', { className: HINT }, `仓库 ${worktree.repo}${worktreeMsg ? ` · ${worktreeMsg}` : ''}`),
               h('div', { className: ACTIONS },
                 h(Button, { variant: 'secondary', size: 'sm', disabled: busy, onClick: () => void worktreeAction('list') }, '看 git worktree 列表'),
-                h(Button, { variant: 'secondary', size: 'sm', disabled: busy, onClick: () => void worktreeAction('remove') }, '回收 worktree'),
+                h(Button, { variant: 'danger', size: 'sm', disabled: busy, 'data-danger': '1', onClick: () => void worktreeAction('remove') }, '回收 worktree'),
               ),
             ),
           worktreeMsg && worktree === null ? h('div', { className: HINT }, worktreeMsg) : null,
@@ -1239,9 +1258,14 @@ function Drawer({ task, state, onClose, onChanged }) {
           h('span', { className: HINT }, `${DESIGN_LABEL[task.design?.status] ?? '未登记'}${chosenDraft === null ? '' : ` · 定案「${chosenDraft.name}」`}`)),
         h('div', { className: SECTION_BODY },
           designDrafts.length === 0
-            ? h('div', { className: 'ds-empty' }, '还没有设计稿：加两稿以上才好比较')
-            : h('div', null, designDrafts.map(item => h('div', { key: item.id, className: 'ds-listrow', style: { marginBottom: 8 } },
-              h('div', { className: 'ds-listrow-main' },
+            ? h(EmptyState, { title: '还没有设计稿：加两稿以上才好比较' })
+            : h('div', { className: 'flex min-w-0 flex-col gap-2' }, designDrafts.map(item => h('div', {
+              key: item.id,
+              'data-drawer-draft': item.id,
+              className: 'flex min-w-0 items-start justify-between gap-4 rounded-xl border border-separator-border p-3'
+                + (item.id === task.design?.chosenId ? ' border-separator-border-strong bg-background-secondary-default' : ''),
+            },
+              h('div', { className: GROW + ' flex flex-col gap-1' },
                 h('div', null,
                   h(ChipField, { variant: 'gray', 'data-on': item.id === task.design?.chosenId ? '1' : '0' }, item.id === task.design?.chosenId ? '已定案' : '待选'),
                   h('span', { style: { marginLeft: 8 } }, item.name),
@@ -1253,7 +1277,7 @@ function Drawer({ task, state, onClose, onChanged }) {
                 item.id === task.design?.chosenId
                   ? null
                   : h(Button, { variant: 'ghost', size: 'sm', disabled: busy, onClick: () => void designAction('choose', item.id) }, '选为定案'),
-                h(Button, { variant: 'ghost', size: 'sm', disabled: busy, 'data-danger': '1', onClick: () => void designAction('remove', item.id) }, '删除'),
+                h(Button, { variant: 'danger', size: 'sm', disabled: busy, 'data-danger': '1', onClick: () => void designAction('remove', item.id) }, '删除'),
               ),
             ))),
           h('div', { className: ROW, style: { gap: 8, marginTop: 8, flexWrap: 'wrap' } },
@@ -1289,7 +1313,7 @@ function Drawer({ task, state, onClose, onChanged }) {
             const service = services.find(item => item.id === task.service) ?? (services.length === 1 ? services[0] : undefined)
             const cmd = String(service?.qualityCmd ?? '').trim() || String(project?.qualityCmd ?? '').trim()
             if (cmd === '') {
-              return h('div', { className: 'ds-empty' }, '这个项目还没配检查命令。到「设置 → 平台 → 项目」填一条（如 npm run check）；配了以后，改过代码的卡要跑过它才能收口。')
+              return h(EmptyState, { title: '这个项目还没配检查命令。到「设置 → 平台 → 项目」填一条（如 npm run check）；配了以后，改过代码的卡要跑过它才能收口。' })
             }
             return h('div', { className: PANEL },
               h('div', { className: PANEL_HEAD },
@@ -1366,7 +1390,7 @@ function Drawer({ task, state, onClose, onChanged }) {
           h('span', { className: HINT }, coding === null ? '改代码要留记录：谁、什么模型、改了什么' : '研发 agent 登记，人也可以补录或评审')),
         h('div', { className: SECTION_BODY },
           coding === null
-            ? h('div', { className: 'ds-empty' }, '还没有执行记录。')
+            ? h(EmptyState, { title: '还没有执行记录。', hint: '改代码要留记录：谁、什么模型、改了什么。' })
             : h('div', { className: PANEL },
               h('div', { className: PANEL_HEAD },
                 h(ChipField, { variant: 'gray', 'data-review': coding.review.status }, CODING_REVIEW_LABEL[coding.review.status] ?? coding.review.status),
@@ -1487,22 +1511,25 @@ function Drawer({ task, state, onClose, onChanged }) {
         h(SectionHead, null, '验收清单',
           h('span', { className: HINT }, checkSum.total === 0 ? '这张卡还没有清单' : `${doneCount} / ${checkSum.total} 已勾`)),
         h('div', { className: SECTION_BODY },
-          checkSum.total === 0 ? null : h('div', { className: 'ds-check-progress' },
-            h('div', { className: 'ds-check-bar', 'data-full': doneCount === checkSum.total ? '1' : '0' },
-              h('span', { style: { width: `${checkSum.total === 0 ? 0 : Math.round(doneCount / checkSum.total * 100)}%` } }),
-            ),
+          checkSum.total === 0 ? null : h('div', { className: 'mb-1', 'data-drawer-checklist': '', 'data-full': doneCount === checkSum.total ? '1' : '0' },
+            h(ProgressTrack, { percentage: checkSum.total === 0 ? 0 : Math.round(doneCount / checkSum.total * 100), size: 'sm' }),
           ),
-          parts === null && checkSum.total > 0 ? h('div', { className: HINT }, '载入清单…') : checklist.map(item => h('div', { key: item.id, className: 'ds-check-row', 'data-done': item.done ? '1' : '0' },
-            h(CheckField, { checked: item.done, disabled: busy,
+          parts === null && checkSum.total > 0 ? h('div', { className: HINT }, '载入清单…') : checklist.map(item => h('div', {
+            key: item.id,
+            'data-done': item.done ? '1' : '0',
+            'data-drawer-check-row': item.id,
+            className: 'flex min-w-0 items-start gap-2 border-b border-separator-border py-2 last:border-b-0',
+          },
+            h(CheckField, { checked: item.done, disabled: busy, title: item.text,
               onChange: () => void toggleChecklist(item),
             }),
             h('div', { className: GROW },
-              h('div', { className: 'ds-check-text' }, item.text, h('span', { className: HINT }, ` #${item.id}`)),
+              h('div', { className: 'text-body-2-regular ' + (item.done ? 'text-text-tertiary line-through' : 'text-text-primary') }, item.text, h('span', { className: HINT }, ` #${item.id}`)),
               item.note || item.by
                 ? h('div', { className: HINT }, `${item.by ? `${item.by} · ` : ''}${item.at ? fmtTime(item.at) : ''}${item.note ? ` · ${item.note}` : ''}`)
                 : null,
             ),
-            h(Button, { variant: 'ghost', size: 'sm', disabled: busy, onClick: () => void removeChecklist(item) }, '×'),
+            h(Button, { variant: 'ghost', size: 'sm', disabled: busy, 'aria-label': '删除这条验收条目', onClick: () => void removeChecklist(item) }, '×'),
           )),
           h('div', { className: ROW },
             h(TextField, {
@@ -1530,8 +1557,11 @@ function Drawer({ task, state, onClose, onChanged }) {
             : null),
         h('div', { className: SECTION_BODY, 'data-scroll': '1' },
           (task.artifacts ?? []).length === 0
-            ? h('div', { className: 'ds-empty' }, '还没有交付物。')
-            : (task.artifacts ?? []).map(item => h('div', { key: item.id, className: 'ds-art-wrap' }, h('div', { className: 'ds-art-row', 'data-missing': artifactHasBody(item) ? '0' : '1' },
+            ? h(EmptyState, { title: '还没有交付物。', hint: '文档、MR、用例、报告——交付要有东西，不只是一句「做完了」。' })
+            : (task.artifacts ?? []).map(item => h('div', { key: item.id, className: 'flex min-w-0 flex-col gap-2', 'data-drawer-artifact': item.id }, h('div', {
+              className: LIST_ROW + (artifactHasBody(item) ? '' : ' bg-background-tertiary-error'),
+              'data-missing': artifactHasBody(item) ? '0' : '1',
+            },
               h(ChipField, { variant: 'gray', 'data-kind': item.kind }, ARTIFACT_KIND_LABEL[item.kind] ?? item.kind),
               h('div', { className: GROW },
                 h('div', { className: ART_TITLE },
@@ -1557,18 +1587,20 @@ function Drawer({ task, state, onClose, onChanged }) {
                 onClick: () => void readArtifact(item),
               }, artRead === item.id ? '收起' : '阅读'),
               imageOf !== item.id ? null : h('div', {
-                className: 'ds-art-image',
+                className: 'fixed inset-0 z-[70] flex cursor-zoom-out items-center justify-center bg-black/55',
+                'data-drawer-image': '',
                 onClick: () => setImageOf(''),
-                style: { position: 'fixed', inset: 0, top: 'max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px))', background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70, cursor: 'zoom-out', WebkitAppRegion: 'no-drag' },
+                style: { top: 'max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px))', WebkitAppRegion: 'no-drag' },
               },
                 imageError !== null
-                  ? h('div', { className: ERR_TEXT, style: { background: '#fff', padding: 12, borderRadius: 8 } }, imageError)
+                  ? h('div', { className: ERR_TEXT + ' rounded-xl bg-background-primary-default p-3' }, imageError)
                   : (imageData === null
-                    ? h('div', { className: HINT, style: { background: '#fff', padding: 12, borderRadius: 8 } }, '正在读这张图…')
+                    ? h('div', { className: HINT + ' rounded-xl bg-background-primary-default p-3' }, '正在读这张图…')
                     : h('img', {
                       src: imageData, alt: item.title,
                       onClick: event => event.stopPropagation(),
-                      style: { maxWidth: '92vw', maxHeight: '86vh', borderRadius: 8, border: '1px solid var(--ds-line)', background: '#fff', boxShadow: '0 12px 40px rgba(0,0,0,0.35)' },
+                      className: 'rounded-xl border border-separator-border bg-background-primary-default shadow-2xl',
+                      style: { maxWidth: '92vw', maxHeight: '86vh' },
                     }))),
               h(Button, {
                 variant: 'ghost', size: 'sm', disabled: busy, title: '编辑正文',
@@ -1581,10 +1613,10 @@ function Drawer({ task, state, onClose, onChanged }) {
                 style: { width: 92, height: 22, fontSize: 11 }, value: item.status, disabled: busy,
                 onChange: event => void setArtifactStatus(item, event.target.value),
               }, ARTIFACT_STATUS.map(value => h('option', { key: value, value }, ARTIFACT_STATUS_LABEL[value]))),
-              h(Button, { variant: 'ghost', size: 'sm', disabled: busy, onClick: () => void removeArtifact(item) }, '×'),
+              h(Button, { variant: 'ghost', size: 'sm', disabled: busy, 'aria-label': '删除这条交付物', onClick: () => void removeArtifact(item) }, '×'),
             ),
             artRead === item.id
-              ? h('div', { className: 'ds-md-preview ds-reader' }, artBodies[item.id] === undefined && artifactHasBody(item)
+              ? h('div', { className: 'ds-md overflow-auto rounded-xl border border-separator-border bg-background-primary-default px-3 py-2', style: { maxHeight: 360 } }, artBodies[item.id] === undefined && artifactHasBody(item)
                 ? h('span', { className: HINT }, '读取中…')
                 : artifactBody(item).trim() === ''
                   ? h('span', { className: HINT }, '这条交付物还没有正文。')
@@ -1650,10 +1682,15 @@ function Drawer({ task, state, onClose, onChanged }) {
           caseRun.note === '' ? null : h('div', { className: HINT }, caseRun.note),
           caseGen.note === '' ? null : h('div', { className: HINT }, caseGen.note),
           caseSum.total === 0
-            ? h('div', { className: 'ds-empty' }, '还没有用例。')
+            ? h(EmptyState, { title: '还没有用例。', hint: '测试同学把用例登记在这里，逐条执行并回填结果。' })
             : parts === null
               ? h('div', { className: HINT }, '载入用例…')
-              : cases.map(item => h('div', { key: item.id, className: 'ds-art-row', 'data-result': item.result },
+              : cases.map(item => h('div', {
+                key: item.id,
+                'data-result': item.result,
+                'data-drawer-case-row': item.id,
+                className: LIST_ROW + ' ' + (CASE_RESULT_RAIL[item.result] ?? ''),
+              },
               h(SelectField, {
                 style: { width: 84, height: 22, fontSize: 11 }, value: item.result, disabled: busy,
                 onChange: event => void setCaseResult(item, event.target.value),
@@ -1717,7 +1754,7 @@ function Drawer({ task, state, onClose, onChanged }) {
                 'data-flaky': item.flaky === true ? '1' : '0',
                 onClick: () => void toggleFlaky(item),
               }, item.flaky === true ? '不稳' : '标不稳'),
-              h(Button, { variant: 'ghost', size: 'sm', disabled: busy, onClick: () => void removeCase(item) }, '×'),
+              h(Button, { variant: 'ghost', size: 'sm', disabled: busy, 'aria-label': '删除这条用例', onClick: () => void removeCase(item) }, '×'),
             )),
           h('div', { className: ROW },
             h(TextField, {
@@ -1783,7 +1820,11 @@ function Drawer({ task, state, onClose, onChanged }) {
       ),
       h(Section, { pane: 'overview', current: pane, id: 'meta' },
         h(SectionHead, null, '其它信息'),
-      h('dl', { className: 'ds-kv' },
+      h('dl', {
+        className: 'grid gap-x-3 gap-y-2 rounded-xl border border-separator-border bg-background-secondary-default p-3 text-caption-1-regular [&>dt]:text-text-tertiary [&>dd]:m-0 [&>dd]:break-all [&>dd]:text-text-primary',
+        style: { gridTemplateColumns: '92px 1fr' },
+        'data-drawer-kv': '',
+      },
         h('dt', {}, '编号'), h('dd', {}, task.code === undefined || task.code === '' ? '未挂需求（无编号）' : task.code),
         h('dt', {}, '所属需求'), h('dd', {}, (() => {
           const req = (state.requirements ?? []).find(item => item.id === task.requirementId)
@@ -1827,10 +1868,10 @@ function Drawer({ task, state, onClose, onChanged }) {
       h(Section, { pane: 'discuss', current: pane, id: 'comments' },
         h(SectionHead, null, `评论（${commentTotal}）`, h('span', { className: HINT }, '最新的在最上面')),
         commentTotal === 0
-          ? h('div', { className: 'ds-empty' }, '还没有评论。在下面输入，或用 @专家名 直接点名派活。')
+          ? h(EmptyState, { title: '还没有评论。', hint: '在下面输入，或用 @专家名 直接点名派活。' })
           : commentList === null
             ? h('div', { className: HINT, style: { padding: '8px 2px' } }, '载入评论…')
-            : h('div', { className: 'ds-comments' },
+            : h('div', { className: 'flex min-w-0 flex-col gap-2', 'data-drawer-comments': '' },
             commentList.slice().reverse().map(item => {
               const experts = state.config?.experts ?? []
               const expert = experts.find(entry => entry.name === item.author)
@@ -1847,21 +1888,33 @@ function Drawer({ task, state, onClose, onChanged }) {
               // 老评论的作者可能是「架构」「研发」这类简写，或带 emoji 前缀；
               // 能对上专家就统一显示专家本名，对不上原样显示。
               const bodyNodes = renderMarkdown(item.body)
+              const roleRail = COMMENT_ROLE_RAIL[expert?.role] ?? 'border-l-separator-border'
               return h('div', {
-                className: 'ds-cm', key: item.id,
+                key: item.id,
                 'data-kind': human ? 'human' : 'agent',
                 'data-role': expert?.role ?? '',
+                'data-drawer-comment': item.id,
+                className: 'grid min-w-0 items-start gap-3 border-t border-separator-border pt-2 first:border-t-0 first:pt-0'
+                  + (human ? '' : ' ml-6'),
+                style: { gridTemplateColumns: '32px minmax(0,1fr)' },
               },
-                h('div', { className: 'ds-cm-avatar' },
-                  human ? h('span', { className: 'ds-cm-initial' }, who.slice(0, 1)) : h('span', { className: 'ds-cm-initial-icon' }, uiIcon(h, expertIconName(expert)))),
-                h('div', { className: 'ds-cm-main' },
-                  h('div', { className: 'ds-cm-head' },
-                    h('span', { className: 'ds-cm-name' }, who),
-                    h('span', { className: 'ds-cm-kind' }, human ? '我提出' : 'AI 回复'),
+                h('div', {
+                  className: 'flex size-8 items-center justify-center rounded-full border '
+                    + (human ? 'border-transparent bg-accent-600 text-text-white' : 'border-separator-border bg-background-secondary-default text-text-secondary'),
+                },
+                  human ? h('span', { className: 'text-caption-1-semibold' }, who.slice(0, 1)) : h('span', { className: 'flex items-center justify-center' }, uiIcon(h, expertIconName(expert)))),
+                h('div', { className: 'flex min-w-0 flex-col gap-1' },
+                  h('div', { className: 'flex min-w-0 flex-wrap items-center gap-2' },
+                    h('span', { className: 'text-body-2-semibold text-text-primary' }, who),
+                    h('span', { className: 'rounded-full border border-separator-border px-2 text-caption-1-regular text-text-tertiary' }, human ? '我提出' : 'AI 回复'),
                     expert !== undefined && expert.domain !== '' ? h(ChipField, { variant: 'gray', 'data-role': expert.role }, expert.domain) : null,
-                    h('span', { className: 'ds-cm-meta' }, fmtTime(item.at)),
+                    h('span', { className: 'ml-auto text-caption-1-regular text-text-tertiary' }, fmtTime(item.at)),
                   ),
-                  h('div', { className: 'ds-cm-bubble ds-md' },
+                  h('div', {
+                    className: 'ds-md min-w-0 rounded-xl border border-l-2 border-separator-border p-2 text-body-2-regular leading-relaxed '
+                      + (human ? 'bg-background-secondary-default ' : 'bg-background-primary-default ')
+                      + roleRail,
+                  },
                     bodyNodes.length === 0 ? h('span', { className: HINT }, '（这条评论没有正文）') : bodyNodes),
                 ),
               )
