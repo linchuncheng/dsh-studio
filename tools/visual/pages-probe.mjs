@@ -146,11 +146,11 @@ try {
   const errors = []
   page.on('pageerror', error => errors.push(String(error).slice(0, 200)))
   await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 })
-  await page.waitForSelector('[data-dsh-studio] .ds-head-tabs [role="tab"]', { timeout: 45000 })
+  await page.waitForSelector('[data-dsh-studio] [data-head-tabs] [role="tab"]', { timeout: 45000 })
 
   for (const [label, marker, mustHave] of PAGES) {
     const clicked = await page.evaluate(sel => {
-      const button = [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs [role="tab"]')]
+      const button = [...document.querySelectorAll('[data-dsh-studio] [data-head-tabs] [role="tab"]')]
         .find(node => (node.textContent || '').trim() === sel)
       if (!button) return false
       button.click()
@@ -165,7 +165,7 @@ try {
         marker: document.querySelector('[data-dsh-studio] ' + sel) !== null,
         required: required === '' ? true : document.querySelector('[data-dsh-studio] ' + required) !== null,
         length: text.length,
-        selected: [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs [role="tab"]')]
+        selected: [...document.querySelectorAll('[data-dsh-studio] [data-head-tabs] [role="tab"]')]
           .filter(node => (node.getAttribute('aria-selected') || node.getAttribute('aria-pressed')) === 'true')
           .map(node => (node.textContent || '').trim()),
       }
@@ -190,7 +190,7 @@ try {
   }
 
   // 卡片抽屉：dialog 要有名字，里面的交互节点也要有名字（键盘/读屏都能用）
-  await page.evaluate(() => { const tab = [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs [role="tab"]')].find(n => (n.textContent || '').trim() === '看板'); if (tab) tab.click() })
+  await page.evaluate(() => { const tab = [...document.querySelectorAll('[data-dsh-studio] [data-head-tabs] [role="tab"]')].find(n => (n.textContent || '').trim() === '看板'); if (tab) tab.click() })
   await sleep(900)
   await page.evaluate(() => { const card = document.querySelector('[data-dsh-studio] [data-kanban-card]'); if (card) card.click() })
   await sleep(1200)
@@ -202,11 +202,11 @@ try {
   // 800px 回归：中窄屏顶栏动作区必须换行，页面不能横向溢出（920px 断点的守门）
   await page.setViewport({ width: 800, height: 1000 })
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
-  await page.waitForSelector('[data-dsh-studio] .ds-head-tabs [role="tab"]', { timeout: 45000 })
+  await page.waitForSelector('[data-dsh-studio] [data-head-tabs] [role="tab"]', { timeout: 45000 })
   await sleep(900)
   const narrow = await page.evaluate(() => {
-    const brand = document.querySelector('[data-dsh-studio] .ds-brand')
-    const actions = document.querySelector('[data-dsh-studio] .ds-head-actions')
+    const brand = document.querySelector('[data-dsh-studio] [data-brand]')
+    const actions = document.querySelector('[data-dsh-studio] [data-head-actions]')
     const b = brand === null ? null : brand.getBoundingClientRect()
     const a = actions === null ? null : actions.getBoundingClientRect()
     return {

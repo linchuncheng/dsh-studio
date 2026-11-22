@@ -414,7 +414,7 @@ try {
   const layout = await page.evaluate(() => {
     const root = document.querySelector('[data-dsh-studio]')
     if (root === null) return { gaps: [], orphan: [] }
-    const body = root.querySelector('.ds-body')
+    const body = root.querySelector('[data-settings-page], [data-market-page]')
     const gaps = []
     if (body !== null) {
       const kids = [...body.children].filter(el => {

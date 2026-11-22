@@ -77,6 +77,8 @@ if (labelNames.length < 10) {
 }
 
 const imports = [
+  "import { Button } from './boardui/index'",
+  "import { EmptyState } from './boardui/empty-state'",
   "import { createMarkdown } from './studio/markdown.js'",
   "import { fmtTime, fmtDate } from './studio/format.js'",
   'import { ' + labelNames.join(', ') + " } from './studio/labels.js'",
@@ -94,6 +96,8 @@ const imports = [
   "import { withDestructiveConfirm } from './studio/destructive.js'",
   "import { applyTitlebarFloor } from './studio/titlebar.js'",
   "import { createEditor } from './studio/editor.js'",
+  "import { NewTaskDialog } from './studio/dialogs/new-task.js'",
+  "import { AutoDispatchPane, BoardAppearancePane, RoleModelsPane, SettingsField, SettingsSaveBar } from './studio/panels/settings-panes.js'",
   "import { ExpertsPanel, TeamsPanel, TestingPanel, EscalatePanel, EnvironmentsPanel } from './studio/panels/people.js'",
   "import { LdapPanel, CostsPanel, BusinessPanel } from './studio/panels/platform.js'",
   "import { AccessPanel, ColumnsPanel, StoragePanel, HealthPanel } from './studio/panels/governance.js'",

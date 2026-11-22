@@ -374,7 +374,7 @@ const COLLECTOR = `(() => {
 
   // ---- 几何：构图、留白、对齐、截断
   const rectOf = el => el.getBoundingClientRect()
-  const main = root.querySelector('.ds-body') ?? root
+  const main = root.querySelector('[data-settings-page], [data-market-page]') ?? root
   const mainRect = rectOf(main)
   const blocks = [...main.children].filter(visible).map(el => { const r = rectOf(el); return { el: describe(el).slice(0, 46), top: Math.round(r.top), h: Math.round(r.height), w: Math.round(r.width), left: Math.round(r.left) } })
   const contentBottom = blocks.length === 0 ? 0 : Math.max(...blocks.map(b => b.top + b.h))

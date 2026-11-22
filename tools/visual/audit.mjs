@@ -7,7 +7,7 @@
  * 判据（全部为 0 才算通过，非 0 退出码 1）：
  *   · nativeSelect  可见的原生 <select>（react-aria 的隐藏 select 不算：它在 [data-rac] 里）
  *   · rawField      input / textarea 不在任何 react-aria 组件里（= 还是原生控件）
- *   · legacyBtn     button/a/label 上的 .ds-btn（老按钮）
+ *   · legacyBtn     button/a/label 上的 [data-variant]（老按钮）
  *   · radixSelect   手写的 radix 下拉触发器（button[aria-haspopup=listbox] 但没 data-rac）
  *   · foreignTab    不在 .studio-tabs / BoardUI Tabs 里的 [role=tab]（第三种页签实现）
  *

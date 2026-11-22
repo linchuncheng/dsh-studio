@@ -46,17 +46,17 @@ window.__ModuleLoader__.load({
       const text = String(value ?? '')
       return h('div', { className: 'ds-md-field' },
         h('div', { className: 'ds-md-bar' },
-          h('span', { className: 'ds-hint' }, '支持 Markdown：标题 / 列表 / 粗体 / 代码块 / 表格'),
-          h('button', { className: 'ds-btn ds-btn-ghost', type: 'button', onClick: () => setPreview(!preview) }, preview ? '回到编辑' : '预览渲染'),
+          h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '支持 Markdown：标题 / 列表 / 粗体 / 代码块 / 表格'),
+          h(Button, { variant: 'ghost', size: 'xs', type: 'button', 'data-md-toggle': preview ? 'preview' : 'edit', onClick: () => setPreview(!preview) }, preview ? '回到编辑' : '预览渲染'),
         ),
         preview
-          ? h('div', { className: 'ds-md-preview ds-req-desc ds-md' }, text.trim() === '' ? h('span', { className: 'ds-hint' }, '还没写内容。') : renderMarkdown(text))
-          : h(TextAreaField, { className: className ?? 'ds-textarea', rows, value, onChange, placeholder, ...rest }),
+          ? h('div', { className: 'ds-md-preview ds-md mt-3 text-caption-1-regular' }, text.trim() === '' ? h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '还没写内容。') : renderMarkdown(text))
+          : h(TextAreaField, { className, rows, value, onChange, placeholder, ...rest }),
       )
     }
 
     function tipLabel(text, hint) {
-      const node = h('div', { className: 'ds-label', style: { cursor: 'help' } }, text)
+      const node = h('div', { className: 'cursor-help text-caption-2-medium text-text-secondary' }, text)
       return hint === undefined || hint === null || hint === '' ? node : tipOf(hint, node)
     }
 
@@ -214,11 +214,15 @@ window.__ModuleLoader__.load({
       }
       if (items.length === 0) return null
       if (Notification === null) {
-        return h('div', { className: 'ds-toasts', role: 'status', 'aria-live': 'polite' },
-          items.map(item => h('div', { key: item.id, className: 'ds-toast', 'data-tone': item.tone }, h('span', { className: 'ds-toast-text' }, item.text))))
+        return h('div', { className: 'fixed bottom-4 right-4 z-[120] flex flex-col items-end gap-2', role: 'status', 'aria-live': 'polite', 'data-toasts': '' },
+          items.map(item => h('div', {
+            key: item.id,
+            className: 'pointer-events-auto max-w-[340px] rounded-xl border border-separator-border bg-background-primary-default px-3 py-2 text-caption-1-regular text-text-primary shadow-lg',
+            'data-toast': item.tone,
+          }, h('span', { className: 'break-words' }, item.text))))
       }
-      return h('div', { className: 'ds-toasts', role: 'status', 'aria-live': 'polite' },
-        items.map(item => h('div', { key: item.id, className: 'ds-toast-slot' },
+      return h('div', { className: 'fixed bottom-4 right-4 z-[120] flex flex-col items-end gap-2', role: 'status', 'aria-live': 'polite', 'data-toasts': '' },
+        items.map(item => h('div', { key: item.id, className: 'pointer-events-auto' },
           h(Notification, {
             title: item.text,
             status: TOAST_STATUS[item.tone] ?? 'info',
@@ -387,15 +391,14 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
   --ds-shadow: none;
   --ds-accent: #2f6feb;
   font: 13px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
-/* 三档显示模式：只换根元素的 color / background 与一组表面色，其余靠 color-mix 自动派生。
-   color-scheme 必须一起改，否则 <select>/<input>/滚动条仍按操作系统的深浅色画。
-   表面层次：--ds-bg（页面底）< --ds-surface-2（列/次级块）< --ds-surface（面板/卡片）。 */
+
 [data-dsh-studio][data-theme="light"] {
   color-scheme:light; color:#1f2328; background:var(--ds-bg); --ds-accent:#2f6feb;
   --ds-bg:#eef1f5; --ds-surface:#ffffff; --ds-surface-2:#f6f8fb; --ds-card:#ffffff;
   --ds-line:#dbe1ea; --ds-line-soft:#e9edf3;
   --ds-shadow:0 1px 2px #0f172a0f;
 }
+
 [data-dsh-studio][data-theme="dark"] {
   /* 暗色下的"文字安全色"：浅色主题那套在深底上不够亮（实测 3.0~3.5:1），这里单独给一套。 */
   --ds-muted:#a1a1aa; --ds-warn-text:#fbbf24; --ds-danger-text:#ff9a9d; --ds-ok-text:#4ade80; --ds-violet-text:#c4b5fd;
@@ -404,364 +407,395 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
   --ds-line:#2c323d; --ds-line-soft:#232830;
   --ds-shadow:0 1px 2px #00000040;
 }
+
 [data-dsh-studio][data-theme="light"] .ds-chip[data-review="changes_requested"] { color:#b3282c; }
+
 [data-dsh-studio][data-theme="dark"] .ds-chip[data-review="changes_requested"] { color:#ff9a9d; }
-/* 深色下把几处「深色语义色」换成浅色版本：它们在白底上是 4.6:1，到了 #14161b 上只有 2.5–3.9:1，
-   11–12px 的小字会糊。只改前景色，底色与边框仍由各规则自己算。 */
+
 [data-dsh-studio][data-theme="dark"] .ds-blocked-line,
 [data-dsh-studio][data-theme="dark"] .ds-blocked-box,
 [data-dsh-studio][data-theme="dark"] .ds-chip-bug,
 [data-dsh-studio][data-theme="dark"] .ds-chip-bug[data-sev="p1"],
 [data-dsh-studio][data-theme="dark"] .ds-error,
 [data-dsh-studio][data-theme="dark"] .ds-chip-bug[data-sev="p0"] { color:#fff; }
+
 [data-dsh-studio][data-theme="dark"] .ds-chip[data-review="approved"],
 [data-dsh-studio][data-theme="dark"] .ds-chip[data-sla="ok"],
 [data-dsh-studio][data-theme="dark"] .ds-ok { color:#6fdca4; }
+
 [data-dsh-studio][data-theme="dark"] .ds-chip[data-sla="due_soon"],
 /* 键盘焦点：所有可聚焦元素统一用主题色描边（原来是浏览器默认蓝，深色下很跳）。 */
 [data-dsh-studio] :focus-visible { outline:2px solid var(--ds-accent); outline-offset:2px; border-radius:10px; }
+
 [data-dsh-studio] * { box-sizing:border-box; }
-.ds-head { flex:none; border-bottom:1px solid var(--ds-line); padding:12px 20px 0;
-  background:var(--ds-surface); box-shadow:var(--ds-shadow); }
-.ds-head-top { display:flex; align-items:flex-start; gap:16px; padding-bottom:12px; }
-.ds-brand { display:flex; align-items:center; gap:12px; min-width:0; }
-.ds-brand-mark { width:26px; height:26px; border-radius:10px; flex:none; display:flex; align-items:center; justify-content:center;
-  background:color-mix(in srgb, var(--ds-accent) 14%, transparent); color:var(--ds-accent); font-size:13px; }
-.ds-head-actions { margin-left:auto; display:flex; align-items:center; gap:8px; flex:none; }
-.ds-head-tabs { display:flex; align-items:center; flex-wrap:wrap; row-gap:8px; gap:12px; padding-bottom:8px; }
-.ds-title { font-size:16px; font-weight:600; letter-spacing:.01em; }
-.ds-sub { font-size:12px; opacity:.55; }
-.ds-tabs { display:inline-flex; gap:2px; padding:4px; border-radius:10px; background:var(--ds-soft); border:1px solid var(--ds-line);
-  max-width:100%; overflow-x:auto; scrollbar-width:none; }
-.ds-tabs::-webkit-scrollbar { height:0; }
-.ds-seg { display:inline-flex; gap:2px; padding:4px; border-radius:10px; background:var(--ds-soft); border:1px solid var(--ds-line); }
-.ds-seg-btn { border:0; background:transparent; color:inherit; font:inherit; font-size:12px; padding:4px 8px; border-radius:10px;
-  cursor:pointer; opacity:.7; white-space:nowrap; }
-.ds-seg-btn:hover { opacity:1; background:var(--ds-soft2); }
-.ds-seg-btn[data-on="1"] { opacity:1; font-weight:600; background:color-mix(in srgb, currentColor 14%, transparent); }
-.ds-tab { border:0; background:transparent; color:inherit; font:inherit; font-size:13px; padding:4px 16px; border-radius:10px;
-  cursor:pointer; opacity:.62; white-space:nowrap; flex:0 0 auto; }
-.ds-tab:hover { opacity:.95; background:var(--ds-soft2); }
-.ds-tab[data-on="1"] { opacity:1; background:var(--ds-surface); font-weight:600; box-shadow:0 1px 3px #00000026; }
-.ds-grow { flex:1; }
+
 .ds-btn { border:1px solid var(--ds-line); background:var(--ds-soft); color:inherit; font:inherit; padding:4px 12px; border-radius:10px; cursor:pointer; }
+
 .ds-btn:hover { background:var(--ds-soft2); }
+
 .ds-btn[disabled] { opacity:.45; cursor:default; }
+
 .ds-btn-primary { background:var(--ds-accent); border-color:var(--ds-accent); color:#fff; }
+
 .ds-btn-primary:hover { filter:brightness(1.08); background:var(--ds-accent); }
+
 .ds-board-bar { display:flex; gap:8px; align-items:center; padding:8px 16px; flex-wrap:wrap; flex:none;
   border-bottom:1px solid var(--ds-line); }
+
 .ds-board-bar .ds-input, .ds-board-bar .ds-select { height:28px; padding:0 8px; }
-.ds-stat { font-size:12px; opacity:.55; }
-.ds-market-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; }
-.ds-market-card { display:flex; flex-direction:column; gap:8px; border:1px solid var(--ds-line); border-radius:16px;
-  padding:16px; background:var(--ds-card); min-height:136px; }
-.ds-mc-head { display:flex; align-items:center; gap:8px; }
-.ds-mc-name { font-weight:600; font-size:13px; }
-.ds-mc-desc { font-size:12px; opacity:.72; }
-.ds-market-card code { font-size:11px; opacity:.55; word-break:break-all; }
+
 .ds-chip[data-on="1"] { color:#0b7a43; border-color:#0f9d5855; }
+
 .ds-board { display:flex; gap:12px; padding:12px 16px 16px; overflow-x:auto; overflow-y:hidden; flex:1; min-height:0; align-items:stretch; }
+
 .ds-col { flex:0 0 282px; display:flex; flex-direction:column; min-height:0; border:1px solid var(--ds-line); border-radius:16px;
   background:var(--ds-surface-2); overflow:hidden; }
+
 .ds-col[data-role="product"] { border-top:2px solid #2f6feb; }
+
 .ds-col[data-role="architect"] { border-top:2px solid #8b5cf6; }
+
 .ds-col[data-role="dev"] { border-top:2px solid #0f9d58; }
+
 .ds-col[data-role="qa"] { border-top:2px solid #e08600; }
-.ds-col-head { display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid var(--ds-line); font-weight:600; font-size:12px; flex:none; background:var(--ds-card); }
+
 .ds-count { margin-left:auto; min-width:20px; text-align:center; border-radius:999px; padding:0 8px; line-height:17px;
   background:var(--ds-soft2); border:1px solid var(--ds-line); font-weight:600; font-size:11px; font-variant-numeric:tabular-nums; }
+
 .ds-count[data-zero="1"] { opacity:.4; }
+
 .ds-col-body { display:flex; flex-direction:column; gap:8px; padding:8px; overflow-y:auto; flex:1; min-height:0; }
+
 .ds-card { border:1px solid var(--ds-line); border-radius:10px; background:var(--ds-surface); padding:8px 12px; cursor:pointer;
   box-shadow:var(--ds-shadow);
   display:flex; flex-direction:column; gap:8px; transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease; }
+
 .ds-card:hover { border-color:var(--ds-accent); transform:translateY(-1px); box-shadow:0 4px 14px #00000014; }
+
 .ds-card[data-urgent="1"] { border-left:3px solid #e5484d; padding-left:8px; }
+
 .ds-card[data-running="1"] { border-color:var(--ds-accent); }
+
 .ds-card[data-blocked="1"] { border-color:#e5484d80; background:color-mix(in srgb, #e5484d 4%, var(--ds-surface)); box-shadow:inset 3px 0 0 #e5484d; }
-.ds-blocked-line { font-size:11px; color:#c0392b; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.ds-blocked-box { border:1px solid #e5484d55; background:color-mix(in srgb, #e5484d 7%, transparent); border-radius:10px; padding:8px 12px; display:flex; flex-direction:column; gap:4px; font-size:12px; color:#c0392b; }
+
 .ds-chip[data-proj="1"] { color:var(--ds-accent); border-color:color-mix(in srgb, var(--ds-accent) 40%, transparent); font-weight:600; cursor:pointer; }
+
 .ds-chip[data-req="1"] { color:#7c4dff; border-color:color-mix(in srgb, #7c4dff 36%, transparent); background:color-mix(in srgb, #7c4dff 8%, transparent); cursor:pointer; }
+
 .ds-chip[data-req-missing="1"] { border-style:dashed; opacity:.62; cursor:pointer; }
+
 .ds-chip[data-iter="1"] { opacity:.8; }
+
 .ds-chip[data-review="approved"] { background:color-mix(in srgb, #0f9d58 16%, transparent); color:#0f6b3c; }
+
 .ds-chip[data-review="changes_requested"] { background:color-mix(in srgb, #e5484d 16%, transparent); color:#a3282b; }
+
 .ds-check-bar { height:6px; border-radius:999px; background:var(--ds-soft2); overflow:hidden; }
+
 .ds-check-bar > span { display:block; height:100%; background:var(--ds-accent); transition:width .2s ease; }
+
 .ds-check-bar[data-full="1"] > span { background:#0f9d58; }
+
 .ds-chip[data-kind="mr"] { color:#8b5cf6; border-color:#8b5cf655; }
+
 .ds-chip[data-kind="cases"] { color:#e08600; border-color:#e0860055; }
+
 .ds-chip[data-kind="design"] { color:#0f9d58; border-color:#0f9d5855; }
+
 .ds-btn-ghost { background:transparent; border-color:transparent; color:inherit; opacity:.45; padding:2px 8px; }
+
 .ds-btn-ghost:hover { opacity:.9; }
+
 .ds-chip { border:1px solid var(--ds-line); border-radius:999px; padding:0 8px; line-height:16px; }
+
 .ds-audit-row { display:grid; grid-template-columns: 64px 88px 120px minmax(0,1fr) 66px; align-items:center; gap:8px;
   padding:8px 0; border-bottom:1px solid var(--ds-line); font-size:12px; }
+
 .ds-audit-row:last-child { border-bottom:none; }
+
 .ds-audit-row[data-ok="0"] { background: color-mix(in srgb, #e5484d 5%, transparent); }
-.ds-audit-what { color: color-mix(in srgb, currentColor 82%, transparent); }
-.ds-audit-detail { color: color-mix(in srgb, currentColor 56%, transparent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  font-family: ui-monospace, Menlo, monospace; font-size:11px; }
-@media (max-width:760px) { .ds-audit-row { grid-template-columns: 60px 1fr 60px; } .ds-audit-what, .ds-audit-detail { display:none; } }
+
+@media (max-width:760px) {
+.ds-audit-row { grid-template-columns: 60px 1fr 60px; }
+}
+
 .ds-kpi-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
-@media (max-width:900px) { .ds-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-@media (max-width:560px) { .ds-kpi-grid { grid-template-columns:minmax(0,1fr); } }
+
+@media (max-width:900px) {
+.ds-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width:560px) {
+.ds-kpi-grid { grid-template-columns:minmax(0,1fr); }
+}
+
 .ds-kpi { position:relative; overflow:hidden; border:1px solid var(--ds-line); border-radius:10px; padding:12px 12px 12px; background:var(--ds-card); box-shadow:var(--ds-shadow), inset 3px 0 0 color-mix(in srgb, var(--ds-accent) 55%, transparent); }
+
 .ds-kpi[data-warn="1"] { border-color: color-mix(in srgb, var(--color-notification-error-foreground) 40%, var(--ds-line)); box-shadow:inset 3px 0 0 color-mix(in srgb, #e5484d 70%, transparent); }
-/* 效能页：12 栅格显式排版。原来用 auto-fit 撑满，四块面板挤在一行、每块只有 290px，
-   柱条被压成发丝、数字挤成一坨；现在每块自己声明占几列，窄屏逐级退成 6 → 12 列。 */
-.ds-an-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:12px; align-items:start; }
+
 .ds-an-grid > .ds-panel { display:flex; flex-direction:column; min-width:0; }
+
 .ds-an-grid > .ds-panel > .ds-panel-body { flex:0 1 auto; }
-.ds-span-3 { grid-column:span 3; }
-.ds-span-4 { grid-column:span 4; }
-.ds-span-5 { grid-column:span 5; }
-.ds-span-7 { grid-column:span 7; }
-.ds-span-8 { grid-column:span 8; }
-.ds-span-9 { grid-column:span 9; }
-@media (max-width:1180px) { .ds-span-3, .ds-span-4, .ds-span-5 { grid-column:span 6; } .ds-span-7, .ds-span-8, .ds-span-9 { grid-column:span 12; } }
-@media (max-width:760px) { .ds-an-grid > .ds-panel { grid-column:span 12; } }
-/* 栅格里已由 gap 控制间距，panel 自带的 margin-bottom 会把行高顶歪 */
+
+@media (max-width:760px) {
+.ds-an-grid > .ds-panel { grid-column:span 12; }
+}
+
 .ds-an-grid > .ds-panel { margin-bottom:0; }
-/* 面板底部小注：贴底，用来把「多高都行」的面板补满，不至于下面留一大片空白 */
+
 .ds-an-track { height:8px; border-radius:999px; background:var(--ds-soft2); overflow:hidden; }
+
 .ds-an-fill { height:100%; border-radius:999px; background:var(--ds-accent); }
+
 .ds-chip[data-role="product"] { color:#2f6feb; border-color:#2f6feb55; }
+
 .ds-chip[data-role="architect"] { color:#8b5cf6; border-color:#8b5cf655; }
+
 .ds-chip[data-role="dev"] { color:#0f9d58; border-color:#0f9d5855; }
+
 .ds-chip[data-role="qa"] { color:#e08600; border-color:#e0860055; }
+
 .ds-chip-blocked { color:#fff; background:#e5484d; border-color:#e5484d; font-weight:600; }
+
 .ds-card[data-nobody="1"] { border-color: color-mix(in srgb, #e5484d 42%, var(--ds-line)); }
+
 .ds-chip-bug { color:#c0392b; border-color:#c0392b66; background:color-mix(in srgb, #c0392b 8%, transparent); font-weight:600; }
+
 .ds-chip-bug[data-sev="p0"] { color:#fff; background:#c0392b; border-color:#c0392b; }
+
 .ds-chip-bug[data-sev="p1"] { color:#c0392b; background:color-mix(in srgb, #c0392b 16%, transparent); }
+
 .ds-chip[data-sla="overdue"] { color:#fff; background:#e5484d; border-color:#e5484d; font-weight:600; }
+
 .ds-chip[data-sla="due_soon"] { color:var(--ds-warn-text); border-color:#b4530966; background:color-mix(in srgb, #d97706 12%, transparent); }
+
 .ds-chip[data-sla="ok"] { color:#137a4b; border-color:#137a4b55; background:color-mix(in srgb, #0f9d58 8%, transparent); }
+
 @keyframes ds-pulse { 0%,100% { opacity:.45 } 50% { opacity:1 } }
+
 .ds-dot { width:6px; height:6px; border-radius:50%; display:inline-block; }
+
 .ds-dot[data-p="urgent"] { background:#e5484d; }
+
 .ds-dot[data-p="normal"] { background:#8a8f98; }
+
 .ds-dot[data-p="relaxed"] { background:#4b7bec55; }
+
 .ds-empty { opacity:.4; font-size:12px; padding:16px 8px; text-align:center; border:1px dashed var(--ds-line); border-radius:10px; }
-.ds-body { flex:1; min-height:0; overflow:auto; padding:16px 20px; }
+
 .ds-panel { border:1px solid var(--ds-line); border-radius:10px; overflow:hidden; margin-bottom:16px; background:var(--ds-card);
   box-shadow:var(--ds-shadow); }
+
 .ds-panel-head { padding:12px 16px; border-bottom:1px solid var(--ds-line); font-weight:600; font-size:13px; display:flex; align-items:center; gap:12px; justify-content:space-between; }
+
 .ds-panel-head > .ds-hint { font-weight:400; }
-/* Panel bodies stack by default: one field or one list row per line, never a mosaic. */
+
 .ds-panel-body { padding:16px 16px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+
 .ds-panel-body > .ds-row { min-width:0; }
+
 .ds-panel-body > .ds-row > .ds-field { min-width:0; }
-/* Two-or-more column body, only where the content really is a set of short fields. */
+
 .ds-panel-body.ds-grid2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 20px; align-items:start; }
+
 .ds-panel-body.ds-grid4 { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px 16px; align-items:start; }
-@media (max-width: 1080px) { .ds-panel-body.ds-grid4 { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-@media (max-width: 660px) { .ds-panel-body.ds-grid2, .ds-panel-body.ds-grid4 { grid-template-columns:1fr; } }
+
+@media (max-width: 1080px) {
+.ds-panel-body.ds-grid4 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width: 660px) {
+.ds-panel-body.ds-grid2, .ds-panel-body.ds-grid4 { grid-template-columns:1fr; }
+}
+
 .ds-listrow { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:12px 0;
   border-bottom:1px solid var(--ds-line); }
+
 .ds-listrow:last-child { border-bottom:0; padding-bottom:2px; }
+
 .ds-listrow-main { min-width:0; flex:1 1 auto; display:flex; flex-direction:column; gap:4px; }
+
 .ds-listrow-main > div:first-child { font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
 .ds-listrow-actions { display:flex; gap:8px; flex:0 0 auto; align-items:center; }
-/* Edit forms: keep the field grid readable instead of stretching inputs across the pane. */
-/* Right-side editor drawer: keep the list in view while editing one record. */
+
 .ds-side-wrap { position:fixed; inset:0; top:max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px)); z-index:80; display:flex; justify-content:flex-end; -webkit-app-region:no-drag; }
+
 .ds-side-mask { position:absolute; inset:0; background:rgba(15,18,25,.42); }
+
 .ds-side { position:relative; display:flex; flex-direction:column; width:min(760px,96vw); height:100%; background:var(--ds-surface); color:inherit; border-left:1px solid var(--ds-line); box-shadow:-18px 0 48px rgba(0,0,0,.18); }
-@media (max-width:760px) { .ds-side { width:100%; } }
-.ds-form-panel { max-width:880px; }
-.ds-form-panel .ds-panel-body > .ds-row { align-items:flex-start; }
-.ds-form-panel .ds-panel-body > .ds-row:last-child { border-top:1px solid var(--ds-line); padding-top:12px; margin-top:2px; }
-.ds-form-panel .ds-panel-body > .ds-row:last-child .ds-btn-primary { min-width:88px; }
-/* Settings: a fixed section rail plus one pane, instead of one long scroll. */
-  border-right:1px solid var(--ds-line); padding:0 12px 12px 0; }
-  border:0; background:none; padding:8px 12px; border-radius:10px; cursor:pointer; font-size:13px; line-height:1.2; }
-@media (max-width: 760px) {
-    border-bottom:1px solid var(--ds-line); padding:0 0 12px; }
+
+@media (max-width:760px) {
+.ds-side { width:100%; }
 }
+
+.ds-form-panel .ds-panel-body > .ds-row { align-items:flex-start; }
+
+.ds-form-panel .ds-panel-body > .ds-row:last-child { border-top:1px solid var(--ds-line); padding-top:12px; margin-top:2px; }
+
+.ds-form-panel .ds-panel-body > .ds-row:last-child .ds-btn-primary { min-width:88px; }
+
 .ds-field { display:flex; flex-direction:column; gap:4px; }
+
 .ds-label { font-size:11px; opacity:.6; }
+
 .ds-input, .ds-textarea, .ds-select { width:100%; font:inherit; color:inherit; background:var(--ds-soft); border:1px solid var(--ds-line);
   border-radius:10px; padding:8px 8px; outline:none; }
+
 .ds-input:focus, .ds-textarea:focus, .ds-select:focus { border-color:var(--ds-accent); }
+
 .ds-textarea { min-height:70px; resize:vertical; font-size:12px; }
+
 .ds-hint { font-size:11px; opacity:.5; }
-.ds-error { font-size:11px; color:#c0392b; }
-.ds-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-/* 桌面版（Electron）是无边框窗口 + Window Controls Overlay：系统在窗口顶部画一条标题栏和
-   最小化/最大化/关闭按钮。fixed 覆盖层如果从 top:0 开始，就会钻到那条标题栏下面 ——
-   抽屉头部的「设计：…」和「关闭」被原生按钮盖住、点不动（issue #4）。
-   env(titlebar-area-height) 给出这条标题栏的高度；普通浏览器里它没有值，退回 0，行为不变。 */
-/* Electron 里 env(titlebar-area-height) 实测为 0，用 --ds-titlebar-floor 兜底（见 web/src/studio/titlebar.js） */
+
 .ds-drawer-wrap { position:fixed; inset:0; top:max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px)); background:#00000055; display:flex; justify-content:flex-end; z-index:60; -webkit-app-region:no-drag; }
+
 .ds-modal-wrap { position:fixed; inset:0; top:max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px)); background:#00000055; display:flex; align-items:center; justify-content:center; -webkit-app-region:no-drag;
   z-index:70; padding:24px; }
+
 .ds-modal { width:min(560px,96vw); max-height:min(86vh,760px); overflow:auto; display:flex; flex-direction:column; gap:16px;
   background:var(--ds-surface); color:inherit; border:1px solid var(--ds-line); border-radius:16px; padding:20px 24px;
   box-shadow:0 24px 60px #0000003d; }
+
 .ds-modal h3 { margin:0; font-size:16px; font-weight:600; }
-.ds-modal-foot { display:flex; align-items:center; gap:12px; padding-top:2px; }
-.ds-modal-foot .ds-grow { flex:1; }
-.ds-modal-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
 .ds-drawer { width:min(980px,94vw); height:100%; max-height:100%; background:var(--ds-surface); color:inherit; border-left:1px solid var(--ds-line);
   display:flex; flex-direction:column; overflow:hidden; box-shadow:-16px 0 40px #0000002e; }
-  flex:0 0 auto; background:linear-gradient(180deg, color-mix(in srgb, var(--ds-accent) 5%, transparent), transparent); }
-/* min-height:0 是关键：没有它，flex 子项不肯收缩，内容一长就把底部评论框顶到屏幕外 */
-.ds-dw-body { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:16px 20px 28px;
-  display:flex; flex-direction:column; gap:20px; }
-/* 详情按页签分组，这里只是包裹层，保持单列 */
-  appearance:none; background:transparent; border:1px solid transparent; border-bottom:none; color:inherit;
-  font-size:13px; padding:8px 12px 8px; border-radius:10px 10px 0 0; cursor:pointer; display:flex; align-items:center; gap:4px;
-  opacity:.72; margin-bottom:-1px;
-}
-  opacity:1; font-weight:600; background:var(--ds-surface); border-color:var(--ds-line);
-  border-bottom:1px solid var(--ds-surface); color:var(--ds-accent);
-}
-  font-size:11px; line-height:1; padding:2px 4px; border-radius:10px; font-weight:600;
-  background:color-mix(in srgb, currentColor 12%, transparent);
-}
+
 .ds-mention-pop {
   position:absolute; left:20px; right:20px; bottom:calc(100% - 4px);
   background:var(--ds-surface); border:1px solid var(--ds-line); border-radius:10px;
   box-shadow:0 12px 32px rgba(0,0,0,0.18); max-height:260px; display:flex; flex-direction:column;
   overflow:hidden; z-index:60; color:inherit;
 }
-  display:flex; align-items:center; gap:8px; width:100%; text-align:left; background:none; border:0;
-  padding:8px 12px; font:inherit; font-size:13px; color:inherit; cursor:pointer;
-}
+
 .ds-chip[data-missing="1"] { border-color:color-mix(in srgb, #e5484d 45%, var(--ds-line)); }
-.ds-sec { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
-.ds-sec:last-child { margin-bottom:0; }
-/* 详情里不要套内层滚动条：外层 .ds-dw-body 已经能滚，再套一层会把内容「截一半」，让人以为丢了数据。 */
-  border:1px solid var(--ds-line); border-radius:10px; background:var(--ds-soft); }
-/* Comment thread: the human's words sit flush left on an accent surface,
-   the agent's answer steps in behind a role-coloured rail. */
-  padding:8px 0; border-top:1px solid var(--ds-line); }
-  font-size:16px; line-height:1; border:1px solid var(--ds-line); background:var(--ds-card); }
-  border-radius:10px; border:1px solid currentColor; opacity:.75; }
-  border:1px solid var(--ds-line); background:var(--ds-card); }
-  border-color:color-mix(in srgb, var(--ds-accent) 38%, transparent); }
+
 .ds-md { white-space:normal; line-height:1.6; word-break:break-word; }
+
 .ds-md > *:first-child { margin-top:0; }
+
 .ds-md > *:last-child { margin-bottom:0; }
+
 .ds-md p { margin:0 0 8px; }
+
 .ds-md h3, .ds-md h4, .ds-md h5, .ds-md h6 { margin:12px 0 8px; line-height:1.35; }
-.ds-md h3 { font-size:16px; } .ds-md h4 { font-size:13px; } .ds-md h5, .ds-md h6 { font-size:13px; }
+
+.ds-md h3 { font-size:16px; }
+
+.ds-md h4 { font-size:13px; }
+
+.ds-md h5, .ds-md h6 { font-size:13px; }
+
 .ds-md ul, .ds-md ol { margin:0 0 8px; padding-left:20px; }
+
 .ds-md li { margin:2px 0; }
+
 .ds-md code { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px;
   background:var(--ds-soft2); border:1px solid var(--ds-line); border-radius:10px; padding:0 4px; }
+
 .ds-md pre { margin:0 0 12px; padding:12px 12px; overflow-x:auto; background:var(--ds-soft2); border:1px solid var(--ds-line); border-radius:10px; }
+
 .ds-md pre code { background:none; border:0; padding:0; font-size:12px; line-height:1.55; }
+
 .ds-md blockquote { margin:0 0 8px; padding:2px 0 2px 12px; border-left:3px solid var(--ds-line); opacity:.85; }
+
 .ds-md a { color:var(--ds-accent); text-decoration:none; }
+
 .ds-md a:hover { text-decoration:underline; }
+
 .ds-md hr { border:0; border-top:1px solid var(--ds-line); margin:12px 0; }
+
 .ds-md table { border-collapse:collapse; margin:0 0 12px; font-size:12px; width:100%; table-layout:fixed; }
+
 .ds-md th, .ds-md td { border:1px solid var(--ds-line); padding:4px 8px; text-align:left; vertical-align:top; word-break:break-word; }
+
 .ds-md th { background:var(--ds-soft2); font-weight:600; }
-.ds-err { color:var(--ds-danger-text); font-size:12px; }
-.ds-ok { color:#0f9d58; font-size:12px; }
-.ds-loading { padding:24px; opacity:.5; font-size:13px; }
-/* ---- 需求页 ---- */
-.ds-req-grid { display:grid; grid-template-columns:320px minmax(0,1fr); gap:16px; align-items:start; }
-@media (max-width:980px) { .ds-req-grid { grid-template-columns:1fr; } }
+
 .ds-req-list { display:flex; flex-direction:column; gap:8px; }
+
 .ds-req-item { border:1px solid var(--ds-line); border-radius:10px; padding:8px 12px; cursor:pointer; display:flex; flex-direction:column; gap:4px; }
+
 .ds-req-item:hover { border-color:var(--ds-accent); }
+
 .ds-req-item[data-on="1"] { border-color:var(--ds-accent); background:color-mix(in srgb, var(--ds-accent) 7%, transparent); }
+
 .ds-req-detail { border:1px solid var(--ds-line); border-radius:10px; padding:16px 20px; min-height:220px; }
-.ds-req-desc { margin-top:12px; font-size:12px; line-height:1.65; opacity:.92; }
-.ds-stat-box { border:1px solid var(--ds-line); border-radius:10px; padding:8px 12px; display:flex; flex-direction:column; gap:2px; }
-.ds-stat-box b { font-size:16px; font-weight:600; }
+
 .ds-pt-row { display:flex; align-items:flex-start; gap:16px; padding:12px 12px; border:1px solid var(--ds-line); border-left:3px solid color-mix(in srgb, currentColor 20%, transparent); border-radius:10px; }
+
 .ds-pt-row[data-covered="1"] { border-left-color:#0f9d58; }
+
 .ds-chip[data-pt="covered"] { color:#0f9d58; border-color:color-mix(in srgb, #0f9d58 40%, transparent); }
+
 .ds-chip[data-pt="open"] { color:#d97706; border-color:color-mix(in srgb, #d97706 40%, transparent); }
-.ds-stat-box span { font-size:11px; opacity:.6; }
-.ds-stat-box[data-warn="1"] { border-color:#e5484d; }
-.ds-stat-box[data-warn="1"] b { color:#e5484d; }
+
 .ds-chip-code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px; letter-spacing:.02em; border:1px solid var(--ds-line); border-radius:10px; padding:0 4px; opacity:.85; }
+
 .ds-chip[data-req="active"] { color:#0f9d58; border-color:#0f9d58; }
+
 .ds-chip[data-req="delivered"] { color:var(--ds-accent); border-color:var(--ds-accent); }
+
 .ds-chip[data-req="closed"] { opacity:.55; }
-/* ---- 需求文档与基线 ---- */
-.ds-doc-row { display:flex; align-items:flex-start; gap:12px; padding:8px 0; border-bottom:1px solid var(--ds-line); }
-.ds-doc-row:last-child { border-bottom:0; }
+
 .ds-chip[data-doc="prd"] { color:#2f6feb; border-color:#2f6feb; }
+
 .ds-chip[data-doc="proto"] { color:#8b5cf6; border-color:#8b5cf6; }
+
 .ds-chip[data-doc="acceptance"] { color:#0f9d58; border-color:#0f9d58; }
+
 .ds-chip[data-docstatus="baseline"] { color:#0f9d58; border-color:#0f9d58; background:color-mix(in srgb, #0f9d58 12%, transparent); }
+
 .ds-chip[data-docstatus="review"] { color:#d97706; border-color:#d97706; }
-/* ---- 滚动条：跟着插件主题走，不跟系统 ---- */
+
 [data-dsh-studio] { scrollbar-width:thin; scrollbar-color:color-mix(in srgb, currentColor 24%, transparent) transparent; }
+
 [data-dsh-studio] ::-webkit-scrollbar { width:10px; height:10px; }
+
 [data-dsh-studio] ::-webkit-scrollbar-track { background:transparent; }
+
 [data-dsh-studio] ::-webkit-scrollbar-thumb { background:color-mix(in srgb, currentColor 22%, transparent); border-radius:10px; }
+
 [data-dsh-studio] ::-webkit-scrollbar-thumb:hover { background:color-mix(in srgb, currentColor 38%, transparent); }
+
 [data-dsh-studio] ::-webkit-scrollbar-corner { background:transparent; }
 
-/* 中窄屏（761–920px）：顶栏动作区有 600px 宽（新建 / 刷新 / 运行托盘 / 当前用户），
-   一行放不下时会把标题挤到只剩几十像素；先让动作区换行，标题保持可读。 */
-@media (max-width:920px) {
-  .ds-head-top { flex-wrap:wrap; gap:8px; }
-  /* 标题独占一行，动作区换到下一行——不依赖字体宽度，Linux/Windows 结果一致。 */
-  .ds-brand { flex:1 0 100%; }
-  .ds-head-actions { flex-wrap:wrap; gap:8px; margin-left:0; }
-}
-/* ---- 窄屏（平板竖屏 / 手机）：单列、卡片占满、按钮换行 ---- */
 @media (max-width:760px) {
-  .ds-head { padding:12px 12px 0; }
-  .ds-head-top { flex-wrap:wrap; gap:8px; }
-  .ds-head-actions { flex-wrap:wrap; gap:8px; margin-left:0; }
-  .ds-head-tabs { gap:8px; }
-  .ds-head-tabs .ds-grow { display:none; }
-  .ds-stat { display:none; }
-  .ds-tabs { flex:1 1 auto; min-width:0; flex-wrap:wrap; overflow:visible; }
-  .ds-tab { padding:4px 12px; }
-  .ds-board { gap:12px; padding:12px 12px 12px; }
-  .ds-col { flex:0 0 min(86vw,300px); }
-  .ds-panel-body { padding:12px; }
-  .ds-audit-row { grid-template-columns:56px 1fr 56px; }
-}
-@media (max-width:520px) {
-  .ds-col { flex:0 0 92vw; }
-  .ds-tabs { overflow-x:auto; max-width:100%; }
-  .ds-head-actions .ds-btn { padding:4px 8px; }
+.ds-board { gap:12px; padding:12px 12px 12px; }
+
+.ds-col { flex:0 0 min(86vw,300px); }
+
+.ds-panel-body { padding:12px; }
+
+.ds-audit-row { grid-template-columns:56px 1fr 56px; }
 }
 
-/* ---- 强制颜色（Windows 高对比度 / forced-colors）：选中态从底色改成边框 ---- */
-@media (forced-colors: active) {
-  .ds-btn, .ds-chip, .ds-seg-btn { border:1px solid ButtonText; }
-  .ds-tab[data-on="1"], .ds-seg-btn[data-on="1"], .ds-chip[data-on="1"] { border:2px solid Highlight; }
-  .ds-btn-primary { border:2px solid ButtonText; background:ButtonFace; color:ButtonText; }
-  .ds-kpi[data-warn="1"], .ds-stat-box[data-warn="1"] { border:2px solid CanvasText; }
-  .ds-chip[data-pt="covered"], .ds-chip[data-pt="open"], .ds-chip[data-req="active"], .ds-chip[data-req="delivered"] { border-color:Highlight; }
-  [data-dsh-studio] :focus-visible { outline:2px solid Highlight; outline-offset:1px; }
+@media (max-width:520px) {
+.ds-col { flex:0 0 92vw; }
+
+.ds-head-actions .ds-btn { padding:4px 8px; }
 }
-/* ---- 登录页（统一登录要求登录、又还没有会话时盖的一层） ---- */
-.ds-login-wrap { flex:1 1 auto; display:flex; align-items:center; justify-content:center; padding:24px; }
-/* 已进入工作区后点「登录」时是浮层：固定盖住整页，别把下面的布局挤歪 */
-.ds-login-wrap[data-overlay="1"] { position:fixed; inset:0; top:max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px)); z-index:90; flex:none; -webkit-app-region:no-drag;
-  background:color-mix(in srgb, var(--ds-surface) 76%, transparent); backdrop-filter:blur(2px); }
+
+@media (forced-colors: active) {
+.ds-btn, .ds-chip, .ds-seg-btn { border:1px solid ButtonText; }
+
+.ds-tab[data-on="1"], .ds-seg-btn[data-on="1"], .ds-chip[data-on="1"] { border:2px solid Highlight; }
+
+.ds-btn-primary { border:2px solid ButtonText; background:ButtonFace; color:ButtonText; }
+
+.ds-kpi[data-warn="1"], .ds-stat-box[data-warn="1"] { border:2px solid CanvasText; }
+
+.ds-chip[data-pt="covered"], .ds-chip[data-pt="open"], .ds-chip[data-req="active"], .ds-chip[data-req="delivered"] { border-color:Highlight; }
+
+[data-dsh-studio] :focus-visible { outline:2px solid Highlight; outline-offset:1px; }
+}
+
 .ds-login { width:min(380px,100%); display:flex; flex-direction:column; gap:12px; padding:20px;
   border:1px solid var(--ds-line); border-radius:16px; background:var(--ds-surface);
   box-shadow:0 12px 32px color-mix(in srgb, currentColor 12%, transparent); }
-.ds-login-wrap[data-overlay="1"] .ds-login { box-shadow:0 22px 60px color-mix(in srgb, currentColor 26%, transparent); }
-.ds-login-brand { font-size:16px; font-weight:600; }
-.ds-login-hint { font-size:12px; opacity:.75; line-height:1.6; }
-.ds-login-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:2px; }
-.ds-login-note { font-size:11px; opacity:.6; word-break:break-all; }
 
-/* ======================================================================
-   shadcn/ui 风格层（2026-11-09）
-   对齐 https://ui.shadcn.com 的默认主题：一套 token + 统一圆角/描边/
-   焦点环/间距，组件按 Button / Input / Card / Badge / Tabs / Dialog /
-   Table 的默认外观重画。仍然零依赖、无构建，只追加规则覆盖旧样式。
-   ====================================================================== */
+.ds-login-wrap[data-overlay="1"] .ds-login { box-shadow:0 22px 60px color-mix(in srgb, currentColor 26%, transparent); }
+
 [data-dsh-studio] {
   --radius:10px;
   --background:#fafafa; --foreground:#09090b;
@@ -780,6 +814,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
   --ds-accent:var(--primary); --ds-shadow:0 1px 2px rgb(9 9 11 / .05);
   background:var(--background); color:var(--foreground);
 }
+
 [data-dsh-studio][data-theme="light"] {
   color-scheme:light; color:var(--foreground); background:var(--background);
   --background:#fafafa; --foreground:#09090b;
@@ -796,6 +831,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
   --ds-soft:var(--muted); --ds-soft2:var(--secondary);
   --ds-accent:var(--primary); --ds-shadow:0 1px 2px rgb(9 9 11 / .05);
 }
+
 [data-dsh-studio][data-theme="dark"] {
   /* 暗色下的"文字安全色"：浅色主题那套在深底上不够亮（实测 3.0~3.5:1），这里单独给一套。 */
   --ds-muted:#a1a1aa; --ds-warn-text:#fbbf24; --ds-danger-text:#ff9a9d; --ds-ok-text:#4ade80; --ds-violet-text:#c4b5fd;
@@ -814,115 +850,120 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
   --ds-soft:var(--muted); --ds-soft2:var(--secondary);
   --ds-accent:var(--primary); --ds-shadow:0 1px 2px rgb(0 0 0 / .45);
 }
-/* 焦点环：shadcn 的 ring-2 ring-ring ring-offset-2 */
+
 [data-dsh-studio] :focus-visible { outline:2px solid var(--ring); outline-offset:2px; border-radius:10px; }
 
-/* 页头 / 页面底 */
-[data-dsh-studio] .ds-head { background:var(--background); border-bottom:1px solid var(--border); padding:16px 20px 0; }
 [data-dsh-studio] .ds-brand, [data-dsh-studio] .ds-title { letter-spacing:0; }
 
-/* 按钮：outline（默认）、primary、ghost 三态 */
 [data-dsh-studio] .ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
   height:32px; padding:0 12px; border:1px solid var(--input); border-radius:10px;
   background:var(--card); color:var(--foreground); font-size:13px; font-weight:500; line-height:1;
   box-shadow:var(--ds-shadow); cursor:pointer; transition:background .12s ease, border-color .12s ease, box-shadow .12s ease; }
+
 [data-dsh-studio] .ds-btn:hover { background:var(--muted); }
+
 [data-dsh-studio] .ds-btn:active { transform:translateY(.5px); }
+
 [data-dsh-studio] .ds-btn[disabled] { opacity:.5; cursor:not-allowed; box-shadow:none; }
+
 [data-dsh-studio] .ds-btn-primary { background:var(--primary); border-color:var(--primary); color:var(--primary-foreground); box-shadow:none; }
+
 [data-dsh-studio] .ds-btn-primary:hover { background:color-mix(in srgb, var(--primary) 88%, transparent); filter:none; }
+
 [data-dsh-studio] .ds-btn-ghost { background:transparent; border-color:transparent; box-shadow:none; opacity:.7; height:26px; padding:0 8px; }
+
 [data-dsh-studio] .ds-btn-ghost:hover { background:var(--muted); opacity:1; }
 
-/* 输入类：Input / Select / Textarea */
 [data-dsh-studio] .ds-input, [data-dsh-studio] .ds-select, [data-dsh-studio] .ds-textarea {
   width:100%; height:32px; padding:0 12px; font:inherit; font-size:13px; color:var(--foreground);
   background:var(--card); border:1px solid var(--input); border-radius:10px;
   box-shadow:var(--ds-shadow); transition:border-color .12s ease, box-shadow .12s ease; }
+
 [data-dsh-studio] .ds-textarea { height:auto; min-height:72px; padding:8px 12px; line-height:1.6; resize:vertical; }
+
 [data-dsh-studio] .ds-select { padding-right:8px; }
+
 [data-dsh-studio] .ds-input:hover, [data-dsh-studio] .ds-select:hover, [data-dsh-studio] .ds-textarea:hover { border-color:var(--ring); }
+
 [data-dsh-studio] .ds-input:focus, [data-dsh-studio] .ds-select:focus, [data-dsh-studio] .ds-textarea:focus {
   border-color:var(--ring); outline:none; box-shadow:0 0 0 3px color-mix(in srgb, var(--ring) 35%, transparent); }
+
 [data-dsh-studio] .ds-input::placeholder, [data-dsh-studio] .ds-textarea::placeholder { color:var(--muted-foreground); }
+
 [data-dsh-studio] .ds-label { font-size:12px; font-weight:500; color:var(--foreground); }
 
-/* 卡片 / 面板 */
 [data-dsh-studio] .ds-panel { background:var(--card); border:1px solid var(--border); border-radius:10px;
   box-shadow:var(--ds-shadow); margin-bottom:16px; overflow:hidden; }
+
 [data-dsh-studio] .ds-panel-head { background:transparent; border-bottom:1px solid var(--border); padding:12px 16px; font-size:13px; }
+
 [data-dsh-studio] .ds-panel-body { padding:16px; gap:16px; }
+
 [data-dsh-studio] .ds-card { background:var(--card); border:1px solid var(--border); border-radius:10px;
   box-shadow:var(--ds-shadow); padding:12px 12px; transition:border-color .12s ease, box-shadow .12s ease, transform .12s ease; }
+
 [data-dsh-studio] .ds-card:hover { border-color:var(--ring); transform:none; box-shadow:0 2px 8px rgb(9 9 11 / .08); }
+
 [data-dsh-studio] .ds-kpi { background:var(--card); border:1px solid var(--border); border-radius:10px;
   box-shadow:var(--ds-shadow), inset 0 0 0 0 transparent; padding:16px 16px; }
-[data-dsh-studio] .ds-stat-box, [data-dsh-studio] .ds-market-card,
-  background:var(--card); border:1px solid var(--border); border-radius:10px; box-shadow:var(--ds-shadow); }
 
-/* Badge（chip） */
 [data-dsh-studio] .ds-chip { display:inline-flex; align-items:center; gap:4px; height:20px; padding:0 8px;
   border:1px solid var(--border); border-radius:999px; background:var(--muted); color:var(--secondary-foreground);
   font-size:11px; font-weight:500; line-height:1; white-space:nowrap; }
+
 [data-dsh-studio] .ds-chip[data-on="1"] { background:var(--primary); border-color:var(--primary); color:var(--primary-foreground); }
+
 [data-dsh-studio] .ds-chip-bug, [data-dsh-studio] .ds-chip[data-sla="overdue"] { background:color-mix(in srgb, var(--destructive) 12%, var(--card)); border-color:color-mix(in srgb, var(--destructive) 45%, var(--border)); color:var(--destructive); font-weight:600; }
+
 [data-dsh-studio] .ds-chip[data-sla="due_soon"] { background:color-mix(in srgb, #d97706 12%, var(--card)); border-color:color-mix(in srgb, #d97706 45%, var(--border)); color:var(--ds-warn-text); }
+
 [data-dsh-studio][data-theme="dark"] .ds-chip[data-sla="due_soon"] { color:#fbbf24; }
 
-/* Tabs（shadcn: 灰底胶囊 + 选中项浮起） */
-[data-dsh-studio] .ds-tabs { display:inline-flex; gap:4px; padding:4px; border-radius:10px;
-  background:var(--muted); border:1px solid var(--border); }
-[data-dsh-studio] .ds-tab { border:0; background:transparent; color:var(--muted-foreground); font:inherit; font-size:13px;
-  font-weight:500; padding:4px 12px; border-radius:10px; white-space:nowrap; flex:0 0 auto; transition:background .12s ease, color .12s ease; }
-[data-dsh-studio] .ds-tab:hover { background:color-mix(in srgb, var(--card) 60%, transparent); color:var(--foreground); opacity:1; }
-[data-dsh-studio] .ds-tab[data-on="1"] { background:var(--card); color:var(--foreground); font-weight:600; box-shadow:var(--ds-shadow); }
-[data-dsh-studio] .ds-seg { display:inline-flex; gap:4px; padding:4px; border-radius:10px; background:var(--muted); border:1px solid var(--border); }
-[data-dsh-studio] .ds-seg-btn { border:0; background:transparent; color:var(--muted-foreground); font:inherit; font-size:12px;
-  padding:4px 12px; border-radius:10px; white-space:nowrap; }
-[data-dsh-studio] .ds-seg-btn[data-on="1"] { background:var(--card); color:var(--foreground); font-weight:600; box-shadow:var(--ds-shadow); opacity:1; }
-}
-
-/* 看板列 */
 [data-dsh-studio] .ds-col { background:color-mix(in srgb, var(--muted) 55%, transparent); border:1px solid var(--border);
   border-radius:10px; }
-[data-dsh-studio] .ds-col-head { background:transparent; border-bottom:1px solid var(--border); padding:12px 12px; font-size:12px; }
 
-/* 抽屉 / 弹窗（Dialog） */
 [data-dsh-studio] .ds-side, [data-dsh-studio] .ds-drawer { background:var(--card); border-left:1px solid var(--border);
   box-shadow:-24px 0 60px rgb(9 9 11 / .18); }
+
 [data-dsh-studio] .ds-modal { background:var(--card); border:1px solid var(--border); border-radius:10px;
   box-shadow:0 24px 64px rgb(9 9 11 / .24); padding:20px; }
+
 [data-dsh-studio] .ds-modal-wrap, [data-dsh-studio] .ds-drawer-wrap, [data-dsh-studio] .ds-side-mask { background:rgb(9 9 11 / .5); }
 
-/* 表格化行 */
 [data-dsh-studio] .ds-listrow, [data-dsh-studio] .ds-doc-row, [data-dsh-studio] .ds-audit-row,
 
 /* 滚动条 */
 [data-dsh-studio] { scrollbar-color:color-mix(in srgb, var(--foreground) 22%, transparent) transparent; }
+
 [data-dsh-studio] ::-webkit-scrollbar-thumb { background:color-mix(in srgb, var(--foreground) 20%, transparent); }
+
 [data-dsh-studio] ::-webkit-scrollbar-thumb:hover { background:color-mix(in srgb, var(--foreground) 32%, transparent); }
 
-/* 登录卡（Card + 表单） */
 [data-dsh-studio] .ds-login { border:1px solid var(--border); border-radius:10px; background:var(--card); box-shadow:0 20px 48px rgb(9 9 11 / .18); }
 
-/* ---- 第二遍：密度与层级微调（看板 / 卡片 / 工具栏） ---- */
 [data-dsh-studio] .ds-board { gap:16px; padding:16px 20px 20px; }
+
 [data-dsh-studio] .ds-board-bar { gap:8px; padding:12px 20px; flex-wrap:wrap; }
+
 [data-dsh-studio] .ds-col { background:var(--muted); border:1px solid var(--border); }
-[data-dsh-studio] .ds-col-head { padding:12px 12px; font-size:13px; font-weight:600; letter-spacing:-.005em; }
+
 [data-dsh-studio] .ds-count { display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 8px;
   border-radius:999px; background:var(--card); border:1px solid var(--border); color:var(--muted-foreground); font-size:11px; font-weight:600; }
+
 [data-dsh-studio] .ds-col-body { padding:12px; gap:12px; }
+
 [data-dsh-studio] .ds-card { padding:12px 12px; border-radius:10px; }
+
 [data-dsh-studio] .ds-chip { height:21px; font-size:11px; padding:0 8px; background:var(--secondary); border-color:var(--border); }
+
 [data-dsh-studio] .ds-chip-code { background:var(--muted); border-color:var(--border); color:var(--muted-foreground); }
+
 [data-dsh-studio] .ds-chip[data-proj="1"] { background:color-mix(in srgb, var(--primary) 8%, var(--card)); border-color:color-mix(in srgb, var(--primary) 22%, var(--border)); color:var(--foreground); }
+
 [data-dsh-studio] .ds-panel-head .ds-hint, [data-dsh-studio] .ds-head .ds-sub { font-size:12px; }
 
-/* 系统开了「减少动态效果」就关掉过渡与动画（WCAG 2.3.3）：抽屉滑入、toast 淡出这类动效
-   对前庭功能敏感的人是实打实的不适，不是装饰偏好。 */
 @media (prefers-reduced-motion: reduce) {
-  [data-dsh-studio], [data-dsh-studio] *, [data-dsh-studio] *::before, [data-dsh-studio] *::after {
+[data-dsh-studio], [data-dsh-studio] *, [data-dsh-studio] *::before, [data-dsh-studio] *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
@@ -1065,61 +1106,67 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 
       const list = data?.items ?? state.config.market.items ?? []
 
-      return h('div', null,
-        h('div', { className: 'ds-row', style: { marginBottom: 12 } },
-          h('div', { style: { fontSize: 13.5, fontWeight: 650 } }, data?.title ?? state.config.market.title),
-          h('span', { className: 'ds-stat' }, `${list.length} 个条目 · profile ${state.profile ?? '—'}`),
-          h('div', { className: 'ds-grow' }),
-          h('button', { className: 'ds-btn', onClick: () => setAdding(!adding) }, adding ? '收起' : '＋ 添加条目'),
+      /* 市场卡片：分区 = 卡片（rounded-xl + 描边 + 白底），动作走 BoardUI Button，
+         状态用 Chip；空态用 boardui/empty-state。 */
+      const CARD = 'flex min-w-0 flex-col gap-2 rounded-xl border border-separator-border bg-background-primary-default p-4'
+      const FIELD = 'flex min-w-0 flex-col gap-1'
+      const LABEL = 'text-caption-2-medium text-text-secondary'
+      const HINT = 'text-caption-1-regular text-text-tertiary'
+      return h('div', { className: 'flex min-w-0 flex-col gap-3', 'data-market-list': '' },
+        h('div', { className: 'flex flex-wrap items-center gap-3' },
+          h('div', { className: 'text-body-2-semibold text-text-primary' }, data?.title ?? state.config.market.title),
+          h('span', { className: 'text-caption-1-regular text-text-tertiary' }, `${list.length} 个条目 · profile ${state.profile ?? '—'}`),
+          h('div', { className: 'flex-1' }),
+          h(Button, { variant: 'secondary', size: 'sm', 'data-action': 'toggle-add', onClick: () => setAdding(!adding) }, adding ? '收起' : '＋ 添加条目'),
         ),
-        error !== null ? h('div', { className: 'ds-err', style: { padding: '0 0 8px' } }, error) : null,
-        notice !== null ? h('div', { className: 'ds-ok', style: { padding: '0 0 8px' } }, notice) : null,
+        error !== null ? h('div', { className: 'text-caption-1-regular text-text-error-primary' }, error) : null,
+        notice !== null ? h('div', { className: 'text-caption-1-regular text-state-success-text' }, notice) : null,
         list.length === 0
-          ? h('div', { className: 'ds-empty' }, data?.hint || '还没有条目。把公司内部的插件包加进来，同事就能一键安装。')
-          : h('div', { className: 'ds-market-grid' },
+          ? h(EmptyState, { title: data?.hint || '还没有条目。把公司内部的插件包加进来，同事就能一键安装。' })
+          : h('div', { className: 'grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3' },
             list.map(item => {
               const name = packageOf(item.spec)
               const isInstalled = installed.has(name) || installed.has(item.name)
-              return h('div', { key: item.id, className: 'ds-market-card' },
-                h('div', { className: 'ds-mc-head' },
-                  h('span', { className: 'ds-mc-name ds-grow' }, item.name),
-                  h(ChipField, { className: 'ds-chip', 'data-on': isInstalled ? '1' : '0' }, isInstalled ? '已安装' : '未安装'),
+              return h('div', { key: item.id, className: CARD },
+                h('div', { className: 'flex items-center gap-2' },
+                  h('span', { className: 'min-w-0 flex-1 truncate text-body-2-semibold text-text-primary' }, item.name),
+                  h(ChipField, { variant: isInstalled ? 'lime' : 'gray', 'data-on': isInstalled ? '1' : '0' }, isInstalled ? '已安装' : '未安装'),
                 ),
-                item.description !== '' ? h('div', { className: 'ds-mc-desc' }, item.description) : null,
-                h('code', null, item.spec),
-                h('div', { className: 'ds-row', style: { marginTop: 'auto' } },
-                  h('button', {
-                    className: isInstalled ? 'ds-btn' : 'ds-btn ds-btn-primary',
+                item.description !== '' ? h('div', { className: HINT }, item.description) : null,
+                h('code', { className: 'break-all rounded-md border border-separator-border bg-background-secondary-default px-1 font-mono text-caption-2-regular text-text-tertiary' }, item.spec),
+                h('div', { className: 'mt-auto flex flex-wrap items-center gap-2' },
+                  h(Button, {
+                    variant: isInstalled ? 'secondary' : 'primary',
+                    size: 'sm',
+                    'data-action': isInstalled ? 'uninstall' : 'install',
                     disabled: busy === item.id,
                     onClick: async () => {
-                    const ok = await confirmDialog(isInstalled ? `从 profile 移除「${name}」？` : `安装「${name}」到工作空间？`, { title: isInstalled ? '移除插件' : '安装插件', danger: isInstalled, okText: isInstalled ? '移除' : '安装' })
-                    if (ok) void act(item, isInstalled ? 'uninstall' : 'install')
-                  },
+                      const ok = await confirmDialog(isInstalled ? `从 profile 移除「${name}」？` : `安装「${name}」到工作空间？`, { title: isInstalled ? '移除插件' : '安装插件', danger: isInstalled, okText: isInstalled ? '移除' : '安装' })
+                      if (ok) void act(item, isInstalled ? 'uninstall' : 'install')
+                    },
                   }, busy === item.id ? '处理中…' : isInstalled ? '移除' : '安装'),
-                  h('button', { className: 'ds-btn', style: { marginLeft: 'auto', opacity: .7 }, onClick: () => void removeItem(item) }, '删条目'),
+                  h(Button, { variant: 'ghost', size: 'sm', className: 'ml-auto', 'data-action': 'remove-item', onClick: () => void removeItem(item) }, '删条目'),
                 ),
               )
             }),
           ),
         adding
-          ? h('div', { className: 'ds-panel', style: { marginTop: 16 } },
-            h('div', { className: 'ds-panel-head' }, '添加条目'),
-            h('div', { className: 'ds-panel-body' },
-              h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '显示名'),
-                h(TextField, { className: 'ds-input', value: form.name, placeholder: '代码评审助手', onChange: e => setForm({ ...form, name: e.target.value }) }),
-              ),
-              h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '包名或路径'),
-                h(TextField, { className: 'ds-input', value: form.spec, placeholder: '@company/dsh-reviewer 或 link:~/pkgs/reviewer', onChange: e => setForm({ ...form, spec: e.target.value }) }),
-              ),
-              h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '一句话说明'),
-                h(TextField, { className: 'ds-input', value: form.description, placeholder: '自动跑 GitLab MR 的评审清单', onChange: e => setForm({ ...form, description: e.target.value }) }),
-              ),
+          ? h('div', { className: CARD, 'data-market-add': '' },
+            h('div', { className: 'text-title-2-semibold text-text-primary' }, '添加条目'),
+            h('div', { className: FIELD },
+              h('div', { className: LABEL }, '显示名'),
+              h(TextField, { 'aria-label': '显示名', value: form.name, placeholder: '代码评审助手', onChange: e => setForm({ ...form, name: e.target.value }) }),
             ),
-            h('div', { style: { padding: '0 16px 16px' } },
-              h('button', { className: 'ds-btn ds-btn-primary', disabled: saving || form.name.trim() === '' || form.spec.trim() === '', onClick: () => void addItem() }, saving ? '添加中…' : '加入市场'),
+            h('div', { className: FIELD },
+              h('div', { className: LABEL }, '包名或路径'),
+              h(TextField, { 'aria-label': '包名或路径', value: form.spec, placeholder: '@company/dsh-reviewer 或 link:~/pkgs/reviewer', onChange: e => setForm({ ...form, spec: e.target.value }) }),
+            ),
+            h('div', { className: FIELD },
+              h('div', { className: LABEL }, '一句话说明'),
+              h(TextField, { 'aria-label': '一句话说明', value: form.description, placeholder: '自动跑 GitLab MR 的评审清单', onChange: e => setForm({ ...form, description: e.target.value }) }),
+            ),
+            h('div', null,
+              h(Button, { variant: 'primary', size: 'sm', 'data-action': 'add-item', disabled: saving || form.name.trim() === '' || form.spec.trim() === '', onClick: () => void addItem() }, saving ? '添加中…' : '加入市场'),
             ),
           )
           : null,
@@ -1196,16 +1243,8 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
       }
 
-      const field = (key, label, hint, type) => h('div', { className: 'ds-field', key },
-        h('div', { className: 'ds-label' }, label),
-        h(TextField, {
-          className: 'ds-input',
-          type: type ?? 'text',
-          value: form[key],
-          placeholder: hint ?? '',
-          onChange: e => setForm({ ...form, [key]: e.target.value }),
-        }),
-      )
+      /* 字段行与保存条都在 panels/settings-panes.js 里（BoardUI），这里只保留同名的调用点。 */
+      const field = (key, label, hint, type) => h(SettingsField, { key, form, setForm, fieldKey: key, label, hint, type })
 
       const roleKeys = Object.keys(form.roles)
       const [section, setSection] = React.useState(initialSection ?? 'experts')
@@ -1239,11 +1278,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         health: ['集成健康', '飞书通知、GitLab、飞书云盘、代码隔离四条外部通道最近一次是成功还是失败。以前这些失败只写进日志，现在会在这里亮出来，坏了能看见、能补一次。'],
       }
 
-      const saveBar = h('div', { className: 'ds-row', style: { gap: 12, marginTop: 2 } },
-        h('button', { className: 'ds-btn ds-btn-primary', disabled: busy, onClick: () => void save() }, busy ? '保存中…' : '保存'),
-        status !== null ? h('span', { className: 'ds-ok' }, status) : null,
-        error !== null ? h('span', { className: 'ds-err' }, error) : null,
-      )
+      const saveBar = h(SettingsSaveBar, { busy, status, error, onSave: save })
 
       const nav = [
         { group: '团队' },
@@ -1288,120 +1323,14 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         if (id === 'feishu') return h('div', null, h(BotsPanel, { config, onChanged }), h(EscalatePanel, { config, onChanged }))
         if (id === 'docs') return h(DocsSinkPanel, { config, onChanged })
       if (id === 'health') return h(HealthPanel, { state, config, onChanged })
-        if (id === 'board') {
-          return h('div', null,
-            h('div', { className: 'ds-panel ds-form-panel' },
-              h('div', { className: 'ds-panel-head' }, '看板'),
-              h('div', { className: 'ds-panel-body' }, field('boardTitle', '看板标题', '需求&任务工作空间')),
-            ),
-            saveBar,
-          )
-        }
-        if (id === 'models') {
-          return h('div', null,
-            h('div', { className: 'ds-panel ds-form-panel' },
-              h('div', { className: 'ds-panel-head' }, '角色与模型'),
-              h('div', { className: 'ds-panel-body ds-grid2' },
-                roleKeys.map(role => h('div', { className: 'ds-field', key: role },
-                  h('div', { className: 'ds-label' }, `${ROLE_LABEL[role] ?? role}`),
-                  h(TextField, {
-                    className: 'ds-input',
-                    value: form.roles[role].model,
-                    placeholder: 'deepseek-v4.1-flash',
-                    onChange: e => setForm({ ...form, roles: { ...form.roles, [role]: { ...form.roles[role], model: e.target.value } } }),
-                  }),
-                )),
-              ),
-            ),
-            h('div', { className: 'ds-hint', style: { margin: '-8px 0 12px' } }, '单个专家可以在「专家」里单独指定模型，优先级：专家模型 → 这里的角色模型 → 宿主默认。'),
-            saveBar,
-          )
-        }
-        // agents
-        return h('div', null,
-          h('div', { className: 'ds-panel ds-form-panel' },
-            h('div', { className: 'ds-panel-head' }, '自动派单（专家 agent）'),
-            h('div', { className: 'ds-panel-body' },
-              h('div', { className: 'ds-field', style: { gridColumn: '1 / -1' } },
-                h('label', { className: 'ds-row', style: { alignItems: 'center', gap: 8, cursor: 'pointer' } },
-                  h(CheckField, { checked: form.agentsEnabled,
-                    onChange: e => setForm({ ...form, agentsEnabled: e.target.checked }),
-                  }),
-                  h('span', {}, '卡片进入勾选的列时，自动派给该列的负责人'),
-                ),
-                h('div', { className: 'ds-hint' }, '关闭后仍可在卡片抽屉里点「马上处理」手动派单；派单结果会写回评论并推进卡片。'),
-              ),
-              h('div', { className: 'ds-field', style: { gridColumn: '1 / -1' } },
-                h('div', { className: 'ds-label' }, '哪些列自动派单'),
-                h('div', { className: 'ds-row', style: { flexWrap: 'wrap', gap: 16 } },
-                  [['design', '待方案'], ['dev_ready', '待开发'], ['dev', '开发中'], ['test', '待测试']].map(([id, label]) =>
-                    h('label', { className: 'ds-row', key: id, style: { alignItems: 'center', gap: 8, cursor: 'pointer' } },
-                      h(CheckField, { checked: form.agentsAuto.includes(id),
-                        onChange: e => setForm({
-                          ...form,
-                          agentsAuto: e.target.checked
-                            ? [...form.agentsAuto, id]
-                            : form.agentsAuto.filter(entry => entry !== id),
-                        }),
-                      }),
-                      h('span', {}, label),
-                    )),
-                ),
-                h('div', { className: 'ds-hint' }, '勾选的列在卡片进入时自动派给该列对应的负责人；其余列只能手动「马上处理」。'),
-              ),
-              field('agentsMaxConcurrent', '同时最多几个 agent', '2'),
-              field('agentsPreset', 'Agent 预设', 'standard'),
-              field('agentsWorkspace', '工作区目录', '~/dsh-workspace'),
-              h('div', { className: 'ds-hint', style: { gridColumn: '1 / -1' } }, '预设决定 agent 手里有哪些工具：standard 带 shell 与文件读写，minimal 只有基础工具。'),
-              h('div', { className: 'ds-field', key: 'agentsSandbox' },
-                h('div', { className: 'ds-label' }, '沙箱档位（这个会话能写哪、能跑什么）'),
-                h(SelectField, {
-                  className: 'ds-input',
-                  value: form.agentsSandbox,
-                  onChange: e => setForm({ ...form, agentsSandbox: e.target.value }),
-                },
-                  [['read-only', '只读：能看不能改'],
-                    ['workspace-write', '只写工作区（推荐）：能改自己的目录，改不到系统别处'],
-                    ['danger-full-access', '无沙箱：可以写任何地方（危险）']].map(([id, label]) =>
-                    h('option', { key: id, value: id }, label)),
-                ),
-                h('div', { className: 'ds-hint' }, '由 DSH 的 permission preset 执行：read-only / workspace-write 走 bwrap 或 Landlock 隔离。单个专家可以在「专家」里覆盖。'),
-              ),
-              h('div', { className: 'ds-field', key: 'agentsIsolation' },
-                h('div', { className: 'ds-label' }, '代码隔离'),
-                h(SelectField, {
-                  className: 'ds-input',
-                  value: form.agentsIsolation,
-                  onChange: e => setForm({ ...form, agentsIsolation: e.target.value }),
-                },
-                  [['none', '不隔离：所有卡共用一个工作区'],
-                    ['worktree', '一卡一个 git worktree（推荐给多卡并行）']].map(([id, label]) =>
-                    h('option', { key: id, value: id }, label)),
-                ),
-                h('div', { className: 'ds-hint' }, '开启后，卡要挂在配了「本机代码目录」的项目上，派单时会为它切一条 task/<编号> 分支。'),
-              ),
-              field('agentsWorktreeRoot', 'worktree 根目录', '留空 = 工作区同级的 dsh-worktrees'),
-              h('div', { className: 'ds-field', key: 'agentsCleanup' },
-                h('div', { className: 'ds-label' }, '卡完成时'),
-                h(SelectField, {
-                  className: 'ds-input',
-                  value: form.agentsCleanup,
-                  onChange: e => setForm({ ...form, agentsCleanup: e.target.value }),
-                },
-                  [['manual', '保留 worktree 和分支，等人看 diff'],
-                    ['on_done', '自动删掉 worktree 和分支']].map(([id, label]) =>
-                    h('option', { key: id, value: id }, label)),
-                ),
-              ),
-            ),
-          ),
-          saveBar,
-        )
+        if (id === 'board') return h(BoardAppearancePane, { form, setForm, saveBar })
+        if (id === 'models') return h(RoleModelsPane, { form, setForm, saveBar, roleKeys })
+        // agents（自动派单）是兜底面板
+        return h(AutoDispatchPane, { form, setForm, saveBar })
       }
-
-      /* 设置页外壳改用 BoardUI token（2026-11-23 起基线是 BoardUI）：
+      /* 设置页外壳用 BoardUI token（2026-11-23 起基线是 BoardUI）：
          左栏导航 + 右栏标题/说明，不再用 .ds-settings / .ds-nav-item 那套手写样式。
-         面板内部还挂着 .ds-panel 壳，那一层按「壳 + 面板」整批迁，不在这里半途改。 */
+         面板本体在 web/src/studio/panels/** 与 panels/settings-panes.js 里，同样只走 token。 */
       const navItemClass = active => [
         'flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-body-2-regular',
         active ? 'bg-background-tertiary-default font-medium text-text-primary' : 'text-text-secondary hover:bg-background-secondary-default',
@@ -1437,157 +1366,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 
     // ------------------------------------------------------------------ page
 
-    function NewTaskDialog({ state, onClose, onCreated }) {
-      const projects = state?.config?.projects ?? []
-      const [title, setTitle] = React.useState('')
-      const [requirement, setRequirement] = React.useState('')
-      const [type, setType] = React.useState('requirement')
-      const [priority, setPriority] = React.useState('normal')
-      const [severity, setSeverity] = React.useState('p2')
-      const [domain, setDomain] = React.useState('')
-      const requirements = state?.requirements ?? []
-      const [requirementId, setRequirementId] = React.useState('')
-      const [project, setProject] = React.useState(projects.length === 1 ? projects[0].id : '')
-      /* 默认挂「当前迭代」：以前每次都要手选，结果就是没人选 —— 真机上 36 张卡一张都没挂迭代，
-         项目页的迭代进度永远是 0/0。这里取该项目的 active 迭代，只有一个迭代时也直接用。 */
-      const activeIterationOf = id => {
-        const list = projects.find(item => item.id === id)?.iterations ?? []
-        const active = list.find(item => String(item.status ?? '') === 'active')
-        return active?.id ?? (list.length === 1 ? list[0].id : '')
-      }
-      const [iteration, setIteration] = React.useState(() => activeIterationOf(projects.length === 1 ? projects[0].id : ''))
-      const [owner, setOwner] = React.useState('')
-      const [due, setDue] = React.useState('')
-      const [error, setError] = React.useState(null)
-      const [busy, setBusy] = React.useState(false)
-      const isBug = type === 'bug'
-      const projectIterations = (projects.find(item => item.id === project)?.iterations ?? [])
-      const submit = async () => {
-        setBusy(true); setError(null)
-        try {
-          await api('/task/create', {
-            title, requirement, type, priority, domain,
-            severity: isBug ? severity : '',
-            role: isBug ? 'dev' : 'product',
-            status: isBug ? 'dev_ready' : 'clarify',
-            project, iteration: project === '' ? '' : iteration,
-            owner: owner.trim(), dueAt: fromDateInput(due),
-            requirementId,
-          })
-          await onCreated()
-          onClose()
-        } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
-      }
-      return h('div', { className: 'ds-modal-wrap', onClick: e => { if (e.target === e.currentTarget) onClose() } },
-        h('div', { className: 'ds-modal' },
-          h('h3', {}, isBug ? '登记缺陷' : '新建任务'),
-          h('div', { className: 'ds-field' },
-            h('div', { className: 'ds-label' }, '标题'),
-            h(TextField, {
-              className: 'ds-input', autoFocus: true,
-              placeholder: isBug ? '一句话说清什么坏了，例如「优惠券叠加后金额算错」' : '一句话说清要做什么',
-              value: title,
-              onChange: e => setTitle(e.target.value),
-              onKeyDown: e => { if (e.key === 'Enter' && !e.isComposing) void submit() },
-            }),
-          ),
-          h('div', { className: 'ds-field' },
-            h('div', { className: 'ds-label' }, isBug ? '复现步骤 / 现象' : '需求 / 背景'),
-            h(MdField, {
-              className: 'ds-textarea', rows: 5,
-              placeholder: isBug
-                ? '复现步骤：1… 2…\n实际结果：\n期望结果：\n影响范围 / 环境（版本、账号、数据条件）：'
-                : '背景、期望结果、验收口径。专家会照这段去开工。',
-              value: requirement, onChange: e => setRequirement(e.target.value),
-            }),
-          ),
-          h('div', { className: 'ds-modal-grid' },
-            h('div', { className: 'ds-field' },
-              h('div', { className: 'ds-label' }, '类型'),
-              h(SelectField, { className: 'ds-select', value: type, onChange: e => setType(e.target.value) },
-                Object.keys(TYPE_LABEL).map(v => h('option', { key: v, value: v }, TYPE_LABEL[v]))),
-            ),
-            isBug
-              ? h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '严重级别'),
-                h(SelectField, { className: 'ds-select', value: severity, onChange: e => setSeverity(e.target.value) },
-                  Object.keys(SEVERITY_LABEL).map(v => h('option', { key: v, value: v }, SEVERITY_LABEL[v]))),
-              )
-              : h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '优先级'),
-                h(SelectField, { className: 'ds-select', value: priority, onChange: e => setPriority(e.target.value) },
-                  Object.keys(PRIORITY_LABEL).map(v => h('option', { key: v, value: v }, PRIORITY_LABEL[v]))),
-              ),
-            isBug
-              ? h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '优先级'),
-                h(SelectField, { className: 'ds-select', value: priority, onChange: e => setPriority(e.target.value) },
-                  Object.keys(PRIORITY_LABEL).map(v => h('option', { key: v, value: v }, PRIORITY_LABEL[v]))),
-              )
-              : null,
-            h('div', { className: 'ds-field', style: { gridColumn: '1 / -1' } },
-              h('div', { className: 'ds-label' }, '挂在哪个需求下'),
-              requirements.length === 0
-                ? h('div', { className: 'ds-hint', style: { fontSize: 11.5 } }, '还没有需求。到「需求」页先建一条，这张卡就能拿到 DEV-001 这样的编号。')
-                : h(SelectField, { className: 'ds-select', value: requirementId, onChange: e => setRequirementId(e.target.value) },
-                  h('option', { value: '' }, '暂不挂需求（编号留空）'),
-                  requirements.map(item => h('option', { key: item.id, value: item.id }, `${item.code || item.id} · ${item.title}`)),
-                ),
-            ),
-            h('div', { className: 'ds-field', style: { gridColumn: '1 / -1' } },
-              h('div', { className: 'ds-label' }, '业务领域（选填）'),
-              h(TextField, {
-                className: 'ds-input', placeholder: '例如 支付 / 会员 / 履约，填了会自动派给同领域的专家',
-                value: domain, onChange: e => setDomain(e.target.value),
-              }),
-            ),
-            projects.length === 0
-              ? null
-              : h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '业务项目'),
-                h(SelectField, {
-                  className: 'ds-select', value: project,
-                  onChange: e => { setProject(e.target.value); setIteration(activeIterationOf(e.target.value)) },
-                },
-                  h('option', { value: '' }, '不属于任何项目'),
-                  projects.map(item => h('option', { key: item.id, value: item.id }, `${item.key ? `${item.key} · ` : ''}${item.name}`)),
-                ),
-              ),
-            projects.length === 0 || projectIterations.length === 0
-              ? null
-              : h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '迭代'),
-                h(SelectField, { className: 'ds-select', value: iteration, onChange: e => setIteration(e.target.value) },
-                  h('option', { value: '' }, '不指定迭代'),
-                  projectIterations.map(item => h('option', { key: item.id, value: item.id }, item.name))),
-                h('div', { className: 'ds-hint', style: { fontSize: 11.5 } }, '默认挂这个项目的当前迭代，可以改'),
-              ),
-            h('div', { className: 'ds-field' },
-              h('div', { className: 'ds-label' }, '业务负责人（选填）'),
-              h(TextField, {
-                className: 'ds-input', placeholder: '提需求的人，例如 张伟',
-                value: owner, onChange: e => setOwner(e.target.value),
-              }),
-            ),
-            h('div', { className: 'ds-field' },
-              h('div', { className: 'ds-label' }, '期望完成（选填）'),
-              h(DateField, { className: 'ds-input', value: due, onChange: e => setDue(e.target.value) }),
-            ),
-          ),
-          isBug
-            ? h('div', { className: 'ds-hint', style: { fontSize: 11.5 } },
-              '缺陷卡会直接落到「待开发」，由研发先复现、定位根因再修，修完自动交给测试验证。')
-            : null,
-          h('div', { className: 'ds-modal-foot' },
-            error !== null ? h('span', { className: 'ds-err' }, error) : null,
-            h('div', { className: 'ds-grow' }),
-            h('button', { className: 'ds-btn', onClick: onClose }, '取消'),
-            h('button', { className: 'ds-btn ds-btn-primary', disabled: busy || title.trim() === '', onClick: () => void submit() },
-              busy ? '创建中…' : (isBug ? '登记缺陷' : '创建')),
-          ),
-        ),
-      )
-    }
+    /* 新建任务 / 登记缺陷对话框已迁到 web/src/studio/dialogs/new-task.js（BoardUI）。 */
 
     /** 效能页：一次通过率、返工率、周期分布、每列停留、AI 采纳情况。 */
     /* 燃尽用折线 + 面积：柱状图在「剩余 0–2」时全被压成 2px 小横线，看不出趋势。 */
@@ -1664,8 +1443,9 @@ function installBoardWheel() {
     if (board.scrollWidth <= board.clientWidth + 1) return
     if (event.shiftKey) return
     if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return
-    /* 列里的卡片溢出时，滚轮应该滚这一列，而不是把整个看板横向推走 */
-    const columnBody = target.closest('.ds-col-body')
+    /* 列里的卡片溢出时，滚轮应该滚这一列，而不是把整个看板横向推走。
+       列容器在 board.js 里是 [data-board-column-body]（.ds-col-body 是迁移前的类名）。 */
+    const columnBody = target.closest('[data-board-column-body]')
     if (columnBody !== null && columnBody.scrollHeight > columnBody.clientHeight + 1) return
     /* 已经推到最左/最右就不要再 preventDefault，否则整页也滚不动 */
     const atStart = board.scrollLeft <= 0
@@ -1748,6 +1528,19 @@ function installKeyboardActivation() {
      * 统一登录：服务端开了 requireLogin 又没带会话时，/state 会返回 locked，
      * 这里就盖一层登录框。用户名 = LDAP 账号（sAMAccountName / uid / mail 都试）。
      */
+    /* 登录卡：BoardUI token + 4px 档位。`data-login` 是新的探针钩子
+       （tools/visual/login-probe.mjs 还在等旧的 .ds-login，换成 [data-login] 后 legacy 规则可删）。 */
+    const LOGIN_CARD = 'flex w-full max-w-[380px] flex-col gap-3 rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xl'
+    const LOGIN_MODES = 'flex items-center gap-1 self-start rounded-lg border border-separator-border bg-background-secondary-default p-1'
+    const LOGIN_MODE = on => [
+      'rounded-md px-2 py-1 text-caption-1-medium transition-colors',
+      on ? 'bg-background-primary-default font-semibold text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary',
+    ].join(' ')
+    const LOGIN_FIELD = 'flex min-w-0 flex-col gap-1'
+    const LOGIN_HINT = 'text-caption-1-regular leading-relaxed text-text-secondary'
+    const LOGIN_NOTE = 'break-all text-caption-2-regular text-text-tertiary'
+    const LABEL = 'text-caption-2-medium text-text-secondary'
+
     function LoginGate({ config, theme, message, onDone, onClose, overlay }) {
       const localName = String(config?.localAuth?.username ?? 'admin')
       const localReady = config?.localAuth?.enabled !== false
@@ -1788,19 +1581,21 @@ function installKeyboardActivation() {
         }
       }
 
-      const tabs = h('div', { className: 'ds-seg', style: { alignSelf: 'flex-start' } },
+      const tabs = h('div', { className: LOGIN_MODES, 'data-login-modes': '' },
         h('button', {
-          className: 'ds-seg-btn',
           type: 'button',
+          className: LOGIN_MODE(mode === 'ldap'),
           'data-on': mode === 'ldap' ? '1' : '0',
+          'data-login-mode': 'ldap',
           disabled: !ldapReady,
           title: ldapReady ? '用公司目录（LDAP）的账号登录' : 'LDAP 还没启用，先在设置里配好再用',
           onClick: () => switchMode('ldap'),
         }, 'LDAP 账号'),
         h('button', {
-          className: 'ds-seg-btn',
           type: 'button',
+          className: LOGIN_MODE(mode === 'local'),
           'data-on': mode === 'local' ? '1' : '0',
+          'data-login-mode': 'local',
           disabled: !localReady,
           title: '用平台自带的超管账号登录',
           onClick: () => switchMode('local'),
@@ -1808,18 +1603,21 @@ function installKeyboardActivation() {
       )
 
       const hint = mode === 'ldap'
-        ? h('div', { className: 'ds-login-hint' },
+        ? h('div', { className: LOGIN_HINT },
             '用公司账号登录（LDAP）。登录后会记下你的名字，写操作和审计都挂在这个名字下。')
-        : h('div', { className: 'ds-login-hint' },
+        : h('div', { className: LOGIN_HINT },
             `用平台自带的超管账号登录。默认账号 ${localName}，默认口令 admin（改过之后就用新口令）。`)
 
-      const card = h('div', { className: 'ds-login' },
-            h('div', { className: 'ds-login-brand' }, '◈ ', config?.board?.title ?? '工作空间'),
+      /* 用 <label> 包住控件：读屏与 login-probe 都靠它拿字段名（以前是 span，
+         控件只有 placeholder 当名字）。 */
+      const card = h('div', { className: LOGIN_CARD, 'data-login': '' },
+            h('div', { className: 'text-title-3-semibold text-text-primary' }, '◈ ', config?.board?.title ?? '工作空间'),
             tabs,
             hint,
-            h('div', { className: 'ds-login-field' },
-              h('span', { className: 'ds-login-label' }, mode === 'local' ? '超管账号' : '域账号'),
+            h('label', { className: LOGIN_FIELD },
+              h('span', { className: LABEL }, mode === 'local' ? '超管账号' : '域账号'),
               h(TextField, {
+                'aria-label': mode === 'local' ? '超管账号' : '域账号',
                 value: username,
                 autoFocus: mode === 'ldap',
                 name: 'studio-account',
@@ -1830,9 +1628,10 @@ function installKeyboardActivation() {
                 onKeyDown: event => { if (event.key === 'Enter') void submit() },
               }),
             ),
-            h('div', { className: 'ds-login-field' },
-              h('span', { className: 'ds-login-label' }, '密码'),
+            h('label', { className: LOGIN_FIELD },
+              h('span', { className: LABEL }, '密码'),
               h(TextField, {
+                'aria-label': '密码',
                 type: 'password',
                 value: password,
                 autoFocus: mode === 'local',
@@ -1845,29 +1644,63 @@ function installKeyboardActivation() {
                 onKeyDown: event => { if (event.key === 'Enter') void submit() },
               }),
             ),
-            error === '' ? null : h('div', { className: 'ds-error' }, error),
+            error === '' ? null : h('div', { className: 'text-caption-1-regular text-text-error-primary', 'data-login-error': '' }, error),
             error !== '' && /LDAP|域|目录|连不上/.test(error)
-              ? h('div', { className: 'ds-login-note' }, '连不上目录服务时，切到「本地超管」用平台账号进来；等网络打通再用域账号。')
+              ? h('div', { className: LOGIN_NOTE }, '连不上目录服务时，切到「本地超管」用平台账号进来；等网络打通再用域账号。')
               : null,
-            h('div', { className: 'ds-login-actions' },
-              h('button', {
-                className: 'ds-btn ds-btn-primary',
+            h('div', { className: 'flex flex-wrap justify-end gap-2' },
+              h(Button, {
+                variant: 'primary',
+                size: 'sm',
+                'data-action': 'login-submit',
                 disabled: busy,
                 onClick: () => void submit(),
               }, busy ? '登录中…' : (mode === 'local' ? '登录（本地超管）' : '登录（LDAP）')),
               typeof onClose === 'function'
-                ? h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => onClose() }, '先不登录')
+                ? h(Button, { variant: 'ghost', size: 'sm', 'data-action': 'login-skip', onClick: () => onClose() }, '先不登录')
                 : null,
             ),
-            h('div', { className: 'ds-login-note' },
+            h('div', { className: LOGIN_NOTE },
               mode === 'ldap'
                 ? `${config?.ldap?.url ?? '—'} · BASE：${config?.ldap?.baseDN ?? '—'}`
-                : `本地账号存在服务端密钥里（scrypt 哈希），改密码在「设置 → 统一登录（LDAP）」`),
+                : '本地账号存在服务端密钥里（scrypt 哈希），改密码在「设置 → 统一登录（LDAP）」'),
         )
-      const wrap = h('div', { className: 'ds-login-wrap', 'data-overlay': overlay === true ? '1' : '0' }, card)
+
+      const wrap = overlay === true
+        ? h('div', {
+            className: 'fixed inset-0 z-[90] flex items-center justify-center bg-background-primary-default/70 p-6 backdrop-blur-sm',
+            style: { top: 'max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px))', WebkitAppRegion: 'no-drag' },
+            'data-overlay': '1',
+            'data-login-overlay': '',
+          }, card)
+        : h('div', { className: 'flex flex-1 items-center justify-center p-6', 'data-overlay': '0' }, card)
       if (overlay === true) return wrap
       return h('div', { 'data-dsh-studio': '', 'data-theme': theme }, h('style', null, CSS), wrap)
     }
+
+    /* 顶栏与页签：外观全部由 BoardUI token + Tailwind 工具类负责（4px 档位）。
+       三个旧类名 ds-brand / ds-head-actions / ds-head-tabs **只作探针锚点**保留：
+       tools/visual/pages-probe.mjs 还按它们定位顶栏与页签（800px 换行回归也用它）。
+       新钩子是 data-brand / data-head-actions / data-head-tabs / data-tab；探针改完之后
+       这三个类名可以连同最后一批 legacy 规则一起删。 */
+    const TOPBAR = 'flex min-h-0 flex-none flex-col gap-3 border-b border-separator-border bg-background-primary-default px-5 pb-2 pt-4 max-[760px]:px-3'
+    const TOPBAR_ROW = 'flex flex-wrap items-start gap-4 max-[920px]:gap-2'
+    const BRAND = 'flex min-w-0 items-center gap-3 max-[920px]:basis-full'
+    const BRAND_MARK = 'flex size-7 shrink-0 items-center justify-center rounded-lg bg-background-tertiary-default text-body-2-semibold text-text-secondary'
+    const TOPBAR_TITLE = 'truncate text-title-3-semibold text-text-primary'
+    const TOPBAR_SUB = 'truncate text-caption-1-regular tabular-nums text-text-tertiary'
+    const TOPBAR_ACTIONS = 'ml-auto flex flex-none flex-wrap items-center gap-2 max-[920px]:ml-0'
+    const HEAD_TABS = 'flex flex-wrap items-center gap-3 pb-1 max-[760px]:gap-2'
+    const BODY = 'flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-6'
+    const HEAD_STAT = 'text-caption-1-regular text-text-tertiary max-[760px]:hidden'
+    const SEG_GROUP = 'inline-flex items-center gap-1 rounded-lg border border-separator-border bg-background-secondary-default p-1'
+    const MENU_SHELL = 'absolute right-0 top-[calc(100%+6px)] z-[80] min-w-[232px] rounded-xl border border-separator-border bg-background-primary-default p-1.5 shadow-lg'
+    const MENU_ROW = 'block w-full rounded-md px-3 py-1.5 text-left text-body-2-regular text-text-primary hover:bg-background-secondary-default'
+    const MENU_BLOCK = 'flex w-full flex-col items-start gap-0.5 rounded-md px-3 py-1.5 text-left hover:bg-background-secondary-default'
+    const MENU_BLOCK_TITLE = 'text-body-2-medium text-text-primary'
+    const TAB_BASE = 'inline-flex shrink-0 items-center rounded-t-lg px-3 py-2 text-body-2-regular transition-colors'
+    const TAB_ON = TAB_BASE + ' bg-background-primary-default font-semibold text-text-primary shadow-sm'
+    const TAB_OFF = TAB_BASE + ' text-text-secondary hover:text-text-primary'
 
     function StudioPage(props) {
       // The bundled build swaps in the shadcn login card; the standalone artifact
@@ -1968,7 +1801,7 @@ function installKeyboardActivation() {
       if (state === null) {
         return h('div', { 'data-dsh-studio': '', 'data-theme': resolvedTheme },
           h('style', null, CSS),
-          h('div', { className: 'ds-loading' }, error === null ? '正在载入工作空间…' : `载入失败：${error}`),
+          h('div', { className: 'flex h-full items-center justify-center p-6 text-body-2-regular text-text-secondary', 'data-loading': '' }, error === null ? '正在载入工作空间…' : `载入失败：${error}`),
         )
       }
       if (state.locked === true) {
@@ -2001,28 +1834,30 @@ function installKeyboardActivation() {
         h('style', null, CSS),
         h(DialogHost, null),
         h(ToastHost, null),
-        h('div', { className: 'ds-head' },
-          h('div', { className: 'ds-head-top' },
-            h('div', { className: 'ds-brand' },
-              h('span', { className: 'ds-brand-mark' }, '◈'),
-              h('div', null,
-                h('div', { className: 'ds-title' }, state.config.board.title),
-                h('div', { className: 'ds-sub', title: `数据版本 rev ${state.revision}（每次写操作递增）` }, `${state.tasks.length} 张卡 · ${fmtTime(state.updatedAt)} 更新`),
+        h('div', { className: TOPBAR, 'data-topbar': '' },
+          h('div', { className: TOPBAR_ROW },
+            h('div', { className: 'ds-brand ' + BRAND, 'data-brand': '' },
+              h('span', { className: BRAND_MARK, 'aria-hidden': 'true' }, '◈'),
+              h('div', { className: 'flex min-w-0 flex-col' },
+                h('div', { className: TOPBAR_TITLE }, state.config.board.title),
+                h('div', { className: TOPBAR_SUB, title: `数据版本 rev ${state.revision}（每次写操作递增）` }, `${state.tasks.length} 张卡 · ${fmtTime(state.updatedAt)} 更新`),
               ),
             ),
-            h('div', { className: 'ds-head-actions' },
+            h('div', { className: 'ds-head-actions ' + TOPBAR_ACTIONS, 'data-head-actions': '' },
               h(RunTray, { state }),
               authUser() === null
                 ? h(ChipField, {
-                    className: 'ds-chip',
+                    variant: 'lime',
                     'data-on': '1',
                     title: `没配 LDAP 时平台默认以超管身份使用，不需要登录；写操作与审计都记在它名下${state.config.localAuth?.mustChange === true ? '。当前仍是默认口令 admin，请去「设置 → 统一登录」改掉' : ''}`,
                   }, `超管 ${state.config.localAuth?.username ?? 'admin'}${state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`)
-                : h(ChipField, { className: 'ds-chip', title: `已登录：${authUser()?.id ?? ''}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? '（仍是默认口令，去「设置 → 统一登录」改掉）' : ''}` }, `${authUser()?.name ?? authUser()?.id}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`),
+                : h(ChipField, { title: `已登录：${authUser()?.id ?? ''}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? '（仍是默认口令，去「设置 → 统一登录」改掉）' : ''}` }, `${authUser()?.name ?? authUser()?.id}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`),
               authUser() === null
-                ? h('button', { className: 'ds-btn ds-btn-ghost', title: '用域账号或本地超管账号登录', onClick: () => setShowLogin(true) }, '登录')
-                : tipOf('退出当前账号（退出后回到超管身份）', h('button', {
-                    className: 'ds-btn ds-btn-ghost',
+                ? h(Button, { variant: 'ghost', size: 'sm', title: '用域账号或本地超管账号登录', 'data-action': 'login', onClick: () => setShowLogin(true) }, '登录')
+                : tipOf('退出当前账号（退出后回到超管身份）', h(Button, {
+                    variant: 'ghost',
+                    size: 'sm',
+                    'data-action': 'logout',
                     onClick: async () => {
                       try { await api('/auth/logout', {}) } catch { /* 会话可能已过期 */ }
                       setSessionToken('')
@@ -2037,43 +1872,50 @@ function installKeyboardActivation() {
                 if (Seg !== null) {
                   return h(Seg, { value: theme, onChange: next => setTheme(setThemeName(next)), options })
                 }
-                return h('div', { className: 'ds-seg', title: '显示模式；「跟随系统」会先跟宿主界面的深浅色，宿主没给出信号时再跟操作系统' },
+                return h('div', { className: SEG_GROUP, 'data-seg': 'theme', title: '显示模式；「跟随系统」会先跟宿主界面的深浅色，宿主没给出信号时再跟操作系统' },
                   THEMES.map(([id, label]) => h('button', {
                     key: id,
-                    className: 'ds-seg-btn',
+                    type: 'button',
+                    className: (theme === id ? TAB_ON : TAB_OFF) + ' rounded-md py-1',
                     'data-on': theme === id ? '1' : '0',
+                    'data-theme-option': id,
                     onClick: () => setTheme(setThemeName(id)),
                   }, label)),
                 )
               })(),
               /* 低频动作收进「⋯」：用原生 <details>，展开/收起与键盘都交给浏览器，
                  不引入状态，也不会和宿主的 Esc / 焦点逻辑打架。 */
-              h('details', { className: 'ds-more' },
-                h('summary', { className: 'ds-btn ds-btn-ghost', title: '更多操作' }, '⋯'),
-                h('div', { className: 'ds-more-menu' },
-                  h('button', { className: 'ds-more-item', onClick: () => void reload() }, '刷新数据'),
+              h('details', { className: 'relative', 'data-more': '' },
+                h('summary', { className: 'flex h-8 cursor-pointer list-none items-center rounded-lg px-2 text-body-2-medium text-text-secondary hover:bg-background-secondary-default [&::-webkit-details-marker]:hidden', title: '更多操作' }, '⋯'),
+                h('div', { className: MENU_SHELL, role: 'menu' },
+                  h('button', { type: 'button', role: 'menuitem', className: MENU_ROW, 'data-action': 'refresh', onClick: () => void reload() }, '刷新数据'),
                   h('a', {
-                    className: 'ds-more-item',
+                    className: MENU_ROW,
+                    role: 'menuitem',
                     href: '/studio-api/export/tasks.csv',
                     title: '把看板上的卡导出成 CSV（Excel 可直接打开）',
                   }, '导出卡 CSV'),
                   h('a', {
-                    className: 'ds-more-item',
+                    className: MENU_ROW,
+                    role: 'menuitem',
                     href: '/studio-api/export/requirements.csv',
                     title: '把需求与准出情况导出成 CSV',
                   }, '导出需求 CSV'),
                 )),
               (state.integrations?.broken ?? 0) > 0
-                ? h('button', {
-                    className: 'ds-btn ds-btn-ghost',
-                    style: { color: 'var(--color-notification-error-foreground)', borderColor: 'color-mix(in srgb, var(--color-notification-error-foreground) 40%, var(--ds-line))' },
+                ? h(Button, {
+                    variant: 'ghost',
+                    size: 'sm',
+                    'data-integration-alert': String(state.integrations.broken),
                     title: (state.integrations.channels ?? []).filter(item => item.state === 'error').map(item => `${item.label}：${item.lastError}`).join('\n'),
                     onClick: () => { setTab('settings'); setSettingsSection('health') },
-                  }, h('span', { className: 'ds-dot', 'data-kind': 'danger', style: { marginRight: 8 } }), `集成异常 ${state.integrations.broken}`)
+                  }, h(ChipField, { variant: 'rose' }, `集成异常 ${state.integrations.broken}`))
                 : null,
-              h('div', { className: 'ds-newmenu', style: { position: 'relative' } },
-                h('button', {
-                  className: 'ds-btn ds-btn-primary',
+              h('div', { className: 'relative', 'data-new-menu': '' },
+                h(Button, {
+                  variant: 'primary',
+                  size: 'sm',
+                  'data-action': 'new',
                   'aria-haspopup': 'menu',
                   'aria-expanded': newMenu ? 'true' : 'false',
                   onClick: event => { event.stopPropagation(); setNewMenu(value => !value) },
@@ -2081,24 +1923,23 @@ function installKeyboardActivation() {
                 newMenu
                   ? h('div', {
                     role: 'menu',
-                    className: 'ds-menu',
-                    style: { position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 80, minWidth: 232, padding: 6, background: 'var(--ds-surface)', border: '1px solid var(--ds-line)', borderRadius: 10, boxShadow: '0 12px 32px rgba(0,0,0,.22)' },
+                    className: MENU_SHELL,
                     onClick: event => event.stopPropagation(),
                   },
-                    h('button', { role: 'menuitem', className: 'ds-btn ds-btn-ghost', style: { display: 'block', width: '100%', textAlign: 'left', height: 'auto', padding: '8px 12px' }, title: '先建需求，再按功能点拆卡', onClick: () => { setNewMenu(false); setTab('requirements'); setNewReq(count => count + 1) } },
-                      h('div', { style: { fontWeight: 600 } }, '新建需求'),
-                      h('div', { className: 'ds-hint', style: { marginTop: 2 } }, '需求 → 功能点 → 拆成卡'),
+                    h('button', { type: 'button', role: 'menuitem', className: MENU_BLOCK, title: '先建需求，再按功能点拆卡', onClick: () => { setNewMenu(false); setTab('requirements'); setNewReq(count => count + 1) } },
+                      h('span', { className: MENU_BLOCK_TITLE }, '新建需求'),
+                      h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '需求 → 功能点 → 拆成卡'),
                     ),
-                    h('button', { role: 'menuitem', className: 'ds-btn ds-btn-ghost', style: { display: 'block', width: '100%', textAlign: 'left', height: 'auto', padding: '8px 12px', marginTop: 2 }, title: '直接在看板上建一张卡', onClick: () => { setNewMenu(false); setTab('board'); setCreating(true) } },
-                      h('div', { style: { fontWeight: 600 } }, '新建任务'),
-                      h('div', { className: 'ds-hint', style: { marginTop: 2 } }, '直接在看板上建一张卡'),
+                    h('button', { type: 'button', role: 'menuitem', className: MENU_BLOCK, title: '直接在看板上建一张卡', onClick: () => { setNewMenu(false); setTab('board'); setCreating(true) } },
+                      h('span', { className: MENU_BLOCK_TITLE }, '新建任务'),
+                      h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '直接在看板上建一张卡'),
                     ),
                   )
                   : null,
               ),
             ),
           ),
-          h('div', { className: 'ds-head-tabs' },
+          h('div', { className: 'ds-head-tabs ' + HEAD_TABS, 'data-head-tabs': '' },
             (() => {
               const Tabs = kit('TabsBar')
               const items = [
@@ -2111,22 +1952,25 @@ function installKeyboardActivation() {
                 { id: 'analytics', label: '效能', hint: '周期分布、每列停留、团队负载、返工与 AI 成本' },
                 { id: 'settings', label: '设置', hint: '列、模型、自动派单、集成、权限、备份' },
               ]
-              // 先走 TabsBar（现在是 BoardUI 的 PillTabList + PillTab），
-              // 没有再退回 Radix 的那套，最后才是自绘的 .ds-tab。
+              // 有 TabsBar（BoardUI 的 role=tab 实现）就用它；单文件产物走下面的等价降级。
               if (Tabs !== null) {
                 return h(Tabs, { items, value: tab, onChange: next => setTab(next) })
               }
-              return h('div', { className: 'ds-tabs' },
+              return h('div', { role: 'tablist', className: 'flex flex-wrap items-center gap-1 border-b border-separator-border' },
                 items.map(item => h('button', {
                   key: item.id,
-                  className: 'ds-tab',
+                  type: 'button',
+                  role: 'tab',
+                  'aria-selected': tab === item.id ? 'true' : 'false',
+                  'data-tab': item.id,
+                  className: tab === item.id ? TAB_ON : TAB_OFF,
                   'data-on': tab === item.id ? '1' : '0',
                   onClick: () => setTab(item.id),
                 }, item.label)),
               )
             })(),
-            h('div', { className: 'ds-grow' }),
-            h('span', { className: 'ds-stat' },
+            h('div', { className: 'flex-1' }),
+            h('span', { className: HEAD_STAT },
               tab === 'dashboard'
                 ? '今天该看什么：风险 · 流程 · 待办'
                 : tab === 'board'
@@ -2147,10 +1991,12 @@ function installKeyboardActivation() {
           ),
         ),
         error !== null
-          ? h('div', { className: 'ds-err', style: { padding: '8px 20px' } }, error)
+          ? h('div', { className: 'flex-none border-b border-separator-border bg-background-primary-default px-5 py-2 text-caption-1-regular text-text-error-primary', 'data-load-error': '' }, error)
           : null,
         tab === 'board'
-          ? h(Board, { state, onWip: async (status, current) => { const raw = await promptDialog(`这一列的 WIP 上限（0 = 不限，最多 50）`, { title: 'WIP 上限', defaultValue: String(current) }); if (raw === null) return; const value = Math.min(50, Math.max(0, Math.trunc(Number(String(raw).trim()) || 0))); try { await api('/columns/wip', { status, wip: value }); toast(value === 0 ? '已取消 WIP 上限' : `WIP 上限设为 ${value}`); await reload() } catch (cause) { toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onCreate: () => setCreating(true), onMove: moveTask, onOpen: setOpenId })
+          ? h('div', { className: 'flex min-h-0 flex-1 flex-col', 'data-board-page': '' },
+              h(Board, { state, onWip: async (status, current) => { const raw = await promptDialog(`这一列的 WIP 上限（0 = 不限，最多 50）`, { title: 'WIP 上限', defaultValue: String(current) }); if (raw === null) return; const value = Math.min(50, Math.max(0, Math.trunc(Number(String(raw).trim()) || 0))); try { await api('/columns/wip', { status, wip: value }); toast(value === 0 ? '已取消 WIP 上限' : `WIP 上限设为 ${value}`); await reload() } catch (cause) { toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onCreate: () => setCreating(true), onMove: moveTask, onOpen: setOpenId }),
+            )
           : tab === 'dashboard'
             ? h(DashboardPage, { state, onOpenTask: setOpenId, onOpenBoard: () => setTab('board'), onOpenCases: () => setTab('cases') })
           : tab === 'requirements'
@@ -2164,8 +2010,8 @@ function installKeyboardActivation() {
               : tab === 'analytics'
                 ? h(AnalyticsPage, { state, onOpenTask: setOpenId, onFixPrices: models => { setCostSuggest(Array.isArray(models) ? models : []); setSettingsSection('costs'); setTab('settings') } })
               : tab === 'market'
-                ? h('div', { className: 'ds-body' }, h(Market, { state, onChanged: reload }))
-                : h('div', { className: 'ds-body' }, h(Settings, { state, onChanged: reload, initialSection: settingsSection, onSection: setSettingsSection, suggestCosts: costSuggest })),
+                ? h('div', { className: BODY, 'data-market-page': '' }, h(Market, { state, onChanged: reload }))
+                : h('div', { className: BODY, 'data-settings-page': '' }, h(Settings, { state, onChanged: reload, initialSection: settingsSection, onSection: setSettingsSection, suggestCosts: costSuggest })),
         paletteOpen
           ? h(Palette, {
               state,
