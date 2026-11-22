@@ -46,17 +46,17 @@ window.__ModuleLoader__.load({
       const text = String(value ?? '')
       return h('div', { className: 'ds-md-field' },
         h('div', { className: 'ds-md-bar' },
-          h('span', { className: 'ds-hint' }, '支持 Markdown：标题 / 列表 / 粗体 / 代码块 / 表格'),
-          h('button', { className: 'ds-btn ds-btn-ghost', type: 'button', onClick: () => setPreview(!preview) }, preview ? '回到编辑' : '预览渲染'),
+          h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '支持 Markdown：标题 / 列表 / 粗体 / 代码块 / 表格'),
+          h(Button, { variant: 'ghost', size: 'xs', type: 'button', 'data-md-toggle': preview ? 'preview' : 'edit', onClick: () => setPreview(!preview) }, preview ? '回到编辑' : '预览渲染'),
         ),
         preview
-          ? h('div', { className: 'ds-md-preview ds-req-desc ds-md' }, text.trim() === '' ? h('span', { className: 'ds-hint' }, '还没写内容。') : renderMarkdown(text))
-          : h(TextAreaField, { className: className ?? 'ds-textarea', rows, value, onChange, placeholder, ...rest }),
+          ? h('div', { className: 'ds-md-preview ds-md mt-3 text-caption-1-regular' }, text.trim() === '' ? h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '还没写内容。') : renderMarkdown(text))
+          : h(TextAreaField, { className, rows, value, onChange, placeholder, ...rest }),
       )
     }
 
     function tipLabel(text, hint) {
-      const node = h('div', { className: 'ds-label', style: { cursor: 'help' } }, text)
+      const node = h('div', { className: 'cursor-help text-caption-2-medium text-text-secondary' }, text)
       return hint === undefined || hint === null || hint === '' ? node : tipOf(hint, node)
     }
 
@@ -214,11 +214,15 @@ window.__ModuleLoader__.load({
       }
       if (items.length === 0) return null
       if (Notification === null) {
-        return h('div', { className: 'ds-toasts', role: 'status', 'aria-live': 'polite' },
-          items.map(item => h('div', { key: item.id, className: 'ds-toast', 'data-tone': item.tone }, h('span', { className: 'ds-toast-text' }, item.text))))
+        return h('div', { className: 'fixed bottom-4 right-4 z-[120] flex flex-col items-end gap-2', role: 'status', 'aria-live': 'polite', 'data-toasts': '' },
+          items.map(item => h('div', {
+            key: item.id,
+            className: 'pointer-events-auto max-w-[340px] rounded-xl border border-separator-border bg-background-primary-default px-3 py-2 text-caption-1-regular text-text-primary shadow-lg',
+            'data-toast': item.tone,
+          }, h('span', { className: 'break-words' }, item.text))))
       }
-      return h('div', { className: 'ds-toasts', role: 'status', 'aria-live': 'polite' },
-        items.map(item => h('div', { key: item.id, className: 'ds-toast-slot' },
+      return h('div', { className: 'fixed bottom-4 right-4 z-[120] flex flex-col items-end gap-2', role: 'status', 'aria-live': 'polite', 'data-toasts': '' },
+        items.map(item => h('div', { key: item.id, className: 'pointer-events-auto' },
           h(Notification, {
             title: item.text,
             status: TOAST_STATUS[item.tone] ?? 'info',
@@ -1065,61 +1069,67 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 
       const list = data?.items ?? state.config.market.items ?? []
 
-      return h('div', null,
-        h('div', { className: 'ds-row', style: { marginBottom: 12 } },
-          h('div', { style: { fontSize: 13.5, fontWeight: 650 } }, data?.title ?? state.config.market.title),
-          h('span', { className: 'ds-stat' }, `${list.length} 个条目 · profile ${state.profile ?? '—'}`),
-          h('div', { className: 'ds-grow' }),
-          h('button', { className: 'ds-btn', onClick: () => setAdding(!adding) }, adding ? '收起' : '＋ 添加条目'),
+      /* 市场卡片：分区 = 卡片（rounded-xl + 描边 + 白底），动作走 BoardUI Button，
+         状态用 Chip；空态用 boardui/empty-state。 */
+      const CARD = 'flex min-w-0 flex-col gap-2 rounded-xl border border-separator-border bg-background-primary-default p-4'
+      const FIELD = 'flex min-w-0 flex-col gap-1'
+      const LABEL = 'text-caption-2-medium text-text-secondary'
+      const HINT = 'text-caption-1-regular text-text-tertiary'
+      return h('div', { className: 'flex min-w-0 flex-col gap-3', 'data-market-list': '' },
+        h('div', { className: 'flex flex-wrap items-center gap-3' },
+          h('div', { className: 'text-body-2-semibold text-text-primary' }, data?.title ?? state.config.market.title),
+          h('span', { className: 'text-caption-1-regular text-text-tertiary' }, `${list.length} 个条目 · profile ${state.profile ?? '—'}`),
+          h('div', { className: 'flex-1' }),
+          h(Button, { variant: 'secondary', size: 'sm', 'data-action': 'toggle-add', onClick: () => setAdding(!adding) }, adding ? '收起' : '＋ 添加条目'),
         ),
-        error !== null ? h('div', { className: 'ds-err', style: { padding: '0 0 8px' } }, error) : null,
-        notice !== null ? h('div', { className: 'ds-ok', style: { padding: '0 0 8px' } }, notice) : null,
+        error !== null ? h('div', { className: 'text-caption-1-regular text-text-error-primary' }, error) : null,
+        notice !== null ? h('div', { className: 'text-caption-1-regular text-state-success-text' }, notice) : null,
         list.length === 0
-          ? h('div', { className: 'ds-empty' }, data?.hint || '还没有条目。把公司内部的插件包加进来，同事就能一键安装。')
-          : h('div', { className: 'ds-market-grid' },
+          ? h(EmptyState, { title: data?.hint || '还没有条目。把公司内部的插件包加进来，同事就能一键安装。' })
+          : h('div', { className: 'grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3' },
             list.map(item => {
               const name = packageOf(item.spec)
               const isInstalled = installed.has(name) || installed.has(item.name)
-              return h('div', { key: item.id, className: 'ds-market-card' },
-                h('div', { className: 'ds-mc-head' },
-                  h('span', { className: 'ds-mc-name ds-grow' }, item.name),
-                  h(ChipField, { className: 'ds-chip', 'data-on': isInstalled ? '1' : '0' }, isInstalled ? '已安装' : '未安装'),
+              return h('div', { key: item.id, className: CARD },
+                h('div', { className: 'flex items-center gap-2' },
+                  h('span', { className: 'min-w-0 flex-1 truncate text-body-2-semibold text-text-primary' }, item.name),
+                  h(ChipField, { variant: isInstalled ? 'lime' : 'gray', 'data-on': isInstalled ? '1' : '0' }, isInstalled ? '已安装' : '未安装'),
                 ),
-                item.description !== '' ? h('div', { className: 'ds-mc-desc' }, item.description) : null,
-                h('code', null, item.spec),
-                h('div', { className: 'ds-row', style: { marginTop: 'auto' } },
-                  h('button', {
-                    className: isInstalled ? 'ds-btn' : 'ds-btn ds-btn-primary',
+                item.description !== '' ? h('div', { className: HINT }, item.description) : null,
+                h('code', { className: 'break-all rounded-md border border-separator-border bg-background-secondary-default px-1 font-mono text-caption-2-regular text-text-tertiary' }, item.spec),
+                h('div', { className: 'mt-auto flex flex-wrap items-center gap-2' },
+                  h(Button, {
+                    variant: isInstalled ? 'secondary' : 'primary',
+                    size: 'sm',
+                    'data-action': isInstalled ? 'uninstall' : 'install',
                     disabled: busy === item.id,
                     onClick: async () => {
-                    const ok = await confirmDialog(isInstalled ? `从 profile 移除「${name}」？` : `安装「${name}」到工作空间？`, { title: isInstalled ? '移除插件' : '安装插件', danger: isInstalled, okText: isInstalled ? '移除' : '安装' })
-                    if (ok) void act(item, isInstalled ? 'uninstall' : 'install')
-                  },
+                      const ok = await confirmDialog(isInstalled ? `从 profile 移除「${name}」？` : `安装「${name}」到工作空间？`, { title: isInstalled ? '移除插件' : '安装插件', danger: isInstalled, okText: isInstalled ? '移除' : '安装' })
+                      if (ok) void act(item, isInstalled ? 'uninstall' : 'install')
+                    },
                   }, busy === item.id ? '处理中…' : isInstalled ? '移除' : '安装'),
-                  h('button', { className: 'ds-btn', style: { marginLeft: 'auto', opacity: .7 }, onClick: () => void removeItem(item) }, '删条目'),
+                  h(Button, { variant: 'ghost', size: 'sm', className: 'ml-auto', 'data-action': 'remove-item', onClick: () => void removeItem(item) }, '删条目'),
                 ),
               )
             }),
           ),
         adding
-          ? h('div', { className: 'ds-panel', style: { marginTop: 16 } },
-            h('div', { className: 'ds-panel-head' }, '添加条目'),
-            h('div', { className: 'ds-panel-body' },
-              h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '显示名'),
-                h(TextField, { className: 'ds-input', value: form.name, placeholder: '代码评审助手', onChange: e => setForm({ ...form, name: e.target.value }) }),
-              ),
-              h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '包名或路径'),
-                h(TextField, { className: 'ds-input', value: form.spec, placeholder: '@company/dsh-reviewer 或 link:~/pkgs/reviewer', onChange: e => setForm({ ...form, spec: e.target.value }) }),
-              ),
-              h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '一句话说明'),
-                h(TextField, { className: 'ds-input', value: form.description, placeholder: '自动跑 GitLab MR 的评审清单', onChange: e => setForm({ ...form, description: e.target.value }) }),
-              ),
+          ? h('div', { className: CARD, 'data-market-add': '' },
+            h('div', { className: 'text-title-2-semibold text-text-primary' }, '添加条目'),
+            h('div', { className: FIELD },
+              h('div', { className: LABEL }, '显示名'),
+              h(TextField, { 'aria-label': '显示名', value: form.name, placeholder: '代码评审助手', onChange: e => setForm({ ...form, name: e.target.value }) }),
             ),
-            h('div', { style: { padding: '0 16px 16px' } },
-              h('button', { className: 'ds-btn ds-btn-primary', disabled: saving || form.name.trim() === '' || form.spec.trim() === '', onClick: () => void addItem() }, saving ? '添加中…' : '加入市场'),
+            h('div', { className: FIELD },
+              h('div', { className: LABEL }, '包名或路径'),
+              h(TextField, { 'aria-label': '包名或路径', value: form.spec, placeholder: '@company/dsh-reviewer 或 link:~/pkgs/reviewer', onChange: e => setForm({ ...form, spec: e.target.value }) }),
+            ),
+            h('div', { className: FIELD },
+              h('div', { className: LABEL }, '一句话说明'),
+              h(TextField, { 'aria-label': '一句话说明', value: form.description, placeholder: '自动跑 GitLab MR 的评审清单', onChange: e => setForm({ ...form, description: e.target.value }) }),
+            ),
+            h('div', null,
+              h(Button, { variant: 'primary', size: 'sm', 'data-action': 'add-item', disabled: saving || form.name.trim() === '' || form.spec.trim() === '', onClick: () => void addItem() }, saving ? '添加中…' : '加入市场'),
             ),
           )
           : null,
@@ -1196,16 +1206,8 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
       }
 
-      const field = (key, label, hint, type) => h('div', { className: 'ds-field', key },
-        h('div', { className: 'ds-label' }, label),
-        h(TextField, {
-          className: 'ds-input',
-          type: type ?? 'text',
-          value: form[key],
-          placeholder: hint ?? '',
-          onChange: e => setForm({ ...form, [key]: e.target.value }),
-        }),
-      )
+      /* 字段行与保存条都在 panels/settings-panes.js 里（BoardUI），这里只保留同名的调用点。 */
+      const field = (key, label, hint, type) => h(SettingsField, { key, form, setForm, fieldKey: key, label, hint, type })
 
       const roleKeys = Object.keys(form.roles)
       const [section, setSection] = React.useState(initialSection ?? 'experts')
@@ -1239,11 +1241,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         health: ['集成健康', '飞书通知、GitLab、飞书云盘、代码隔离四条外部通道最近一次是成功还是失败。以前这些失败只写进日志，现在会在这里亮出来，坏了能看见、能补一次。'],
       }
 
-      const saveBar = h('div', { className: 'ds-row', style: { gap: 12, marginTop: 2 } },
-        h('button', { className: 'ds-btn ds-btn-primary', disabled: busy, onClick: () => void save() }, busy ? '保存中…' : '保存'),
-        status !== null ? h('span', { className: 'ds-ok' }, status) : null,
-        error !== null ? h('span', { className: 'ds-err' }, error) : null,
-      )
+      const saveBar = h(SettingsSaveBar, { busy, status, error, onSave: save })
 
       const nav = [
         { group: '团队' },
@@ -1288,120 +1286,14 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         if (id === 'feishu') return h('div', null, h(BotsPanel, { config, onChanged }), h(EscalatePanel, { config, onChanged }))
         if (id === 'docs') return h(DocsSinkPanel, { config, onChanged })
       if (id === 'health') return h(HealthPanel, { state, config, onChanged })
-        if (id === 'board') {
-          return h('div', null,
-            h('div', { className: 'ds-panel ds-form-panel' },
-              h('div', { className: 'ds-panel-head' }, '看板'),
-              h('div', { className: 'ds-panel-body' }, field('boardTitle', '看板标题', '需求&任务工作空间')),
-            ),
-            saveBar,
-          )
-        }
-        if (id === 'models') {
-          return h('div', null,
-            h('div', { className: 'ds-panel ds-form-panel' },
-              h('div', { className: 'ds-panel-head' }, '角色与模型'),
-              h('div', { className: 'ds-panel-body ds-grid2' },
-                roleKeys.map(role => h('div', { className: 'ds-field', key: role },
-                  h('div', { className: 'ds-label' }, `${ROLE_LABEL[role] ?? role}`),
-                  h(TextField, {
-                    className: 'ds-input',
-                    value: form.roles[role].model,
-                    placeholder: 'deepseek-v4.1-flash',
-                    onChange: e => setForm({ ...form, roles: { ...form.roles, [role]: { ...form.roles[role], model: e.target.value } } }),
-                  }),
-                )),
-              ),
-            ),
-            h('div', { className: 'ds-hint', style: { margin: '-8px 0 12px' } }, '单个专家可以在「专家」里单独指定模型，优先级：专家模型 → 这里的角色模型 → 宿主默认。'),
-            saveBar,
-          )
-        }
-        // agents
-        return h('div', null,
-          h('div', { className: 'ds-panel ds-form-panel' },
-            h('div', { className: 'ds-panel-head' }, '自动派单（专家 agent）'),
-            h('div', { className: 'ds-panel-body' },
-              h('div', { className: 'ds-field', style: { gridColumn: '1 / -1' } },
-                h('label', { className: 'ds-row', style: { alignItems: 'center', gap: 8, cursor: 'pointer' } },
-                  h(CheckField, { checked: form.agentsEnabled,
-                    onChange: e => setForm({ ...form, agentsEnabled: e.target.checked }),
-                  }),
-                  h('span', {}, '卡片进入勾选的列时，自动派给该列的负责人'),
-                ),
-                h('div', { className: 'ds-hint' }, '关闭后仍可在卡片抽屉里点「马上处理」手动派单；派单结果会写回评论并推进卡片。'),
-              ),
-              h('div', { className: 'ds-field', style: { gridColumn: '1 / -1' } },
-                h('div', { className: 'ds-label' }, '哪些列自动派单'),
-                h('div', { className: 'ds-row', style: { flexWrap: 'wrap', gap: 16 } },
-                  [['design', '待方案'], ['dev_ready', '待开发'], ['dev', '开发中'], ['test', '待测试']].map(([id, label]) =>
-                    h('label', { className: 'ds-row', key: id, style: { alignItems: 'center', gap: 8, cursor: 'pointer' } },
-                      h(CheckField, { checked: form.agentsAuto.includes(id),
-                        onChange: e => setForm({
-                          ...form,
-                          agentsAuto: e.target.checked
-                            ? [...form.agentsAuto, id]
-                            : form.agentsAuto.filter(entry => entry !== id),
-                        }),
-                      }),
-                      h('span', {}, label),
-                    )),
-                ),
-                h('div', { className: 'ds-hint' }, '勾选的列在卡片进入时自动派给该列对应的负责人；其余列只能手动「马上处理」。'),
-              ),
-              field('agentsMaxConcurrent', '同时最多几个 agent', '2'),
-              field('agentsPreset', 'Agent 预设', 'standard'),
-              field('agentsWorkspace', '工作区目录', '~/dsh-workspace'),
-              h('div', { className: 'ds-hint', style: { gridColumn: '1 / -1' } }, '预设决定 agent 手里有哪些工具：standard 带 shell 与文件读写，minimal 只有基础工具。'),
-              h('div', { className: 'ds-field', key: 'agentsSandbox' },
-                h('div', { className: 'ds-label' }, '沙箱档位（这个会话能写哪、能跑什么）'),
-                h(SelectField, {
-                  className: 'ds-input',
-                  value: form.agentsSandbox,
-                  onChange: e => setForm({ ...form, agentsSandbox: e.target.value }),
-                },
-                  [['read-only', '只读：能看不能改'],
-                    ['workspace-write', '只写工作区（推荐）：能改自己的目录，改不到系统别处'],
-                    ['danger-full-access', '无沙箱：可以写任何地方（危险）']].map(([id, label]) =>
-                    h('option', { key: id, value: id }, label)),
-                ),
-                h('div', { className: 'ds-hint' }, '由 DSH 的 permission preset 执行：read-only / workspace-write 走 bwrap 或 Landlock 隔离。单个专家可以在「专家」里覆盖。'),
-              ),
-              h('div', { className: 'ds-field', key: 'agentsIsolation' },
-                h('div', { className: 'ds-label' }, '代码隔离'),
-                h(SelectField, {
-                  className: 'ds-input',
-                  value: form.agentsIsolation,
-                  onChange: e => setForm({ ...form, agentsIsolation: e.target.value }),
-                },
-                  [['none', '不隔离：所有卡共用一个工作区'],
-                    ['worktree', '一卡一个 git worktree（推荐给多卡并行）']].map(([id, label]) =>
-                    h('option', { key: id, value: id }, label)),
-                ),
-                h('div', { className: 'ds-hint' }, '开启后，卡要挂在配了「本机代码目录」的项目上，派单时会为它切一条 task/<编号> 分支。'),
-              ),
-              field('agentsWorktreeRoot', 'worktree 根目录', '留空 = 工作区同级的 dsh-worktrees'),
-              h('div', { className: 'ds-field', key: 'agentsCleanup' },
-                h('div', { className: 'ds-label' }, '卡完成时'),
-                h(SelectField, {
-                  className: 'ds-input',
-                  value: form.agentsCleanup,
-                  onChange: e => setForm({ ...form, agentsCleanup: e.target.value }),
-                },
-                  [['manual', '保留 worktree 和分支，等人看 diff'],
-                    ['on_done', '自动删掉 worktree 和分支']].map(([id, label]) =>
-                    h('option', { key: id, value: id }, label)),
-                ),
-              ),
-            ),
-          ),
-          saveBar,
-        )
+        if (id === 'board') return h(BoardAppearancePane, { form, setForm, saveBar })
+        if (id === 'models') return h(RoleModelsPane, { form, setForm, saveBar, roleKeys })
+        // agents（自动派单）是兜底面板
+        return h(AutoDispatchPane, { form, setForm, saveBar })
       }
-
-      /* 设置页外壳改用 BoardUI token（2026-11-23 起基线是 BoardUI）：
+      /* 设置页外壳用 BoardUI token（2026-11-23 起基线是 BoardUI）：
          左栏导航 + 右栏标题/说明，不再用 .ds-settings / .ds-nav-item 那套手写样式。
-         面板内部还挂着 .ds-panel 壳，那一层按「壳 + 面板」整批迁，不在这里半途改。 */
+         面板本体在 web/src/studio/panels/** 与 panels/settings-panes.js 里，同样只走 token。 */
       const navItemClass = active => [
         'flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-body-2-regular',
         active ? 'bg-background-tertiary-default font-medium text-text-primary' : 'text-text-secondary hover:bg-background-secondary-default',
@@ -1437,157 +1329,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 
     // ------------------------------------------------------------------ page
 
-    function NewTaskDialog({ state, onClose, onCreated }) {
-      const projects = state?.config?.projects ?? []
-      const [title, setTitle] = React.useState('')
-      const [requirement, setRequirement] = React.useState('')
-      const [type, setType] = React.useState('requirement')
-      const [priority, setPriority] = React.useState('normal')
-      const [severity, setSeverity] = React.useState('p2')
-      const [domain, setDomain] = React.useState('')
-      const requirements = state?.requirements ?? []
-      const [requirementId, setRequirementId] = React.useState('')
-      const [project, setProject] = React.useState(projects.length === 1 ? projects[0].id : '')
-      /* 默认挂「当前迭代」：以前每次都要手选，结果就是没人选 —— 真机上 36 张卡一张都没挂迭代，
-         项目页的迭代进度永远是 0/0。这里取该项目的 active 迭代，只有一个迭代时也直接用。 */
-      const activeIterationOf = id => {
-        const list = projects.find(item => item.id === id)?.iterations ?? []
-        const active = list.find(item => String(item.status ?? '') === 'active')
-        return active?.id ?? (list.length === 1 ? list[0].id : '')
-      }
-      const [iteration, setIteration] = React.useState(() => activeIterationOf(projects.length === 1 ? projects[0].id : ''))
-      const [owner, setOwner] = React.useState('')
-      const [due, setDue] = React.useState('')
-      const [error, setError] = React.useState(null)
-      const [busy, setBusy] = React.useState(false)
-      const isBug = type === 'bug'
-      const projectIterations = (projects.find(item => item.id === project)?.iterations ?? [])
-      const submit = async () => {
-        setBusy(true); setError(null)
-        try {
-          await api('/task/create', {
-            title, requirement, type, priority, domain,
-            severity: isBug ? severity : '',
-            role: isBug ? 'dev' : 'product',
-            status: isBug ? 'dev_ready' : 'clarify',
-            project, iteration: project === '' ? '' : iteration,
-            owner: owner.trim(), dueAt: fromDateInput(due),
-            requirementId,
-          })
-          await onCreated()
-          onClose()
-        } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
-      }
-      return h('div', { className: 'ds-modal-wrap', onClick: e => { if (e.target === e.currentTarget) onClose() } },
-        h('div', { className: 'ds-modal' },
-          h('h3', {}, isBug ? '登记缺陷' : '新建任务'),
-          h('div', { className: 'ds-field' },
-            h('div', { className: 'ds-label' }, '标题'),
-            h(TextField, {
-              className: 'ds-input', autoFocus: true,
-              placeholder: isBug ? '一句话说清什么坏了，例如「优惠券叠加后金额算错」' : '一句话说清要做什么',
-              value: title,
-              onChange: e => setTitle(e.target.value),
-              onKeyDown: e => { if (e.key === 'Enter' && !e.isComposing) void submit() },
-            }),
-          ),
-          h('div', { className: 'ds-field' },
-            h('div', { className: 'ds-label' }, isBug ? '复现步骤 / 现象' : '需求 / 背景'),
-            h(MdField, {
-              className: 'ds-textarea', rows: 5,
-              placeholder: isBug
-                ? '复现步骤：1… 2…\n实际结果：\n期望结果：\n影响范围 / 环境（版本、账号、数据条件）：'
-                : '背景、期望结果、验收口径。专家会照这段去开工。',
-              value: requirement, onChange: e => setRequirement(e.target.value),
-            }),
-          ),
-          h('div', { className: 'ds-modal-grid' },
-            h('div', { className: 'ds-field' },
-              h('div', { className: 'ds-label' }, '类型'),
-              h(SelectField, { className: 'ds-select', value: type, onChange: e => setType(e.target.value) },
-                Object.keys(TYPE_LABEL).map(v => h('option', { key: v, value: v }, TYPE_LABEL[v]))),
-            ),
-            isBug
-              ? h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '严重级别'),
-                h(SelectField, { className: 'ds-select', value: severity, onChange: e => setSeverity(e.target.value) },
-                  Object.keys(SEVERITY_LABEL).map(v => h('option', { key: v, value: v }, SEVERITY_LABEL[v]))),
-              )
-              : h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '优先级'),
-                h(SelectField, { className: 'ds-select', value: priority, onChange: e => setPriority(e.target.value) },
-                  Object.keys(PRIORITY_LABEL).map(v => h('option', { key: v, value: v }, PRIORITY_LABEL[v]))),
-              ),
-            isBug
-              ? h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '优先级'),
-                h(SelectField, { className: 'ds-select', value: priority, onChange: e => setPriority(e.target.value) },
-                  Object.keys(PRIORITY_LABEL).map(v => h('option', { key: v, value: v }, PRIORITY_LABEL[v]))),
-              )
-              : null,
-            h('div', { className: 'ds-field', style: { gridColumn: '1 / -1' } },
-              h('div', { className: 'ds-label' }, '挂在哪个需求下'),
-              requirements.length === 0
-                ? h('div', { className: 'ds-hint', style: { fontSize: 11.5 } }, '还没有需求。到「需求」页先建一条，这张卡就能拿到 DEV-001 这样的编号。')
-                : h(SelectField, { className: 'ds-select', value: requirementId, onChange: e => setRequirementId(e.target.value) },
-                  h('option', { value: '' }, '暂不挂需求（编号留空）'),
-                  requirements.map(item => h('option', { key: item.id, value: item.id }, `${item.code || item.id} · ${item.title}`)),
-                ),
-            ),
-            h('div', { className: 'ds-field', style: { gridColumn: '1 / -1' } },
-              h('div', { className: 'ds-label' }, '业务领域（选填）'),
-              h(TextField, {
-                className: 'ds-input', placeholder: '例如 支付 / 会员 / 履约，填了会自动派给同领域的专家',
-                value: domain, onChange: e => setDomain(e.target.value),
-              }),
-            ),
-            projects.length === 0
-              ? null
-              : h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '业务项目'),
-                h(SelectField, {
-                  className: 'ds-select', value: project,
-                  onChange: e => { setProject(e.target.value); setIteration(activeIterationOf(e.target.value)) },
-                },
-                  h('option', { value: '' }, '不属于任何项目'),
-                  projects.map(item => h('option', { key: item.id, value: item.id }, `${item.key ? `${item.key} · ` : ''}${item.name}`)),
-                ),
-              ),
-            projects.length === 0 || projectIterations.length === 0
-              ? null
-              : h('div', { className: 'ds-field' },
-                h('div', { className: 'ds-label' }, '迭代'),
-                h(SelectField, { className: 'ds-select', value: iteration, onChange: e => setIteration(e.target.value) },
-                  h('option', { value: '' }, '不指定迭代'),
-                  projectIterations.map(item => h('option', { key: item.id, value: item.id }, item.name))),
-                h('div', { className: 'ds-hint', style: { fontSize: 11.5 } }, '默认挂这个项目的当前迭代，可以改'),
-              ),
-            h('div', { className: 'ds-field' },
-              h('div', { className: 'ds-label' }, '业务负责人（选填）'),
-              h(TextField, {
-                className: 'ds-input', placeholder: '提需求的人，例如 张伟',
-                value: owner, onChange: e => setOwner(e.target.value),
-              }),
-            ),
-            h('div', { className: 'ds-field' },
-              h('div', { className: 'ds-label' }, '期望完成（选填）'),
-              h(DateField, { className: 'ds-input', value: due, onChange: e => setDue(e.target.value) }),
-            ),
-          ),
-          isBug
-            ? h('div', { className: 'ds-hint', style: { fontSize: 11.5 } },
-              '缺陷卡会直接落到「待开发」，由研发先复现、定位根因再修，修完自动交给测试验证。')
-            : null,
-          h('div', { className: 'ds-modal-foot' },
-            error !== null ? h('span', { className: 'ds-err' }, error) : null,
-            h('div', { className: 'ds-grow' }),
-            h('button', { className: 'ds-btn', onClick: onClose }, '取消'),
-            h('button', { className: 'ds-btn ds-btn-primary', disabled: busy || title.trim() === '', onClick: () => void submit() },
-              busy ? '创建中…' : (isBug ? '登记缺陷' : '创建')),
-          ),
-        ),
-      )
-    }
+    /* 新建任务 / 登记缺陷对话框已迁到 web/src/studio/dialogs/new-task.js（BoardUI）。 */
 
     /** 效能页：一次通过率、返工率、周期分布、每列停留、AI 采纳情况。 */
     /* 燃尽用折线 + 面积：柱状图在「剩余 0–2」时全被压成 2px 小横线，看不出趋势。 */
@@ -1664,8 +1406,9 @@ function installBoardWheel() {
     if (board.scrollWidth <= board.clientWidth + 1) return
     if (event.shiftKey) return
     if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return
-    /* 列里的卡片溢出时，滚轮应该滚这一列，而不是把整个看板横向推走 */
-    const columnBody = target.closest('.ds-col-body')
+    /* 列里的卡片溢出时，滚轮应该滚这一列，而不是把整个看板横向推走。
+       列容器在 board.js 里是 [data-board-column-body]（.ds-col-body 是迁移前的类名）。 */
+    const columnBody = target.closest('[data-board-column-body]')
     if (columnBody !== null && columnBody.scrollHeight > columnBody.clientHeight + 1) return
     /* 已经推到最左/最右就不要再 preventDefault，否则整页也滚不动 */
     const atStart = board.scrollLeft <= 0
@@ -1748,6 +1491,19 @@ function installKeyboardActivation() {
      * 统一登录：服务端开了 requireLogin 又没带会话时，/state 会返回 locked，
      * 这里就盖一层登录框。用户名 = LDAP 账号（sAMAccountName / uid / mail 都试）。
      */
+    /* 登录卡：BoardUI token + 4px 档位。`data-login` 是新的探针钩子
+       （tools/visual/login-probe.mjs 还在等旧的 .ds-login，换成 [data-login] 后 legacy 规则可删）。 */
+    const LOGIN_CARD = 'flex w-full max-w-[380px] flex-col gap-3 rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xl'
+    const LOGIN_MODES = 'flex items-center gap-1 self-start rounded-lg border border-separator-border bg-background-secondary-default p-1'
+    const LOGIN_MODE = on => [
+      'rounded-md px-2 py-1 text-caption-1-medium transition-colors',
+      on ? 'bg-background-primary-default font-semibold text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary',
+    ].join(' ')
+    const LOGIN_FIELD = 'flex min-w-0 flex-col gap-1'
+    const LOGIN_HINT = 'text-caption-1-regular leading-relaxed text-text-secondary'
+    const LOGIN_NOTE = 'break-all text-caption-2-regular text-text-tertiary'
+    const LABEL = 'text-caption-2-medium text-text-secondary'
+
     function LoginGate({ config, theme, message, onDone, onClose, overlay }) {
       const localName = String(config?.localAuth?.username ?? 'admin')
       const localReady = config?.localAuth?.enabled !== false
@@ -1788,19 +1544,21 @@ function installKeyboardActivation() {
         }
       }
 
-      const tabs = h('div', { className: 'ds-seg', style: { alignSelf: 'flex-start' } },
+      const tabs = h('div', { className: LOGIN_MODES, 'data-login-modes': '' },
         h('button', {
-          className: 'ds-seg-btn',
           type: 'button',
+          className: LOGIN_MODE(mode === 'ldap'),
           'data-on': mode === 'ldap' ? '1' : '0',
+          'data-login-mode': 'ldap',
           disabled: !ldapReady,
           title: ldapReady ? '用公司目录（LDAP）的账号登录' : 'LDAP 还没启用，先在设置里配好再用',
           onClick: () => switchMode('ldap'),
         }, 'LDAP 账号'),
         h('button', {
-          className: 'ds-seg-btn',
           type: 'button',
+          className: LOGIN_MODE(mode === 'local'),
           'data-on': mode === 'local' ? '1' : '0',
+          'data-login-mode': 'local',
           disabled: !localReady,
           title: '用平台自带的超管账号登录',
           onClick: () => switchMode('local'),
@@ -1808,18 +1566,21 @@ function installKeyboardActivation() {
       )
 
       const hint = mode === 'ldap'
-        ? h('div', { className: 'ds-login-hint' },
+        ? h('div', { className: LOGIN_HINT },
             '用公司账号登录（LDAP）。登录后会记下你的名字，写操作和审计都挂在这个名字下。')
-        : h('div', { className: 'ds-login-hint' },
+        : h('div', { className: LOGIN_HINT },
             `用平台自带的超管账号登录。默认账号 ${localName}，默认口令 admin（改过之后就用新口令）。`)
 
-      const card = h('div', { className: 'ds-login' },
-            h('div', { className: 'ds-login-brand' }, '◈ ', config?.board?.title ?? '工作空间'),
+      /* 用 <label> 包住控件：读屏与 login-probe 都靠它拿字段名（以前是 span，
+         控件只有 placeholder 当名字）。 */
+      const card = h('div', { className: LOGIN_CARD, 'data-login': '' },
+            h('div', { className: 'text-title-3-semibold text-text-primary' }, '◈ ', config?.board?.title ?? '工作空间'),
             tabs,
             hint,
-            h('div', { className: 'ds-login-field' },
-              h('span', { className: 'ds-login-label' }, mode === 'local' ? '超管账号' : '域账号'),
+            h('label', { className: LOGIN_FIELD },
+              h('span', { className: LABEL }, mode === 'local' ? '超管账号' : '域账号'),
               h(TextField, {
+                'aria-label': mode === 'local' ? '超管账号' : '域账号',
                 value: username,
                 autoFocus: mode === 'ldap',
                 name: 'studio-account',
@@ -1830,9 +1591,10 @@ function installKeyboardActivation() {
                 onKeyDown: event => { if (event.key === 'Enter') void submit() },
               }),
             ),
-            h('div', { className: 'ds-login-field' },
-              h('span', { className: 'ds-login-label' }, '密码'),
+            h('label', { className: LOGIN_FIELD },
+              h('span', { className: LABEL }, '密码'),
               h(TextField, {
+                'aria-label': '密码',
                 type: 'password',
                 value: password,
                 autoFocus: mode === 'local',
@@ -1845,29 +1607,63 @@ function installKeyboardActivation() {
                 onKeyDown: event => { if (event.key === 'Enter') void submit() },
               }),
             ),
-            error === '' ? null : h('div', { className: 'ds-error' }, error),
+            error === '' ? null : h('div', { className: 'text-caption-1-regular text-text-error-primary', 'data-login-error': '' }, error),
             error !== '' && /LDAP|域|目录|连不上/.test(error)
-              ? h('div', { className: 'ds-login-note' }, '连不上目录服务时，切到「本地超管」用平台账号进来；等网络打通再用域账号。')
+              ? h('div', { className: LOGIN_NOTE }, '连不上目录服务时，切到「本地超管」用平台账号进来；等网络打通再用域账号。')
               : null,
-            h('div', { className: 'ds-login-actions' },
-              h('button', {
-                className: 'ds-btn ds-btn-primary',
+            h('div', { className: 'flex flex-wrap justify-end gap-2' },
+              h(Button, {
+                variant: 'primary',
+                size: 'sm',
+                'data-action': 'login-submit',
                 disabled: busy,
                 onClick: () => void submit(),
               }, busy ? '登录中…' : (mode === 'local' ? '登录（本地超管）' : '登录（LDAP）')),
               typeof onClose === 'function'
-                ? h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => onClose() }, '先不登录')
+                ? h(Button, { variant: 'ghost', size: 'sm', 'data-action': 'login-skip', onClick: () => onClose() }, '先不登录')
                 : null,
             ),
-            h('div', { className: 'ds-login-note' },
+            h('div', { className: LOGIN_NOTE },
               mode === 'ldap'
                 ? `${config?.ldap?.url ?? '—'} · BASE：${config?.ldap?.baseDN ?? '—'}`
-                : `本地账号存在服务端密钥里（scrypt 哈希），改密码在「设置 → 统一登录（LDAP）」`),
+                : '本地账号存在服务端密钥里（scrypt 哈希），改密码在「设置 → 统一登录（LDAP）」'),
         )
-      const wrap = h('div', { className: 'ds-login-wrap', 'data-overlay': overlay === true ? '1' : '0' }, card)
+
+      const wrap = overlay === true
+        ? h('div', {
+            className: 'fixed inset-0 z-[90] flex items-center justify-center bg-background-primary-default/70 p-6 backdrop-blur-sm',
+            style: { top: 'max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px))', WebkitAppRegion: 'no-drag' },
+            'data-overlay': '1',
+            'data-login-overlay': '',
+          }, card)
+        : h('div', { className: 'flex flex-1 items-center justify-center p-6', 'data-overlay': '0' }, card)
       if (overlay === true) return wrap
       return h('div', { 'data-dsh-studio': '', 'data-theme': theme }, h('style', null, CSS), wrap)
     }
+
+    /* 顶栏与页签：外观全部由 BoardUI token + Tailwind 工具类负责（4px 档位）。
+       三个旧类名 ds-brand / ds-head-actions / ds-head-tabs **只作探针锚点**保留：
+       tools/visual/pages-probe.mjs 还按它们定位顶栏与页签（800px 换行回归也用它）。
+       新钩子是 data-brand / data-head-actions / data-head-tabs / data-tab；探针改完之后
+       这三个类名可以连同最后一批 legacy 规则一起删。 */
+    const TOPBAR = 'flex min-h-0 flex-none flex-col gap-3 border-b border-separator-border bg-background-primary-default px-5 pb-2 pt-4 max-[760px]:px-3'
+    const TOPBAR_ROW = 'flex flex-wrap items-start gap-4 max-[920px]:gap-2'
+    const BRAND = 'flex min-w-0 items-center gap-3 max-[920px]:basis-full'
+    const BRAND_MARK = 'flex size-7 shrink-0 items-center justify-center rounded-lg bg-background-tertiary-default text-body-2-semibold text-text-secondary'
+    const TOPBAR_TITLE = 'truncate text-title-3-semibold text-text-primary'
+    const TOPBAR_SUB = 'truncate text-caption-1-regular tabular-nums text-text-tertiary'
+    const TOPBAR_ACTIONS = 'ml-auto flex flex-none flex-wrap items-center gap-2 max-[920px]:ml-0'
+    const HEAD_TABS = 'flex flex-wrap items-center gap-3 pb-1 max-[760px]:gap-2'
+    const BODY = 'flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-6'
+    const HEAD_STAT = 'text-caption-1-regular text-text-tertiary max-[760px]:hidden'
+    const SEG_GROUP = 'inline-flex items-center gap-1 rounded-lg border border-separator-border bg-background-secondary-default p-1'
+    const MENU_SHELL = 'absolute right-0 top-[calc(100%+6px)] z-[80] min-w-[232px] rounded-xl border border-separator-border bg-background-primary-default p-1.5 shadow-lg'
+    const MENU_ROW = 'block w-full rounded-md px-3 py-1.5 text-left text-body-2-regular text-text-primary hover:bg-background-secondary-default'
+    const MENU_BLOCK = 'flex w-full flex-col items-start gap-0.5 rounded-md px-3 py-1.5 text-left hover:bg-background-secondary-default'
+    const MENU_BLOCK_TITLE = 'text-body-2-medium text-text-primary'
+    const TAB_BASE = 'inline-flex shrink-0 items-center rounded-t-lg px-3 py-2 text-body-2-regular transition-colors'
+    const TAB_ON = TAB_BASE + ' bg-background-primary-default font-semibold text-text-primary shadow-sm'
+    const TAB_OFF = TAB_BASE + ' text-text-secondary hover:text-text-primary'
 
     function StudioPage(props) {
       // The bundled build swaps in the shadcn login card; the standalone artifact
@@ -1968,7 +1764,7 @@ function installKeyboardActivation() {
       if (state === null) {
         return h('div', { 'data-dsh-studio': '', 'data-theme': resolvedTheme },
           h('style', null, CSS),
-          h('div', { className: 'ds-loading' }, error === null ? '正在载入工作空间…' : `载入失败：${error}`),
+          h('div', { className: 'flex h-full items-center justify-center p-6 text-body-2-regular text-text-secondary', 'data-loading': '' }, error === null ? '正在载入工作空间…' : `载入失败：${error}`),
         )
       }
       if (state.locked === true) {
@@ -2001,28 +1797,30 @@ function installKeyboardActivation() {
         h('style', null, CSS),
         h(DialogHost, null),
         h(ToastHost, null),
-        h('div', { className: 'ds-head' },
-          h('div', { className: 'ds-head-top' },
-            h('div', { className: 'ds-brand' },
-              h('span', { className: 'ds-brand-mark' }, '◈'),
-              h('div', null,
-                h('div', { className: 'ds-title' }, state.config.board.title),
-                h('div', { className: 'ds-sub', title: `数据版本 rev ${state.revision}（每次写操作递增）` }, `${state.tasks.length} 张卡 · ${fmtTime(state.updatedAt)} 更新`),
+        h('div', { className: TOPBAR, 'data-topbar': '' },
+          h('div', { className: TOPBAR_ROW },
+            h('div', { className: 'ds-brand ' + BRAND, 'data-brand': '' },
+              h('span', { className: BRAND_MARK, 'aria-hidden': 'true' }, '◈'),
+              h('div', { className: 'flex min-w-0 flex-col' },
+                h('div', { className: TOPBAR_TITLE }, state.config.board.title),
+                h('div', { className: TOPBAR_SUB, title: `数据版本 rev ${state.revision}（每次写操作递增）` }, `${state.tasks.length} 张卡 · ${fmtTime(state.updatedAt)} 更新`),
               ),
             ),
-            h('div', { className: 'ds-head-actions' },
+            h('div', { className: 'ds-head-actions ' + TOPBAR_ACTIONS, 'data-head-actions': '' },
               h(RunTray, { state }),
               authUser() === null
                 ? h(ChipField, {
-                    className: 'ds-chip',
+                    variant: 'lime',
                     'data-on': '1',
                     title: `没配 LDAP 时平台默认以超管身份使用，不需要登录；写操作与审计都记在它名下${state.config.localAuth?.mustChange === true ? '。当前仍是默认口令 admin，请去「设置 → 统一登录」改掉' : ''}`,
                   }, `超管 ${state.config.localAuth?.username ?? 'admin'}${state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`)
-                : h(ChipField, { className: 'ds-chip', title: `已登录：${authUser()?.id ?? ''}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? '（仍是默认口令，去「设置 → 统一登录」改掉）' : ''}` }, `${authUser()?.name ?? authUser()?.id}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`),
+                : h(ChipField, { title: `已登录：${authUser()?.id ?? ''}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? '（仍是默认口令，去「设置 → 统一登录」改掉）' : ''}` }, `${authUser()?.name ?? authUser()?.id}${authUser()?.source === 'local' && state.config.localAuth?.mustChange === true ? ' · 默认口令' : ''}`),
               authUser() === null
-                ? h('button', { className: 'ds-btn ds-btn-ghost', title: '用域账号或本地超管账号登录', onClick: () => setShowLogin(true) }, '登录')
-                : tipOf('退出当前账号（退出后回到超管身份）', h('button', {
-                    className: 'ds-btn ds-btn-ghost',
+                ? h(Button, { variant: 'ghost', size: 'sm', title: '用域账号或本地超管账号登录', 'data-action': 'login', onClick: () => setShowLogin(true) }, '登录')
+                : tipOf('退出当前账号（退出后回到超管身份）', h(Button, {
+                    variant: 'ghost',
+                    size: 'sm',
+                    'data-action': 'logout',
                     onClick: async () => {
                       try { await api('/auth/logout', {}) } catch { /* 会话可能已过期 */ }
                       setSessionToken('')
@@ -2037,43 +1835,50 @@ function installKeyboardActivation() {
                 if (Seg !== null) {
                   return h(Seg, { value: theme, onChange: next => setTheme(setThemeName(next)), options })
                 }
-                return h('div', { className: 'ds-seg', title: '显示模式；「跟随系统」会先跟宿主界面的深浅色，宿主没给出信号时再跟操作系统' },
+                return h('div', { className: SEG_GROUP, 'data-seg': 'theme', title: '显示模式；「跟随系统」会先跟宿主界面的深浅色，宿主没给出信号时再跟操作系统' },
                   THEMES.map(([id, label]) => h('button', {
                     key: id,
-                    className: 'ds-seg-btn',
+                    type: 'button',
+                    className: (theme === id ? TAB_ON : TAB_OFF) + ' rounded-md py-1',
                     'data-on': theme === id ? '1' : '0',
+                    'data-theme-option': id,
                     onClick: () => setTheme(setThemeName(id)),
                   }, label)),
                 )
               })(),
               /* 低频动作收进「⋯」：用原生 <details>，展开/收起与键盘都交给浏览器，
                  不引入状态，也不会和宿主的 Esc / 焦点逻辑打架。 */
-              h('details', { className: 'ds-more' },
-                h('summary', { className: 'ds-btn ds-btn-ghost', title: '更多操作' }, '⋯'),
-                h('div', { className: 'ds-more-menu' },
-                  h('button', { className: 'ds-more-item', onClick: () => void reload() }, '刷新数据'),
+              h('details', { className: 'relative', 'data-more': '' },
+                h('summary', { className: 'flex h-8 cursor-pointer list-none items-center rounded-lg px-2 text-body-2-medium text-text-secondary hover:bg-background-secondary-default [&::-webkit-details-marker]:hidden', title: '更多操作' }, '⋯'),
+                h('div', { className: MENU_SHELL, role: 'menu' },
+                  h('button', { type: 'button', role: 'menuitem', className: MENU_ROW, 'data-action': 'refresh', onClick: () => void reload() }, '刷新数据'),
                   h('a', {
-                    className: 'ds-more-item',
+                    className: MENU_ROW,
+                    role: 'menuitem',
                     href: '/studio-api/export/tasks.csv',
                     title: '把看板上的卡导出成 CSV（Excel 可直接打开）',
                   }, '导出卡 CSV'),
                   h('a', {
-                    className: 'ds-more-item',
+                    className: MENU_ROW,
+                    role: 'menuitem',
                     href: '/studio-api/export/requirements.csv',
                     title: '把需求与准出情况导出成 CSV',
                   }, '导出需求 CSV'),
                 )),
               (state.integrations?.broken ?? 0) > 0
-                ? h('button', {
-                    className: 'ds-btn ds-btn-ghost',
-                    style: { color: 'var(--color-notification-error-foreground)', borderColor: 'color-mix(in srgb, var(--color-notification-error-foreground) 40%, var(--ds-line))' },
+                ? h(Button, {
+                    variant: 'ghost',
+                    size: 'sm',
+                    'data-integration-alert': String(state.integrations.broken),
                     title: (state.integrations.channels ?? []).filter(item => item.state === 'error').map(item => `${item.label}：${item.lastError}`).join('\n'),
                     onClick: () => { setTab('settings'); setSettingsSection('health') },
-                  }, h('span', { className: 'ds-dot', 'data-kind': 'danger', style: { marginRight: 8 } }), `集成异常 ${state.integrations.broken}`)
+                  }, h(ChipField, { variant: 'rose' }, `集成异常 ${state.integrations.broken}`))
                 : null,
-              h('div', { className: 'ds-newmenu', style: { position: 'relative' } },
-                h('button', {
-                  className: 'ds-btn ds-btn-primary',
+              h('div', { className: 'relative', 'data-new-menu': '' },
+                h(Button, {
+                  variant: 'primary',
+                  size: 'sm',
+                  'data-action': 'new',
                   'aria-haspopup': 'menu',
                   'aria-expanded': newMenu ? 'true' : 'false',
                   onClick: event => { event.stopPropagation(); setNewMenu(value => !value) },
@@ -2081,24 +1886,23 @@ function installKeyboardActivation() {
                 newMenu
                   ? h('div', {
                     role: 'menu',
-                    className: 'ds-menu',
-                    style: { position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 80, minWidth: 232, padding: 6, background: 'var(--ds-surface)', border: '1px solid var(--ds-line)', borderRadius: 10, boxShadow: '0 12px 32px rgba(0,0,0,.22)' },
+                    className: MENU_SHELL,
                     onClick: event => event.stopPropagation(),
                   },
-                    h('button', { role: 'menuitem', className: 'ds-btn ds-btn-ghost', style: { display: 'block', width: '100%', textAlign: 'left', height: 'auto', padding: '8px 12px' }, title: '先建需求，再按功能点拆卡', onClick: () => { setNewMenu(false); setTab('requirements'); setNewReq(count => count + 1) } },
-                      h('div', { style: { fontWeight: 600 } }, '新建需求'),
-                      h('div', { className: 'ds-hint', style: { marginTop: 2 } }, '需求 → 功能点 → 拆成卡'),
+                    h('button', { type: 'button', role: 'menuitem', className: MENU_BLOCK, title: '先建需求，再按功能点拆卡', onClick: () => { setNewMenu(false); setTab('requirements'); setNewReq(count => count + 1) } },
+                      h('span', { className: MENU_BLOCK_TITLE }, '新建需求'),
+                      h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '需求 → 功能点 → 拆成卡'),
                     ),
-                    h('button', { role: 'menuitem', className: 'ds-btn ds-btn-ghost', style: { display: 'block', width: '100%', textAlign: 'left', height: 'auto', padding: '8px 12px', marginTop: 2 }, title: '直接在看板上建一张卡', onClick: () => { setNewMenu(false); setTab('board'); setCreating(true) } },
-                      h('div', { style: { fontWeight: 600 } }, '新建任务'),
-                      h('div', { className: 'ds-hint', style: { marginTop: 2 } }, '直接在看板上建一张卡'),
+                    h('button', { type: 'button', role: 'menuitem', className: MENU_BLOCK, title: '直接在看板上建一张卡', onClick: () => { setNewMenu(false); setTab('board'); setCreating(true) } },
+                      h('span', { className: MENU_BLOCK_TITLE }, '新建任务'),
+                      h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '直接在看板上建一张卡'),
                     ),
                   )
                   : null,
               ),
             ),
           ),
-          h('div', { className: 'ds-head-tabs' },
+          h('div', { className: 'ds-head-tabs ' + HEAD_TABS, 'data-head-tabs': '' },
             (() => {
               const Tabs = kit('TabsBar')
               const items = [
@@ -2111,22 +1915,25 @@ function installKeyboardActivation() {
                 { id: 'analytics', label: '效能', hint: '周期分布、每列停留、团队负载、返工与 AI 成本' },
                 { id: 'settings', label: '设置', hint: '列、模型、自动派单、集成、权限、备份' },
               ]
-              // 先走 TabsBar（现在是 BoardUI 的 PillTabList + PillTab），
-              // 没有再退回 Radix 的那套，最后才是自绘的 .ds-tab。
+              // 有 TabsBar（BoardUI 的 role=tab 实现）就用它；单文件产物走下面的等价降级。
               if (Tabs !== null) {
                 return h(Tabs, { items, value: tab, onChange: next => setTab(next) })
               }
-              return h('div', { className: 'ds-tabs' },
+              return h('div', { role: 'tablist', className: 'flex flex-wrap items-center gap-1 border-b border-separator-border' },
                 items.map(item => h('button', {
                   key: item.id,
-                  className: 'ds-tab',
+                  type: 'button',
+                  role: 'tab',
+                  'aria-selected': tab === item.id ? 'true' : 'false',
+                  'data-tab': item.id,
+                  className: tab === item.id ? TAB_ON : TAB_OFF,
                   'data-on': tab === item.id ? '1' : '0',
                   onClick: () => setTab(item.id),
                 }, item.label)),
               )
             })(),
-            h('div', { className: 'ds-grow' }),
-            h('span', { className: 'ds-stat' },
+            h('div', { className: 'flex-1' }),
+            h('span', { className: HEAD_STAT },
               tab === 'dashboard'
                 ? '今天该看什么：风险 · 流程 · 待办'
                 : tab === 'board'
@@ -2147,10 +1954,12 @@ function installKeyboardActivation() {
           ),
         ),
         error !== null
-          ? h('div', { className: 'ds-err', style: { padding: '8px 20px' } }, error)
+          ? h('div', { className: 'flex-none border-b border-separator-border bg-background-primary-default px-5 py-2 text-caption-1-regular text-text-error-primary', 'data-load-error': '' }, error)
           : null,
         tab === 'board'
-          ? h(Board, { state, onWip: async (status, current) => { const raw = await promptDialog(`这一列的 WIP 上限（0 = 不限，最多 50）`, { title: 'WIP 上限', defaultValue: String(current) }); if (raw === null) return; const value = Math.min(50, Math.max(0, Math.trunc(Number(String(raw).trim()) || 0))); try { await api('/columns/wip', { status, wip: value }); toast(value === 0 ? '已取消 WIP 上限' : `WIP 上限设为 ${value}`); await reload() } catch (cause) { toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onCreate: () => setCreating(true), onMove: moveTask, onOpen: setOpenId })
+          ? h('div', { className: 'flex min-h-0 flex-1 flex-col', 'data-board-page': '' },
+              h(Board, { state, onWip: async (status, current) => { const raw = await promptDialog(`这一列的 WIP 上限（0 = 不限，最多 50）`, { title: 'WIP 上限', defaultValue: String(current) }); if (raw === null) return; const value = Math.min(50, Math.max(0, Math.trunc(Number(String(raw).trim()) || 0))); try { await api('/columns/wip', { status, wip: value }); toast(value === 0 ? '已取消 WIP 上限' : `WIP 上限设为 ${value}`); await reload() } catch (cause) { toast(cause instanceof Error ? cause.message : String(cause), 'error') } }, onCreate: () => setCreating(true), onMove: moveTask, onOpen: setOpenId }),
+            )
           : tab === 'dashboard'
             ? h(DashboardPage, { state, onOpenTask: setOpenId, onOpenBoard: () => setTab('board'), onOpenCases: () => setTab('cases') })
           : tab === 'requirements'
@@ -2164,8 +1973,8 @@ function installKeyboardActivation() {
               : tab === 'analytics'
                 ? h(AnalyticsPage, { state, onOpenTask: setOpenId, onFixPrices: models => { setCostSuggest(Array.isArray(models) ? models : []); setSettingsSection('costs'); setTab('settings') } })
               : tab === 'market'
-                ? h('div', { className: 'ds-body' }, h(Market, { state, onChanged: reload }))
-                : h('div', { className: 'ds-body' }, h(Settings, { state, onChanged: reload, initialSection: settingsSection, onSection: setSettingsSection, suggestCosts: costSuggest })),
+                ? h('div', { className: BODY, 'data-market-page': '' }, h(Market, { state, onChanged: reload }))
+                : h('div', { className: BODY, 'data-settings-page': '' }, h(Settings, { state, onChanged: reload, initialSection: settingsSection, onSection: setSettingsSection, suggestCosts: costSuggest })),
         paletteOpen
           ? h(Palette, {
               state,
