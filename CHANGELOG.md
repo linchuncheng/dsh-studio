@@ -1,6 +1,28 @@
 # 更新日志
 
 
+## [0.9.77] — 2026-11-23
+
+### BoardUI 迁移彻底收官：`ds-` 类清零（只剩测试断言的 5 个）
+
+上一版把 CSS 里 124 → 14，这一版清掉最后的「有意保留」：
+
+| 项 | 结果 |
+| --- | --- |
+| Markdown 排版作用域 | `ds-md*` → **`md-content` / `md-field` / `md-editor-bar` / `md-preview`**，规则全部改用 token |
+| 三个组件钩子 | `ds-dot` → `size-1.5 rounded-full bg-status-*`；`ds-icon` → Tailwind；`ds-seg-control` → token |
+| 注释里的旧类名 | 24 个文件改成中性描述，删掉两个已无定义的钩子 |
+| `tools/ui/prune-ds-css.mjs` | 报告 **0 处** |
+
+Markdown 观感（实测前后）：正文 13px/20px 不变；三级标题 16/13/13 → **18/16/14**，字重 700 → 600（层级更清楚）；代码块底色 `#f4f4f5 → #f7f7f7`、描边 `#e4e4e7 → #ebebeb`。深色下引用块与表头一处对比度回退（≈2.6:1）已修回「正文色 + 0.85」。
+
+### 现在还剩什么
+
+JS/TSX 里非 `--ds-*` 变量的 `ds-` 只剩 **overlay 白名单 5 个类**
+（`ds-drawer` / `ds-drawer-wrap` / `ds-modal-wrap` / `ds-side` / `ds-side-mask`）——
+它们是 `tests/overlay-titlebar.test.mjs` 的断言对象（issue #4：桌面版覆盖层必须避开标题栏），**不是遗留**。
+另有 `ds-palette-veil` 在 index.css 白名单里同样被测试守着。
+
 ## [0.9.76] — 2026-11-23
 
 ### BoardUI 迁移收尾：CSS 里的手写类 124 → 14
