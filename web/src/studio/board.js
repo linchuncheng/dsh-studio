@@ -19,6 +19,8 @@ function Board({ state, onOpen, onMove, onWip, onCreate }) {
   const [serviceFilter, setServiceFilter] = React.useState('')
   const [requirementFilter, setRequirementFilter] = React.useState('')
   const [hideEmpty, setHideEmpty] = React.useState(false)
+  // 列多时默认给可读列宽、横向滚；打开这个把列压到一屏看全（记在本地）
+  const [fitWidth, setFitWidth] = React.useState(() => { try { return window.localStorage.getItem('studio.boardFit') === '1' } catch { return false } })
   const [onlyBlocked, setOnlyBlocked] = React.useState(false)
   const [onlyNoBody, setOnlyNoBody] = React.useState(false)
   // 每列当前渲染到第几张；点「显示更多」一页一页加。
@@ -155,6 +157,21 @@ function Board({ state, onOpen, onMove, onWip, onCreate }) {
         h(CheckField, { checked: hideEmpty, onChange: event => setHideEmpty(event.target.checked) }),
         h('span', {}, '隐藏空列'),
       ),
+      h('label', {
+        className: 'ds-row',
+        style: { gap: 4, fontSize: 12, cursor: 'pointer', opacity: .8 },
+        title: '把每列压到能一屏看全：列多的时候比横向滚动快，代价是卡片标题会换行',
+      },
+        h(CheckField, {
+          checked: fitWidth,
+          onChange: event => {
+            const next = event.target.checked
+            setFitWidth(next)
+            try { window.localStorage.setItem('studio.boardFit', next ? '1' : '0') } catch { /* 隐私模式下写不进去就算了 */ }
+          },
+        }),
+        h('span', {}, '适应宽度'),
+      ),
       blockedCount > 0
         ? h('label', {
           className: 'ds-row', style: { gap: 4, fontSize: 12, cursor: 'pointer', color: 'var(--color-notification-error-foreground)' },
@@ -184,6 +201,7 @@ function Board({ state, onOpen, onMove, onWip, onCreate }) {
     ),
     h('div', {
       className: 'ds-board',
+      'data-fit': fitWidth ? '1' : '0',
       tabIndex: 0,
       'aria-label': '看板列，左右滚动或用方向键',
     },
