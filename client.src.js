@@ -481,16 +481,6 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 
 
 
-@keyframes ds-pulse { 0%,100% { opacity:.45 } 50% { opacity:1 } }
-
-.ds-dot { width:6px; height:6px; border-radius:50%; display:inline-block; }
-
-.ds-dot[data-p="urgent"] { background:#e5484d; }
-
-.ds-dot[data-p="normal"] { background:#8a8f98; }
-
-.ds-dot[data-p="relaxed"] { background:#4b7bec55; }
-
 
 
 

@@ -211,12 +211,6 @@
 
 
 
-[data-dsh-studio] .ds-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  flex: none;
-}
 
 
 
@@ -912,39 +906,6 @@ html body [data-dsh-studio] .studio-tabs-thumb {
   background: var(--color-accent-600, var(--ds-accent));
 }
 
-/* 分段控件（官方 SegmentedControl）：容器与滑动块的底色用 token 写死，
-   因为 Tailwind 的 bg-* 工具类在这个宿主页里不生效（见前面几处说明）。 */
-html body [data-dsh-studio] .ds-seg-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-  border-radius: 10px;
-  background: var(--color-segmented-control-background, var(--ds-soft));
-}
-
-html body [data-dsh-studio] .ds-seg-control > span[aria-hidden] {
-  border-radius: 10px;
-  background: var(--color-segmented-control-selected-background, #fff);
-  box-shadow: 0 1px 2px color-mix(in srgb, #101828 8%, transparent);
-}
-
-html body [data-dsh-studio] .ds-seg-control button {
-  padding: 4px 8px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  font: inherit;
-  font-size: 12px;
-  line-height: 17px;
-  color: var(--muted-foreground);
-  cursor: pointer;
-}
-
-html body [data-dsh-studio] .ds-seg-control button[data-selected] {
-  color: var(--color-text-primary, inherit);
-  font-weight: 600;
-}
 
 /* ------------------------------------------------------- 表格（官方） --- */
 /* 摘自考 registry 的 styles/globals.css，只摘 .bui-table 这一段（整份 globals 带
@@ -1095,25 +1056,6 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
  * unslop pass 2 —— 一套线性图标（lucide）+ 状态点
  * 图标只用 currentColor，不单独上色；状态一律 6px 圆点 + 文字。
  * ======================================================================== */
-[data-dsh-studio] .ds-icon {
-  flex: none;
-  vertical-align: -2px;
-  color: currentColor;
-}
-
-[data-dsh-studio] .ds-dot {
-  display: inline-block;
-  flex: none;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--ds-muted, #6b6b74);
-}
-[data-dsh-studio] .ds-dot[data-kind="ok"] { background: var(--ds-ok-text, #0b7a43); }
-[data-dsh-studio] .ds-dot[data-kind="warn"] { background: var(--ds-warn-text, #a26100); }
-[data-dsh-studio] .ds-dot[data-kind="danger"] { background: var(--ds-danger-text, #c0392b); }
-[data-dsh-studio] .ds-dot[data-kind="info"] { background: var(--primary, #2563eb); }
-[data-dsh-studio] .ds-dot[data-kind="idle"] { background: var(--ds-line, #d4d4d8); }
 
 
 

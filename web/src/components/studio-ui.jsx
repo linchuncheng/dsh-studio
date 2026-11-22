@@ -42,6 +42,7 @@ export { TabsBar } from './tabs-bar.jsx'
 export function SegGroup({ value, onChange, options, className }) {
   // 官方 SegmentedControl（分段控件）：这才是「互斥按钮组」该用的组件，
   // 之前用胶囊（PillTab）是视图切换的语义，用错了。
+  // 外壳只补 token + 工具类：圆角/描边/底色都来自 BoardUI，不再挂手写类。
   return (
     <BoarduiSegmented
       selectedKeys={[value]}
@@ -49,7 +50,7 @@ export function SegGroup({ value, onChange, options, className }) {
         const next = [...keys][0]
         if (next !== undefined && next !== null) onChange(String(next))
       }}
-      className={cn('ds-seg-control', className)}
+      className={cn('inline-flex rounded-lg border border-separator-border bg-background-secondary-default p-1', className)}
     >
       {options.map((opt) => (
         <BoarduiSegmentedItem key={opt.id} id={opt.id}>
