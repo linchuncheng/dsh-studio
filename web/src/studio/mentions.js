@@ -2,7 +2,7 @@
  *
  * 外观走 BoardUI token（表面 card + separator-border + 大阴影，行 hover/选中用 secondary 底）。
  * 定位仍是「贴着输入框上沿、左右各留 20px」的绝对定位：这层要盖住输入框上方的空间，
- * 用内联样式写死，不依赖 legacy 的 .ds-mention-pop 规则（那些会被删）。
+ * 用内联样式写死，不依赖 legacy 的弹出层规则（那些会被删）。
  */
 
 import { uiIcon } from './icons.js'

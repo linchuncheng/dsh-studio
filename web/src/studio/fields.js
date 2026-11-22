@@ -22,7 +22,7 @@ export function createFields({ h, kit, React }) {
     function TextAreaField(props) {
       return h(BoarduiTextarea, withAccessibleName(props))
     }
-    /* 状态标签。legacy 写法 h(ChipField, { className: 'ds-chip ds-chip-blocked' }, 文本)，
+    /* 状态标签。legacy 写法把类名塞进 h(ChipField, { className }, 文本)，
        语义（阻塞 / 缺陷 / 代码 / 普通）由适配层翻成 BoardUI Chip 的颜色。 */
     function ChipField({ className, variant, ...rest }) {
       return h(BoarduiChip, { className, variant, ...rest })

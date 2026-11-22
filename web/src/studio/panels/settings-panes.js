@@ -5,7 +5,7 @@
  *   · 字段 = 标签（caption）+ 控件，控件仍走共享的 TextField / SelectField / CheckField；
  *   · 动作走 BoardUI Button；保存结果用 token 色的小字。
  *
- * 这三块原先挂在 .ds-panel / .ds-panel-head / .ds-panel-body 上，是设置页外壳迁完后的最后一批。
+ * 这三块原先挂在旧 panel 的「壳 / 头 / 体」三层类上，是设置页外壳迁完后的最后一批。
  */
 import { Button } from '../../boardui/index'
 import { ROLE_LABEL } from '../labels.js'

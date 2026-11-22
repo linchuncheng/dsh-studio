@@ -1,12 +1,12 @@
 /* Settings panels lifted out of client.src.js; shared handles come from the studio context.
  *
- * 面板内部已经全部换成 BoardUI（Tailwind v4 token + 4px 档位），不再用 .ds-* 手写类：
+ * 面板内部已经全部换成 BoardUI（Tailwind v4 token + 4px 档位），不再用手写类：
  *   - 分区 = 卡片：rounded-xl + border-separator-border + bg-background-primary-default + p-4
  *   - 小节标题 text-title-2-semibold、说明 text-caption-1-regular text-text-tertiary
  *   - 行 = 分隔线（1px + 末行去掉），动作用 BoardUI Button，状态用 Chip
- *   - 空态用 boardui/empty-state；列表分区不再走共享 Editor（ds-panel 那套）
+ *   - 空态用 boardui/empty-state；列表分区不再走共享 Editor（旧的 panel 那套）
  *
- * 最外层容器是纯 Tailwind（设置页外壳已迁 BoardUI），不再借 `.ds-panel` 过渡。
+ * 最外层容器是纯 Tailwind（设置页外壳已迁 BoardUI），不再借旧的 panel 类过渡。
  * 免得分区卡片外面再套一层卡片边框。
  */
 

@@ -6,7 +6,7 @@
  *   - 遮罩：bg-black/40，定位仍然是「贴着标题栏下沿的 fixed 覆盖层」
  *   - 面板：bg-background-primary-default + border-separator-border + 大阴影
  * 覆盖层的 fixed / top 下沉 / z-index / no-drag 用内联样式写死 —— 这几条是 issue #4
- * 的修复点，不能依赖会被删掉的 legacy `.ds-side-*` 规则。
+ * 的修复点，不能依赖会被删掉的 legacy 侧滑层规则。
  */
 
 import { Button } from '../boardui/index'

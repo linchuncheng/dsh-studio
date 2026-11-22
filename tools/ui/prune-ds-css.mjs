@@ -25,10 +25,10 @@ const root = process.cwd()
 const clientPath = join(root, 'client.src.js')
 const cssPath = join(root, 'web/src/index.css')
 
-/* 永远不自动删：Markdown 排版作用域、以及 tests/overlay-titlebar.test.mjs 断言「规则必须存在」的那几条。
-   覆盖层迁到 BoardUI 后这些类可能已无消费者，但删了会让测试红；要删得先改测试判据。 */
+/* 永远不自动删：tests/overlay-titlebar.test.mjs 断言「这些规则必须存在」的那几条。
+   覆盖层迁到 BoardUI 后这些类可能已无消费者，但删了会让测试红；要删得先改测试判据。
+   （Markdown 排版作用域已改名成 md-content，不再是 ds-* 类，所以不必再列白名单。） */
 const NEVER_DELETE = new Set([
-  'ds-md', 'ds-md-field', 'ds-md-bar', 'ds-md-preview',
   'ds-drawer', 'ds-drawer-wrap', 'ds-modal-wrap', 'ds-side-wrap', 'ds-side-mask', 'ds-side', 'ds-palette-veil',
 ])
 

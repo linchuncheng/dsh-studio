@@ -1,6 +1,6 @@
 /* Page-level components lifted out of client.src.js; shared handles come from the studio context. */
 
-/* 工作台：整页 BoardUI（Tailwind token + 4px 档位），不再用 .ds-* 手写样式：
+/* 工作台：整页 BoardUI（Tailwind token + 4px 档位），不再用手写样式：
  *   - 板块外壳：rounded-xl + border-separator-border + bg-background-primary-default
  *   - 数字：StatCard（boardui/chart-card，data-stat-card 是稳定钩子）
  *   - 列表行：TaskRow（boardui/task-list，data-task-row）
@@ -73,7 +73,7 @@ export function DashboardPage({ state, onOpenTask, onOpenBoard, onOpenCases }) {
   const risks = data.risks ?? {}
   const flow = data.flow ?? {}
   const ai = data.ai ?? {}
-  // KPI 与任务行都是 BoardUI 的实现：与效能页共用同一套壳，不再和 .ds-kpi 混排。
+  // KPI 与任务行都是 BoardUI 的实现：与效能页共用同一套壳，不再和手写 KPI 卡混排。
   const kpi = (label, value, hint, warn) => h(StatCard, { label, value: String(value ?? 0), hint, warn: warn === true })
   const taskRow = (item) => h(TaskRow, {
     key: item.id,

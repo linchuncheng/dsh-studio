@@ -78,7 +78,7 @@ export function TabsBar({ items, value, onChange, className }) {
       {thumb === null ? null : (
         <span
           aria-hidden
-          className="ds-tabs-thumb pointer-events-none absolute bottom-0 left-0 h-0.5 bg-accent-600 transition-[transform,width] duration-200 ease"
+          className="pointer-events-none absolute bottom-0 left-0 h-0.5 bg-accent-600 transition-[transform,width] duration-200 ease"
           style={{ transform: `translateX(${thumb.left}px)`, width: thumb.width }}
         />
       )}

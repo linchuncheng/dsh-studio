@@ -1,9 +1,9 @@
 /* 项目页：业务项目 / 迭代 / 每个服务的本机目录与卡数。
  *
- * 这一版整页改用 BoardUI（Tailwind v4 + token + 4px 档位），不再用 .ds-proj-* 那套手写类：
+ * 这一版整页改用 BoardUI（Tailwind v4 + token + 4px 档位），不再用那套手写类：
  *   - 卡片表面：rounded-xl + border-separator-border + bg-background-primary-default
  *   - 数字/标签：text-title-2-semibold / text-caption-1-regular / tabular-nums
- *   - 进度条：BoardUI 的 ProgressTrack（轨道与填充都来自 theme.css，不再自己写 .ds-check-bar）
+ *   - 进度条：BoardUI 的 ProgressTrack（轨道与填充都来自 theme.css，不再自己写进度条类）
  *   - 空态：boardui/empty-state（BoardUI 没有空态组件，这是它家 token 拼的等价物）
  *   - 动作：boardui/index 的 Button（variant/size 由适配层翻译）
  */

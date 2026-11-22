@@ -1,13 +1,13 @@
 /* Settings panels lifted out of client.src.js; shared handles come from the studio context.
  *
- * 面板内部已经全部换成 BoardUI（Tailwind v4 token + 4px 档位），不再用 .ds-* 手写类：
+ * 面板内部已经全部换成 BoardUI（Tailwind v4 token + 4px 档位），不再用手写类：
  *   - 分区 = 卡片：rounded-xl + border-separator-border + bg-background-primary-default + p-4
  *   - 小节标题 text-title-2-semibold、说明 text-caption-1-regular text-text-tertiary
  *   - 行 = 分隔线（1px + 末行去掉），动作用 BoardUI Button，状态用 Chip
  *   - 审计日志用官方 Table + Pagination（真 <table> 语义，键盘可达）
  *   - 空态用 boardui/empty-state
  *
- * 最外层容器是纯 Tailwind（设置页外壳已迁 BoardUI），不再借 `.ds-panel` 过渡。
+ * 最外层容器是纯 Tailwind（设置页外壳已迁 BoardUI），不再借旧的 panel 类过渡。
  * 探针靠 data-* 钩子（data-design-gate / data-review-gate / data-case-gate / data-isolation-warning），
  * 不依赖样式类名。
  */
@@ -200,7 +200,7 @@ export function AccessPanel({ state, config, onChanged }) {
           : '没有符合筛选条件的记录。把关键字清空或换个人试试。' })
         : h('div', { className: 'flex min-w-0 flex-col gap-3' },
           // 官方 Table：真 <table> 语义（表头可被屏幕阅读器读到、行可用键盘导航），
-          // 替代原来 120 个 div.ds-audit-row 平铺。
+          // 替代原来 120 个审计行 div 平铺。
           h(Table, { key: 'table', size: 'sm', 'aria-label': '审计日志' },
             h(TableHeader, null,
               h(TableColumn, { id: 'time', isRowHeader: true }, '时间'),

@@ -1,7 +1,7 @@
 /* 新建任务 / 登记缺陷对话框。
  *
  * 从 client.src.js 的 NewTaskDialog 原样迁出来，只换表现层：
- *   · 壳 = 固定覆盖层 + 卡片（Tailwind token + 4px 档位），不再是 .ds-modal-wrap / .ds-modal；
+ *   · 壳 = 固定覆盖层 + 卡片（Tailwind token + 4px 档位），不再是旧的 modal 类；
  *   · 字段仍走共享的 TextField / SelectField / DateField / MdField（BoardUI 适配层，语义不变）；
  *   · 动作走 BoardUI Button；点遮罩关闭、Enter 提交、默认挂当前迭代这些行为一个没动。
  *

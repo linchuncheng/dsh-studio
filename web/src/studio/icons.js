@@ -11,7 +11,7 @@
  *
  * 两个约定：
  *   1. 图标永远跟着文字的颜色走（currentColor），不单独上色；
- *   2. 状态不用图标表达，用 `.ds-dot`（6px 圆点）+ 文字：形状固定、颜色只表意。
+ *   2. 状态不用图标表达，用 6px 圆点（statusDot）+ 文字：形状固定、颜色只表意。
  *
  * 用法（这些模块都是 h() 写法，所以图标也从传入的 createElement 构造）：
  *   import { uiIcon, statusDot, expertIconName } from './icons.js'
@@ -71,15 +71,26 @@ export function uiIcon(createElement, name, props = {}) {
       'aria-hidden': 'true',
       focusable: 'false',
       ...rest,
-      className: ['ds-icon', className].filter(Boolean).join(' '),
+      // 尺寸/颜色/基线一律用工具类：图标永远跟着文字颜色走（currentColor），不单独上色。
+      className: ['flex-none align-[-2px] text-current', className].filter(Boolean).join(' '),
     },
     nodes.map((node, index) => createElement(node[0], { ...node[1], key: index })),
   )
 }
 
+/** 状态点在语义上的那几档颜色：只用 BoardUI 的状态 token，不写实色。 */
+const DOT_TONE = {
+  ok: 'bg-status-lime-text',
+  warn: 'bg-status-yellow-text',
+  danger: 'bg-status-rose-text',
+  info: 'bg-accent-500',
+  idle: 'bg-text-tertiary',
+}
+
 /** 6px 状态点。kind: ok / warn / danger / info / idle。 */
 export function statusDot(createElement, kind, props = {}) {
-  return createElement('span', { className: 'ds-dot', 'data-kind': kind, 'aria-hidden': 'true', ...props })
+  const tone = DOT_TONE[kind] ?? DOT_TONE.idle
+  return createElement('span', { className: `inline-block size-1.5 flex-none rounded-full ${tone}`, 'data-kind': kind, 'aria-hidden': 'true', ...props })
 }
 
 const ROLE_ICON = {

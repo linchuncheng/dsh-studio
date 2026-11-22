@@ -7,7 +7,7 @@ import { RELEASE_STATUS_ORDER, RELEASE_STATUS_LABEL, REQ_STATUS_LABEL } from '..
 import { Button, Select, Chip } from '../../boardui/index'
 import { EmptyState } from '../../boardui/empty-state'
 
-/* 整页 BoardUI：面板/表单/列表/动作全部走 token + Tailwind（4px 档位），不再写 .ds-*。 */
+/* 整页 BoardUI：面板/表单/列表/动作全部走 token + Tailwind（4px 档位），不再写手写类。 */
 const PAGE = 'flex min-w-0 flex-col gap-4 overflow-auto p-4'
 const PANEL = 'flex min-w-0 flex-col overflow-hidden rounded-xl border border-separator-border bg-background-primary-default'
 const PANEL_HEAD = 'flex flex-wrap items-center gap-2 border-b border-separator-border px-4 py-3 text-body-2-medium text-text-primary'

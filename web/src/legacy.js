@@ -79,13 +79,13 @@ export function createStudio(React, h) {
     function MdField({ rows = 6, value, onChange, placeholder, className, ...rest }) {
       const [preview, setPreview] = React.useState(false)
       const text = String(value ?? '')
-      return h('div', { className: 'ds-md-field' },
-        h('div', { className: 'ds-md-bar' },
+      return h('div', { className: 'md-field' },
+        h('div', { className: 'md-editor-bar' },
           h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '支持 Markdown：标题 / 列表 / 粗体 / 代码块 / 表格'),
           h(Button, { variant: 'ghost', size: 'xs', type: 'button', 'data-md-toggle': preview ? 'preview' : 'edit', onClick: () => setPreview(!preview) }, preview ? '回到编辑' : '预览渲染'),
         ),
         preview
-          ? h('div', { className: 'ds-md-preview ds-md mt-3 text-caption-1-regular' }, text.trim() === '' ? h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '还没写内容。') : renderMarkdown(text))
+          ? h('div', { className: 'md-preview md-content mt-3' }, text.trim() === '' ? h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '还没写内容。') : renderMarkdown(text))
           : h(TextAreaField, { className, rows, value, onChange, placeholder, ...rest }),
       )
     }
@@ -96,14 +96,14 @@ export function createStudio(React, h) {
     }
 
     /* 表单控件的 shadcn 适配层。
-       legacy 代码全是 h(SelectField, { className:'ds-select', value, onChange(e) }, option…)
+       legacy 代码全是 h(SelectField, { className:'…', value, onChange(e) }, option…)
        这类写法；有了 UIKIT 就换成 Radix 版本，没有就原样用原生控件（单文件产物）。 */
 
 
 
 
-/* 徽章。legacy 写法是 h(ChipField, { className: 'ds-chip', ...rest }, 内容)；
-       有 UIKIT 就渲染成 shadcn Badge（variant 按语义映射），没有就还是 span.ds-chip。 */
+/* 徽章。legacy 写法是 h(ChipField, { className: '…', ...rest }, 内容)；
+       有 UIKIT 就渲染成 shadcn Badge（variant 按语义映射），没有就还是普通 span。 */
 
     /* 布尔开关。legacy 写法是 h(CheckField, { checked, onChange(e) })， */
     /* 换了 UIKIT 就渲染成 Radix Switch，没有就还是原生 checkbox。 */
@@ -231,7 +231,7 @@ export function createStudio(React, h) {
       toastEmit()
     }
     const TOAST_STATUS = { success: 'success', error: 'error', info: 'info', warn: 'warning' }
-    /* 轻提示宿主：用官方 Notification 渲染（原来是自己写的 .ds-toast div）。 */
+    /* 轻提示宿主：用官方 Notification 渲染（原来是自己写的 toast div）。 */
     function ToastHost() {
       const Notification = kit('Notification')
       const [items, setItems] = React.useState(() => TOAST_ITEMS.slice())
@@ -516,16 +516,6 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 
 
 
-@keyframes ds-pulse { 0%,100% { opacity:.45 } 50% { opacity:1 } }
-
-.ds-dot { width:6px; height:6px; border-radius:50%; display:inline-block; }
-
-.ds-dot[data-p="urgent"] { background:#e5484d; }
-
-.ds-dot[data-p="normal"] { background:#8a8f98; }
-
-.ds-dot[data-p="relaxed"] { background:#4b7bec55; }
-
 
 
 
@@ -573,46 +563,60 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 
 
 
-.ds-md { white-space:normal; line-height:1.6; word-break:break-word; }
+/* Markdown 排版作用域：renderMarkdown 的产物挂在这一套语义类里（md-content / md-field /
+   md-editor-bar / md-preview）。它不是组件样式，是「渲染出来的正文」的排版：
+   颜色只取 BoardUI 的语义 token，字号走 4px 档（正文 13 / 标题 18·16·14 / 代码 12），
+   行高落在 20·24·16 上。{--ds-*} 只在单文件产物（没有 index.css）里当兜底。 */
+[data-dsh-studio] .md-content { white-space:normal; word-break:break-word; font-size:13px; line-height:20px; color:var(--color-text-primary, currentColor); }
 
-.ds-md > *:first-child { margin-top:0; }
+[data-dsh-studio] .md-content > *:first-child { margin-top:0; }
 
-.ds-md > *:last-child { margin-bottom:0; }
+[data-dsh-studio] .md-content > *:last-child { margin-bottom:0; }
 
-.ds-md p { margin:0 0 8px; }
+[data-dsh-studio] .md-content p { margin:0 0 8px; }
 
-.ds-md h3, .ds-md h4, .ds-md h5, .ds-md h6 { margin:12px 0 8px; line-height:1.35; }
+[data-dsh-studio] .md-content h1,
+[data-dsh-studio] .md-content h2,
+[data-dsh-studio] .md-content h3,
+[data-dsh-studio] .md-content h4,
+[data-dsh-studio] .md-content h5,
+[data-dsh-studio] .md-content h6 { margin:12px 0 8px; font-weight:600; line-height:24px; color:var(--color-text-primary, inherit); }
 
-.ds-md h3 { font-size:16px; }
+[data-dsh-studio] .md-content h1,
+[data-dsh-studio] .md-content h2,
+[data-dsh-studio] .md-content h3 { font-size:18px; }
 
-.ds-md h4 { font-size:13px; }
+[data-dsh-studio] .md-content h4 { font-size:16px; }
 
-.ds-md h5, .ds-md h6 { font-size:13px; }
+[data-dsh-studio] .md-content h5,
+[data-dsh-studio] .md-content h6 { font-size:14px; line-height:20px; }
 
-.ds-md ul, .ds-md ol { margin:0 0 8px; padding-left:20px; }
+[data-dsh-studio] .md-content ul,
+[data-dsh-studio] .md-content ol { margin:0 0 8px; padding-left:20px; }
 
-.ds-md li { margin:2px 0; }
+[data-dsh-studio] .md-content li { margin:2px 0; }
 
-.ds-md code { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px;
-  background:var(--ds-soft2); border:1px solid var(--ds-line); border-radius:10px; padding:0 4px; }
+[data-dsh-studio] .md-content code { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; line-height:16px; color:var(--color-text-primary, inherit);
+  background:var(--color-background-secondary-default, var(--ds-soft2)); border:1px solid var(--color-separator-border, var(--ds-line)); border-radius:10px; padding:0 4px; }
 
-.ds-md pre { margin:0 0 12px; padding:12px 12px; overflow-x:auto; background:var(--ds-soft2); border:1px solid var(--ds-line); border-radius:10px; }
+[data-dsh-studio] .md-content pre { margin:0 0 12px; padding:12px 12px; overflow-x:auto; background:var(--color-background-secondary-default, var(--ds-soft2)); border:1px solid var(--color-separator-border, var(--ds-line)); border-radius:10px; }
 
-.ds-md pre code { background:none; border:0; padding:0; font-size:12px; line-height:1.55; }
+[data-dsh-studio] .md-content pre code { background:none; border:0; padding:0; font-size:12px; line-height:16px; }
 
-.ds-md blockquote { margin:0 0 8px; padding:2px 0 2px 12px; border-left:3px solid var(--ds-line); opacity:.85; }
+[data-dsh-studio] .md-content blockquote { margin:0 0 8px; padding:2px 0 2px 12px; border-left:3px solid var(--color-separator-border, var(--ds-line)); color:var(--color-text-primary, inherit); opacity:.85; }
 
-.ds-md a { color:var(--ds-accent); text-decoration:none; }
+[data-dsh-studio] .md-content a { color:var(--color-text-primary, var(--ds-accent)); text-decoration:none; }
 
-.ds-md a:hover { text-decoration:underline; }
+[data-dsh-studio] .md-content a:hover { text-decoration:underline; }
 
-.ds-md hr { border:0; border-top:1px solid var(--ds-line); margin:12px 0; }
+[data-dsh-studio] .md-content hr { border:0; border-top:1px solid var(--color-separator-border, var(--ds-line)); margin:12px 0; }
 
-.ds-md table { border-collapse:collapse; margin:0 0 12px; font-size:12px; width:100%; table-layout:fixed; }
+[data-dsh-studio] .md-content table { border-collapse:collapse; margin:0 0 12px; font-size:12px; line-height:16px; width:100%; table-layout:fixed; }
 
-.ds-md th, .ds-md td { border:1px solid var(--ds-line); padding:4px 8px; text-align:left; vertical-align:top; word-break:break-word; }
+[data-dsh-studio] .md-content th,
+[data-dsh-studio] .md-content td { border:1px solid var(--color-separator-border, var(--ds-line)); padding:4px 8px; text-align:left; vertical-align:top; word-break:break-word; }
 
-.ds-md th { background:var(--ds-soft2); font-weight:600; }
+[data-dsh-studio] .md-content th { background:var(--color-background-secondary-default, var(--ds-soft2)); font-weight:600; color:var(--color-text-primary, inherit); opacity:.85; }
 
 
 
@@ -1133,7 +1137,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
         return h(AutoDispatchPane, { form, setForm, saveBar })
       }
       /* 设置页外壳用 BoardUI token（2026-11-23 起基线是 BoardUI）：
-         左栏导航 + 右栏标题/说明，不再用 .ds-settings / .ds-nav-item 那套手写样式。
+         左栏导航 + 右栏标题/说明，不再用那套手写样式。
          面板本体在 web/src/studio/panels/** 与 panels/settings-panes.js 里，同样只走 token。 */
       const navItemClass = active => [
         'flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-body-2-regular',
@@ -1248,7 +1252,7 @@ function installBoardWheel() {
     if (event.shiftKey) return
     if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return
     /* 列里的卡片溢出时，滚轮应该滚这一列，而不是把整个看板横向推走。
-       列容器在 board.js 里是 [data-board-column-body]（.ds-col-body 是迁移前的类名）。 */
+       列容器在 board.js 里是 [data-board-column-body]（迁移前的类名已删）。 */
     const columnBody = target.closest('[data-board-column-body]')
     if (columnBody !== null && columnBody.scrollHeight > columnBody.clientHeight + 1) return
     /* 已经推到最左/最右就不要再 preventDefault，否则整页也滚不动 */
@@ -1333,7 +1337,7 @@ function installKeyboardActivation() {
      * 这里就盖一层登录框。用户名 = LDAP 账号（sAMAccountName / uid / mail 都试）。
      */
     /* 登录卡：BoardUI token + 4px 档位。`data-login` 是新的探针钩子
-       （tools/visual/login-probe.mjs 还在等旧的 .ds-login，换成 [data-login] 后 legacy 规则可删）。 */
+       （tools/visual/login-probe.mjs 还在等旧的登录节点，换成 [data-login] 后 legacy 规则可删）。 */
     const LOGIN_CARD = 'flex w-full max-w-[380px] flex-col gap-3 rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xl'
     const LOGIN_MODES = 'flex items-center gap-1 self-start rounded-lg border border-separator-border bg-background-secondary-default p-1'
     const LOGIN_MODE = on => [

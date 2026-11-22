@@ -1,14 +1,14 @@
 /* Settings panels lifted out of client.src.js; shared handles come from the studio context.
  *
- * 面板内部已经全部换成 BoardUI（Tailwind v4 token + 4px 档位），不再用 .ds-* 手写类：
+ * 面板内部已经全部换成 BoardUI（Tailwind v4 token + 4px 档位），不再用手写类：
  *   - 分区 = 卡片：rounded-xl + border-separator-border + bg-background-primary-default + p-4
  *   - 小节标题 text-title-2-semibold、说明 text-caption-1-regular text-text-tertiary
  *   - 行 = 分隔线（1px + 末行去掉），动作用 BoardUI Button，状态用 Chip
  *   - 空态用 boardui/empty-state；勾选/开关用 CheckField / SwitchToggle 并**带文字标签**
  *     （以前是 <label><控件/><span> 的嵌套 label，读屏念不出名字，点文字也不生效）
- *   - 列表分区不再走共享 Editor（ds-panel 那套），这里按同一套 token 内联
+ *   - 列表分区不再走共享 Editor（旧的 panel 那套），这里按同一套 token 内联
  *
- * 最外层容器是纯 Tailwind（设置页外壳已迁 BoardUI），不再借 `.ds-panel` 过渡。
+ * 最外层容器是纯 Tailwind（设置页外壳已迁 BoardUI），不再借旧的 panel 类过渡。
  * 免得分区卡片外面再套一层卡片边框。
  */
 
@@ -19,7 +19,7 @@ import { Button } from '../../boardui/index'
 import { EmptyState } from '../../boardui/empty-state'
 
 /* 容器是纯 Tailwind（设置页外壳已迁 BoardUI）。
-   内联样式优先级高于样式表规则，正好把 `.ds-panel` 的描边/底色/外边距抵消掉。 */
+   内联样式优先级高于样式表规则，正好把旧 panel 类的描边/底色/外边距抵消掉。 */
 const PANE = 'flex min-w-0 flex-col gap-3'
 /* 分区：面板里的一块内容 */
 const SECTION = 'flex min-w-0 flex-col gap-3 rounded-xl border border-separator-border bg-background-primary-default p-4'
@@ -62,7 +62,7 @@ function fieldOf(h, label, control, hint) {
   )
 }
 
-/* 字段标签的悬停说明：client.src.js 的 tipLabel 内部还挂着 .ds-label，
+/* 字段标签的悬停说明：client.src.js 的 tipLabel 内部还挂着旧的 label 类，
    面板这一层自己拼一个，免得旧类名从共享函数里漏出来。 */
 function labelTip(h, tipOf, text, hint) {
   const node = h('div', { className: LABEL, style: { cursor: 'help' } }, text)
