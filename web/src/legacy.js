@@ -1707,7 +1707,14 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
       const requirements = state?.requirements ?? []
       const [requirementId, setRequirementId] = React.useState('')
       const [project, setProject] = React.useState(projects.length === 1 ? projects[0].id : '')
-      const [iteration, setIteration] = React.useState('')
+      /* 默认挂「当前迭代」：以前每次都要手选，结果就是没人选 —— 真机上 36 张卡一张都没挂迭代，
+         项目页的迭代进度永远是 0/0。这里取该项目的 active 迭代，只有一个迭代时也直接用。 */
+      const activeIterationOf = id => {
+        const list = projects.find(item => item.id === id)?.iterations ?? []
+        const active = list.find(item => String(item.status ?? '') === 'active')
+        return active?.id ?? (list.length === 1 ? list[0].id : '')
+      }
+      const [iteration, setIteration] = React.useState(() => activeIterationOf(projects.length === 1 ? projects[0].id : ''))
       const [owner, setOwner] = React.useState('')
       const [due, setDue] = React.useState('')
       const [error, setError] = React.useState(null)
@@ -1799,7 +1806,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
                 h('div', { className: 'ds-label' }, '业务项目'),
                 h(SelectField, {
                   className: 'ds-select', value: project,
-                  onChange: e => { setProject(e.target.value); setIteration('') },
+                  onChange: e => { setProject(e.target.value); setIteration(activeIterationOf(e.target.value)) },
                 },
                   h('option', { value: '' }, '不属于任何项目'),
                   projects.map(item => h('option', { key: item.id, value: item.id }, `${item.key ? `${item.key} · ` : ''}${item.name}`)),
@@ -1812,6 +1819,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
                 h(SelectField, { className: 'ds-select', value: iteration, onChange: e => setIteration(e.target.value) },
                   h('option', { value: '' }, '不指定迭代'),
                   projectIterations.map(item => h('option', { key: item.id, value: item.id }, item.name))),
+                h('div', { className: 'ds-hint', style: { fontSize: 11.5 } }, '默认挂这个项目的当前迭代，可以改'),
               ),
             h('div', { className: 'ds-field' },
               h('div', { className: 'ds-label' }, '业务负责人（选填）'),

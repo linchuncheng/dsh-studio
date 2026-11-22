@@ -78,7 +78,7 @@ flowchart LR
 | --- | --- |
 | ![drawer](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/drawer.png) | ![requirements](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/requirements.png) |
 
-| 用例库：跨卡聚合、套件、最近回归 | 效能：产品定义的五条指标（门禁一次通过率 · 自动化率 · 交付时长 · 用例覆盖 · 派单周活）+ 其它读数 |
+| 用例库：跨卡聚合、套件、最近回归 | 效能：产品定义的五条指标（门禁一次通过率 · 自动化率 · 交付时长 · 用例覆盖 · 派单周活）+ 用例缺口清单 + 其它读数 |
 | --- | --- |
 | ![cases](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/cases.png) | ![quality](https://raw.githubusercontent.com/marsken88/dsh-studio/main/docs/images/quality.png) |
 
