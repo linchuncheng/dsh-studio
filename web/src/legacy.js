@@ -603,7 +603,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 
 [data-dsh-studio] .md-content pre code { background:none; border:0; padding:0; font-size:12px; line-height:16px; }
 
-[data-dsh-studio] .md-content blockquote { margin:0 0 8px; padding:2px 0 2px 12px; border-left:3px solid var(--color-separator-border, var(--ds-line)); color:var(--color-text-secondary, inherit); }
+[data-dsh-studio] .md-content blockquote { margin:0 0 8px; padding:2px 0 2px 12px; border-left:3px solid var(--color-separator-border, var(--ds-line)); color:var(--color-text-primary, inherit); opacity:.85; }
 
 [data-dsh-studio] .md-content a { color:var(--color-text-primary, var(--ds-accent)); text-decoration:none; }
 
@@ -616,7 +616,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 [data-dsh-studio] .md-content th,
 [data-dsh-studio] .md-content td { border:1px solid var(--color-separator-border, var(--ds-line)); padding:4px 8px; text-align:left; vertical-align:top; word-break:break-word; }
 
-[data-dsh-studio] .md-content th { background:var(--color-background-secondary-default, var(--ds-soft2)); font-weight:600; color:var(--color-text-secondary, inherit); }
+[data-dsh-studio] .md-content th { background:var(--color-background-secondary-default, var(--ds-soft2)); font-weight:600; color:var(--color-text-primary, inherit); opacity:.85; }
 
 
 
