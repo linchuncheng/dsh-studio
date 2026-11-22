@@ -117,7 +117,7 @@ try {
     return {
       hasEmptyCopy: text.includes('还没有任何卡'),
       crashed: text.includes('渲染失败'),
-      cards: document.querySelectorAll('[data-dsh-studio] .ds-card').length,
+      cards: document.querySelectorAll('[data-dsh-studio] [data-kanban-card]').length,
     }
   })
   check('空看板给出「还没有任何卡」的引导', board.hasEmptyCopy === true, JSON.stringify(board))

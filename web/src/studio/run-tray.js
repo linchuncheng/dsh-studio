@@ -10,11 +10,22 @@
  *   - 都 0：灰点 + 「AI 空闲」。
  *
  * 零新依赖、零新页面：原生 <details> 负责展开/收起和键盘操作。
+ * 外观走 BoardUI token（点用 status-rose/lime/tertiary，面板 card + separator-border），
+ * 不再引用 --ds-danger-text / --ds-muted 那批 legacy 变量。
+ * `data-run-tray` 是探针钩子（tools/visual/panel-probe.mjs 按它读运行数）。
  */
+
+const SUMMARY = 'flex cursor-pointer list-none items-center gap-2 rounded-md px-1 py-0.5 text-caption-1-regular text-text-tertiary'
+const DOT = 'inline-block size-[7px] flex-none rounded-full'
+const PANEL = 'absolute right-0 top-[calc(100%+6px)] z-30 w-[min(380px,92vw)] min-w-[280px] rounded-lg border border-separator-border bg-background-primary-default p-2 shadow-lg'
+const ROW = 'border-t border-separator-border py-1 first:border-t-0'
+const ROW_TITLE = 'flex items-center gap-1 text-caption-1-regular text-text-primary'
+const ROW_META = 'text-caption-2-regular text-text-tertiary'
+const ERROR = 'p-1 text-caption-2-regular text-text-error-primary'
 
 export function createRunTray({ h, React, api }) {
   const elapsed = ms => {
-    const total = Math.max(0, Math.round((Number(ms) || 0) / 1000))
+    const total = Math.max(0, Math.round(Number(ms) || 0) / 1000)
     if (total < 60) return `${total}s`
     return `${Math.floor(total / 60)}m${String(total % 60).padStart(2, '0')}s`
   }
@@ -61,61 +72,56 @@ export function createRunTray({ h, React, api }) {
       : running.length > 0
         ? `AI 在跑 ${running.length}`
         : stalled > 0 ? `停摆 ${stalled} 张` : 'AI 空闲'
+    /* 红 / 绿 / 灰三态的点：token 直出，暗色主题跟着 BoardUI 走。 */
     const dot = failed || stalled > 0
-      ? 'var(--ds-danger-text)'
-      : running.length > 0 ? 'var(--ds-ok-text)' : 'var(--ds-muted)'
+      ? 'bg-status-rose-text'
+      : running.length > 0 ? 'bg-status-lime-text' : 'bg-text-tertiary'
 
     const row = info => {
       const task = (state.tasks ?? []).find(item => item.id === info.taskId)
       const expert = (state.config?.experts ?? []).find(item => item.id === info.expert)
       return h('div', {
         key: String(info.sessionId ?? info.taskId ?? info.expert),
-        style: { padding: '4px 4px', borderTop: '1px solid var(--ds-line-soft, var(--ds-line))' },
+        className: ROW,
+        'data-run-row': '',
       },
-        h('div', { style: { fontSize: 12, lineHeight: 1.4 } },
-          h('b', null, task?.code || String(info.taskId ?? '任务')),
-          ' ',
-          task?.title ?? '（卡可能已被删除）'),
-        h('div', { style: { fontSize: 11, color: 'var(--ds-muted)' } },
+        h('div', { className: ROW_TITLE },
+          h('b', { className: 'font-semibold text-text-primary' }, task?.code || String(info.taskId ?? '任务')),
+          h('span', { className: 'min-w-0 truncate' }, task?.title ?? '（卡可能已被删除）'),
+        ),
+        h('div', { className: ROW_META },
           `${expert?.name ?? info.expert ?? '专家'} · 已跑 ${elapsed(Date.now() - (Number(info.at) || Date.now()))}`),
       )
     }
 
     return h('details', {
-      className: 'ds-run-tray',
+      className: 'relative inline-block',
       'data-run-tray': String(running.length),
       'data-stalled': String(stalled),
-      style: { position: 'relative', display: 'inline-block' },
     },
       h('summary', {
+        className: SUMMARY,
         title: '运行托盘：谁在跑、有没有卡停摆（1.5 秒刷新；点开看明细）',
-        style: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--ds-muted)', listStyle: 'none', padding: '2px 4px' },
       },
-        h('span', { 'aria-hidden': 'true', style: { width: 7, height: 7, borderRadius: '50%', background: dot, flex: 'none' } }),
-        label,
+        h('span', { className: `${DOT} ${dot}`, 'aria-hidden': 'true' }),
+        h('span', {}, label),
         running.length > 0
-          ? h('span', { style: { color: 'var(--ds-muted)', fontSize: 11 } }, `${running.length}/${agents?.maxConcurrent ?? '—'}`)
+          ? h('span', { className: ROW_META }, `${running.length}/${agents?.maxConcurrent ?? '—'}`)
           : null),
-      h('div', {
-        style: {
-          position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 30, minWidth: 280, maxWidth: 380,
-          background: 'var(--ds-surface, var(--ds-card))', border: '1px solid var(--ds-line)',
-          borderRadius: 8, boxShadow: 'var(--ds-shadow, 0 8px 24px rgba(0,0,0,.18))', padding: '8px 8px',
-        },
-      },
+      h('div', { className: PANEL, 'data-run-tray-panel': '' },
         failed
-          ? h('div', { style: { fontSize: 11, color: 'var(--ds-danger-text)', padding: '4px' } }, '读不到 /agents：可能是派单引擎还没起来，或服务刚重启。')
+          ? h('div', { className: ERROR }, '读不到 /agents：可能是派单引擎还没起来，或服务刚重启。')
           : null,
         running.length === 0 && stalled === 0 && !failed
-          ? h('div', { style: { fontSize: 11, color: 'var(--ds-muted)', padding: '4px' } }, '没有正在跑的专家会话。')
+          ? h('div', { className: ERROR, 'data-run-tray-empty': '' }, '没有正在跑的专家会话。')
           : null,
         running.map(row),
         stalled > 0 && running.length === 0
-          ? h('div', { style: { fontSize: 11, color: 'var(--ds-danger-text)', padding: '4px' } },
+          ? h('div', { className: ERROR },
             `${stalled} 张卡停在「正在跑」但会话已不在：去工作台看「停摆」清单，或打开卡片重试。`)
           : null,
         agents?.lastError
-          ? h('div', { style: { fontSize: 11, color: 'var(--ds-danger-text)', padding: '4px' } }, `最近错误：${String(agents.lastError).slice(0, 160)}`)
+          ? h('div', { className: ERROR }, `最近错误：${String(agents.lastError).slice(0, 160)}`)
           : null,
       ),
     )

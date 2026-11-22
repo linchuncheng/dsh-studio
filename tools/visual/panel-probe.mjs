@@ -218,9 +218,9 @@ try {
   // 必须点探针自己造的那张卡：看板上还有真实卡片，点第一张会打开别人的卡（没有 pointId），
   // 于是这条断言永远失败，看起来像产品 bug。2026-11-21 真机定位到这里。
   await page.evaluate(() => {
-    const card = [...document.querySelectorAll('.ds-card')]
+    const card = [...document.querySelectorAll('[data-kanban-card]')]
       .find(node => (node.textContent ?? '').includes('（探针）看板卡片'))
-    ;(card ?? document.querySelector('.ds-card'))?.click()
+    ;(card ?? document.querySelector('[data-kanban-card]'))?.click()
   })
   await new Promise(resolve => setTimeout(resolve, 900))
   const sections = await page.evaluate(() => [...document.querySelectorAll('[data-drawer-section]')].map(node => String(node.textContent ?? '')))

@@ -177,7 +177,7 @@ try {
 
   // 4) 看板 → WIP 输入框（promptDialog）
   await clickText('看板'); await sleep(700)
-  const wip = await page.evaluate(() => { const n = document.querySelector('[data-dsh-studio] .ds-count'); if (n === null) return false; n.click(); return true })
+  const wip = await page.evaluate(() => { const n = document.querySelector('[data-dsh-studio] [data-wip-count]'); if (n === null) return false; n.click(); return true })
   if (wip) { await sleep(800); await shot('overlay-prompt', 'promptDialog（WIP 上限）') }
   await esc()
 
@@ -191,7 +191,7 @@ try {
   await esc()
 
   // 6) 卡片抽屉 → 讨论 → @ 选择器
-  await page.evaluate(() => { const c = document.querySelector('[data-dsh-studio] .ds-card'); if (c) c.click() })
+  await page.evaluate(() => { const c = document.querySelector('[data-dsh-studio] [data-kanban-card]'); if (c) c.click() })
   await sleep(1200)
   await clickText('讨论'); await sleep(600)
   const mention = await page.evaluate(() => {

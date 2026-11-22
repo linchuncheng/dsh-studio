@@ -71,8 +71,8 @@ check('需求页无 pageerror', errors.length === 0, errors.join(' | '))
 
 // ---------- 看板：开一张卡，逐个页签走一遍 ----------
 await goTab('看板')
-await page.waitForSelector('[data-dsh-studio] .ds-card', { timeout: 20000 })
-await page.evaluate(() => document.querySelector('[data-dsh-studio] .ds-card')?.click())
+await page.waitForSelector('[data-dsh-studio] [data-kanban-card]', { timeout: 20000 })
+await page.evaluate(() => document.querySelector('[data-dsh-studio] [data-kanban-card]')?.click())
 await page.waitForSelector('[data-dsh-studio] [data-drawer]', { timeout: 20000 })
 await sleep(900)
 const paneLabels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] [data-drawer] [role="tab"]')].map((n) => (n.textContent || '').trim()))

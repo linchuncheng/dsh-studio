@@ -32,7 +32,7 @@ await page.waitForSelector('[data-dsh-studio] [role="tablist"]', { timeout: 4500
 await sleep(1000)
 await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] [role="tab"]')].find((n) => (n.textContent || '').trim() === '看板')?.click())
 await sleep(1500)
-await page.evaluate(() => document.querySelector('[data-dsh-studio] .ds-card')?.click())
+await page.evaluate(() => document.querySelector('[data-dsh-studio] [data-kanban-card]')?.click())
 await sleep(1800)
 
 const SCOPE = '[data-dsh-studio-portal] [role="dialog"], [data-dsh-studio] [data-drawer]'

@@ -233,7 +233,7 @@ try {
   }
   await sleep(1500)
   const opened = await page.evaluate(() => {
-    const card = document.querySelector('[data-dsh-studio] .ds-card')
+    const card = document.querySelector('[data-dsh-studio] [data-kanban-card]')
     if (card === null) return false
     card.click()
     return true
@@ -297,7 +297,7 @@ try {
   await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }])
   await sleep(400)
   report.reducedMotion = await page.evaluate(() => {
-    const sample = document.querySelector('[data-dsh-studio] .ds-card, [data-dsh-studio] .ds-btn, [data-dsh-studio] .ds-panel')
+    const sample = document.querySelector('[data-dsh-studio] [data-kanban-card], [data-dsh-studio] .ds-btn, [data-dsh-studio] .ds-panel')
     if (sample === null) return { supported: false }
     const style = getComputedStyle(sample)
     const toMs = value => {

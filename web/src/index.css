@@ -336,27 +336,9 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent);
 }
 
-[data-dsh-studio] .ds-card-title {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.45;
-  letter-spacing: 0.005em;
-  color: var(--color-text-primary, var(--foreground));
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 
-[data-dsh-studio] .ds-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  line-height: 1;
-  color: var(--muted-foreground);
-}
+
+
 
 [data-dsh-studio] .ds-meta .ds-chip {
   height: 18px;
@@ -429,9 +411,7 @@
   height: 32px;
 }
 
-[data-dsh-studio] .ds-search {
-  flex: 0 0 auto;
-}
+
 
 /* Column header: 11px muted text was almost unreadable on the muted column. */
 [data-dsh-studio] .ds-col-head {
@@ -500,12 +480,12 @@
 }
 ﻿
 /* 燃尽：折线 + 面积（2026-11-10） */
-[data-dsh-studio] .ds-burn { display: block; padding-top: 4px; }
-[data-dsh-studio] .ds-burn-svg { display: block; width: 100%; height: 84px; }
-[data-dsh-studio] .ds-burn-area { fill: color-mix(in srgb, var(--ds-accent) 14%, transparent); }
-[data-dsh-studio] .ds-burn-line { fill: none; stroke: var(--ds-accent); stroke-width: 1.6; }
-[data-dsh-studio] .ds-burn-dot { fill: var(--ds-accent); }
-[data-dsh-studio] .ds-burn-axis { display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; color: var(--muted-foreground); }
+
+
+
+
+
+
 ﻿
 /* 卡片详情页签：给 Radix TabsList 补上轨道外观（2026-11-10） */
 
@@ -759,7 +739,7 @@
 
 /* 深色下页签：轨道与选中项在 #181b22/#1e222a 上几乎同色，选中态看不出来。
    这里给「轨道压暗、选中提亮 + 内描边」一组显式值，明暗两侧都不依赖尾类的相近色。 */
-[data-dsh-studio][data-theme="dark"] .ds-meta { color: #a8afba; }
+
 [data-dsh-studio][data-theme="dark"] .ds-hint { color: #9aa1ad; }
 
 /* ------------------------------------------------ board scrolling --- */
@@ -780,8 +760,8 @@
 [data-dsh-studio] .ds-col { scroll-snap-align: start; min-width: 0; }
 [data-dsh-studio] .ds-col-body { overflow-x: hidden; }
 [data-dsh-studio] .ds-card { min-width: 0; max-width: 100%; }
-[data-dsh-studio] .ds-card-title { overflow-wrap: anywhere; }
-[data-dsh-studio] .ds-meta { flex-wrap: wrap; row-gap: 4px; }
+
+
 
 /* 列必须“看得出来是列”：之前用 muted 55% 透明叠在白色上几乎和背景同色，
    卡片像是浮在白纸上。改成实色底 + 明确描边，头部略提亮。 */
@@ -794,7 +774,7 @@
   border-bottom: 1px solid var(--border);
   border-radius: 10px;
 }
-[data-dsh-studio] .ds-col-owner { color: var(--muted-foreground); }
+
 [data-dsh-studio][data-theme="dark"] .ds-col {
   background: #14171d;
   border-color: #262a33;
@@ -999,7 +979,7 @@
 [data-dsh-studio] .ds-drawer .ds-chip[data-role] { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 
 /* 看板卡片：负责人当成「卡片右下角的经办人」来排（2026-11-10） */
-[data-dsh-studio] .ds-meta { display:flex; flex-wrap:wrap; align-items:center; gap:4px; row-gap:4px }
+
 [data-dsh-studio] .ds-meta .ds-chip[data-role] {
   margin-left: auto; order: 99;
   max-width: 120px; height: 20px; line-height: 18px; padding: 0 8px;
@@ -1018,14 +998,11 @@
 [data-dsh-studio] .ds-col { flex: 0 0 288px; width: 288px; min-width: 288px; max-width: 288px }
 [data-dsh-studio] .ds-col-body { display: flex; flex-direction: column; gap: 8px; padding: 8px; overflow-x: hidden }
 [data-dsh-studio] .ds-card { width: 100%; min-width: 0 }
-[data-dsh-studio] .ds-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 4px }
+
 [data-dsh-studio] .ds-meta .ds-chip { height: 18px; line-height: 16px; font-size: 11px; padding: 0 4px}
-[data-dsh-studio] .ds-card-foot {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px;
-  font-size: 11px; color: var(--muted-foreground); margin-top: 2px
-}
-[data-dsh-studio] .ds-card-foot > span:last-child { margin-left: auto }
-[data-dsh-studio] .ds-card-title { font-size: 13px; line-height: 1.45 }
+
+
+
 @media (max-width: 900px) {
   [data-dsh-studio] .ds-col { flex: 0 0 86vw; width: 86vw; min-width: 86vw; max-width: 86vw }
 }
@@ -1037,23 +1014,19 @@
   background: var(--card); border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 2
 }
-[data-dsh-studio] .ds-col-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0 }
-[data-dsh-studio] .ds-col-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
-[data-dsh-studio] .ds-col-owner { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 11px; color: var(--muted-foreground) }
-[data-dsh-studio] .ds-col-owner-name {
-  display: inline-flex; align-items: center; max-width: 160px; padding: 2px 8px; border-radius: 999px;
-  background: color-mix(in srgb, currentColor 10%, transparent); color: var(--foreground);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis
-}
-[data-dsh-studio] .ds-col-owner[data-empty="1"] .ds-col-owner-name { background: transparent; border: 1px dashed var(--border); color: var(--muted-foreground) }
+
+
+
+
+
 [data-dsh-studio][data-theme="dark"] .ds-col-head { background: #1a1e25 }
 [data-dsh-studio] .ds-col-body { padding-top: 8px }
 
 /* 列头左对齐修正（上面的 .ds-col-head 曾被居中） */
 [data-dsh-studio] .ds-col-head { align-items: stretch; text-align: left }
-[data-dsh-studio] .ds-col-title { width: 100%; align-items: center }
-[data-dsh-studio] .ds-col-name { flex: 1 1 auto; text-align: left }
-[data-dsh-studio] .ds-col-owner { width: 100%; justify-content: flex-start }
+
+
+
 
 /* 列头对齐：用更高特异性 + !important 压过旧规则 */
 [data-dsh-studio] .ds-board .ds-col .ds-col-head { align-items: stretch !important; text-align: left !important }
@@ -1278,30 +1251,22 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 
 /* 全局搜索（⌘K / Ctrl+K） */
 [data-dsh-studio] .ds-palette-veil { position: fixed; inset: 0; top: max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px)); z-index: 120; -webkit-app-region: no-drag; background: rgba(9, 9, 11, .38); display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh }
-[data-dsh-studio] .ds-palette { width: min(560px, 92vw); background: var(--ds-surface, #fff); border: 1px solid var(--ds-line, #e4e4e7); border-radius: 16px; box-shadow: 0 24px 64px rgba(0, 0, 0, .28); overflow: hidden }
+
 /* 官方 Input 是「壳 div[role=presentation] + 内部 input」两层结构，
    命令面板要的是「一整条无框输入」，所以两层都得重置：
    壳去掉灰底/圆角/内边距，内部 input 撑满并只留一条底部分隔线。 */
-[data-dsh-studio] .ds-palette-input { width: 100% }
-[data-dsh-studio] .ds-palette-input > div[role="presentation"] {
-  background: transparent; border-radius: 0; padding: 0; box-shadow: none; outline: none;
-  --tw-ring-shadow: 0 0 #0000;
-}
-[data-dsh-studio] .ds-palette-input input {
-  width: 100%; height: 44px; padding: 0 12px; border: 0;
-  border-bottom: 1px solid var(--ds-line, #e4e4e7);
-  background: transparent; color: inherit; font-size: 13px; outline: none;
-}
-[data-dsh-studio] .ds-palette-flow { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; font-size: 12px; color: var(--ds-muted, #6b6b74) }
-[data-dsh-studio] .ds-palette-flow::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: #7c3aed }
-[data-dsh-studio] .ds-palette-flow[data-flow="expert"]::before { background: #0ea5e9 }
-[data-dsh-studio] .ds-palette-list { max-height: min(52vh, 420px); overflow: auto; padding: 4px}
-[data-dsh-studio] .ds-palette-item { display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 10px; cursor: pointer; font-size: 13px }
-[data-dsh-studio] .ds-palette-item[data-active="1"] { background: color-mix(in srgb, var(--ds-accent, #18181b) 10%, transparent) }
+
+
+
+
+
+
+
+
+
 [data-dsh-studio] .ds-palette-kind { flex: 0 0 auto; font-size: 11px; padding: 2px 4px; border-radius: 999px; background: var(--ds-surface-2, #f4f4f5); color: var(--ds-muted, #6b6b74) }
 [data-dsh-studio] .ds-palette-kind[data-kind="action"] { background: color-mix(in srgb, #7c3aed 16%, transparent); color: var(--ds-violet-text, #6d28d9) }
 [data-theme="dark"] .ds-palette-kind[data-kind="action"] { background: color-mix(in srgb, #a78bfa 22%, transparent); color: #c4b5fd }
-[data-dsh-studio] .ds-palette-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 
 
 
@@ -1309,8 +1274,9 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 
 
 
-[data-dsh-studio] .ds-reg-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 12px; margin-bottom: 12px; border: 1px solid var(--ds-line, #e4e4e7); border-radius: 10px; background: var(--ds-surface-2, #f4f4f5); font-size: 12px }
-[data-dsh-studio] .ds-reg-banner[data-bad="1"] { border-color: #f3c0c2; background: #fdf2f2; color: #b42318 }
+
+
+
 [data-dsh-studio] .ds-suite { display: inline-flex; align-items: center; gap: 8px; padding: 2px 8px; border: 1px solid var(--ds-line, #e4e4e7); border-radius: 999px; background: var(--ds-surface-2, #f4f4f5); font-size: 12px }
 [data-dsh-studio] .ds-suite[data-default="1"] { border-color: #a5b4fc; background: #eef2ff; color: #3730a3 }
 
@@ -1319,9 +1285,9 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] .ds-case-lib { display: flex; flex-direction: column }
 
 
-[data-dsh-studio] .ds-palette-hint { flex: 0 0 auto; max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ds-muted, #6b6b74); font-size: 12px }
-[data-dsh-studio] .ds-palette-key { flex: 0 0 auto; font-size: 11px; line-height: 16px; padding: 2px 4px; border-radius: 10px; border: 1px solid var(--ds-line, #e4e4e7); background: var(--ds-surface-2, #f4f4f5); color: var(--ds-muted, #6b6b74); white-space: nowrap }
-[data-dsh-studio][data-theme="dark"] .ds-palette-key { border-color: #3f3f46; background: #27272a; color: #a1a1aa }
+
+
+
 [data-dsh-studio][data-theme="dark"] .ds-palette-veil { background: rgba(0, 0, 0, .6) }
 
 /* ========================================================================
@@ -1771,13 +1737,7 @@ html body [data-dsh-studio] .ds-col-head {
   color: var(--color-text-primary, inherit);
 }
 
-html body [data-dsh-studio] .ds-col-owner {
-  padding: 4px 12px 8px;
-  font-size: 11px;
-  opacity: 1;
-  color: var(--muted-foreground);
-  background: var(--color-background-primary-default, #fff);
-}
+html body 
 
 html body [data-dsh-studio] .ds-col-body {
   padding: 8px;
@@ -1799,22 +1759,11 @@ html body [data-dsh-studio] .ds-card:hover {
   transform: translateY(-1px);
 }
 
-html body [data-dsh-studio] .ds-card-title {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.45;
-  color: var(--color-text-primary, inherit);
-}
+html body 
 
-html body [data-dsh-studio] .ds-card-foot {
-  font-size: 11px;
-  opacity: 1;
-  color: var(--muted-foreground);
-}
+html body 
 
-html body [data-dsh-studio] .ds-card-warn {
-  font-size: 11px;
-}
+html body 
 
 /* 暗色主题下「只看阻塞 / 只看缺正文」这类红色筛选标签：浅色主题那套深红 #c0392b
    在深色底上几乎看不见，换成浅一档的红。 */
@@ -2084,15 +2033,7 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
   border-color: color-mix(in srgb, var(--color-notification-warning-foreground, #d97706) 45%, var(--ds-line));
 }
 
-[data-dsh-studio] .ds-stalled-line {
-  margin-top: 4px;
-  padding: 4px 8px;
-  border-radius: 8px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--ds-warn-text, #a26100);
-  background: color-mix(in srgb, var(--color-notification-warning-foreground, #d97706) 12%, transparent);
-}
+
 
 /* 系统设置里开了「减少动态效果」时，关掉过渡与动画（WCAG 2.3.3）。
    抽屉滑入、toast 淡出这类动效对前庭功能敏感的用户是实打实的不适，不是装饰偏好。 */
@@ -2166,7 +2107,7 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
 /* 次要文字用颜色表达层级，不用 opacity —— .5 的 11px 字实际对比度只有 2.6:1，
    量不出来是因为脚本只看 color、不看元素 opacity。 */
 [data-dsh-studio] .ds-hint { opacity: 1; color: var(--ds-muted, var(--muted-foreground)); }
-[data-dsh-studio] .ds-meta { opacity: 1; color: var(--ds-muted, var(--muted-foreground)); }
+
 
 /* 胶囊不是只有 .ds-chip 一个类：全站 253 个 999px 分布在下面这一族里。
    除了真正的状态点（6px）与进度条，其余统一收到 6px。 */
@@ -2177,7 +2118,7 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
 [data-dsh-studio] .ds-palette-kind { border-radius: 6px; padding: 0 8px; }
 
 [data-dsh-studio] .ds-meta .ds-chip[data-role] { border-radius: 6px; }
-[data-dsh-studio] .ds-col-owner-name { border-radius: 6px; }
+
 
 /* 计数徽标：18px 的小方块比胶囊更安静（看板列头的那个数字） */
 [data-dsh-studio] .ds-count { border-radius: 6px; }
@@ -2206,8 +2147,7 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
 [data-dsh-studio] .ds-dot[data-kind="info"] { background: var(--primary, #2563eb); }
 [data-dsh-studio] .ds-dot[data-kind="idle"] { background: var(--ds-line, #d4d4d8); }
 
-[data-dsh-studio] .ds-card-foot span,
-[data-dsh-studio] .ds-meta span { display: inline-flex; align-items: center; gap: 4px; }
+
 
 /* 评论头像里只放图标时，用同一套底色，不再回退成 emoji */
 
@@ -2223,7 +2163,7 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
 [data-dsh-studio] .ds-btn { font-size: 13px; }
 
 [data-dsh-studio] .ds-hint { font-size: 12px; }
-[data-dsh-studio] .ds-meta { font-size: 12px; }
+
 
 /* 计数与指标一律等宽数字，扫一列的时候不会跳 */
 [data-dsh-studio] .ds-count,

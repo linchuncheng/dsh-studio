@@ -211,7 +211,7 @@ try {
   await shot('board')
   // 3. 卡片抽屉：点「演示·抵扣用例验证」，切到测试页签
   await page.evaluate(() => {
-    const card = [...document.querySelectorAll('.ds-card')].find(node => String(node.textContent ?? '').includes('演示·抵扣用例验证'))
+    const card = [...document.querySelectorAll('[data-kanban-card]')].find(node => String(node.textContent ?? '').includes('演示·抵扣用例验证'))
     if (card !== undefined) card.click()
   })
   await new Promise(resolve => setTimeout(resolve, 900))
