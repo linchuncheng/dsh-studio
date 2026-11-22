@@ -47,6 +47,24 @@ const HANDOFF_FORM = [
 ]
 
 export function createDrawer({ h, React, api, kit, currentUser, renderMarkdown, tipOf, tipLabel, confirmDialog, promptDialog, TextField, TextAreaField, ChipField, CheckField, SelectField, MdField, MentionPicker }) {
+/* 小节 = 圆角卡片：标题行 + 内容。pane 决定它属于哪个页签，current 是当前页签。
+   这两个组件放在工厂作用域里（不是 Drawer 内部）：组件身份必须跨渲染稳定，
+   否则每次轮询/输入都会得到一个新类型，React 整块卸载重挂——输入框会一个字丢一次焦点。 */
+function Section({ pane, current, id, children, ...rest }) {
+  return h('section', {
+    ...rest,
+    className: SECTION,
+    style: pane === current ? undefined : { display: 'none' },
+    'data-drawer-section': id ?? pane,
+  }, children)
+}
+/* 标题行：第一段是标题，其余（说明文字、动作按钮）原样跟在后面 */
+function SectionHead({ children }) {
+  const list = React.Children.toArray(children).filter(item => item !== null && item !== undefined && item !== '')
+  if (list.length === 0) return null
+  return h('div', { className: SECTION_HEAD }, h('div', { className: SECTION_TITLE }, list[0]), list.slice(1))
+}
+
 function Drawer({ task, state, onClose, onChanged }) {
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState(null)
@@ -214,7 +232,6 @@ function Drawer({ task, state, onClose, onChanged }) {
     const node = bodyRef.current
     if (node !== null) node.scrollTop = 0
   }, [pane, task.id])
-  const hideWhen = name => (pane === name ? undefined : { display: 'none' })
   const tabs = [
     { id: 'overview', label: '概览', hint: '标题、状态、负责人、阻塞原因与关键时间' },
     { id: 'content', label: '内容', hint: '需求正文与验收标准，支持 Markdown' },
@@ -903,8 +920,8 @@ function Drawer({ task, state, onClose, onChanged }) {
       ),
       h('div', { className: 'flex min-w-0 flex-col gap-4' },
         h('div', { className: 'flex min-w-0 flex-col gap-4' },
-      h('div', { className: 'ds-sec', style: hideWhen('overview') },
-        h('div', { className: 'ds-sec-head' }, '推进到', h('span', { className: HINT }, '点一下就会移动卡片，并触发对应列的 AI')),
+      h(Section, { pane: 'overview', current: pane, id: 'advance' },
+        h(SectionHead, null, '推进到', h('span', { className: HINT }, '点一下就会移动卡片，并触发对应列的 AI')),
         h('div', { className: ACTIONS }, (() => {
           const order = state.statuses
           const currentIndex = order.findIndex(item => item.id === task.status)
@@ -936,8 +953,8 @@ function Drawer({ task, state, onClose, onChanged }) {
           ].filter(Boolean)
         })()),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('overview') },
-        h('div', { className: 'ds-sec-head' }, '准出检查',
+      h(Section, { pane: 'overview', current: pane, id: 'gate' },
+        h(SectionHead, null, '准出检查',
           h('span', { className: HINT }, '进「已完成」之前必须过这一关：清单全勾、没有失败用例、不在阻塞、有人签字')),
         h('div', { className: SECTION_BODY },
           gate === null
@@ -966,8 +983,8 @@ function Drawer({ task, state, onClose, onChanged }) {
                 h(Button, { variant: 'ghost', size: 'sm', onClick: () => void signOff('clear') }, '取消签字')),
         ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('overview') },
-        h('div', { className: 'ds-sec-head' }, '阻塞',
+      h(Section, { pane: 'overview', current: pane, id: 'blocked' },
+        h(SectionHead, null, '阻塞',
           h('span', { className: HINT }, '卡住了打个标，卡留在本列停住，不会被自动往下派；怎么继续由人定')),
         blocked === null
           ? h('div', { className: SECTION_BODY },
@@ -998,8 +1015,8 @@ function Drawer({ task, state, onClose, onChanged }) {
             ),
           ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('overview') },
-        h('div', { className: 'ds-sec-head' }, 'AI 处理', h('span', { className: HINT }, '默认用本列负责人；也可以临时换人')),
+      h(Section, { pane: 'overview', current: pane, id: 'agent' },
+        h(SectionHead, null, 'AI 处理', h('span', { className: HINT }, '默认用本列负责人；也可以临时换人')),
         h('div', { className: SECTION_BODY },
           h('div', { className: HINT },
             task.dispatch?.state === 'running'
@@ -1026,8 +1043,8 @@ function Drawer({ task, state, onClose, onChanged }) {
           ),
         ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('content') },
-        h('div', { className: 'ds-sec-head' }, '内容'),
+      h(Section, { pane: 'content', current: pane, id: 'content' },
+        h(SectionHead, null, '内容'),
       h('div', { className: FIELD },
         h('div', { className: LABEL }, '标题'),
         h(TextField, { value: draft.title, onChange: e => setDraft({ ...draft, title: e.target.value }) }),
@@ -1092,8 +1109,8 @@ function Drawer({ task, state, onClose, onChanged }) {
         h(Button, { variant: 'secondary', size: 'sm', disabled: busy, onClick: remove }, '只删卡'),
       ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('plan') },
-        h('div', { className: 'ds-sec-head' }, '计划',
+      h(Section, { pane: 'plan', current: pane, id: 'plan' },
+        h(SectionHead, null, '计划',
           h('span', { className: HINT }, '这张卡属于哪个项目/迭代、谁提的、什么时候要')),
         h('div', { className: SECTION_BODY },
           h('div', { className: ROW },
@@ -1173,8 +1190,8 @@ function Drawer({ task, state, onClose, onChanged }) {
           ),
         ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('plan') },
-        h('div', { className: 'ds-sec-head' }, '代码隔离（git worktree）',
+      h(Section, { pane: 'plan', current: pane, id: 'worktree' },
+        h(SectionHead, null, '代码隔离（git worktree）',
           h('span', { className: HINT }, worktree === null ? '这张卡还没有独立工作目录' : '这张卡自己的分支与目录')),
         h('div', { className: SECTION_BODY },
           worktree === null
@@ -1196,8 +1213,8 @@ function Drawer({ task, state, onClose, onChanged }) {
           worktreeMsg && worktree === null ? h('div', { className: HINT }, worktreeMsg) : null,
         ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('handoff'), 'data-handoff': '' },
-        h('div', { className: 'ds-sec-head' }, '交接契约',
+      h(Section, { pane: 'handoff', current: pane, id: 'handoff', 'data-handoff': '' },
+        h(SectionHead, null, '交接契约',
           h('span', { className: HINT }, '交给下一棒之前写清：决策 / 假设 / 未决 / 风险 / 影响面')),
         h('div', { className: SECTION_BODY },
           HANDOFF_FORM.map(([key, label, hint]) => h('div', { className: FIELD, key, 'data-handoff-field': key },
@@ -1217,8 +1234,8 @@ function Drawer({ task, state, onClose, onChanged }) {
           ),
         ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('design') },
-        h('div', { className: 'ds-sec-head' }, '设计多稿与定案',
+      h(Section, { pane: 'design', current: pane, id: 'design' },
+        h(SectionHead, null, '设计多稿与定案',
           h('span', { className: HINT }, `${DESIGN_LABEL[task.design?.status] ?? '未登记'}${chosenDraft === null ? '' : ` · 定案「${chosenDraft.name}」`}`)),
         h('div', { className: SECTION_BODY },
           designDrafts.length === 0
@@ -1250,8 +1267,8 @@ function Drawer({ task, state, onClose, onChanged }) {
           task.design?.spec == null ? null : h('div', { className: HINT, style: { marginTop: 8 } }, `规范体检：查了 ${task.design.spec.checked} 个元素，${task.design.spec.violations} 处野值`),
         ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('coding') },
-        h('div', { className: 'ds-sec-head' }, '技能沉淀',
+      h(Section, { pane: 'coding', current: pane, id: 'skill' },
+        h(SectionHead, null, '技能沉淀',
           h('span', { className: HINT }, '把这张卡上真实发生过的证据汇总成一条技能草稿（默认停用）')),
         h('div', { className: SECTION_BODY },
           h('div', { className: ROW, style: { gap: 8, alignItems: 'center', flexWrap: 'wrap' } },
@@ -1262,8 +1279,8 @@ function Drawer({ task, state, onClose, onChanged }) {
           mine.line === '' ? null : h('div', { className: HINT, style: { marginTop: 8 } }, mine.line),
         ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('coding') },
-        h('div', { className: 'ds-sec-head' }, '项目检查',
+      h(Section, { pane: 'coding', current: pane, id: 'quality' },
+        h(SectionHead, null, '项目检查',
           h('span', { className: HINT }, '在这个项目的代码目录（有 worktree 就用它）里跑一条本地质量命令')),
         h('div', { className: SECTION_BODY },
           (() => {
@@ -1307,8 +1324,8 @@ function Drawer({ task, state, onClose, onChanged }) {
           })(),
         ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('coding') },
-        h('div', { className: 'ds-sec-head' }, '合并门禁',
+      h(Section, { pane: 'coding', current: pane, id: 'merge-gate' },
+        h(SectionHead, null, '合并门禁',
           h('span', { className: HINT }, '把「能不能合」发成 GitLab 的 studio/merge-gate 提交状态；仓库要求状态检查时必须通过，合并按钮才会放行')),
         h('div', { className: SECTION_BODY },
           mergeGate === null
@@ -1344,8 +1361,8 @@ function Drawer({ task, state, onClose, onChanged }) {
           mergeRun.line === '' ? null : h('div', { className: HINT, style: { marginTop: 8 } }, mergeRun.line),
         ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('coding') },
-        h('div', { className: 'ds-sec-head' }, 'AI Coding 执行记录',
+      h(Section, { pane: 'coding', current: pane, id: 'coding' },
+        h(SectionHead, null, 'AI Coding 执行记录',
           h('span', { className: HINT }, coding === null ? '改代码要留记录：谁、什么模型、改了什么' : '研发 agent 登记，人也可以补录或评审')),
         h('div', { className: SECTION_BODY },
           coding === null
@@ -1466,8 +1483,8 @@ function Drawer({ task, state, onClose, onChanged }) {
       ),
         ),
         h('div', { className: 'flex min-w-0 flex-col gap-4' },
-      h('div', { className: 'ds-sec', style: hideWhen('test') },
-        h('div', { className: 'ds-sec-head' }, '验收清单',
+      h(Section, { pane: 'test', current: pane, id: 'checklist' },
+        h(SectionHead, null, '验收清单',
           h('span', { className: HINT }, checkSum.total === 0 ? '这张卡还没有清单' : `${doneCount} / ${checkSum.total} 已勾`)),
         h('div', { className: SECTION_BODY },
           checkSum.total === 0 ? null : h('div', { className: 'ds-check-progress' },
@@ -1498,8 +1515,8 @@ function Drawer({ task, state, onClose, onChanged }) {
           h('div', { className: HINT }, '清单就是「做完」的定义：AI 每完成一项要勾一项并附证据；人也可以直接勾。'),
         ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('deliver') },
-        h('div', { className: 'ds-sec-head' }, '交付物',
+      h(Section, { pane: 'deliver', current: pane, id: 'artifacts' },
+        h(SectionHead, null, '交付物',
           h('span', { className: HINT }, '文档、MR、用例、报告——交付要有东西，不只是一句「做完了」；登记后会写成飞书云盘需求文件夹里的一份文档'),
           artifactsWithoutBody(task).length > 0
             ? h('span', { className: WARN_TEXT, title: '这些交付物还没写正文，点「正文」补上再同步' }, statusDot(h, 'warn'), ` ${artifactsWithoutBody(task).length} 件缺正文`)
@@ -1612,8 +1629,8 @@ function Drawer({ task, state, onClose, onChanged }) {
           ),
         ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('test') },
-        h('div', { className: 'ds-sec-head' }, '测试用例',
+      h(Section, { pane: 'test', current: pane, id: 'cases' },
+        h(SectionHead, null, '测试用例',
           h('span', { className: HINT }, caseSum.total === 0
             ? '测试同学把用例登记在这里，逐条执行并回填结果'
             : caseSummary),
@@ -1764,8 +1781,8 @@ function Drawer({ task, state, onClose, onChanged }) {
           ),
         ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('overview') },
-        h('div', { className: 'ds-sec-head' }, '其它信息'),
+      h(Section, { pane: 'overview', current: pane, id: 'meta' },
+        h(SectionHead, null, '其它信息'),
       h('dl', { className: 'ds-kv' },
         h('dt', {}, '编号'), h('dd', {}, task.code === undefined || task.code === '' ? '未挂需求（无编号）' : task.code),
         h('dt', {}, '所属需求'), h('dd', {}, (() => {
@@ -1807,8 +1824,8 @@ function Drawer({ task, state, onClose, onChanged }) {
         }).join(' → ') || '无'),
       ),
       ),
-      h('div', { className: 'ds-sec', style: hideWhen('discuss') },
-        h('div', { className: 'ds-sec-head' }, `评论（${commentTotal}）`, h('span', { className: HINT }, '最新的在最上面')),
+      h(Section, { pane: 'discuss', current: pane, id: 'comments' },
+        h(SectionHead, null, `评论（${commentTotal}）`, h('span', { className: HINT }, '最新的在最上面')),
         commentTotal === 0
           ? h('div', { className: 'ds-empty' }, '还没有评论。在下面输入，或用 @专家名 直接点名派活。')
           : commentList === null
