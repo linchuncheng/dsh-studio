@@ -99,18 +99,18 @@ await sleep(700)
 // ---------- 设置：逐个分区 ----------
 await goTab('设置')
 await sleep(600)
-const navItems = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] .ds-nav-item')].map((n) => (n.textContent || '').trim()))
+const navItems = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] [data-settings-nav-item]')].map((n) => (n.textContent || '').trim()))
 let navOk = true
 for (const label of navItems) {
   const clicked = await page.evaluate((want) => {
-    const b = [...document.querySelectorAll('[data-dsh-studio] .ds-nav-item')].find((n) => (n.textContent || '').trim().startsWith(want))
+    const b = [...document.querySelectorAll('[data-dsh-studio] [data-settings-nav-item]')].find((n) => (n.textContent || '').trim().startsWith(want))
     if (!b) return false
     b.click()
     return true
   }, label)
   await sleep(650)
   const info = await page.evaluate(() => ({
-    text: (document.querySelector('[data-dsh-studio] .ds-settings-pane')?.innerText ?? '').length,
+    text: (document.querySelector('[data-dsh-studio] [data-settings-pane]')?.innerText ?? '').length,
     broken: (document.body.innerText || '').includes('渲染失败'),
   }))
   if (!clicked || info.text < 20 || info.broken) { navOk = false; console.log(`  分区「${label}」异常：clicked=${clicked} text=${info.text} broken=${info.broken}`) }

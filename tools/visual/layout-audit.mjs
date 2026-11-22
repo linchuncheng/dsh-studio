@@ -85,10 +85,10 @@ for (const label of PAGES) {
 }
 
 // 设置里 16 个面板
-const panels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')].map((n) => (n.querySelector('span')?.textContent || '').trim()))
+const panels = await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] [data-settings-nav] [data-settings-nav-item]')].map((n) => (n.querySelector('span')?.textContent || '').trim()))
 for (const label of panels) {
   await page.evaluate((want) => {
-    [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')].find((n) => (n.querySelector('span')?.textContent || '').trim() === want)?.click()
+    [...document.querySelectorAll('[data-dsh-studio] [data-settings-nav] [data-settings-nav-item]')].find((n) => (n.querySelector('span')?.textContent || '').trim() === want)?.click()
   }, label)
   await snap(`设置/${label}`)
 }

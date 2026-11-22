@@ -39,7 +39,7 @@ await page.waitForSelector('[data-dsh-studio] [role="tablist"]', { timeout: 4500
 await sleep(1200)
 await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] [role="tab"]')].find((n) => (n.textContent || '').trim() === '设置')?.click())
 await sleep(1500)
-await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] .ds-settings-nav .ds-nav-item')].find((n) => (n.querySelector('span')?.textContent || '').trim() === '权限与审计')?.click())
+await page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] [data-settings-nav] [data-settings-nav-item]')].find((n) => (n.querySelector('span')?.textContent || '').trim() === '权限与审计')?.click())
 await sleep(2000)
 
 const first = await page.evaluate(() => {
