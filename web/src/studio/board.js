@@ -18,11 +18,13 @@ const COLUMN_PAGE = 40
 /* 4px 档位：gap-1=4 / gap-2=8 / gap-3=12 / p-2=8 / px-3=12。 */
 const ROOT = 'flex min-h-0 flex-1 flex-col'
 const TOOLBAR = 'flex flex-none flex-wrap items-center gap-2 border-b border-separator-border px-4 py-2'
-/* 列宽两档：「固定 282」与「适应宽度」（等分并有个最小宽，列多时能一屏看全）。
-   宽度与 flex 一起切换，避免 w-[282px] 和 flex-1 同时在场时谁赢说不清。 */
+/* 列宽两档，照抄 index.css 里「看板列宽策略」那两条规则的实际行为：
+   · 默认 flex 1 1 200px，列宽在 200–360 之间自适应（列多就先横向滚）；
+   · 勾上「适应宽度」压到 flex 1 1 0 / min 160，一屏放下全部列。
+   用 arbitrary 的 flex 简写，避免 w-[282px] 与 flex-1 同时在场时谁赢说不清。 */
 const COLUMN_BASE = 'ds-col flex flex-col overflow-hidden rounded-2xl border border-separator-border bg-background-secondary-default data-[drag-over="1"]:border-accent-500 data-[drag-over="1"]:bg-accent-50'
-const COLUMN_FIXED = 'w-[282px] shrink-0'
-const COLUMN_FIT = 'min-w-40 flex-1 basis-0'
+const COLUMN_FIXED = 'w-auto min-w-[200px] max-w-[360px] flex-[1_1_200px]'
+const COLUMN_FIT = 'min-w-[160px] max-w-none flex-[1_1_0]'
 const COLUMN_HEAD = 'flex flex-none items-center gap-2 border-b border-separator-border bg-background-primary-default px-3 py-2'
 const COLUMN_TITLE = 'min-w-0 truncate text-body-2-semibold text-text-primary'
 const COLUMN_COUNT = 'ds-count ml-auto min-w-6 shrink-0 rounded-full bg-background-secondary-default px-2 text-center text-caption-1-medium tabular-nums text-text-secondary data-[zero="1"]:opacity-50 data-[over="1"]:bg-status-rose-background data-[over="1"]:text-status-rose-text'
