@@ -243,7 +243,7 @@ function Board({ state, onOpen, onMove, onWip, onCreate }) {
             tasks.length > (shown[column.id] ?? COLUMN_PAGE)
               ? h('button', {
                 className: 'ds-btn ds-btn-ghost',
-                style: { width: '100%', marginTop: 6, fontSize: 12 },
+                style: { width: '100%', marginTop: 8, fontSize: 12 },
                 onClick: () => setShown(previous => ({ ...previous, [column.id]: (previous[column.id] ?? COLUMN_PAGE) + COLUMN_PAGE })),
               }, `显示更多（还有 ${tasks.length - (shown[column.id] ?? COLUMN_PAGE)} 张）`)
               : null,

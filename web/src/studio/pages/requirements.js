@@ -623,7 +623,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
             const stateLabel = review === null ? '还没提交评审' : (REVIEW_LABEL[review.status] ?? review.status)
             const canSubmit = review === null || review.status === 'changes_requested'
             const canDecide = review !== null && review.status === 'pending'
-            return h('div', { className: 'ds-panel', 'data-review': review === null ? 'none' : review.status, style: { marginTop: 14 } },
+            return h('div', { className: 'ds-panel', 'data-review': review === null ? 'none' : review.status, style: { marginTop: 16 } },
               h('div', { className: 'ds-panel-head' },
                 h('span', null, '需求评审'),
                 h(ChipField, { className: 'ds-chip', 'data-on': review?.status === 'approved' ? '1' : '0', style: { marginLeft: 8 } }, stateLabel),
@@ -647,7 +647,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
             ? h('div', { className: 'ds-req-links' }, link('PRD 文档', links.prd), link('原型', links.proto), link('验收标准', links.acceptance))
             : h('div', { className: 'ds-empty' }, [h('span', null, '还没有登记 PRD / 原型 / 验收标准链接；PRD 与原型由产品在澄清后输出，可在这里补，或点右边「让产品补 PRD」。'), h('button', { className: 'ds-btn ds-btn-ghost', style: { marginLeft: 8 }, onClick: async () => { const note = await promptDialog('想请产品补什么？', { title: '申请产品补 PRD', defaultValue: '需要产品输出 PRD 与原型' }); if (note === null) return; try { await api('/requirement/request-prd', { id: current.id, by: currentUser(), note }); toast('已申请产品补 PRD'); onChanged() } catch (error) { toast(error.message ?? String(error), 'error') } } }, '让产品补 PRD')]),
           current.description
-            ? h('div', { className: 'ds-panel ds-req-desc-panel', style: { marginTop: 14 } },
+            ? h('div', { className: 'ds-panel ds-req-desc-panel', style: { marginTop: 16 } },
               h('div', { className: 'ds-panel-head' },
                 h('span', null, '需求明细'), current.source === 'business' ? h('span', { className: 'ds-hint', 'data-src': 'business' }, `业务提单 · ${current.requester?.name || '未署名'}${current.requester?.dept ? '（' + current.requester.dept + '）' : ''} · ${fmtTime(current.requester?.at || current.createdAt)}`) : null,
                 h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } }, '支持 Markdown'),
@@ -662,7 +662,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
             const history = (current.history ?? []).slice().reverse()
             if (history.length === 0 || (current.change ?? null) !== null) return null
             const label = { title: '标题', description: '需求明细', priority: '优先级', status: '状态', owner: '负责人', project: '项目', iteration: '迭代' }
-            return h('div', { className: 'ds-panel ds-history-panel', style: { marginTop: 14 } },
+            return h('div', { className: 'ds-panel ds-history-panel', style: { marginTop: 16 } },
               h('div', { className: 'ds-panel-head' },
                 h('span', null, '变更记录'),
                 h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } }, `最近 ${history.length} 条`),
@@ -697,7 +697,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
               try { await api('/requirement/pool', { id: current.id, pool: { reach, impact, confidence, effort } }); toast('需求池评分已更新'); await onChanged() }
               catch (cause) { toast(cause instanceof Error ? cause.message : String(cause), 'error') }
             }
-            return h('div', { className: 'ds-panel ds-pool-panel', style: { marginTop: 14 } },
+            return h('div', { className: 'ds-panel ds-pool-panel', style: { marginTop: 16 } },
               h('div', { className: 'ds-panel-head' },
                 h('span', null, '需求池评分（RICE）'),
                 h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } }, pool.score > 0 ? `得分 ${pool.score}` : '还没打分：不打分就没法和别的需求比优先级'),
@@ -735,7 +735,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
               if (ok !== true) return
               await call({ action: 'delete', questionId: item.id }, '已删除')
             }
-            return h('div', { className: 'ds-panel ds-question-panel', 'data-open': openCount > 0 ? '1' : '0', style: { marginTop: 14 } },
+            return h('div', { className: 'ds-panel ds-question-panel', 'data-open': openCount > 0 ? '1' : '0', style: { marginTop: 16 } },
               h('div', { className: 'ds-panel-head' },
                 h('span', null, '待确认清单'),
                 h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } }, openCount > 0 ? `${openCount} 个没回答，回答完才能拆卡` : (questions.length === 0 ? '澄清阶段把不确定的先记在这里' : '全部已回答')),
@@ -771,7 +771,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
             const affectedCases = change.affectedCases ?? []
             const byId = new Map(tasks.map(task => [task.id, task]))
             const statusLabel = id => (state.statuses.find(entry => entry.id === id)?.label) ?? id
-            return h('div', { className: 'ds-panel ds-change-panel', 'data-invalidated': change.invalidated ? '1' : '0', style: { marginTop: 14 } },
+            return h('div', { className: 'ds-panel ds-change-panel', 'data-invalidated': change.invalidated ? '1' : '0', style: { marginTop: 16 } },
               h('div', { className: 'ds-panel-head' },
                 h('span', null, change.invalidated ? '变更影响（签字已作废）' : '变更影响'),
                 h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } },
@@ -817,7 +817,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
           (() => {
             const deploys = current.deploys ?? []
             if (deploys.length === 0) return null
-            return h('div', { className: 'ds-panel', style: { marginTop: 14 } },
+            return h('div', { className: 'ds-panel', style: { marginTop: 16 } },
               h('div', { className: 'ds-panel-head' },
                 h('span', null, '上线足迹'),
                 h('span', { className: 'ds-hint', style: { marginLeft: 'auto' } }, '来自版本的部署记录，只留痕不触发'),
@@ -834,7 +834,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
               ),
             )
           })(),
-          h('div', { className: 'ds-panel', style: { marginTop: 14 } },
+          h('div', { className: 'ds-panel', style: { marginTop: 16 } },
             h('div', { className: 'ds-panel-head' }, h('span', null, '依赖与排序')),
             h('div', { className: 'ds-panel-body' },
               h('div', { className: 'ds-row' },
@@ -868,7 +868,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
             const pointTotal = stats.points ?? (current.points ?? []).length
             const casePass = stats.pass ?? passed
             const caseTotal = stats.cases ?? caseAgg.total
-            return h('div', { className: 'ds-panel', style: { marginTop: 14 } },
+            return h('div', { className: 'ds-panel', style: { marginTop: 16 } },
               h('div', { className: 'ds-panel-head' },
                 h('span', null, '需求准出与验收签字'),
                 h(ChipField, { className: 'ds-chip', 'data-pt': gate.ready ? 'covered' : 'open', style: { marginLeft: 'auto' } },
@@ -984,8 +984,8 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
                   : renderMarkdown(docAll[doc.id]))
                 : null),
             )))),
-          docNote === null ? null : h('div', { className: 'ds-hint', style: { marginTop: 6 } }, docNote),
-          docForm === null ? null : h('div', { className: 'ds-panel ds-form-panel', style: { marginTop: 10 } },
+          docNote === null ? null : h('div', { className: 'ds-hint', style: { marginTop: 8 } }, docNote),
+          docForm === null ? null : h('div', { className: 'ds-panel ds-form-panel', style: { marginTop: 12 } },
             h('div', { className: 'ds-panel-head' }, docForm.id === undefined ? '添加文档' : `编辑 ${docForm.title}`),
             h('div', { className: 'ds-panel-body' },
               h('div', { className: 'ds-row', style: { gap: 12 } },
@@ -1027,7 +1027,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
             h('div', { className: 'ds-pane-title' }, '需求变更影响面'),
             h('div', { className: 'ds-pane-desc' }, '需求一改，下面这些卡和用例就要重看。点一下现算，不改任何数据。'),
           ),
-          h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', marginBottom: 6 } },
+          h('div', { className: 'ds-row', style: { gap: 8, alignItems: 'center', marginBottom: 8 } },
             h('button', { className: 'ds-btn', disabled: impactBusy || currentForDeps === null, onClick: () => void loadImpact() }, impactBusy ? '计算中…' : '算一下影响面'),
             impact === null
               ? h('span', { className: 'ds-hint' }, '还没算过')
@@ -1053,7 +1053,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
                 `功能点 ${matrix.summary.points} · 已覆盖 ${matrix.summary.coveredPoints}${matrix.summary.pointsWithoutCases > 0 ? `（${matrix.summary.pointsWithoutCases} 条还没有用例，覆盖率 ${matrix.summary.coverageRate}%）` : ''} · 卡 ${matrix.summary.cards}（未归点 ${matrix.summary.looseCards}）· 用例 ${matrix.summary.cases}（通过 ${matrix.summary.pass}${matrix.summary.fail > 0 ? `，失败 ${matrix.summary.fail}` : ''}）· 通过率 ${matrix.summary.passRate}%`,
               ),
               /* 口径写明白：不然读者会自己推断成"一卡一点，覆盖率有天花板"（issue #9 第 5 条的真事） */
-              h('div', { className: 'ds-hint', style: { marginBottom: 6 } },
+              h('div', { className: 'ds-hint', style: { marginBottom: 8 } },
                 '覆盖率按功能点算：一个功能点可以对应多张卡、多条用例。用例自带的 pointId 优先——同一张卡上的用例可以分别覆盖不同功能点（没填就沿用卡上的功能点）。'),
               /* 官方 Table：需求矩阵本来就是一张表（编号 / 功能点 / 覆盖 / 卡与用例 / 操作），
                  原来是一串 div 拼的 .ds-pt-row。RAC 的 collection 组件不能被自定义组件包住，
@@ -1116,7 +1116,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
                 ),
               ),
               (matrix.loose ?? []).length === 0 ? null : h('div', { className: 'ds-pt-loose' },
-                h('div', { className: 'ds-hint', style: { marginBottom: 6 } }, `还有 ${matrix.loose.length} 张卡没归到功能点，选一个挂上去，矩阵才算完整：`),
+                h('div', { className: 'ds-hint', style: { marginBottom: 8 } }, `还有 ${matrix.loose.length} 张卡没归到功能点，选一个挂上去，矩阵才算完整：`),
                 matrix.loose.map(card => h('div', { key: card.id, className: 'ds-pt-loose-row' },
                   h('span', { className: 'ds-chip-code' }, card.code || card.id),
                   h('span', { className: 'ds-pt-loose-title' }, card.title),
@@ -1132,14 +1132,14 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
                 )),
               ),
             ),
-          h('div', { className: 'ds-row', style: { gap: 8, marginTop: 10, alignItems: 'center' } },
+          h('div', { className: 'ds-row', style: { gap: 8, marginTop: 12, alignItems: 'center' } },
             h('button', { className: 'ds-btn', onClick: () => setPointForm(blankPoint()) }, '＋ 加功能点'),
             h('button', { className: 'ds-btn ds-btn-primary', disabled: splitBusy, onClick: () => void splitPoints() }, splitBusy ? '拆卡中…' : '按未覆盖的功能点拆卡'),
             h('button', { className: 'ds-btn ds-btn-ghost', onClick: () => { if (current !== null) void loadMatrix(current.id) } }, '刷新矩阵'),
             splitNote === null ? null : h('span', { className: 'ds-hint' }, splitNote),
             matrixNote === null ? null : h('span', { className: 'ds-hint' }, matrixNote),
           ),
-          pointForm === null ? null : h('div', { className: 'ds-panel ds-form-panel', style: { marginTop: 10 } },
+          pointForm === null ? null : h('div', { className: 'ds-panel ds-form-panel', style: { marginTop: 12 } },
             h('div', { className: 'ds-panel-head' }, pointForm.id === undefined ? '新增功能点' : `编辑功能点 ${pointForm.id}`),
             h('div', { className: 'ds-panel-body' },
               h('div', { className: 'ds-field' },
@@ -1181,7 +1181,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
             h('div', { className: 'ds-stat-box' }, h('b', null, String(artifacts.length)), h('span', null, '交付物')),
             h('div', { className: 'ds-stat-box' }, h('b', null, String(mrs.length)), h('span', null, 'MR')),
           ),
-          h('div', { className: 'ds-sec-head', style: { marginTop: 14 } }, `这张需求下的 ${tasks.length} 张卡`),
+          h('div', { className: 'ds-sec-head', style: { marginTop: 16 } }, `这张需求下的 ${tasks.length} 张卡`),
           tasks.length === 0
             ? h('div', { className: 'ds-empty' }, '还没有挂上来的卡。建卡时选择这条需求，编号会自动分配。')
             : h('div', { className: 'ds-req-tasks' }, tasks.map(task => h('div', {
@@ -1205,14 +1205,14 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
                 ),
               ))),
           mrs.length > 0 ? h('div', null,
-            h('div', { className: 'ds-sec-head', style: { marginTop: 14 } }, '关联 MR'),
+            h('div', { className: 'ds-sec-head', style: { marginTop: 16 } }, '关联 MR'),
             mrs.map(task => h('div', { key: task.id, className: 'ds-hint' }, `${task.code || task.id} · !${task.gitlabMR.iid} ${task.gitlabMR.title ?? ''}（${task.gitlabMR.state || 'open'}）`)),
           ) : null,
         )
       })()
 
 return h('div', { className: 'ds-body' },
-        error !== null ? h('div', { className: 'ds-err', style: { marginBottom: 10 } }, error) : null,
+        error !== null ? h('div', { className: 'ds-err', style: { marginBottom: 12 } }, error) : null,
         formPanel,
         h('div', { className: 'ds-req-grid' },
           h('div', { className: 'ds-intake-launch', style: { display: 'flex', gap: 8, padding: '0 0 8px' } },

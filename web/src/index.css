@@ -714,7 +714,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px 12px;
-  margin: 8px 0 6px;
+  margin: 8px 0 8px;
   font-size: 12px;
   color: var(--muted-foreground);
 }
@@ -723,11 +723,11 @@
   border-radius: 999px;
   background: var(--muted);
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 [data-dsh-studio] .ds-market-grid + .ds-hint,
 [data-dsh-studio] .ds-proj-grid + .ds-hint {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 /* 项目页 / 市场页的容器：外层 .ds-body 若参与父级网格会把卡片挤成窄列，
@@ -1055,9 +1055,9 @@
 [data-dsh-studio] .ds-drawer .ds-sec + .ds-sec { margin-top:2px }
 
 /* 准出检查里的签字区：单独成块，和清单分开（2026-11-10） */
-[data-dsh-studio] .ds-gate-sign { display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; margin-top:10px; padding-top:12px; border-top:1px dashed var(--border); font-size:12px; color:var(--foreground) }
+[data-dsh-studio] .ds-gate-sign { display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border); font-size:12px; color:var(--foreground) }
 [data-dsh-studio] .ds-gate-sign > span { min-width:0; overflow-wrap:anywhere }
-[data-dsh-studio] .ds-gate .ds-row { margin-top:10px; padding-top:12px; border-top:1px dashed var(--border) }
+[data-dsh-studio] .ds-gate .ds-row { margin-top:12px; padding-top:12px; border-top:1px dashed var(--border) }
 [data-dsh-studio] .ds-gate .ds-row .ds-btn { white-space:nowrap }
 
 /* 卡片上的「负责人」标签：限宽 + 省略号，完整信息放 title（2026-11-10） */
@@ -1197,7 +1197,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   outline: none !important; border-color: var(--ring) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 28%, transparent) !important
 }
 [data-dsh-studio] .ds-pane .ds-field > .ds-label { font-size: 12px; color: var(--muted-foreground) }
-[data-dsh-studio] .ds-pane .ds-sec-head { margin-bottom: 6px }
+[data-dsh-studio] .ds-pane .ds-sec-head { margin-bottom: 8px }
 /* 顶部页签：逐个都有内边距与最小宽度，不再挤成一排文字 */
 /* 主题三档（Radix ToggleGroup）：同样给足内边距与最小宽度，避免挤成一行文字 */
 /* 设置页：侧导航条目被 UA 复位压成 20px 高，补回内边距 */
@@ -1288,7 +1288,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio][data-theme="dark"] .ds-count[data-over="1"] { color: #ff9a9d; }
 
 /* 列负责人选择器：不要被列的 overflow 裁掉，列表可滚 */
-[data-dsh-studio] .ds-colpick { position: relative; z-index: 30; margin-top: 6px; }
+[data-dsh-studio] .ds-colpick { position: relative; z-index: 30; margin-top: 8px; }
 [data-dsh-studio] .ds-colpick-list { max-height: 220px; overflow-y: auto; border: 1px solid var(--border);
   border-radius: 10px; background: var(--card); box-shadow: var(--ds-shadow); padding: 4px; }
 [data-dsh-studio] .ds-colpick .ds-mention-item { display: flex; gap: 8px; align-items: center; width: 100%;
@@ -1325,7 +1325,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 
 /* 业务提单独立页签：原条带从需求页移除 */
 [data-dsh-studio] .ds-biz-strip{display:none!important}
-[data-dsh-studio] .ds-biz-result{padding:4px 8px;border:1px solid var(--border);border-radius:10px;background:var(--muted);font-size:12px;margin-top:6px}
+[data-dsh-studio] .ds-biz-result{padding:4px 8px;border:1px solid var(--border);border-radius:10px;background:var(--muted);font-size:12px;margin-top:8px}
 
 /* 业务提单页签：说明文字不要 nowrap，避免溢出压到相邻元素 */
 [data-dsh-studio] .ds-hint{white-space:normal}
@@ -1390,14 +1390,14 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] .ds-palette-kind[data-kind="action"] { background: color-mix(in srgb, #7c3aed 16%, transparent); color: var(--ds-violet-text, #6d28d9) }
 [data-theme="dark"] .ds-palette-kind[data-kind="action"] { background: color-mix(in srgb, #a78bfa 22%, transparent); color: #c4b5fd }
 [data-dsh-studio] .ds-palette-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-[data-dsh-studio] .ds-diff { margin-top: 10px; border: 1px solid var(--ds-line, #e4e4e7); border-radius: 10px; overflow: hidden }
+[data-dsh-studio] .ds-diff { margin-top: 12px; border: 1px solid var(--ds-line, #e4e4e7); border-radius: 10px; overflow: hidden }
 [data-dsh-studio] .ds-diff-head { display: flex; align-items: center; gap: 12px; padding: 8px 8px; background: var(--ds-surface-2, #f4f4f5); font-size: 12px }
 [data-dsh-studio] .ds-diff-body { max-height: 340px; overflow: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.55 }
 [data-dsh-studio] .ds-diff-line { padding: 2px 8px; white-space: pre-wrap; word-break: break-word }
 [data-dsh-studio] .ds-diff-line[data-kind="add"] { background: #e9f7ef; color: #11623b }
 [data-dsh-studio] .ds-diff-line[data-kind="del"] { background: #fdecec; color: #a4232b }
 [data-dsh-studio] .ds-diff-line[data-kind="same"] { color: var(--ds-muted, #6b6b74) }
-[data-dsh-studio] .ds-reg-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 12px; margin-bottom: 10px; border: 1px solid var(--ds-line, #e4e4e7); border-radius: 10px; background: var(--ds-surface-2, #f4f4f5); font-size: 12px }
+[data-dsh-studio] .ds-reg-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 12px; margin-bottom: 12px; border: 1px solid var(--ds-line, #e4e4e7); border-radius: 10px; background: var(--ds-surface-2, #f4f4f5); font-size: 12px }
 [data-dsh-studio] .ds-reg-banner[data-bad="1"] { border-color: #f3c0c2; background: #fdf2f2; color: #b42318 }
 [data-dsh-studio] .ds-suite { display: inline-flex; align-items: center; gap: 8px; padding: 2px 8px; border: 1px solid var(--ds-line, #e4e4e7); border-radius: 999px; background: var(--ds-surface-2, #f4f4f5); font-size: 12px }
 [data-dsh-studio] .ds-suite[data-default="1"] { border-color: #a5b4fc; background: #eef2ff; color: #3730a3 }
@@ -1406,7 +1406,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
 [data-dsh-studio] .ds-reg-item[data-bad="1"] { border-color: #f3c0c2; background: #fdf2f2; color: #b42318 }
 [data-dsh-studio] .ds-case-lib { display: flex; flex-direction: column }
 [data-dsh-studio] .ds-case-lib-detail { padding: 8px 12px 8px 36px; background: var(--ds-surface-2, #f4f4f5); font-size: 12px; line-height: 1.6; color: var(--ds-muted, #6b6b74) }
-[data-dsh-studio] .ds-case-lib-preview { margin: 6px 0 0; padding: 8px 8px; max-height: 180px; overflow: auto; background: var(--ds-surface, #fff); border: 1px solid var(--ds-line, #e4e4e7); border-radius: 10px; font-size: 11px; white-space: pre-wrap; word-break: break-word }
+[data-dsh-studio] .ds-case-lib-preview { margin: 8px 0 0; padding: 8px 8px; max-height: 180px; overflow: auto; background: var(--ds-surface, #fff); border: 1px solid var(--ds-line, #e4e4e7); border-radius: 10px; font-size: 11px; white-space: pre-wrap; word-break: break-word }
 [data-dsh-studio] .ds-palette-hint { flex: 0 0 auto; max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ds-muted, #6b6b74); font-size: 12px }
 [data-dsh-studio] .ds-palette-key { flex: 0 0 auto; font-size: 11px; line-height: 16px; padding: 2px 4px; border-radius: 10px; border: 1px solid var(--ds-line, #e4e4e7); background: var(--ds-surface-2, #f4f4f5); color: var(--ds-muted, #6b6b74); white-space: nowrap }
 [data-dsh-studio][data-theme="dark"] .ds-palette-key { border-color: #3f3f46; background: #27272a; color: #a1a1aa }
@@ -1568,7 +1568,7 @@ html body [data-dsh-studio][data-dsh-studio-portal] {
   border: 1px solid var(--color-separator-border, var(--ds-line));
   border-radius: 16px;
   padding: 12px 12px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   background: var(--color-background-primary-default, var(--ds-card));
   box-shadow: 0 1px 2px color-mix(in srgb, #101828 6%, transparent);
 }
@@ -2115,7 +2115,7 @@ html body [data-dsh-studio] .ds-seg-control button[data-selected] {
   /* 这一节自己没有下边距、面板只有 margin-bottom，于是「整体情况」的底边和紧跟的「流程与产出」
      面板是 0 距离：落单的那张 KPI 卡直接压在面板上边线上（真机 2414px 宽量到 gap=0）。
      统一成和面板间距相同的 14px，几组块之间就有了同一套节奏。 */
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 [data-dsh-studio] .ds-kpi-title {
   font-size: 12px;
