@@ -1773,7 +1773,7 @@ function Drawer({ task, state, onClose, onChanged }) {
           (() => {
             const points = (state.requirements ?? []).find(entry => entry.id === task.requirementId)?.points ?? []
             if (points.length === 0) return null
-            return h('div', { className: ROW, style: { gap: 8, alignItems: 'center', marginTop: 8 } },
+            return h('div', { className: ROW, style: { gap: 8, alignItems: 'center', marginTop: 8 }, 'data-case-point-row': '' },
               h('span', { className: HINT }, '这条用例算在'),
               h(SelectField, {
                 style: { width: 240, height: 28 }, value: newCase.pointId ?? '',

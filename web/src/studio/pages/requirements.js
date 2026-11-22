@@ -1272,7 +1272,7 @@ return h('div', { className: PAGE, 'data-requirements-page': '' },
             }, '新建需求'),
           ),
           
-          h('div', { className: 'flex min-w-0 flex-col gap-2' },
+          h('div', { className: 'flex min-w-0 flex-col gap-2', 'data-requirement-list': '' },
             h('div', { className: 'flex flex-wrap items-center justify-between gap-2 text-caption-1-regular text-text-tertiary' },
               h('span', null, `需求 ${visibleRequirements.length}${visibleRequirements.length === requirements.length ? '' : ` / ${requirements.length}`}`),
               h(Button, {

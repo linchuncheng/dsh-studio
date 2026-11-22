@@ -69,13 +69,13 @@ try {
   })
   await page.waitForSelector('[data-dsh-studio]', { timeout: 30000 })
   await sleep(1200)
-  for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
+  for (const tab of await page.$$('[data-dsh-studio] [data-head-tabs] button')) {
     if (((await tab.evaluate(node => node.textContent)) || '').trim() === '用例') { await tab.click(); break }
   }
   await sleep(2500)
 
-  const rowsOf = () => page.$$eval('[data-dsh-studio] .ds-case-lib table tbody tr', nodes => nodes.length)
-  const kindColumn = () => page.$$eval('[data-dsh-studio] .ds-case-lib table tbody tr', nodes => nodes.map(tr => (tr.children[3]?.textContent || '').trim()))
+  const rowsOf = () => page.$$eval('[data-dsh-studio] [data-cases-table] table tbody tr', nodes => nodes.length)
+  const kindColumn = () => page.$$eval('[data-dsh-studio] [data-cases-table] table tbody tr', nodes => nodes.map(tr => (tr.children[3]?.textContent || '').trim()))
   const total = await rowsOf()
   check('用例库有行', total > 0, `${total} 行`)
 

@@ -93,7 +93,7 @@ try {
   const errors = []
   page.on('pageerror', error => errors.push(String(error).slice(0, 200)))
   await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 60000 })
-  await page.waitForSelector('[data-dsh-studio] .ds-head-tabs button', { timeout: 45000 })
+  await page.waitForSelector('[data-dsh-studio] [data-head-tabs] button', { timeout: 45000 })
 
   const click = async (selector, text) => page.evaluate((sel, want) => {
     const node = [...document.querySelectorAll(sel)].find(item => (item.textContent || '').trim() === want)
@@ -102,7 +102,7 @@ try {
     return true
   }, selector, text)
 
-  check('切到设置', await click('[data-dsh-studio] .ds-head-tabs button', '设置'))
+  check('切到设置', await click('[data-dsh-studio] [data-head-tabs] button', '设置'))
   await sleep(800)
   check('点开「新增专家」', await click('[data-dsh-studio] button', '新增专家'))
   await page.waitForSelector('[role="dialog"]', { timeout: 10000 })

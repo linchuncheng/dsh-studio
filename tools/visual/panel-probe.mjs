@@ -228,7 +228,7 @@ try {
   check('② 抽屉里有「测试用例」区', sections.some(text => text.includes('测试用例')))
   const casePoint = await page.evaluate(() => {
     const select = [...document.querySelectorAll('select')].find(node => [...node.options].some(option => String(option.textContent).includes('不归功能点')))
-    return select === undefined ? null : { value: select.value, hint: [...document.querySelectorAll('.ds-hint')].some(node => String(node.textContent).includes('默认跟卡上的功能点')) }
+    return select === undefined ? null : { value: select.value, hint: [...document.querySelectorAll('[data-case-point-row]')].some(node => String(node.textContent).includes('默认跟卡上的功能点')) }
   })
   check('② 新用例表单的功能点选择器默认继承卡（p1）', casePoint !== null && casePoint.value === 'p1', JSON.stringify(casePoint))
   check('② 选择器旁有「默认跟卡上的功能点」说明', casePoint?.hint === true)
@@ -288,7 +288,7 @@ try {
     return true
   })
   await new Promise(resolve => setTimeout(resolve, 500))
-  const matchedRows = await page.evaluate(() => [...document.querySelectorAll('.ds-req-item')].map(node => String(node.textContent ?? '')).join('|'))
+  const matchedRows = await page.evaluate(() => [...document.querySelectorAll('[data-requirement-row]')].map(node => String(node.textContent ?? '')).join('|'))
   check('③b 需求页搜索能筛出探针需求', typedQuery === true && matchedRows.includes('面板渲染自检'), matchedRows.slice(0, 80))
 
   await page.evaluate(() => {
@@ -437,7 +437,9 @@ try {
       }
     }
     const orphan = []
-    for (const grid of root.querySelectorAll('.ds-kpi-grid')) {
+    for (const section of root.querySelectorAll('[data-stat-section]')) {
+      const grid = section.lastElementChild
+      if (grid === null) continue
       const rects = [...grid.children].map(el => el.getBoundingClientRect()).filter(r => r.width > 0)
       if (rects.length < 2) continue
       const byTop = new Map()

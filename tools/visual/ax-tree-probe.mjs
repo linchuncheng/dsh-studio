@@ -128,9 +128,9 @@ try {
   await page.waitForSelector('[data-dsh-studio]', { timeout: 30000 })
   await sleep(1500)
 
-  const tabs = await page.$$eval('[data-dsh-studio] .ds-head-tabs button', nodes => nodes.map(node => node.textContent.trim()))
+  const tabs = await page.$$eval('[data-dsh-studio] [data-head-tabs] button', nodes => nodes.map(node => node.textContent.trim()))
   for (const name of tabs) {
-    for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
+    for (const tab of await page.$$('[data-dsh-studio] [data-head-tabs] button')) {
       if (((await tab.evaluate(node => node.textContent)) || '').trim() === name) { await tab.click(); break }
     }
     await sleep(1500)
@@ -144,7 +144,7 @@ try {
   }
 
   // 卡片抽屉（打开态的无障碍树才看得到对话框）
-  for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {
+  for (const tab of await page.$$('[data-dsh-studio] [data-head-tabs] button')) {
     if (((await tab.evaluate(node => node.textContent)) || '').trim() === '看板') { await tab.click(); break }
   }
   await sleep(1200)

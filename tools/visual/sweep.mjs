@@ -32,11 +32,11 @@ await page.evaluate(() => {
   const node = [...document.querySelectorAll('*')].find((el) => el.children.length === 0 && (el.textContent || '').trim() === '需求&任务工作空间')
   node?.closest('button,a,li,[role="button"],[tabindex]')?.click?.()
 })
-await page.waitForSelector('[data-dsh-studio] .ds-head-tabs [role="tab"]', { timeout: 45000 })
+await page.waitForSelector('[data-dsh-studio] [data-head-tabs] [role="tab"]', { timeout: 45000 })
 await sleep(1200)
 const goTab = async (label) => {
   await page.evaluate((want) => {
-    const b = [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs [role="tab"]')].find((n) => (n.textContent || '').trim() === want)
+    const b = [...document.querySelectorAll('[data-dsh-studio] [data-head-tabs] [role="tab"]')].find((n) => (n.textContent || '').trim() === want)
     b?.click()
   }, label)
   await sleep(1400)
@@ -44,18 +44,18 @@ const goTab = async (label) => {
 
 // ---------- 需求：逐条点开，看布局是否稳定 ----------
 await goTab('需求')
-const reqCount = await page.evaluate(() => document.querySelectorAll('[data-dsh-studio] .ds-req-item').length)
+const reqCount = await page.evaluate(() => document.querySelectorAll('[data-dsh-studio] [data-requirement-row]').length)
 let stable = true
 let worst = ''
 for (let index = 0; index < Math.min(reqCount, 5); index += 1) {
   await page.evaluate((i) => {
-    const items = document.querySelectorAll('[data-dsh-studio] .ds-req-item')
+    const items = document.querySelectorAll('[data-dsh-studio] [data-requirement-row]')
     items[i]?.click()
   }, index)
   await sleep(900)
   const shape = await page.evaluate(() => {
-    const list = document.querySelector('[data-dsh-studio] .ds-req-list')
-    const detail = document.querySelector('[data-dsh-studio] .ds-req-detail')
+    const list = document.querySelector('[data-dsh-studio] [data-requirement-list]')
+    const detail = document.querySelector('[data-dsh-studio] [data-requirement-detail]')
     if (!list || !detail) return null
     const a = list.getBoundingClientRect()
     const b = detail.getBoundingClientRect()

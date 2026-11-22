@@ -5,7 +5,7 @@
  *   · 横向溢出（内容撑破容器 / 该滚动却没滚动）
  *   · 小于 11px 的字（可读性下限）
  *   · 内联硬编码颜色（深色主题必翻车）
- *   · 还留在 DOM 里的 legacy 类（.ds-btn / .ds-chip / .ds-input …）
+ *   · 还留在 DOM 里的手写 legacy 类（已清零）与 BoardUI 控件覆盖（[data-variant]）
  *   · 每页用到的字号档位数量（越多越不像一套设计）
  */
 import { createRequire } from 'node:module'
@@ -50,10 +50,12 @@ const MEASURE = () => {
     return /#[0-9a-fA-F]{3,8}|rgb\(|hsl\(/.test(style)
   }).length
 
-  const legacy = shown.filter((el) => /(^|\s)(ds-btn|ds-chip|ds-input|ds-select|ds-textarea|ds-listrow|ds-empty|ds-case-lib-row|ds-pt-row)(\s|$)/.test((el.className || '').toString())).length
+  // 手写 legacy 类已清空（全仓 0 处），这里改成数 BoardUI 控件：Button 适配层输出 data-variant。
+  // 这个数越大越说明控件走的是 BoardUI；和溢出/小字/内联色那些「越小越好」的指标不是一类。
+  const boardui = shown.filter((el) => el.hasAttribute('data-variant')).length
 
   const sizes = new Set(shown.filter((el) => el.children.length === 0 && (el.textContent || '').trim() !== '').map((el) => getComputedStyle(el).fontSize))
-  return { overflow, tiny, inlineColor, legacy, sizeSteps: [...sizes].sort()[0], sizeCount: sizes.size, total: shown.length }
+  return { overflow, tiny, inlineColor, boardui, sizeSteps: [...sizes].sort()[0], sizeCount: sizes.size, total: shown.length }
 }
 
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'], defaultViewport: { width: 1680, height: 1000 } })
@@ -95,15 +97,15 @@ for (const label of panels) {
 
 await browser.close()
 
-console.log('模块'.padEnd(22) + '字号档'.padStart(7) + '最小字'.padStart(8) + '内联色'.padStart(8) + 'legacy'.padStart(8))
+console.log('模块'.padEnd(22) + '字号档'.padStart(7) + '最小字'.padStart(8) + '内联色'.padStart(8) + 'BoardUI'.padStart(8))
 for (const r of rows) {
   const flag = r.overflow.length > 0 ? '  ⚠溢出' : ''
-  console.log(r.name.padEnd(22) + String(r.sizeCount).padStart(7) + r.sizeSteps.padStart(8) + String(r.inlineColor || '·').padStart(8) + String(r.legacy || '·').padStart(8) + flag)
+  console.log(r.name.padEnd(22) + String(r.sizeCount).padStart(7) + r.sizeSteps.padStart(8) + String(r.inlineColor || '·').padStart(8) + String(r.boardui || '·').padStart(8) + flag)
   for (const o of r.overflow) console.log('     ↳ 溢出 ' + o)
   for (const t of r.tiny) console.log('     ↳ 小字 ' + t)
 }
 const overflowTotal = rows.reduce((sum, r) => sum + r.overflow.length, 0)
 const inlineTotal = rows.reduce((sum, r) => sum + r.inlineColor, 0)
-const legacyTotal = rows.reduce((sum, r) => sum + r.legacy, 0)
-console.log(`\n${rows.length} 个模块：溢出 ${overflowTotal} 处、内联硬编码颜色 ${inlineTotal} 处、legacy 类 ${legacyTotal} 处、pageerror ${errors.length}`)
+const boarduiTotal = rows.reduce((sum, r) => sum + r.boardui, 0)
+console.log(`\n${rows.length} 个模块：溢出 ${overflowTotal} 处、内联硬编码颜色 ${inlineTotal} 处、BoardUI 控件 ${boarduiTotal} 个、pageerror ${errors.length}`)
 if (errors.length) console.log('pageerror: ' + errors.slice(0, 3).join(' | '))

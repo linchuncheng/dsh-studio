@@ -4,7 +4,7 @@
  *
  * 断言：
  *   1 table.bui-table 存在，表头 5 列（时间/操作人/动作/详情/结果）
- *   2 每页行数 = 50（分页生效），且没有 .ds-audit-row 残留
+ *   2 每页行数 = 50（分页生效），且没有旧的 div 网格残留（[data-audit-row] 只能是 <tr>）
  *   3 分页控件存在（上一页 / 下一页 / 页码）
  *   4 点「下一页」后内容真的换了
  *   5 全程无 pageerror
@@ -51,14 +51,15 @@ const first = await page.evaluate(() => {
     headers: table ? [...table.querySelectorAll('th')].map((n) => (n.textContent || '').trim()) : [],
     rows: table ? table.querySelectorAll('tbody tr').length : 0,
     firstRow: table ? (table.querySelector('tbody tr')?.textContent || '').trim().slice(0, 30) : '',
-    oldRows: scope.querySelectorAll('.ds-audit-row').length,
+    oldRows: [...scope.querySelectorAll('[data-audit-row]')].filter((node) => node.tagName !== 'TR').length,
+    tableRows: scope.querySelectorAll('tr[data-audit-row]').length,
     pager: pager !== null,
   }
 })
 check('审计日志是官方 Table', first.table === true)
 check('表头 5 列', first.headers.length === 5, first.headers.join(' / '))
 check('每页 50 行（分页生效）', first.rows === 50, `${first.rows} 行`)
-check('旧的 div 网格已消失', first.oldRows === 0, `.ds-audit-row=${first.oldRows}`)
+check('审计行是真表格行（旧的 div 网格已消失）', first.oldRows === 0 && first.tableRows > 0, `非 tr 行=${first.oldRows} / tr 行=${first.tableRows}`)
 check('分页控件存在', first.pager === true)
 
 const flipped = await page.evaluate(() => {
