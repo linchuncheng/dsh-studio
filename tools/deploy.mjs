@@ -19,7 +19,7 @@
  */
 import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -36,11 +36,17 @@ const REMOTE_DIR = option('remote-dir', process.env.DSH_DEPLOY_DIR ?? '~/dsh-stu
 const TMP = option('tmp-dir', '/tmp')
 const KEY = option('key', '')
 const DRY = args.includes('--dry-run')
+const NO_RESTART = args.includes('--no-restart')
+/** 传进安装脚本：auto = 尝试 sudo / 直连重启；skip = 只传文件。 */
+const RESTART_MODE = NO_RESTART ? 'skip' : 'auto'
 
 if (HOST === '' || USER === '') {
   console.error('缺少 DSH_DEPLOY_HOST / DSH_DEPLOY_USER')
   process.exit(2)
 }
+
+/** 宿主元数据：以前不在清单里，部署完目标机的 package.json 还停在老版本（真机 0.1.0 vs 0.9.59）。 */
+const META = ['package.json', 'cordis.patch.yml', 'icon.svg', 'README.md']
 
 const root = process.cwd()
 const walk = dir => readdirSync(dir).flatMap(name => {
@@ -56,19 +62,36 @@ const files = [
     local: full,
     remote: 'src/host/' + full.slice(join(root, 'src/host').length + 1).split('\\').join('/'),
   })),
+  ...META.filter(name => existsSync(join(root, name))).map(name => ({ local: join(root, name), remote: name })),
+  ...readdirSync(join(root, 'locale')).filter(name => name.endsWith('.json')).map(name => ({
+    local: join(root, 'locale', name),
+    remote: 'locale/' + name,
+  })),
 ]
 
 const INSTALL = `#!/bin/bash
 set -u
 DEST=${REMOTE_DIR}
 STAMP=$(date +%Y%m%d-%H%M%S)
+BEFORE=$(systemctl show dsh-web -p ExecMainStartTimestamp --value 2>/dev/null || echo unknown)
 cp "$DEST/index.js" "${TMP}/index.js.$STAMP.bak" 2>/dev/null || true
 cp "$DEST/client.js" "${TMP}/client.js.$STAMP.bak" 2>/dev/null || true
+cp "$DEST/package.json" "${TMP}/package.json.$STAMP.bak" 2>/dev/null || true
 cp "${TMP}/index.js" "$DEST/index.js"
 cp "${TMP}/client.js" "$DEST/client.js"
 if [ -d "${TMP}/src" ]; then mkdir -p "$DEST/src"; cp -r "${TMP}/src/." "$DEST/src/"; fi
+for f in package.json cordis.patch.yml icon.svg README.md; do [ -f "${TMP}/$f" ] && cp "${TMP}/$f" "$DEST/$f"; done
+if [ -d "${TMP}/locale" ]; then mkdir -p "$DEST/locale"; cp -r "${TMP}/locale/." "$DEST/locale/"; fi
 cd "$DEST" && node --check index.js || { echo "SYNTAX_FAIL"; exit 1; }
-echo '${PASSWORD}' | sudo -S systemctl restart dsh-web >/dev/null 2>&1 || systemctl restart dsh-web >/dev/null 2>&1 || true
+echo "version=$(node -p "require('./package.json').version" 2>/dev/null || echo unknown)"
+RESTARTED=
+if [ "${RESTART_MODE}" = "auto" ]; then
+  echo '${PASSWORD}' | sudo -S systemctl restart dsh-web >/dev/null 2>&1 && RESTARTED=sudo
+  if [ -z "$RESTARTED" ]; then sudo -n systemctl restart dsh-web >/dev/null 2>&1 && RESTARTED=sudo-nopass; fi
+  if [ -z "$RESTARTED" ]; then systemctl restart dsh-web >/dev/null 2>&1 && RESTARTED=direct; fi
+fi
+AFTER=$(systemctl show dsh-web -p ExecMainStartTimestamp --value 2>/dev/null || echo unknown)
+if [ "$BEFORE" = "$AFTER" ]; then echo "restart=NOT-APPLIED"; else [ -z "$RESTARTED" ] && RESTARTED=applied; echo "restart=$RESTARTED"; fi
 for i in $(seq 1 25); do if ss -ltn 2>/dev/null | grep -q ':18080'; then break; fi; sleep 1; done
 echo "active=$(systemctl is-active dsh-web)"
 echo "files=$(find "$DEST/src/host" -name '*.js' | wc -l)"
@@ -94,11 +117,24 @@ const WATCHDOG = setTimeout(() => {
 }, 10 * 60 * 1000)
 WATCHDOG.unref()
 
+/**
+ * 只看 active 是不够的：文件传上去了但进程没重启时，active 照样是 active，
+ * 界面上跑的还是旧代码。重启没生效必须说出来并非零退出，让人去处理。
+ */
 const verify = out => {
   console.log(out.trim())
   if (!/active=active/.test(out)) {
     console.error('部署后服务不是 active，先看 journalctl -u dsh-web')
     process.exit(1)
+  }
+  if (/restart=NOT-APPLIED/.test(out)) {
+    if (NO_RESTART) {
+      console.log('（--no-restart：按你的要求没有重启；新文件已落盘，跑 sudo systemctl restart dsh-web 生效）')
+      return
+    }
+    console.error('部署完成但服务没有重启：新文件已经在目标机上，进程还在跑旧代码。')
+    console.error('请执行：ssh <user>@<host> "sudo systemctl restart dsh-web"（或用密码模式重跑本脚本）')
+    process.exit(4)
   }
 }
 
@@ -122,7 +158,7 @@ if (PASSWORD !== '') {
         stream.stderr.on('data', d => { out += d.toString() })
         stream.on('close', () => res(out))
       }))
-      await run(`mkdir -p ${TMP}/src/host/routes`)
+      await run(`mkdir -p ${TMP}/src/host/routes ${TMP}/locale`)
       console.log(`开始上传 ${files.length} 个文件`)
       let uploaded = 0
       for (const file of files) {
@@ -152,7 +188,7 @@ if (PASSWORD !== '') {
   const ssh = (...argv) => execFileSync('ssh', ['-p', String(PORT), ...(KEY === '' ? [] : ['-i', KEY.replace('~', homedir())]), `${USER}@${HOST}`, ...argv], { encoding: 'utf8' })
   const scp = (...argv) => execFileSync('scp', ['-P', String(PORT), ...(KEY === '' ? [] : ['-i', KEY.replace('~', homedir())]), ...argv], { encoding: 'utf8' })
   console.log(`连接就绪：${USER}@${HOST}:${PORT}（key 模式）`)
-  ssh(`mkdir -p ${TMP}/src/host/routes`)
+  ssh(`mkdir -p ${TMP}/src/host/routes ${TMP}/locale`)
   console.log(`开始上传 ${files.length} 个文件`)
   for (const file of files) {
     const target = file.remote.startsWith('src/') ? `${TMP}/${file.remote}` : `${TMP}/${file.remote}`

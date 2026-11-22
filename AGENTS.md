@@ -57,7 +57,9 @@ STUDIO_TOKEN=$(sudo journalctl -u dsh-web -n 50 | grep -o 'token=[A-Za-z0-9_-]*'
   node tools/visual/smoke.mjs
 ```
 
-> `tools/deploy.mjs` 会打印 `active=` / `files=` / `state=`，`active` 不是 active 就以非零退出。
+> `tools/deploy.mjs` 会打印 `version=` / `restart=` / `active=` / `files=` / `state=`：
+> `active` 不是 active 退出 1；**文件传上去了但服务没重启退出 4**（key 模式下 sudo 要密码时就是这种）。
+> 只想传文件不重启用 `--no-restart`。元数据（`package.json` / `cordis.patch.yml` / `icon.svg` / `README.md` / `locale/*.json`）现在跟主文件一起传。
 > 它依赖 `ssh2`（devDependency，只给部署用，不进插件运行时）；`tools/mock-gitlab.mjs` 是本地 GitLab 打桩（三个接口，3 文件 / 3 提交），配合 `tools/verify-gitlab-facts.mjs` 可以在没有真实令牌时把「MR 事实 → 与自报值对账」整条链跑通：`node tools/mock-gitlab.mjs` + `STUDIO_BASE=<host> node tools/verify-gitlab-facts.mjs`。
 
 `tools/visual/smoke.mjs` 依赖 `puppeteer-core`（同样只在 devDependencies 里），浏览器用系统 Chrome，可用 `CHROME_PATH` 指定。
@@ -69,7 +71,7 @@ STUDIO_TOKEN=$(sudo journalctl -u dsh-web -n 50 | grep -o 'token=[A-Za-z0-9_-]*'
 > 它先把「仓库版本 → profile 版本」打出来再拷（2026-11-20 就是靠这一行才发现 desktop profile 里躺着 0.9.14 的拷贝，
 > `link:` 根本没建成链接，白重启了一次），目录整体替换，不会把删掉的模块留成旧文件。
 >
-> 目标机上那个老的 `deploy-all.sh` 只作兜底（它拷 `/tmp/` 下的两个文件和 `src/`）。日常用 `tools/deploy.mjs`，别再手工 scp 拼路径。改了 `package.json`（包头、`engines`、`dsh.*`、`files`）、`cordis.patch.yml`、`locale/*.json` 时必须单独上传到插件目录（`~/dsh-studio/` 或 profile 的 `node_modules` 下）再重启，否则改了个寂寞。改动前先 `cp package.json /tmp/package.json.bak` 留退路。
+> 目标机上那个老的 `deploy-all.sh` 只作兜底（它拷 `/tmp/` 下的两个文件和 `src/`）。日常用 `tools/deploy.mjs`，别再手工 scp 拼路径。`package.json`（包头、`engines`、`dsh.*`、`files`）、`cordis.patch.yml`、`locale/*.json` 由 `tools/deploy.mjs` 一起传（2026-11-22 起）；只有走 profile 的 `node_modules` 手工拷贝时才需要自己带。改动前先 `cp package.json /tmp/package.json.bak` 留退路。
 >
 > 宿主拆成 `src/host/*.js` 以后，**部署必须带整个 `src/` 目录**：`/tmp/index.js`、`/tmp/client.js`、`/tmp/src/host/{domain,dispatcher,executor,integrations,store}.js` 与 `/tmp/src/host/routes/*.js`。只传 `index.js` 会得到 `ReferenceError: sanitizeAccess is not defined`（服务 502）。
 
