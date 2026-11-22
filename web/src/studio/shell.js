@@ -1,5 +1,15 @@
 /* The shared right-hand drawer. Radix Sheet when the host provides one,
-   otherwise the legacy mask + panel markup with Escape-to-close. */
+   otherwise the legacy mask + panel markup with Escape-to-close.
+ *
+ * 兜底分支只走自家标记（桌面客户端需要整体避开窗口标题栏，宿主的 SheetDrawer
+ * 挪不动），外观走 BoardUI token：
+ *   - 遮罩：bg-black/40，定位仍然是「贴着标题栏下沿的 fixed 覆盖层」
+ *   - 面板：bg-background-primary-default + border-separator-border + 大阴影
+ * 覆盖层的 fixed / top 下沉 / z-index / no-drag 用内联样式写死 —— 这几条是 issue #4
+ * 的修复点，不能依赖会被删掉的 legacy `.ds-side-*` 规则。
+ */
+
+import { Button } from '../boardui/index'
 
 /** 当前需要的标题栏下沉量（px）；Web 版没有标题栏，是 0。 */
 function titlebarFloor() {
@@ -22,20 +32,35 @@ export function createSideDrawer({ h, kit }) {
         return h(Sheet, { title, hint, onClose, footer }, children)
       }
       return h('div', {
-        className: 'ds-side-wrap',
+        className: 'flex justify-end bg-black/40',
+        'data-side-drawer': '',
+        style: {
+          position: 'fixed',
+          inset: 0,
+          top: 'max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px))',
+          zIndex: 80,
+          WebkitAppRegion: 'no-drag',
+        },
         onKeyDown: e => { if (e.key === 'Escape') onClose() },
       },
-        h('div', { className: 'ds-side-mask', onClick: onClose }),
-        h('div', { className: 'ds-side', role: 'dialog', 'aria-modal': 'true' },
-          h('div', { className: 'ds-side-head' },
-            h('div', {},
-              h('div', { className: 'ds-side-title' }, title),
-              hint === undefined || hint === null ? null : h('div', { className: 'ds-hint' }, hint),
+        h('div', { className: 'absolute inset-0', 'data-side-mask': '', onClick: onClose }),
+        h('div', {
+          className: 'relative z-10 flex h-full w-[min(760px,96vw)] flex-col border-l border-separator-border bg-background-primary-default shadow-2xl',
+          role: 'dialog',
+          'aria-modal': 'true',
+          'aria-label': typeof title === 'string' && title !== '' ? title : '侧边抽屉',
+        },
+          h('div', { className: 'flex flex-none items-start justify-between gap-3 border-b border-separator-border px-5 pt-4 pb-3' },
+            h('div', { className: 'flex min-w-0 flex-col gap-1' },
+              h('div', { className: 'truncate text-headline-medium text-text-primary' }, title),
+              hint === undefined || hint === null ? null : h('div', { className: 'text-caption-1-regular text-text-tertiary' }, hint),
             ),
-            h('button', { className: 'ds-btn', onClick: onClose }, '关闭'),
+            h(Button, { variant: 'secondary', size: 'sm', onClick: onClose }, '关闭'),
           ),
-          h('div', { className: 'ds-side-body' }, children),
-          footer === undefined || footer === null ? null : h('div', { className: 'ds-side-foot' }, footer),
+          h('div', { className: 'flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4' }, children),
+          footer === undefined || footer === null
+            ? null
+            : h('div', { className: 'flex flex-none items-center gap-2 border-t border-separator-border bg-background-secondary-default px-5 py-3' }, footer),
         ),
       )
     }

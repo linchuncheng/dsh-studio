@@ -457,7 +457,7 @@ export function createPalette({ h, React, TextField }) {
 
     /* 高亮项始终滚进可视区（列表最多 12 项可见，连按 ↓ 会让高亮跑到屏幕外） */
     const keepVisible = (index) => {
-      const items = document.querySelectorAll('[data-palette] .ds-palette-list > *')
+      const items = document.querySelectorAll('[data-palette] [data-palette-list] > *')
       const node = items[index]
       if (node && typeof node.scrollIntoView === 'function') node.scrollIntoView({ block: 'nearest' })
     }
@@ -478,12 +478,26 @@ export function createPalette({ h, React, TextField }) {
 
     const banner = flow === null
       ? null
-      : h('div', { className: 'ds-palette-flow', 'data-flow': flow.step },
+      : h('div', { className: 'flex-none border-b border-separator-border bg-background-secondary-default px-3 py-2 text-caption-1-medium text-text-secondary', 'data-palette-flow': flow.step },
         CARD_FLOWS[flow.action].title + (flow.step === 'expert' ? ' → 选一位专家' : flow.step === 'column' ? ' → 选一列' : ' → 选一张卡片'))
 
-    return h('div', { className: 'ds-palette-veil', onClick: onClose },
+    /* 遮罩的定位（fixed / 顶部让开桌面标题栏 / 层级 / 不吃窗口拖拽）用内联样式写死：
+       这是 issue #4 的修复点，不能依赖 legacy 的 `.ds-palette-veil` 规则（那条 CSS 会被删）。
+       外观（底色、居中、留白）走 token 工具类。 */
+    return h('div', {
+      className: 'flex items-start justify-center bg-black/40 pt-[12vh] dark:bg-black/60',
+      'data-palette-veil': '',
+      style: {
+        position: 'fixed',
+        inset: 0,
+        top: 'max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px))',
+        zIndex: 120,
+        WebkitAppRegion: 'no-drag',
+      },
+      onClick: onClose,
+    },
       h('div', {
-        className: 'ds-palette',
+        className: 'w-[min(560px,92vw)] overflow-hidden rounded-2xl border border-separator-border bg-background-primary-default shadow-2xl',
         role: 'dialog',
         'aria-label': '全局搜索',
         'data-palette': '1',
@@ -495,34 +509,36 @@ export function createPalette({ h, React, TextField }) {
         banner,
         /* 全站最后一个原生表单控件。官方 Input（TextField + InputBase），
            inputRef 透传到底层 <input>，打开面板时自动聚焦、方向键/Esc 照常走 onKeyDown。 */
-        h(TextField, {
-          inputRef,
-          autoFocus: true,
-          'aria-label': '全局搜索',
-          className: 'ds-palette-input',
-          placeholder,
-          value: query,
-          onChange: (event) => setQuery(event.target.value),
-          onKeyDown,
-          'data-palette-input': '1',
-        }),
-        h('div', { className: 'ds-palette-list' },
+        h('div', { className: 'p-3 pb-2' },
+          h(TextField, {
+            inputRef,
+            autoFocus: true,
+            'aria-label': '全局搜索',
+            placeholder,
+            value: query,
+            onChange: (event) => setQuery(event.target.value),
+            onKeyDown,
+            'data-palette-input': '1',
+          }),
+        ),
+        h('div', { className: 'max-h-[min(58vh,440px)] overflow-y-auto p-1', 'data-palette-list': '' },
           list.length === 0
-            ? h('div', { className: 'ds-hint', style: { padding: '12px 12px' } },
+            ? h('div', { className: 'px-3 py-3 text-caption-1-regular text-text-tertiary' },
               flow === null ? '没有匹配的内容' : flow.step === 'expert' ? '没有匹配的专家' : '没有匹配的卡片')
             : list.map((item, index) => h('div', {
               key: item.key,
-              className: 'ds-palette-item',
+              className: 'flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 hover:bg-background-secondary-default data-[active="1"]:bg-background-secondary-default',
               'data-active': index === active ? '1' : '0',
+              'data-palette-item': item.kind,
               onMouseEnter: () => setActive(index),
               onClick: () => pick(item),
             },
-              h('span', { className: 'ds-palette-kind', 'data-kind': item.kind }, KIND_LABEL[item.kind] ?? item.kind),
-              h('span', { className: 'ds-palette-label' }, clip(item.label, 80)),
-              item.hint === '' ? null : h('span', { className: 'ds-palette-hint' }, clip((item.kind === 'action' && query === '' && recents.includes(item.id) ? '最近用过 · ' : '') + item.hint, 40)),
+              h('span', { className: 'w-[52px] shrink-0 truncate text-caption-1-medium text-text-tertiary', 'data-kind': item.kind }, KIND_LABEL[item.kind] ?? item.kind),
+              h('span', { className: 'min-w-0 flex-1 truncate text-body-2-medium text-text-primary' }, clip(item.label, 80)),
+              item.hint === '' ? null : h('span', { className: 'max-w-[42%] truncate text-caption-1-regular text-text-tertiary' }, clip((item.kind === 'action' && query === '' && recents.includes(item.id) ? '最近用过 · ' : '') + item.hint, 40)),
               item.shortcut === undefined || item.shortcut === null
                 ? null
-                : h('span', { className: 'ds-palette-key', title: '全局快捷键' }, item.shortcut),
+                : h('span', { className: 'shrink-0 rounded border border-separator-border px-1 text-caption-2-regular tabular-nums text-text-tertiary', title: '全局快捷键' }, item.shortcut),
             )),
         ),
       ),
