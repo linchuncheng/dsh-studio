@@ -1,6 +1,32 @@
 # 更新日志
 
 
+## [0.9.75] — 2026-11-23
+
+### 界面全部转 BoardUI（收官：代码里的手写类 3364 → 188）
+
+| 批次 | 范围 | 手写类 |
+| --- | --- | --- |
+| 0.9.73 | 项目页（样板） | `.ds-proj-*` 清零 |
+| 0.9.74 | 抽屉 / 五个页面 / 看板与周边 / 四个设置面板 / 设置页外壳 | 3364 → 856 |
+| 0.9.75 | `client.src.js`：顶栏、页签、看板页外壳、三个内联设置面板、新建任务与登记缺陷对话框、市场页、登录卡、轻提示 | **代码段 222 → 23**，全仓 856 → **188** |
+
+`client.src.js` 顺带瘦身：2247 → 2096 行，CSS 段 41.6k → 29.1k 字符；新增两个模块
+`web/src/studio/panels/settings-panes.js`（看板外观 / 角色与模型 / 自动派单）与
+`web/src/studio/dialogs/new-task.js`。
+
+### 顺带修的真 bug
+
+`installBoardWheel` 的列容器选择器还是 `.ds-col-body`——第一批迁移后这个类已不存在，
+分支永远命中 null，「列内可滚时别抢横向滚轮」早就失效了。改成 `[data-board-column-body]` 恢复。
+
+### 仍然保留的 `.ds-*`（有意为之）
+
+- `ds-md*`：Markdown 排版作用域，BoardUI 没有等价物
+- `ds-drawer-wrap` / `ds-modal-wrap` / `ds-side-wrap` / `ds-side-mask`：`tests/overlay-titlebar.test.mjs` 断言必须存在（issue #4 的守门）
+- `ds-card` / `ds-col` / `ds-count` / `ds-board` 等：部分探针锚点与看板样式兜底
+- 19 条无引用规则（`ds-ok` / `ds-an-grid` / `ds-grid2/4` 等）：多选择器或 `[dark]` 组合，连同 `main.jsx` 的四条 legacy 桥一起留待下一轮清理
+
 ## [0.9.74] — 2026-11-23
 
 ### 界面全部转 BoardUI（第一批大会战：3364 → 856 处手写类）
