@@ -125,6 +125,12 @@ if (wantProbes) {
       problems.push('--probes 现在还会跑用例库探针，需要 STUDIO_BASE（例：STUDIO_BASE=http://192.168.120.218:18080），不猜默认地址免得打到别的机器上')
     }
     const probes = ['tools/visual/pages-probe.mjs', 'tools/visual/toast-probe.mjs', 'tools/visual/drawer-probe.mjs', 'tools/visual/cases-probe.mjs', 'tools/visual/a11y-probe.mjs', 'tools/visual/empty-state-probe.mjs']
+    /* 真机功能巡检。2026-11-23 的教训：假宿主夹具数据太简单，
+       「设置页四个面板 PANE is not defined」这种崩只有真数据才暴露，
+       而它一路过了 npm test、verify:pages，发到目标机才被 verify:sweep 抓到。
+       所以发版前固定跑这几支（都要 STUDIO_TOKEN，缺失时本函数已经提前拒了）。 */
+    const realHostProbes = ['tools/visual/smoke.mjs', 'tools/visual/sweep.mjs']
+    probes.push(...realHostProbes)
     for (const probe of probes) {
       try {
         const out = execFileSync(process.execPath, [probe], { encoding: 'utf8', env: process.env })

@@ -96,7 +96,7 @@ export function Input({
       isRequired={required === true}
       aria-label={fieldLabel(rest)}
     >
-      <BoarduiInputBase ref={inputRef} {...rest} />
+      <BoarduiInputBase ref={inputRef} {...rest} aria-label={fieldLabel(rest)} />
     </BoarduiField>
   );
 }
@@ -127,7 +127,7 @@ export function Textarea({
       isRequired={required === true}
       aria-label={fieldLabel(rest)}
     >
-      <BoarduiTextareaBase rows={rowCount} {...rest} />
+      <BoarduiTextareaBase rows={rowCount} {...rest} aria-label={fieldLabel(rest)} />
     </BoarduiField>
   );
 }

@@ -1165,7 +1165,7 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
     const KB_TAG_SKIP = { INPUT: 1, TEXTAREA: 1, SELECT: 1, BUTTON: 1, A: 1, OPTION: 1 }
     // 只有「长得像可点东西」的节点才值得量一次 cursor：全量 getComputedStyle 会强制样式重算，
     // 275 个节点就要 600ms 以上（需求页切换时实测 685ms 长任务）。
-    const KB_CANDIDATE = '[data-on],[data-role],[role="button"],[tabindex],[class*="ds-"]'
+    const KB_CANDIDATE = '[data-on],[data-role],[role="button"],[tabindex]'
     // 读：只量 cursor，绝不改 DOM。批量调用时不会引发「读→写→读」的强制同步布局。
     function kbClickable(el) {
       if (el === null || el.nodeType !== 1) return false
