@@ -2396,3 +2396,50 @@ html body [data-dsh-studio] .ds-kpi { border-radius: 12px; }
   min-width: 160px;
   max-width: none;
 }
+
+/* ========================================================================
+ * 项目页：迭代进度
+ * 以前只数「有几个迭代」，首屏 900px 里 370px 是空的；现在每个迭代一行
+ * （名字 · 进度条 · 完成/总数），另外补了「近 7 天 新增/完成」。
+ * ======================================================================== */
+[data-dsh-studio] .ds-proj-iters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+
+[data-dsh-studio] .ds-proj-iter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px auto;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--ds-muted, var(--muted-foreground));
+}
+
+[data-dsh-studio] .ds-proj-iter-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--foreground);
+}
+
+[data-dsh-studio] .ds-proj-iter-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--muted);
+  overflow: hidden;
+}
+
+[data-dsh-studio] .ds-proj-iter-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+  opacity: .55;
+}
+
+[data-dsh-studio] .ds-proj-iter-bar > span[data-full="1"] { opacity: 1; }
+
+[data-dsh-studio] .ds-proj-iter-num { font-variant-numeric: tabular-nums; white-space: nowrap; }

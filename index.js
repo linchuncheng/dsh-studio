@@ -34,6 +34,7 @@ import { mirrorCards } from './src/host/bitable.js'
 import { bugSeverityFor } from './src/host/bugs.js'
 import { automationRate } from './src/host/intervention.js'
 import { dispatchWeekly, gateFirstPass, requirementDelivery } from './src/host/delivery.js'
+import { coverageStrength } from './src/host/case-strength.js'
 import { createIdempotencyGate, findIdempotent, normalizeIdempotencyKey, rememberIdempotent, IDEMPOTENCY_SIDE_KEY } from './src/host/idempotency.js'
 
 /* 同一个 Idempotency-Key 的并发闸：执行前先占住，后来的挡回（issue #18）。 */
@@ -467,6 +468,7 @@ function projectMetrics(tasks, now) {
   let cycleSum = 0
   let cycleCount = 0
   let throughput = 0
+  let created = 0
   let codingTasks = 0
   let filesChanged = 0
   let testsTotal = 0
@@ -477,6 +479,7 @@ function projectMetrics(tasks, now) {
   for (const task of tasks) {
     if (byStatus[task.status] !== undefined) byStatus[task.status] += 1
     if (task.blocked !== null && task.blocked !== undefined) blocked += 1
+    if (task.createdAt > now - week) created += 1
     if (task.dueAt > 0 && task.dueAt < now && task.status !== 'done') overdue += 1
     if (task.type === 'bug' && task.status !== 'done') bugs += 1
     if (task.status === 'done') {
@@ -513,6 +516,7 @@ function projectMetrics(tasks, now) {
     avgCycleMs: cycleCount > 0 ? Math.round(cycleSum / cycleCount) : 0,
     cycleDays: cycleCount > 0 ? Math.round((cycleSum / cycleCount / DAY) * 10) / 10 : 0,
     throughput7d: throughput,
+    created7d: created,
     coding: { tasks: codingTasks, files: filesChanged, tests: testsTotal, testsPassed, reviewed, merged },
   }
 }
@@ -527,7 +531,15 @@ function buildMetrics(state) {
       name: project.name,
       key: project.key,
       status: project.status,
-      iterations: project.iterations,
+      iterations: (project.iterations ?? []).map(iteration => {
+        const inIteration = state.tasks.filter(task => task.project === project.id && task.iteration === iteration.id)
+        return {
+          ...iteration,
+          total: inIteration.length,
+          done: inIteration.filter(task => task.status === 'done').length,
+          blocked: inIteration.filter(task => task.blocked !== null && task.blocked !== undefined).length,
+        }
+      }),
       metrics: projectMetrics(tasks, now),
     }
   })
@@ -725,6 +737,9 @@ function buildAnalytics(state, options = {}) {
       (state.requirements ?? []).filter(item => ['delivered', 'closed'].includes(String(item.status ?? ''))).map(item => item.id),
       state.config,
     ),
+    // 用例覆盖强度（产品定义第 8 条）：带可执行断言的用例 ÷ 全部。
+    // 口径只在 src/host/case-strength.js 里定义一份，这里不另算。
+    cases: coverageStrength(inScope.flatMap(task => Array.isArray(task.cases) ? task.cases : [])),
     cycle: {
       count: cycleValues.length,
       avgDays: cycleValues.length > 0 ? cycleValues.reduce((sum, value) => sum + value, 0) / cycleValues.length / DAY : 0,

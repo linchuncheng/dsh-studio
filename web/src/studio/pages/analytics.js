@@ -215,16 +215,30 @@ export function AnalyticsPage({ state, onOpenTask, onFixPrices }) {
     ),
     h('div', { className: 'ds-an-sec' },
       '质量',
-      h('span', { className: 'ds-hint' }, '先看这四个数：返工多不多、多久能做完、AI 交的东西有多少被人验收'),
+      h('span', { className: 'ds-hint' }, '产品定义第 4 节那五条可断言的指标：门禁一次通过率、自动化率、需求交付时长、用例覆盖强度、派单周活'),
     ),
+    h('div', { className: 'ds-kpi-grid' },
+      kpi('门禁一次通过率', gate.rate === null ? '—' : pct(gate.rate), gate.cards === 0 ? '还没有走到验收的卡' : `${gate.firstPass}/${gate.cards} 张第一次进待验收就完成 · 目标 40–70%`, gate.rate !== null && (gate.rate < 0.3 || gate.rate > 0.9)),
+      kpi('自动化率', au.rate === null ? '—' : pct(au.rate), au.rate === null ? '还没有已交付的需求' : `零人工介入 ${au.untouched}/${au.delivered} 条已交付需求`),
+      kpi('需求交付时长', delivery.medianDays === null ? '—' : fmtSpan(delivery.medianDays), delivery.count === 0 ? '还没有签过字的需求' : `中位 ${delivery.count} 条需求 · 创建到签字`),
+      (() => {
+        const cases = data.cases ?? { total: 0, executable: 0, rate: null }
+        const rate = cases.rate
+        return kpi('用例可执行覆盖', rate === null ? '—' : pct(rate), cases.total === 0 ? '还没有用例' : `${cases.executable}/${cases.total} 条带可执行断言 · 目标 ≥60%`, rate !== null && rate < 0.6)
+      })(),
+      (() => {
+        const weeks = data.dispatch?.weeks ?? []
+        const thisWeek = weeks.length > 0 ? (weeks[weeks.length - 1].cards ?? 0) : 0
+        const avg = weeks.length > 0 ? Math.round(weeks.reduce((sum, item) => sum + (item.cards ?? 0), 0) / weeks.length) : 0
+        return kpi('派单周活', weeks.length === 0 ? '—' : String(thisWeek), weeks.length === 0 ? '还没有派单记录' : `本周有 AI 评论的卡 · 近 ${weeks.length} 周平均 ${avg}（目标 ≥15）`, weeks.length > 0 && thisWeek < 15)
+      })(),
+    ),
+    h('div', { className: 'ds-an-sec', style: { marginTop: 16 } }, h('span', {}, '其它读数（不进门槛，供参考）')),
     h('div', { className: 'ds-kpi-grid' },
       kpi('一次通过率', pct(data.rework.firstPassRate), '完成的卡里，从没被退回过的比例', data.rework.firstPassRate < 0.6),
       kpi('返工率', pct(data.rework.rate), `${data.rework.reworked}/${data.rework.moved} 张卡倒退过`, data.rework.rate > 0.3),
       kpi('中位周期', fmtSpan(data.cycle.medianDays), `平均 ${fmtSpan(data.cycle.avgDays)} · P90 ${fmtSpan(data.cycle.p90Days)}`),
       kpi('AI 交付物采纳率', pct(data.ai.acceptedRate), `${data.ai.accepted}/${data.ai.artifactsAi} 件已被验收 · 占全部交付物 ${pct(data.ai.aiShare)}`),
-      kpi('自动化率', au.rate === null ? '—' : pct(au.rate), au.rate === null ? '还没有已交付的需求' : `零人工介入 ${au.untouched}/${au.delivered} 条已交付需求`),
-      kpi('门禁一次通过率', gate.rate === null ? '—' : pct(gate.rate), gate.cards === 0 ? '还没有走到验收的卡' : `${gate.firstPass}/${gate.cards} 张第一次进待验收就完成`, gate.rate !== null && gate.rate < 0.3),
-      kpi('需求交付时长', delivery.medianDays === null ? '—' : fmtSpan(delivery.medianDays), delivery.count === 0 ? '还没有签过字的需求' : `中位 ${delivery.count} 条需求 · 创建到签字`),
     ),
     h('div', { className: 'ds-panel', style: { marginTop: 12 } },
       h('div', { className: 'ds-panel-head' },
