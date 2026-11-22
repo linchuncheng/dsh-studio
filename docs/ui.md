@@ -1,11 +1,14 @@
 # 界面：样式与构建链
 - **全面转 BoardUI**（2026-11-23）：基线定为 BoardUI（`web/src/components/base/**` + `web/src/boardui/**`），
-  手写 `.ds-*` 逐块迁完即删。第一块是项目页（`web/src/studio/pages/projects.js`）：卡片表面用
-  `rounded-xl + border-separator-border + bg-background-primary-default`，数字用 `text-title-2-semibold`，
-  进度条用 `ProgressTrack`，空态用 `boardui/empty-state`，动作按钮用 `boardui/index` 的 Button；
-  **对应的 10 条 `.ds-proj-*` 规则与 `index.css` 里 24 处引用一起删掉**。
-  迁移时同步改探针判据：页面元素用 `data-*` 钩子（`data-project-card` / `data-projects-page`）定位，
-  不拿样式类名当判据（`tools/visual/pages-probe.mjs`）。
+  手写 `.ds-*` 逐块迁完即删，不再反向映射。
+- **第一批大会战完成**（0.9.74）：抽屉（495→0）、五个页面（804→0）、看板与周边（104→0）、
+  四个设置面板（751→0）、设置页外壳。全仓手写类 3364 → 856，剩余集中在 `client.src.js`
+  （顶栏 / 页签 / 看板外壳 + 14 个仍内联的设置面板）。
+  探针判据同步改成 `data-*` 钩子（类名是样式实现，不该当判据）；新增 `tools/ui/prune-ds-css.mjs`
+  （带 `NEVER_DELETE` 白名单）负责「迁一块删一块」。
+  `ds-md*` 必须保留：Markdown 排版作用域还没有 BoardUI 等价物。
+  项目页是这套写法的样板：卡片 `rounded-xl + border-separator-border + bg-background-primary-default`、
+  数字 `text-title-2-semibold`、进度条 `ProgressTrack`、空态 `boardui/empty-state`、动作 `boardui/index` 的 Button。
 - **shadcn 全部退场**（2026-11-20）：`components/ui.jsx` 删除，`studio-ui.jsx` 的五个再导出改走 BoardUI，
   `login-gate.jsx` 的 Card/Tabs/Label/Button 换成 BoardUI（PillTab 切登录方式）。同时删掉 10 个无引用的
   `@radix-ui/*`。产物 1,453 → 1,368 kB，构建守卫的 Radix 门户计数 2 → 0。
