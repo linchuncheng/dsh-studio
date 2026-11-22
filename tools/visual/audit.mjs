@@ -132,7 +132,7 @@ await openDrawer('抽屉/新建需求', async () => {
 })
 await openDrawer('抽屉/卡片详情', async () => {
   await clickTab('看板')
-  await page.evaluate(() => document.querySelector('[data-dsh-studio] .ds-card')?.click())
+  await page.evaluate(() => document.querySelector('[data-dsh-studio] [data-kanban-card]')?.click())
 })
 await openDrawer('抽屉/新增专家', async () => {
   await clickTab('设置')

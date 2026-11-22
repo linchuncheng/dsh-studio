@@ -148,7 +148,7 @@ try {
     if (((await tab.evaluate(node => node.textContent)) || '').trim() === '看板') { await tab.click(); break }
   }
   await sleep(1200)
-  await page.evaluate(() => { const card = document.querySelector('[data-dsh-studio] .ds-card'); if (card !== null) card.click() })
+  await page.evaluate(() => { const card = document.querySelector('[data-dsh-studio] [data-kanban-card]'); if (card !== null) card.click() })
   await sleep(1200)
   const drawerNodes = await axSnapshot()
   const drawerDialog = drawerNodes.find(node => !node.ignored && (node.role === 'dialog' || node.role === 'alertdialog'))

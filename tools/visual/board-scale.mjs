@@ -180,7 +180,7 @@ try {
     if (label === '看板') { await tab.click(); break }
   }
   try {
-    await page.waitForSelector('[data-dsh-studio] .ds-card', { timeout: 45000 })
+    await page.waitForSelector('[data-dsh-studio] [data-kanban-card]', { timeout: 45000 })
   } catch (cause) {
     // 挂不上时先看页面自己说了什么（AGENTS §4：「找不到元素」先截图再说）
     const dump = await page.evaluate(() => ({
@@ -199,7 +199,7 @@ try {
 
   const mounted = await page.evaluate(() => ({
     error: window.__HARNESS_ERROR__ ?? null,
-    cards: document.querySelectorAll('.ds-card').length,
+    cards: document.querySelectorAll('[data-kanban-card]').length,
     columns: document.querySelectorAll('[data-col]').length,
     moreButtons: [...document.querySelectorAll('[data-col] button')].filter(node => (node.textContent || '').startsWith('显示更多')).length,
     text: document.body.innerText.includes('渲染失败'),
@@ -225,7 +225,7 @@ try {
       button?.click()
     })
     await new Promise(resolve => setTimeout(resolve, 400))
-    after = await page.evaluate(() => document.querySelectorAll('.ds-card').length)
+    after = await page.evaluate(() => document.querySelectorAll('[data-kanban-card]').length)
     check('点「显示更多」只多渲染 ' + COLUMN_PAGE + ' 张', after === before + COLUMN_PAGE, before + ' → ' + after)
   }
 

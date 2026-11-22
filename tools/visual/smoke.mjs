@@ -80,7 +80,7 @@ try {
     if ((((await tab.evaluate(n => n.textContent)) || '').trim()) === '看板') { await tab.click(); break }
   }
   await sleep(1500)
-  const cards = await page.$$eval('[data-dsh-studio] .ds-card', nodes => nodes.length)
+  const cards = await page.$$eval('[data-dsh-studio] [data-kanban-card]', nodes => nodes.length)
   check('看板有卡', cards > 0, `${cards} 张`)
 
   for (const tab of await page.$$('[data-dsh-studio] .ds-head-tabs button')) {

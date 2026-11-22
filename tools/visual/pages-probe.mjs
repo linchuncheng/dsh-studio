@@ -127,7 +127,7 @@ const AX_ROLES = new Set(['button','link','checkbox','radio','switch','textbox',
 // 第三项是「必须真的存在」的组件标记（用来盯住新换的 BoardUI 组件，别被别的选择器蒙混）
 const PAGES = [
   ['工作台', '[data-insights-page], [data-stat-section], [data-regression-banner], [data-empty-state]', ''],
-  ['看板', '.ds-col .ds-card, .ds-col', ''],
+  ['看板', '[data-board-column] [data-kanban-card], [data-board-column]', ''],
   ['需求', '[data-requirements-page], [data-requirement-row], [data-requirement-desc], [data-empty-state]', ''],
   ['用例', '.ds-panel, [data-empty-state], [data-task-row]', ''],
   ['版本', '.ds-panel, [data-empty-state], [data-task-row]', ''],
@@ -192,7 +192,7 @@ try {
   // 卡片抽屉：dialog 要有名字，里面的交互节点也要有名字（键盘/读屏都能用）
   await page.evaluate(() => { const tab = [...document.querySelectorAll('[data-dsh-studio] .ds-head-tabs [role="tab"]')].find(n => (n.textContent || '').trim() === '看板'); if (tab) tab.click() })
   await sleep(900)
-  await page.evaluate(() => { const card = document.querySelector('[data-dsh-studio] .ds-card'); if (card) card.click() })
+  await page.evaluate(() => { const card = document.querySelector('[data-dsh-studio] [data-kanban-card]'); if (card) card.click() })
   await sleep(1200)
   const drawerAx = await axSession.send('Accessibility.getFullAXTree')
   const dialogs = drawerAx.nodes.filter(node => !node.ignored && (node.role?.value === 'dialog' || node.role?.value === 'alertdialog'))

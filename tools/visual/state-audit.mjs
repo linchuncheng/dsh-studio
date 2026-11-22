@@ -242,18 +242,18 @@ try {
     rows.push({ name: 'disabled', ...(disabled ?? {}) })
     // 悬停
     const hover = await page.evaluate(() => {
-      const card = document.querySelector('[data-dsh-studio] .ds-card')
+      const card = document.querySelector('[data-dsh-studio] [data-kanban-card]')
       if (card === null) return null
       return { before: getComputedStyle(card).boxShadow }
     })
     const cardBox = await page.evaluate(() => {
-      const card = document.querySelector('[data-dsh-studio] .ds-card')
+      const card = document.querySelector('[data-dsh-studio] [data-kanban-card]')
       if (card === null) return null
       const r = card.getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }
     })
     if (cardBox !== null) {
       await page.mouse.move(cardBox.x, cardBox.y); await sleep(300)
-      const after = await page.evaluate(() => getComputedStyle(document.querySelector('[data-dsh-studio] .ds-card')).boxShadow)
+      const after = await page.evaluate(() => getComputedStyle(document.querySelector('[data-dsh-studio] [data-kanban-card]')).boxShadow)
       console.log(`· 悬停         shadow ${hover.before === after ? '没有变化（⚠）' : '有变化'}`)
       rows.push({ name: 'hover', changed: hover.before !== after })
       // 拖拽：按下 → 移动 → 看 data-dragging，然后松开

@@ -129,12 +129,12 @@ try {
     }
     return false
   }
-  const cardTitles = () => page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] .ds-card')]
+  const cardTitles = () => page.evaluate(() => [...document.querySelectorAll('[data-dsh-studio] [data-kanban-card]')]
     .map(node => (node.textContent || '').trim()))
-  const columnCount = () => page.evaluate(() => document.querySelectorAll('[data-dsh-studio] .ds-col').length)
+  const columnCount = () => page.evaluate(() => document.querySelectorAll('[data-dsh-studio] [data-board-column]').length)
 
   check('切到看板', await clickTab('看板'))
-  await page.waitForSelector('[data-dsh-studio] .ds-card', { timeout: 30000 })
+  await page.waitForSelector('[data-dsh-studio] [data-kanban-card]', { timeout: 30000 })
   const before = await cardTitles()
   check('两张卡都渲染出来了', before.length === 2, `${before.length} 张`)
   check('看板有 8 列（默认不隐藏空列）', (await columnCount()) === 8, String(await columnCount()))
@@ -203,7 +203,7 @@ try {
 
   // ---- 3) 下拉：BoardUI 的 Select（触发按钮 + portal 里的 listbox）
   const triggerOf = label => page.evaluate(sel => {
-    const bar = document.querySelector('[data-dsh-studio] .ds-board-bar')
+    const bar = document.querySelector('[data-dsh-studio] [data-board-toolbar]')
     const button = [...(bar?.querySelectorAll('button') ?? [])].find(node => (node.textContent || '').trim() === sel)
     if (!button) return false
     button.click()
@@ -232,9 +232,9 @@ try {
   })
   await sleep(700)
   const afterSelect = await page.evaluate(() => {
-    const bar = document.querySelector('[data-dsh-studio] .ds-board-bar')
+    const bar = document.querySelector('[data-dsh-studio] [data-board-toolbar]')
     const button = [...(bar?.querySelectorAll('button') ?? [])].find(node => /缺陷/.test(node.textContent || ''))
-    return { trigger: button !== undefined, cards: document.querySelectorAll('[data-dsh-studio] .ds-card').length }
+    return { trigger: button !== undefined, cards: document.querySelectorAll('[data-dsh-studio] [data-kanban-card]').length }
   })
   check('选「缺陷」之后触发按钮跟着变、结果也筛掉了', afterSelect.trigger === true && afterSelect.cards === 0, `${afterSelect.cards} 张卡`)
   await triggerOf('缺陷')
@@ -247,7 +247,7 @@ try {
   check('清回「全部类型」卡片回来', (await cardTitles()).length === 2)
 
   // ---- 4) 多行输入：抽屉里的 textarea
-  await page.evaluate(() => document.querySelector('[data-dsh-studio] .ds-card')?.click())
+  await page.evaluate(() => document.querySelector('[data-dsh-studio] [data-kanban-card]')?.click())
   await page.waitForSelector('[data-dsh-studio] [data-drawer] textarea', { timeout: 30000 })
   const areaShape = await page.evaluate(() => {
     const area = document.querySelector('[data-dsh-studio] [data-drawer] textarea')

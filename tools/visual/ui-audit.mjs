@@ -384,7 +384,7 @@ const COLLECTOR = `(() => {
     return { el: describe(el).slice(0, 46), cols, kids: kids.length, lastRow: kids.length % cols === 0 ? cols : kids.length % cols }
   })
   const clipped = [...root.querySelectorAll('*')].filter(el => visible(el) && el.scrollWidth > el.clientWidth + 2 && el.clientWidth > 0).slice(0, 20).map(el => describe(el) + ' ' + el.clientWidth + '→' + el.scrollWidth)
-  const cols = [...root.querySelectorAll('.ds-col')].filter(visible).map(el => Math.round(rectOf(el).width))
+  const cols = [...root.querySelectorAll('[data-board-column]')].filter(visible).map(el => Math.round(rectOf(el).width))
   result.geometry = {
     viewport: [window.innerWidth, window.innerHeight],
     main: { left: Math.round(mainRect.left), width: Math.round(mainRect.width), padLeft: getComputedStyle(main).paddingLeft, padRight: getComputedStyle(main).paddingRight },
@@ -498,7 +498,7 @@ try {
   await clickBy('看板')
   await new Promise(resolve => setTimeout(resolve, 700))
   const opened = await page.evaluate(() => {
-    const card = [...document.querySelectorAll('.ds-card')].find(node => String(node.textContent ?? '').includes('演示·抵扣用例验证')) ?? document.querySelector('.ds-card')
+    const card = [...document.querySelectorAll('[data-kanban-card]')].find(node => String(node.textContent ?? '').includes('演示·抵扣用例验证')) ?? document.querySelector('[data-kanban-card]')
     if (card === undefined || card === null) return false
     card.click()
     return true

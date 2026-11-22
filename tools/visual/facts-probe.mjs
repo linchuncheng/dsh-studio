@@ -155,8 +155,8 @@ try {
 
   // ---- 1) 抽屉里的 GitLab 核对结果
   check('切到看板', await clickTab('看板'))
-  await page.waitForSelector('[data-dsh-studio] .ds-card', { timeout: 30000 })
-  await page.evaluate(() => document.querySelector('[data-dsh-studio] .ds-card')?.click())
+  await page.waitForSelector('[data-dsh-studio] [data-kanban-card]', { timeout: 30000 })
+  await page.evaluate(() => document.querySelector('[data-dsh-studio] [data-kanban-card]')?.click())
   await page.waitForSelector('[data-gitlab-facts]', { timeout: 30000 }).catch(async error => {
     const dump = await page.evaluate(() => ({
       drawer: document.querySelector('[data-drawer]') !== null,
