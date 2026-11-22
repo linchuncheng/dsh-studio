@@ -43,7 +43,8 @@ export async function publishNoteMentions(deps, options = {}) {
   let commented = false
   if (shouldComment && typeof commentTask === 'function') {
     try {
-      await commentTask(store, taskId, `**评审意见（${by}）**\n\n${note}`, by, 'human')
+      const label = String(options.label ?? '评审意见')
+      await commentTask(store, taskId, `**${label}（${by}）**\n\n${note}`, by, 'human')
       commented = true
     } catch { /* 留言失败不影响评审结论本身 */ }
   }

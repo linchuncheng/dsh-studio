@@ -103,7 +103,7 @@ if (method === 'POST' && route === '/task/coding') {
   /* 评审备注里的 @ 以前不生效（只有评论才解析）：评审不通过时写「@开发工程师 这里要改」
      对方根本收不到。现在把备注补成评论并逐个派单。 */
   const noteOut = action === 'review'
-    ? await publishNoteMentions({ store, commentTask: host.commentTask, dispatcher: host.getDispatcher(), parseMentions }, { taskId: id, note: String(body.note ?? ''), by })
+    ? await publishNoteMentions({ store, commentTask: host.commentTask, dispatcher: host.getDispatcher(), parseMentions }, { taskId: id, note: String(body.note ?? ''), by, label: '代码评审' })
     : { mentions: [], dispatched: [], commented: false }
   host.sendJson(res, 200, { ok: true, task, ...noteOut, state: host.publicState(store) })
   return true

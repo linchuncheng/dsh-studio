@@ -107,3 +107,15 @@ test('publishNoteMentions：commentMode=mentions 时，没 @ 就不补评论（�
   assert.equal(withMention.commented, true, '真 @ 了人才补评论')
   assert.deepEqual(withMention.mentions.map(m => m.name), ['开发工程师'])
 })
+
+test('publishNoteMentions：评论标题用调用方给的 label（签字不该被标成「评审意见」）', async () => {
+  const bodies = []
+  await publishNoteMentions({
+    store: makeStore(),
+    commentTask: async (store, id, body) => { bodies.push(body) },
+    dispatcher: { dispatchMention: async () => {} },
+    parseMentions,
+  }, { taskId: 't-1', note: '@开发工程师 跟进', by: '张三', label: '验收签字' })
+  assert.match(bodies[0], /验收签字（张三）/, '标题要跟着来源走')
+  assert.equal(/评审意见/.test(bodies[0]), false)
+})
