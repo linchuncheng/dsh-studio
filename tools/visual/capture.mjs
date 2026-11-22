@@ -178,6 +178,7 @@ try {
   await page.setViewport({ width: 1600, height: 1000, deviceScaleFactor: 1 })
   const errors = []
   page.on('pageerror', error => errors.push(String(error?.message ?? error)))
+  page.on('console', message => { const text = message.text(); if (message.type() === 'error' && !/favicon|404 (Not Found)/.test(text)) errors.push('console: ' + text.slice(0, 200)) })
 
   const harnessUrl = `http://127.0.0.1:${server.address().port}`
   await page.goto(harnessUrl, { waitUntil: 'domcontentloaded' })
