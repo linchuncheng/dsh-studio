@@ -1,6 +1,34 @@
 # 更新日志
 
 
+## [0.9.76] — 2026-11-23
+
+### BoardUI 迁移收尾：CSS 里的手写类 124 → 14
+
+界面迁移（0.9.73–0.9.75）之后还剩一层「收尾债」，这一版清掉：
+
+| 项 | 结果 |
+| --- | --- |
+| 17 个探针脚本的选择器 | `.ds-head-tabs` 等全部换成 `data-*` 钩子，逐文件 `.ds-*` 残留 = 0 |
+| 只为探针存在的锚点类名 | `ds-brand` / `ds-head-tabs` / `ds-board` / `ds-col` / `ds-card` 等从 markup 删除 |
+| 无引用样式 | `client.src.js` −233 行、`web/src/index.css` **−1026 行**（去重后 124 → 14 个类） |
+| `main.jsx` 的 legacy 桥 | `ds-btn` / `ds-listrow` / `ds-empty` / `span.ds-chip` 四条运行时翻译桥删除（已无消费者） |
+
+产物同步瘦身：`client.js` 1,391 → **1,324 kB**（gzip 408 → 397 kB）。
+
+**顺带修的两个真 bug**：
+
+1. `installBoardWheel()` 用 `closest('.ds-board')` 找横向滚动容器——锚点类名一删，看板滚轮换列会静默失效；已改 `closest('[data-board]')`
+2. `tools/visual/audit.mjs` 注释写着 `[data-variant]`、代码却在 `classList.contains('ds-btn')`——迁移后永远为 0，属于**假绿**；改成通用的「还有没有 `ds-*`」断言
+
+**清理器重写**：`tools/ui/prune-ds-css.mjs` 改成按规则块删（递归 `@media`、按逗号拆选择器分支、删空 at-rule 级联删），引用面只认字符串字面量里的类名——旧实现把「以前用 `.ds-xxx`」的注释也算引用，死样式永远删不掉。
+
+### 仍然保留的 14 个 `.ds-*`（都有理由）
+
+- Markdown 排版作用域：`ds-md` / `ds-md-bar` / `ds-md-field` / `ds-md-preview`（BoardUI 没有等价物）
+- overflay 测试断言必须存在：`ds-drawer` / `ds-drawer-wrap` / `ds-modal-wrap` / `ds-side*` / `ds-palette-veil`（issue #4 的守门）
+- 仍在渲染且带样式的组件钩子：`ds-dot` / `ds-icon` / `ds-seg-control`
+
 ## [0.9.75] — 2026-11-23
 
 ### 界面全部转 BoardUI（收官：代码里的手写类 3364 → 188）

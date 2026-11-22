@@ -1,6 +1,10 @@
 # 界面：样式与构建链
 - **全面转 BoardUI**（2026-11-23）：基线定为 BoardUI（`web/src/components/base/**` + `web/src/boardui/**`），
   手写 `.ds-*` 逐块迁完即删，不再反向映射。
+- **迁移收尾**（0.9.76）：CSS 里的手写类 124 → **14**（`client.src.js` −233 行、`index.css` −1026 行），
+  `main.jsx` 的四条 legacy 桥删除，产物 1,391 → 1,324 kB。
+  剩余的 14 个：Markdown 排版作用域（`ds-md*`）、overlay 测试断言的覆盖层类、三个仍在渲染的组件钩子
+  （`ds-dot` / `ds-icon` / `ds-seg-control`）。清理器 `tools/ui/prune-ds-css.mjs` 改成按规则块删。
 - **迁移收官**（0.9.75）：`client.src.js` 的顶栏、页签、看板页外壳、三个内联设置面板、
   新建任务对话框、市场页、登录卡全部换 BoardUI；代码段手写类 222 → 23，全仓 3364 → 188。
   新增 `web/src/studio/panels/settings-panes.js` 与 `web/src/studio/dialogs/new-task.js`。
