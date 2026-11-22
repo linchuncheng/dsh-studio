@@ -45,6 +45,7 @@ import { overrideSummary } from './src/host/override.js'
 import { toolAccessTable, toolLevel } from './src/host/tool-access.js'
 import { isStudioProfile } from './src/host/profile-detect.js'
 import { isStalled } from './src/host/dispatch-state.js'
+import { approvalNote, createFeedBuffer, parseStudioSession } from './src/host/agent-feed.js'
 import { sanitizeLimits } from './src/host/limits.js'
 import { attachWebhooks, sanitizeWebhooks } from './src/host/webhooks.js'
 import { updateTaskComment, removeTaskComment } from './src/host/comments.js'
@@ -2588,11 +2589,42 @@ export function apply(ctx) {
     const offStatus = dispatcherCtx.on('agent/status', ({ agent, status }) => {
       if (status === 'idle') dispatcher?.settle(agent.id)
     })
+    /* 派单会话的执行播报：把 session/event 汇成卡上的「执行中」评论（15 秒节流，本轮结束立刻发）。
+       内容是 思考摘要 · 回复正文 · 调了哪些工具 · **本次实际用的模型**——
+       最后一项以前只能靠猜（设置里配 flash，实际请求用了哪个型号只有这里说得清）。 */
+    const feed = createFeedBuffer((sessionId, snapshot) => {
+      if (snapshot === null || snapshot.taskId === '') return
+      const expert = (store.snapshot().config.experts ?? []).find(entry => entry.id === snapshot.expertId)
+      const author = String(expert?.name ?? snapshot.expertId ?? 'AI')
+      void commentTask(store, snapshot.taskId, snapshot.body, author, 'agent').catch(() => {})
+    })
+    const offSessionEvent = dispatcherCtx.on('session/event', (session, event) => {
+      const sessionId = String(session?.id ?? '')
+      const parsed = parseStudioSession(sessionId)
+      if (parsed === null) return
+      try { feed.push(sessionId, event, parsed) } catch { /* 播报失败不能影响会话本身 */ }
+    })
+    const feedTimer = setInterval(() => {
+      try { feed.flushAll(Date.now()) } catch { /* 同上 */ }
+    }, 15000)
+    feedTimer.unref?.()
+    /* 派单会话的提权审批一律自动拒绝并留痕。
+       以前没人盯着审批：架构师会话点了 plugin_manager（要 danger-full-access），
+       approval/asked 之后就永久挂起——界面显示「正在跑」，评论里一片空白，abort 也不解除。 */
+    const offApproval = dispatcherCtx.on('approval/request', async (request, next) => {
+      const parsed = parseStudioSession(String(request?.agent?.id ?? ''))
+      if (parsed === null) return next()
+      void commentTask(store, parsed.taskId, approvalNote(request), '系统', 'agent').catch(() => {})
+      return 'rejected'
+    })
     return () => {
       dispatcher?.stop()
       dispatcher = undefined
       activeDispatcher = undefined
       offStatus?.()
+      offSessionEvent?.()
+      offApproval?.()
+      clearInterval(feedTimer)
     }
   })
 }
