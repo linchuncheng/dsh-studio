@@ -3,6 +3,8 @@ import { readArtifactImage } from '../artifact-image.js'
 import { designPatchFrom } from '../design.js'
 import { rejectUnknownFields } from '../route-contract.js'
 import { resolveRequirement, requirementRefHint, saveTaskDesign } from '../reviews.js'
+import { publishNoteMentions } from '../mention-note.js'
+import { parseMentions } from '../dispatcher.js'
 import { emitEvent } from '../events.js'
 import { collectCases, groupCaseKeys, loadSuites, resolveSuiteKeys, sanitizeSuite, saveSuites, summarizeRun } from '../cases.js'
 import { clearTeamMemory, loadTeamMemory } from '../team-memory.js'
@@ -139,7 +141,12 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
     }
     // 评审/定案逻辑与 studio_task_design 工具共用一份（src/host/reviews.js）
     const design = await saveTaskDesign(store, id, incoming, by)
-    host.sendJson(res, 200, { ok: true, design, state: host.publicState(store) })
+    /* 设计评审备注里的 @ 同样要能叫起人（以前只有评论解析 @）。 */
+    const noteOut = await publishNoteMentions(
+      { store, commentTask: host.commentTask, dispatcher: host.getDispatcher(), parseMentions },
+      { taskId: id, note: String(incoming.note ?? ''), by },
+    )
+    host.sendJson(res, 200, { ok: true, design, ...noteOut, state: host.publicState(store) })
     return true
   }
   if (method === 'POST' && route === '/task/update') {

@@ -2549,6 +2549,8 @@ export function apply(ctx) {
     configureExportRoutes({ sendCsv, requirementProgress, sessions: SESSIONS, sessionKeyFor })
     configureStateRoutes({ publicState, getDispatcher: () => activeDispatcher, sendJson })
     configureCodingRoutes({
+  commentTask,
+  getDispatcher: () => activeDispatcher,
   gitlabRequest,
   gitlabMergeRequestDetail, applyConfig, ensureWorktree, mergeMergeRequest, publicState, publishMergeGate, readJsonBody, removeWorktree, sendJson, serviceOf, upsertById, workProjectOf,
   deleteProjectFolder: (store, projectId) => deleteProjectFolder(store, projectId, larkJson) })
