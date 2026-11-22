@@ -1438,7 +1438,7 @@ function installBoardWheel() {
   if (typeof document === 'undefined') return () => {}
   const handler = event => {
     const target = event.target
-    const board = target instanceof Element ? target.closest('.ds-board') : null
+    const board = target instanceof Element ? target.closest('[data-board]') : null
     if (board === null) return
     if (board.scrollWidth <= board.clientWidth + 1) return
     if (event.shiftKey) return
@@ -1679,10 +1679,8 @@ function installKeyboardActivation() {
     }
 
     /* 顶栏与页签：外观全部由 BoardUI token + Tailwind 工具类负责（4px 档位）。
-       三个旧类名 ds-brand / ds-head-actions / ds-head-tabs **只作探针锚点**保留：
-       tools/visual/pages-probe.mjs 还按它们定位顶栏与页签（800px 换行回归也用它）。
-       新钩子是 data-brand / data-head-actions / data-head-tabs / data-tab；探针改完之后
-       这三个类名可以连同最后一批 legacy 规则一起删。 */
+       定位只认 data-* 钩子（data-brand / data-head-actions / data-head-tabs / data-tab），
+       旧的手写类名已经删掉，探针与 800px 换行回归都按钩子走。 */
     const TOPBAR = 'flex min-h-0 flex-none flex-col gap-3 border-b border-separator-border bg-background-primary-default px-5 pb-2 pt-4 max-[760px]:px-3'
     const TOPBAR_ROW = 'flex flex-wrap items-start gap-4 max-[920px]:gap-2'
     const BRAND = 'flex min-w-0 items-center gap-3 max-[920px]:basis-full'
@@ -1836,14 +1834,14 @@ function installKeyboardActivation() {
         h(ToastHost, null),
         h('div', { className: TOPBAR, 'data-topbar': '' },
           h('div', { className: TOPBAR_ROW },
-            h('div', { className: 'ds-brand ' + BRAND, 'data-brand': '' },
+            h('div', { className: BRAND, 'data-brand': '' },
               h('span', { className: BRAND_MARK, 'aria-hidden': 'true' }, '◈'),
               h('div', { className: 'flex min-w-0 flex-col' },
                 h('div', { className: TOPBAR_TITLE }, state.config.board.title),
                 h('div', { className: TOPBAR_SUB, title: `数据版本 rev ${state.revision}（每次写操作递增）` }, `${state.tasks.length} 张卡 · ${fmtTime(state.updatedAt)} 更新`),
               ),
             ),
-            h('div', { className: 'ds-head-actions ' + TOPBAR_ACTIONS, 'data-head-actions': '' },
+            h('div', { className: TOPBAR_ACTIONS, 'data-head-actions': '' },
               h(RunTray, { state }),
               authUser() === null
                 ? h(ChipField, {
@@ -1939,7 +1937,7 @@ function installKeyboardActivation() {
               ),
             ),
           ),
-          h('div', { className: 'ds-head-tabs ' + HEAD_TABS, 'data-head-tabs': '' },
+          h('div', { className: HEAD_TABS, 'data-head-tabs': '' },
             (() => {
               const Tabs = kit('TabsBar')
               const items = [

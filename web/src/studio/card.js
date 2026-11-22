@@ -5,7 +5,7 @@
  * 标题 text-body-2-semibold，元信息 text-caption-1-regular，状态色全走 token
  * （阻塞/逾期/缺陷 → text-text-error-primary / status-rose-*，不再有 hex）。
  * 拖拽没动：draggable、dataTransfer、onDragStart/onDragEnd 原样保留。
- * `ds-card` 是探针锚点（tools/visual/*.mjs 还按它点开抽屉），等探针换成 data-kanban-card 再删。
+ * 定位只认 data-kanban-card（tools/visual/*.mjs 按它点开抽屉），不再挂手写类名。
  */
 
 import { PRIORITY_LABEL, ROLE_LABEL } from './labels.js'
@@ -22,7 +22,7 @@ function slaText(ms) {
 /* 卡片表面 + 各种状态（紧急 / 正在跑 / 阻塞 / 缺正文）都用 data-* 变体表达，
    这样状态色不再依赖 legacy CSS 里那串 `[data-blocked="1"] { border-color:#e5484d80 }`。 */
 const CARD = [
-  'ds-card flex cursor-pointer flex-col gap-2 rounded-xl border border-separator-border bg-background-primary-default px-3 py-2 shadow-sm',
+  'flex cursor-pointer flex-col gap-2 rounded-xl border border-separator-border bg-background-primary-default px-3 py-2 shadow-sm',
   'transition-[border-color,box-shadow,transform] duration-150 hover:-translate-y-px hover:border-accent-500 hover:shadow-md',
   'data-[dragging="1"]:opacity-60',
   'data-[urgent="1"]:border-l-[3px] data-[urgent="1"]:border-l-status-rose-text',
