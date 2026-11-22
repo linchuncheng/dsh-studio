@@ -248,6 +248,15 @@ export function ColumnsPanel({ state, onChanged }) {
       await onChanged()
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
   }
+  // 用例闸门：代码/测试类的卡一条用例都没有时不许收口（默认开）。存 config.caseGate，服务端 executor.js 用它。
+  const caseGateEnabled = config.caseGate?.enabled !== false
+  const saveCaseGate = async enabled => {
+    setBusy(true); setError(null)
+    try {
+      await api('/config', { caseGate: { ...(config.caseGate ?? {}), enabled } })
+      await onChanged()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } finally { setBusy(false) }
+  }
   const toggleGateColumn = id => {
     const next = gateColumns.includes(id) ? gateColumns.filter(item => item !== id) : [...gateColumns, id]
     void saveDesign({ columns: next })
@@ -303,6 +312,16 @@ export function ColumnsPanel({ state, onChanged }) {
           disabled: busy,
           onClick: () => void saveReview({ columns: reviewColumns.includes(column.id) ? reviewColumns.filter(item => item !== column.id) : [...reviewColumns, column.id] }),
         }, column.label ?? column.id)),
+      ),
+      h('div', { className: 'ds-hint', style: { marginTop: 14 } },
+        '用例闸门：代码/测试类的卡（开发 / 测试 / 缺陷）一条测试用例都没有时，不允许收口（默认开启）。',
+        '关掉意味着这类卡可以零用例直接验收 —— 真机上曾经 20 张到过验收的卡里有 6 张零用例，门禁一次通过率 91%。'),
+      h('div', { className: 'ds-row', style: { gap: 8, flexWrap: 'wrap', marginTop: 6 } },
+        h('button', {
+          className: caseGateEnabled ? 'ds-btn ds-btn-primary' : 'ds-btn',
+          disabled: busy, 'data-case-gate': caseGateEnabled ? 'on' : 'off',
+          onClick: () => void saveCaseGate(!caseGateEnabled),
+        }, caseGateEnabled ? '用例闸门：已开启' : '用例闸门：已关闭'),
       ),
       statuses.map(column => {
         const members = membersOf(column.id)

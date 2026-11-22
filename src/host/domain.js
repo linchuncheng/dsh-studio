@@ -235,6 +235,12 @@ export function defaultConfig() {
     design: { enabled: true, columns: ['dev'] },
     /** 代码评审闸门：进 columns（默认「待测试」）之前 coding.review 必须 approved。**默认开**。 */
     reviewGate: { enabled: true, columns: ['test'] },
+    /**
+     * 用例闸门：代码/测试类的卡（dev / test / bug）**一条测试用例都没有**时，不许收口。
+     * 默认开 —— 真机上 20 张到过验收的卡里有 6 张零用例，门禁对这种情况原本只给 warning，
+     * 于是「门禁一次通过率」91%（>90% 说明这道门没在拦人）。显式 enabled:false 才关。
+     */
+    caseGate: { enabled: true },
     /** 成本闸门：只统计「跑了多少次、花了多少机上时间」，宿主没把 token 用量回传给插件。 */
     costs: { budgetRuns: 500, budgetHours: 80, warnAt: 80 },
     roles: {
@@ -441,6 +447,8 @@ export function mergeConfig(saved) {
     })(),
     // 评审闸门：默认开，只有显式 false 才算关（和 quality.js 的 reviewGate 判据保持一致）。
     reviewGate: sanitizeReviewGate({ ...base.reviewGate, ...(saved.reviewGate !== null && typeof saved.reviewGate === 'object' ? saved.reviewGate : {}) }),
+    // 用例闸门：默认开，只有显式 false 才算关。
+    caseGate: sanitizeCaseGate({ ...base.caseGate, ...(saved.caseGate !== null && typeof saved.caseGate === 'object' ? saved.caseGate : {}) }),
     environments: (() => {
       const list = sanitizeDeployEnvs(saved.environments)
       return list.length > 0 ? list : defaultDeployEnvs()
@@ -459,6 +467,12 @@ export function sanitizeReviewGate(raw) {
     enabled: input.enabled !== false,
     columns: (Array.isArray(input.columns) && input.columns.length > 0 ? input.columns : ['test']).map(String).slice(0, 8),
   }
+}
+
+/** 用例闸门：默认开，只有显式 false 才算关。 */
+export function sanitizeCaseGate(raw) {
+  const input = raw !== null && typeof raw === 'object' ? raw : {}
+  return { enabled: input.enabled !== false }
 }
 
 /** 缺陷 SLA：每个严重级别给一个修复时限（小时）。 */

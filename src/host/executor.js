@@ -740,7 +740,18 @@ export function taskExitGate(state, task) {
   if (task.signoff === undefined || task.signoff === null) blockers.push('还没有验收签字')
   // AI 不能代签：自己验、自己签、自己推到完成，等于验收这一环没人看过。
   else if (isAiSignoff(task.signoff, state.config)) blockers.push(`验收签字是 AI 写的（${task.signoff.by}）：卡准出要人签。让人签一次，或者走 override 写明为什么这次可以例外`)
-  if (cases.length === 0) warnings.push('这张卡没有测试用例，建议至少补一条主流程用例')
+  if (cases.length === 0) {
+    /* 用例闸门（config.caseGate，默认开）：代码/测试类的卡一条用例都没有，就不许收口。
+       以前这里只是 warning —— 真机 20 张到过验收的卡里有 6 张零用例，门禁没拦，
+       于是「门禁一次通过率」91%（产品定义里 >90% 说明这道门太松）。
+       产品/设计/需求卡不适用：它们本来就不该被用例卡住。 */
+    const codeLike = ['dev', 'test', 'bug'].includes(String(task.type ?? ''))
+    if (codeLike && state?.config?.caseGate?.enabled !== false) {
+      blockers.push('这张是代码/测试类卡，但一条测试用例都没有：至少补一条（http / shell / db / 浏览器任一可执行定义）并跑通')
+    } else {
+      warnings.push('这张卡没有测试用例，建议至少补一条主流程用例')
+    }
+  }
   else {
     const pending = cases.filter(item => item.result === 'pending' || item.result === 'skip').length
     if (pending > 0) warnings.push(`${pending} 条用例还没跑`)

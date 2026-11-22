@@ -43,7 +43,8 @@ const card = (overrides = {}) => ({
   service: 'svc-1',
   requirementId: '',
   checklist: [],
-  cases: [],
+  // 一张能过用例闸门的卡：有可执行定义且跑通过（用例闸门默认开，dev 卡零用例会被拦）
+  cases: [{ id: 'c1', title: '冒烟', http: { method: 'GET', url: 'http://127.0.0.1:9/health', expectStatus: 200 }, result: 'pass' }],
   artifacts: [],
   comments: [],
   history: [],
@@ -181,4 +182,32 @@ test('准出：产品卡/设计卡（没有执行记录）不该被代码检查�
   const design = card({ coding: null, type: 'design', role: 'architect' })
   const gate = taskExitGate(state, design)
   assert.ok(!gate.blockers.some(text => text.includes('项目检查')), `没有代码改动的卡不该被拦：${gate.blockers.join('；')}`)
+})
+
+test('准出：代码/测试类卡零用例要拦（用例闸门默认开），产品卡不拦', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-studio-casegate-'))
+  const store = new StudioStore(join(dir, 'state.json'), { dbFile: join(dir, 'state.db'), secrets: new SecretStore(join(dir, '.secrets.json')) })
+  try {
+    await store.ready
+    await store.mutate(state => {
+      state.tasks.push(card({ id: 't-dev', code: 'DEV-010', type: 'dev', cases: [] }))
+      state.tasks.push(card({ id: 't-doc', code: 'REQ-010', type: 'requirement', cases: [] }))
+    })
+    const snapshot = store.snapshot()
+    const devGate = taskExitGate(snapshot, snapshot.tasks.find(item => item.id === 't-dev'))
+    assert.ok(devGate.blockers.some(text => text.includes('一条测试用例都没有')), `dev 卡零用例应该拦：${devGate.blockers.join('；')}`)
+
+    const docGate = taskExitGate(snapshot, snapshot.tasks.find(item => item.id === 't-doc'))
+    assert.equal(docGate.blockers.some(text => text.includes('一条测试用例都没有')), false, '产品/需求卡不该被用例闸门拦')
+
+    // 闸门关掉就退回 warning
+    await store.mutate(state => { state.config.caseGate = { enabled: false } })
+    const off = store.snapshot()
+    const offGate = taskExitGate(off, off.tasks.find(item => item.id === 't-dev'))
+    assert.equal(offGate.blockers.some(text => text.includes('一条测试用例都没有')), false, '关掉闸门后不应再拦')
+    assert.ok(offGate.warnings.some(text => text.includes('没有测试用例')), '关掉闸门仍要给 warning')
+  } finally {
+    store.db?.close?.()
+    rmSync(dir, { recursive: true, force: true })
+  }
 })
