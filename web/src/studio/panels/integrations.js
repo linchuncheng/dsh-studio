@@ -16,7 +16,7 @@ import { client } from '../context.js'
 import { Button } from '../../boardui/index'
 import { EmptyState } from '../../boardui/empty-state'
 
-/* 过渡期的壳：类名留给 pages-probe 的「设置」判据与主会话的壳迁移，
+/* 设置页容器：纯 Tailwind（设置页外壳已迁 BoardUI）。 */
 const PANE = 'flex min-w-0 flex-col gap-3'
 
 const SECTION = 'flex min-w-0 flex-col gap-3 rounded-xl border border-separator-border bg-background-primary-default p-4'
