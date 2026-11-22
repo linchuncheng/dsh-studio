@@ -1263,21 +1263,24 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
 return h('div', { className: PAGE, 'data-requirements-page': '' },
         error !== null ? h('div', { className: 'text-caption-1-regular text-text-error-primary', style: { marginBottom: 12 } }, error) : null,
         formPanel,
+        /* 工具栏是页面级动作，必须放在两列网格之外：
+           以前它和「列表」「明细」一起塞进 grid-cols-[20rem_1fr]（两列三个子元素），
+           结果明细被挤到第一列的 20rem 里，正文预览只有 252px 宽。 */
+        h('div', { className: 'flex flex-wrap items-center gap-2 pb-2' },
+          h('span', { className: HINT }, '新需求从这里开始：'),
+          h(Button, {
+            variant: 'primary', size: 'sm',
+            onClick: () => openNew(),
+          }, '新建需求'),
+        ),
         h('div', { className: 'grid grid-cols-1 items-start gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]' },
-          h('div', { className: 'flex flex-wrap items-center gap-2 pb-2' },
-            h('span', { className: HINT }, '新需求从这里开始：'),
-            h(Button, {
-              variant: 'primary', size: 'sm',
-              onClick: () => openNew(),
-            }, '新建需求'),
-          ),
-          
           h('div', { className: 'flex min-w-0 flex-col gap-2', 'data-requirement-list': '' },
-            h('div', { className: 'flex flex-wrap items-center justify-between gap-2 text-caption-1-regular text-text-tertiary' },
-              h('span', null, `需求 ${visibleRequirements.length}${visibleRequirements.length === requirements.length ? '' : ` / ${requirements.length}`}`),
+            /* 左栏只有 20rem：三件挤一行会折成三行，所以分两行——
+               第一行「计数 + 来源筛选」，第二行搜索独占宽度。内联的 190×28 去掉了。 */
+            h('div', { className: 'flex items-center justify-between gap-2 text-caption-1-regular text-text-tertiary' },
+              h('span', { className: 'shrink-0 tabular-nums' }, `需求 ${visibleRequirements.length}${visibleRequirements.length === requirements.length ? '' : ` / ${requirements.length}`}`),
               h(Button, {
                 variant: 'ghost', size: 'sm',
-                style: { marginLeft: 8 },
                 title: '按来源筛选：全部 / 业务提单 / 内部',
                 onClick: () => {
                   const next = reqSource === 'all' ? 'business' : reqSource === 'business' ? 'internal' : 'all'
@@ -1285,13 +1288,12 @@ return h('div', { className: PAGE, 'data-requirements-page': '' },
                   try { window.localStorage.setItem('dsh-studio:reqsrc', next) } catch { /* 隐私模式写不了 localStorage，不影响本次筛选 */ }
                 },
               }, reqSource === 'all' ? '来源：全部' : reqSource === 'business' ? '来源：业务提单' : '来源：内部'),
-              h(TextField, {
-                style: { marginLeft: 8, width: 190, height: 28 },
-                placeholder: '搜编号 / 标题 / 负责人',
-                value: reqQuery,
-                onChange: event => setReqQuery(event.target.value),
-              }),
             ),
+            h(TextField, {
+              placeholder: '搜编号 / 标题 / 负责人',
+              value: reqQuery,
+              onChange: event => setReqQuery(event.target.value),
+            }),
             visibleRequirements.length === 0
               ? h(EmptyState, {
                 title: requirements.length === 0
