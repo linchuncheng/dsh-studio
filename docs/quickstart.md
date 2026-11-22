@@ -33,6 +33,7 @@ STUDIO_BASE=http://<host>:18080 node tools/verify-gitlab-facts.mjs   # 本机，
 
 ```bash
 DSH_DEPLOY_HOST=<host> DSH_DEPLOY_USER=<user> DSH_DEPLOY_PASSWORD=<pw> node tools/deploy.mjs   # 3) 部署
+#    只传文件不重启：加 --no-restart；key 模式没有 sudo 权限时脚本会以退出码 4 提示你去重启
 ```
 
 它会传 `index.js` + `dist/client.js` + **整个 `src/host`**，先备份旧文件，跑远端 `node --check`，重启 dsh-web，最后打印 `active= / files= / state=`；不是 `active` 就以非零退出。
