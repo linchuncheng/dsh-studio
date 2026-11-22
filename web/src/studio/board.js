@@ -34,7 +34,19 @@ const LABEL_ROW = 'flex cursor-pointer items-center gap-1 text-caption-1-regular
 const LABEL_ROW_WARN = 'flex cursor-pointer items-center gap-1 text-caption-1-regular text-text-error-primary'
 const STAT = 'ml-auto shrink-0 text-caption-1-regular tabular-nums text-text-tertiary'
 
-/** 每列一条角色色条：谁负责这一列一眼看得出来（原先是硬编码 hex，这里全走 token）。 */
+/** 每列一条色条：原先 index.css 按 [data-col] 给 --col-accent 写死 8 个 hex，
+    这里改成 token 工具类，同色系、不写死颜色。认不出列 id 时退回角色色。 */
+const COLUMN_ACCENT = {
+  clarify: 'border-t-2 border-t-zinc-400',
+  design: 'border-t-2 border-t-purple-500',
+  dev_ready: 'border-t-2 border-t-blue-500',
+  dev: 'border-t-2 border-t-cyan-500',
+  review: 'border-t-2 border-t-yellow-500',
+  test: 'border-t-2 border-t-orange-500',
+  accept: 'border-t-2 border-t-emerald-500',
+  done: 'border-t-2 border-t-zinc-600',
+}
+
 const ROLE_ACCENT = {
   product: 'border-t-2 border-t-accent-500',
   architect: 'border-t-2 border-t-purple-500',
@@ -243,7 +255,7 @@ function Board({ state, onOpen, onMove, onWip, onCreate }) {
       columns.map(column => {
         const tasks = byStatus.get(column.id) ?? []
         const owner = ownerLabel(config, config.columns?.[column.id])
-        const roleAccent = ROLE_ACCENT[column.role] ?? ''
+        const roleAccent = COLUMN_ACCENT[column.id] ?? ROLE_ACCENT[column.role] ?? ''
         return h('div', {
           className: `${COLUMN_BASE} ${fitWidth ? COLUMN_FIT : COLUMN_FIXED} ${roleAccent}`.trim(), key: column.id,
           'data-col': column.id, 'data-board-column': column.id, 'data-role': column.role,
