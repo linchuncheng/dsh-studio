@@ -418,7 +418,6 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 [data-dsh-studio][data-theme="dark"] .ds-chip[data-sla="ok"],
 [data-dsh-studio][data-theme="dark"] .ds-ok { color:#6fdca4; }
 [data-dsh-studio][data-theme="dark"] .ds-chip[data-sla="due_soon"],
-[data-dsh-studio][data-theme="dark"] .ds-skilldesc { color:color-mix(in srgb, currentColor 62%, transparent); }
 /* 键盘焦点：所有可聚焦元素统一用主题色描边（原来是浏览器默认蓝，深色下很跳）。 */
 [data-dsh-studio] :focus-visible { outline:2px solid var(--ds-accent); outline-offset:2px; border-radius:10px; }
 [data-dsh-studio] * { box-sizing:border-box; }
@@ -492,14 +491,12 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-check-bar { height:6px; border-radius:999px; background:var(--ds-soft2); overflow:hidden; }
 .ds-check-bar > span { display:block; height:100%; background:var(--ds-accent); transition:width .2s ease; }
 .ds-check-bar[data-full="1"] > span { background:#0f9d58; }
-.ds-check-text { font-size:12px; line-height:1.5; }
 .ds-chip[data-kind="mr"] { color:#8b5cf6; border-color:#8b5cf655; }
 .ds-chip[data-kind="cases"] { color:#e08600; border-color:#e0860055; }
 .ds-chip[data-kind="design"] { color:#0f9d58; border-color:#0f9d5855; }
 .ds-btn-ghost { background:transparent; border-color:transparent; color:inherit; opacity:.45; padding:2px 8px; }
 .ds-btn-ghost:hover { opacity:.9; }
 .ds-chip { border:1px solid var(--ds-line); border-radius:999px; padding:0 8px; line-height:16px; }
-.ds-chip-soft { background: var(--ds-soft2); border-color: transparent; margin-left: 8px; }
 .ds-audit-row { display:grid; grid-template-columns: 64px 88px 120px minmax(0,1fr) 66px; align-items:center; gap:8px;
   padding:8px 0; border-bottom:1px solid var(--ds-line); font-size:12px; }
 .ds-audit-row:last-child { border-bottom:none; }
@@ -531,9 +528,6 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 /* 面板底部小注：贴底，用来把「多高都行」的面板补满，不至于下面留一大片空白 */
 .ds-an-track { height:8px; border-radius:999px; background:var(--ds-soft2); overflow:hidden; }
 .ds-an-fill { height:100%; border-radius:999px; background:var(--ds-accent); }
-.ds-an-kv { display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:4px 0; border-bottom:1px dashed var(--ds-line); font-size:12px; }
-.ds-an-kv:last-child { border-bottom:none; }
-.ds-an-kv b[data-warn="1"] { color:var(--ds-danger-text); }
 .ds-chip[data-role="product"] { color:#2f6feb; border-color:#2f6feb55; }
 .ds-chip[data-role="architect"] { color:#8b5cf6; border-color:#8b5cf655; }
 .ds-chip[data-role="dev"] { color:#0f9d58; border-color:#0f9d5855; }
@@ -566,7 +560,6 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-panel-body.ds-grid4 { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px 16px; align-items:start; }
 @media (max-width: 1080px) { .ds-panel-body.ds-grid4 { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width: 660px) { .ds-panel-body.ds-grid2, .ds-panel-body.ds-grid4 { grid-template-columns:1fr; } }
-.ds-panel-body.ds-grid2 > .ds-span, .ds-panel-body.ds-grid4 > .ds-span { grid-column:1 / -1; }
 .ds-listrow { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:12px 0;
   border-bottom:1px solid var(--ds-line); }
 .ds-listrow:last-child { border-bottom:0; padding-bottom:2px; }
@@ -574,14 +567,10 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 .ds-listrow-main > div:first-child { font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .ds-listrow-actions { display:flex; gap:8px; flex:0 0 auto; align-items:center; }
 /* Edit forms: keep the field grid readable instead of stretching inputs across the pane. */
-.ds-pane-stack { display:flex; flex-direction:column; gap:12px; }
-.ds-pane-stack > .ds-panel { margin-bottom:0; }
-.ds-pane-stack > .ds-form-panel { order:-1; }
 /* Right-side editor drawer: keep the list in view while editing one record. */
 .ds-side-wrap { position:fixed; inset:0; top:max(env(titlebar-area-height, 0px), var(--ds-titlebar-floor, 0px)); z-index:80; display:flex; justify-content:flex-end; -webkit-app-region:no-drag; }
 .ds-side-mask { position:absolute; inset:0; background:rgba(15,18,25,.42); }
 .ds-side { position:relative; display:flex; flex-direction:column; width:min(760px,96vw); height:100%; background:var(--ds-surface); color:inherit; border-left:1px solid var(--ds-line); box-shadow:-18px 0 48px rgba(0,0,0,.18); }
-.ds-side-note { margin-left:auto; }
 @media (max-width:760px) { .ds-side { width:100%; } }
 .ds-form-panel { max-width:880px; }
 .ds-form-panel .ds-panel-body > .ds-row { align-items:flex-start; }
@@ -640,38 +629,14 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
   box-shadow:0 12px 32px rgba(0,0,0,0.18); max-height:260px; display:flex; flex-direction:column;
   overflow:hidden; z-index:60; color:inherit;
 }
-.ds-mention-search { border:0; border-bottom:1px solid var(--ds-line); background:transparent; color:inherit; padding:8px 12px; font:inherit; font-size:13px; outline:none; }
-.ds-mention-item {
   display:flex; align-items:center; gap:8px; width:100%; text-align:left; background:none; border:0;
   padding:8px 12px; font:inherit; font-size:13px; color:inherit; cursor:pointer;
 }
-.ds-mention-item:hover, .ds-mention-item[data-active='1'] { background:color-mix(in srgb, var(--ds-accent) 12%, transparent); }
-.ds-mention-item .ds-hint { margin-left:auto; }
-.ds-mention-empty { padding:12px 12px; font-size:12px; color:color-mix(in srgb, currentColor 55%, transparent); }
-.ds-colrow { border-bottom:1px solid var(--ds-line); padding:12px 0; display:flex; flex-direction:column; gap:8px; }
-.ds-colrow:last-of-type { border-bottom:0; }
-.ds-colrow-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.ds-colrow-name { font-weight:600; font-size:13px; min-width:64px; }
-.ds-chip-owner { display:inline-flex; align-items:center; gap:4px; }
-.ds-chip-x { border:0; background:none; color:inherit; cursor:pointer; opacity:0.55; font-size:13px; line-height:1; padding:0 2px; }
-.ds-chip-x:hover { opacity:1; color:var(--ds-danger-text); }
-.ds-skillbox { display:flex; flex-direction:column; gap:2px; max-height:190px; overflow-y:auto; border:1px solid var(--ds-line); border-radius:10px; padding:8px 8px; background:var(--ds-soft); }
-.ds-skillopt { display:flex; align-items:center; gap:8px; padding:4px 2px; border-radius:10px; cursor:pointer; }
-.ds-skillopt:hover { background:var(--ds-soft2); }
-.ds-skillopt[data-on="1"] { background:color-mix(in srgb, var(--ds-accent) 10%, transparent); }
-.ds-skillname { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; }
-.ds-skilldesc { flex:1 1 auto; min-width:0; color:var(--ds-muted, #6b7280); font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.ds-skillusers { flex:0 0 auto; font-size:11px; opacity:.6; }
 .ds-chip[data-missing="1"] { border-color:color-mix(in srgb, #e5484d 45%, var(--ds-line)); }
-.ds-colpick { border:1px solid var(--ds-line); border-radius:10px; max-height:220px; display:flex; flex-direction:column; overflow:hidden; background:var(--ds-surface); }
-.ds-colpick-list { overflow:auto; padding:4px 0; }
 .ds-sec { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
 .ds-sec:last-child { margin-bottom:0; }
 /* 详情里不要套内层滚动条：外层 .ds-dw-body 已经能滚，再套一层会把内容「截一半」，让人以为丢了数据。 */
-.ds-kv { display:grid; grid-template-columns:92px 1fr; gap:8px 12px; font-size:12px; margin:0; padding:12px 12px;
   border:1px solid var(--ds-line); border-radius:10px; background:var(--ds-soft); }
-.ds-kv dt { opacity:.55; }
-.ds-kv dd { margin:0; word-break:break-all; }
 /* Comment thread: the human's words sit flush left on an accent surface,
    the agent's answer steps in behind a role-coloured rail. */
   padding:8px 0; border-top:1px solid var(--ds-line); }
@@ -760,8 +725,6 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
   .ds-board { gap:12px; padding:12px 12px 12px; }
   .ds-col { flex:0 0 min(86vw,300px); }
   .ds-panel-body { padding:12px; }
-  .ds-kv { grid-template-columns:1fr; gap:2px 0; }
-  .ds-kv dt { margin-top:8px; }
   .ds-audit-row { grid-template-columns:56px 1fr 56px; }
 }
 @media (max-width:520px) {
