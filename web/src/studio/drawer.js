@@ -1072,7 +1072,7 @@ function Drawer({ task, state, onClose, onChanged }) {
         h('div', { className: LABEL }, '需求 / 背景 / 验收标准'),
         String(draft.requirement ?? '').trim() === ''
           ? null
-          : h('div', { className: 'ds-md min-h-[84px] overflow-auto rounded-xl border border-separator-border bg-background-primary-default px-3 py-2', 'data-task-md': '1', style: { maxHeight: 220 } }, renderMarkdown(draft.requirement)),
+          : h('div', { className: 'md-content min-h-[84px] overflow-auto rounded-xl border border-separator-border bg-background-primary-default px-3 py-2', 'data-task-md': '1', style: { maxHeight: 220 } }, renderMarkdown(draft.requirement)),
         h(MdField, {
           rows: String(draft.requirement ?? '').trim() === '' ? 4 : 8,
           value: draft.requirement,
@@ -1616,7 +1616,7 @@ function Drawer({ task, state, onClose, onChanged }) {
               h(Button, { variant: 'ghost', size: 'sm', disabled: busy, 'aria-label': '删除这条交付物', onClick: () => void removeArtifact(item) }, '×'),
             ),
             artRead === item.id
-              ? h('div', { className: 'ds-md overflow-auto rounded-xl border border-separator-border bg-background-primary-default px-3 py-2', style: { maxHeight: 360 } }, artBodies[item.id] === undefined && artifactHasBody(item)
+              ? h('div', { className: 'md-content overflow-auto rounded-xl border border-separator-border bg-background-primary-default px-3 py-2', style: { maxHeight: 360 } }, artBodies[item.id] === undefined && artifactHasBody(item)
                 ? h('span', { className: HINT }, '读取中…')
                 : artifactBody(item).trim() === ''
                   ? h('span', { className: HINT }, '这条交付物还没有正文。')
@@ -1911,7 +1911,7 @@ function Drawer({ task, state, onClose, onChanged }) {
                     h('span', { className: 'ml-auto text-caption-1-regular text-text-tertiary' }, fmtTime(item.at)),
                   ),
                   h('div', {
-                    className: 'ds-md min-w-0 rounded-xl border border-l-2 border-separator-border p-2 text-body-2-regular leading-relaxed '
+                    className: 'md-content min-w-0 rounded-xl border border-l-2 border-separator-border p-2 text-body-2-regular leading-relaxed '
                       + (human ? 'bg-background-secondary-default ' : 'bg-background-primary-default ')
                       + roleRail,
                   },

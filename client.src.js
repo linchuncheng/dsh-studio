@@ -44,13 +44,13 @@ window.__ModuleLoader__.load({
     function MdField({ rows = 6, value, onChange, placeholder, className, ...rest }) {
       const [preview, setPreview] = React.useState(false)
       const text = String(value ?? '')
-      return h('div', { className: 'ds-md-field' },
-        h('div', { className: 'ds-md-bar' },
+      return h('div', { className: 'md-field' },
+        h('div', { className: 'md-editor-bar' },
           h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '支持 Markdown：标题 / 列表 / 粗体 / 代码块 / 表格'),
           h(Button, { variant: 'ghost', size: 'xs', type: 'button', 'data-md-toggle': preview ? 'preview' : 'edit', onClick: () => setPreview(!preview) }, preview ? '回到编辑' : '预览渲染'),
         ),
         preview
-          ? h('div', { className: 'ds-md-preview ds-md mt-3 text-caption-1-regular' }, text.trim() === '' ? h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '还没写内容。') : renderMarkdown(text))
+          ? h('div', { className: 'md-preview md-content mt-3' }, text.trim() === '' ? h('span', { className: 'text-caption-1-regular text-text-tertiary' }, '还没写内容。') : renderMarkdown(text))
           : h(TextAreaField, { className, rows, value, onChange, placeholder, ...rest }),
       )
     }
@@ -538,46 +538,60 @@ html[data-dsh-theme="light"] [class*="rightbarCol"] { background: #fafafa !impor
 
 
 
-.ds-md { white-space:normal; line-height:1.6; word-break:break-word; }
+/* Markdown 排版作用域：renderMarkdown 的产物挂在这一套语义类里（md-content / md-field /
+   md-editor-bar / md-preview）。它不是组件样式，是「渲染出来的正文」的排版：
+   颜色只取 BoardUI 的语义 token，字号走 4px 档（正文 13 / 标题 18·16·14 / 代码 12），
+   行高落在 20·24·16 上。{--ds-*} 只在单文件产物（没有 index.css）里当兜底。 */
+[data-dsh-studio] .md-content { white-space:normal; word-break:break-word; font-size:13px; line-height:20px; color:var(--color-text-primary, currentColor); }
 
-.ds-md > *:first-child { margin-top:0; }
+[data-dsh-studio] .md-content > *:first-child { margin-top:0; }
 
-.ds-md > *:last-child { margin-bottom:0; }
+[data-dsh-studio] .md-content > *:last-child { margin-bottom:0; }
 
-.ds-md p { margin:0 0 8px; }
+[data-dsh-studio] .md-content p { margin:0 0 8px; }
 
-.ds-md h3, .ds-md h4, .ds-md h5, .ds-md h6 { margin:12px 0 8px; line-height:1.35; }
+[data-dsh-studio] .md-content h1,
+[data-dsh-studio] .md-content h2,
+[data-dsh-studio] .md-content h3,
+[data-dsh-studio] .md-content h4,
+[data-dsh-studio] .md-content h5,
+[data-dsh-studio] .md-content h6 { margin:12px 0 8px; font-weight:600; line-height:24px; color:var(--color-text-primary, inherit); }
 
-.ds-md h3 { font-size:16px; }
+[data-dsh-studio] .md-content h1,
+[data-dsh-studio] .md-content h2,
+[data-dsh-studio] .md-content h3 { font-size:18px; }
 
-.ds-md h4 { font-size:13px; }
+[data-dsh-studio] .md-content h4 { font-size:16px; }
 
-.ds-md h5, .ds-md h6 { font-size:13px; }
+[data-dsh-studio] .md-content h5,
+[data-dsh-studio] .md-content h6 { font-size:14px; line-height:20px; }
 
-.ds-md ul, .ds-md ol { margin:0 0 8px; padding-left:20px; }
+[data-dsh-studio] .md-content ul,
+[data-dsh-studio] .md-content ol { margin:0 0 8px; padding-left:20px; }
 
-.ds-md li { margin:2px 0; }
+[data-dsh-studio] .md-content li { margin:2px 0; }
 
-.ds-md code { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px;
-  background:var(--ds-soft2); border:1px solid var(--ds-line); border-radius:10px; padding:0 4px; }
+[data-dsh-studio] .md-content code { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; line-height:16px; color:var(--color-text-primary, inherit);
+  background:var(--color-background-secondary-default, var(--ds-soft2)); border:1px solid var(--color-separator-border, var(--ds-line)); border-radius:10px; padding:0 4px; }
 
-.ds-md pre { margin:0 0 12px; padding:12px 12px; overflow-x:auto; background:var(--ds-soft2); border:1px solid var(--ds-line); border-radius:10px; }
+[data-dsh-studio] .md-content pre { margin:0 0 12px; padding:12px 12px; overflow-x:auto; background:var(--color-background-secondary-default, var(--ds-soft2)); border:1px solid var(--color-separator-border, var(--ds-line)); border-radius:10px; }
 
-.ds-md pre code { background:none; border:0; padding:0; font-size:12px; line-height:1.55; }
+[data-dsh-studio] .md-content pre code { background:none; border:0; padding:0; font-size:12px; line-height:16px; }
 
-.ds-md blockquote { margin:0 0 8px; padding:2px 0 2px 12px; border-left:3px solid var(--ds-line); opacity:.85; }
+[data-dsh-studio] .md-content blockquote { margin:0 0 8px; padding:2px 0 2px 12px; border-left:3px solid var(--color-separator-border, var(--ds-line)); color:var(--color-text-secondary, inherit); }
 
-.ds-md a { color:var(--ds-accent); text-decoration:none; }
+[data-dsh-studio] .md-content a { color:var(--color-text-primary, var(--ds-accent)); text-decoration:none; }
 
-.ds-md a:hover { text-decoration:underline; }
+[data-dsh-studio] .md-content a:hover { text-decoration:underline; }
 
-.ds-md hr { border:0; border-top:1px solid var(--ds-line); margin:12px 0; }
+[data-dsh-studio] .md-content hr { border:0; border-top:1px solid var(--color-separator-border, var(--ds-line)); margin:12px 0; }
 
-.ds-md table { border-collapse:collapse; margin:0 0 12px; font-size:12px; width:100%; table-layout:fixed; }
+[data-dsh-studio] .md-content table { border-collapse:collapse; margin:0 0 12px; font-size:12px; line-height:16px; width:100%; table-layout:fixed; }
 
-.ds-md th, .ds-md td { border:1px solid var(--ds-line); padding:4px 8px; text-align:left; vertical-align:top; word-break:break-word; }
+[data-dsh-studio] .md-content th,
+[data-dsh-studio] .md-content td { border:1px solid var(--color-separator-border, var(--ds-line)); padding:4px 8px; text-align:left; vertical-align:top; word-break:break-word; }
 
-.ds-md th { background:var(--ds-soft2); font-weight:600; }
+[data-dsh-studio] .md-content th { background:var(--color-background-secondary-default, var(--ds-soft2)); font-weight:600; color:var(--color-text-secondary, inherit); }
 
 
 

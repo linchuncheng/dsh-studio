@@ -320,13 +320,13 @@
    97 处 ds-row、151 处 ds-field 全都退化成块级堆叠，行内 style 的 gap/alignItems
    和 child 的 flex 全都失效——专家编辑里标签、下拉、提示互相压住就是这个原因。 */
 
-/* Markdown 内容字段：工具行 + 预览 */
-[data-dsh-studio] .ds-md-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-[data-dsh-studio] .ds-md-bar { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
-[data-dsh-studio] .ds-md-preview {
-  border: 1px solid var(--border);
+/* Markdown 内容字段：工具行 + 预览（排版规则在 client.src.js 的 md-content 段） */
+[data-dsh-studio] .md-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+[data-dsh-studio] .md-editor-bar { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+[data-dsh-studio] .md-preview {
+  border: 1px solid var(--color-separator-border);
   border-radius: 10px;
-  background: var(--card);
+  background: var(--color-background-secondary-default);
   padding: 8px 12px;
   min-height: 84px;
 }

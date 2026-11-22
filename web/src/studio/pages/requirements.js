@@ -11,8 +11,8 @@ import { EmptyState } from '../../boardui/empty-state'
 import { ProgressTrack } from '../../components/base/progress/progress'
 
 /* 整页 BoardUI：面板 / 表单 / 列表 / 徽标 / 动作全部换成 token + Tailwind（4px 档位）。
-   唯一保留的 .ds-* 是 `ds-md`：renderMarkdown 的产物要靠它那套排版规则（标题/列表/表格/代码），
-   BoardUI 没有等价的富文本作用域，删了正文就没样式了。 */
+   Markdown 正文不是组件：renderMarkdown 的产物挂语义类 md-content，排版规则（标题/列表/表格/代码）
+   写在 client.src.js 的 CSS 段里——BoardUI 没有等价的富文本作用域，删了正文就没样式了。 */
 const PAGE = 'flex min-w-0 flex-col gap-4 overflow-auto p-4'
 const PANEL = 'flex min-w-0 flex-col overflow-hidden rounded-xl border border-separator-border bg-background-primary-default'
 const PANEL_HEAD = 'flex flex-wrap items-center gap-2 border-b border-separator-border px-4 py-3 text-body-2-medium text-text-primary'
@@ -690,7 +690,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
                 h('span', { className: HINT, style: { marginLeft: 'auto' } }, '支持 Markdown'),
               ),
               h('div', { className: PANEL_BODY },
-                h('div', { className: 'ds-md text-body-2-regular text-text-primary', 'data-requirement-desc': '' }, renderMarkdown(current.description)),
+                h('div', { className: 'md-content text-text-primary', 'data-requirement-desc': '' }, renderMarkdown(current.description)),
               ),
             )
             : h('div', { className: HINT }, '还没有写需求描述：产品背景、要解决的问题、验收口径都建议写在这里，点右侧「编辑」补上。'),
@@ -1014,11 +1014,11 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
               ),
             ),
             docReader !== null && docReader.id === doc.id
-              ? h('div', { className: 'ds-md mt-2 rounded-xl border border-separator-border bg-background-secondary-default p-3' }, docReader.busy
+              ? h('div', { className: 'md-content mt-2 rounded-xl border border-separator-border bg-background-secondary-default p-3' }, docReader.busy
                 ? h('span', { className: HINT }, '读取中…')
                 : (docReader.content.trim() === '' ? h('span', { className: HINT }, '这条文档还没有正文。') : renderMarkdown(docReader.content)))
               : (docAll !== null && docAll[doc.id] !== undefined
-                ? h('div', { className: 'ds-md mt-2 rounded-xl border border-separator-border bg-background-secondary-default p-3' }, docAll[doc.id].trim() === ''
+                ? h('div', { className: 'md-content mt-2 rounded-xl border border-separator-border bg-background-secondary-default p-3' }, docAll[doc.id].trim() === ''
                   ? h('span', { className: HINT }, '这条文档还没有正文。')
                   : renderMarkdown(docAll[doc.id]))
                 : null),
@@ -1124,7 +1124,7 @@ export     function RequirementsPage({ state, onOpenTask, onChanged, createSigna
                           .slice(0, 90)
                         return h(React.Fragment, null,
                           open
-                            ? h('div', { className: 'ds-md text-body-2-regular text-text-primary' }, renderMarkdown(point.description))
+                            ? h('div', { className: 'md-content text-text-primary' }, renderMarkdown(point.description))
                             : h('div', { className: 'text-caption-1-regular text-text-tertiary', title: description }, summary + (summary.length >= 90 ? '…' : '')),
                           h(Button, {
                             variant: 'ghost', size: 'xs', className: 'mt-1 self-start',
