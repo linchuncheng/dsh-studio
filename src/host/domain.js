@@ -1151,6 +1151,13 @@ export function publicArtifact(artifact) {
 }
 
 /** 交付物：老数据可能是纯字符串，统一升级成一条记录。 */
+/* 从请求体里挑出**交付物自己**的字段：顶层 id 是卡 id，整包透传会把交付物 id 写成卡 id（issue #112）。 */
+export function artifactInputFromBody(body) {
+  const raw = body?.artifact
+  if (raw !== null && typeof raw === "object") return raw
+  return { kind: body?.kind, title: body?.title, ref: body?.ref, content: body?.content, stage: body?.stage, status: body?.status, by: body?.by, at: body?.at }
+}
+
 export function sanitizeArtifact(raw, index) {
   if (typeof raw === 'string') {
     const title = raw.trim().slice(0, 200)

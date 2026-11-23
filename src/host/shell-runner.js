@@ -14,6 +14,7 @@ export async function runShellCase(item, config) {
   let stdout = ''
   let stderr = ''
   let code = 0
+  let timedOut = false
   try {
     const out = await new Promise(finish => {
       exec(shell.command, { cwd: cwd === '' ? undefined : cwd, timeout, maxBuffer: 1024 * 1024 }, (error, outText, errText) => {
@@ -23,13 +24,16 @@ export async function runShellCase(item, config) {
     stdout = out.out
     stderr = out.err
     code = out.error === null || out.error === undefined ? 0 : (Number(out.error.code) || 1)
+    /* exec 的 timeout 到点会杀子进程：killed / signal 是唯一线索（issue #111）。 */
+    timedOut = out.error?.killed === true || out.error?.signal === 'SIGTERM'
   } catch (error) {
     stderr = String(error?.message ?? error)
     code = 1
   }
   const combined = stdout + stderr
   const problems = []
-  if (code !== shell.expectExit) problems.push('退出码 ' + code + '（期望 ' + shell.expectExit + '）')
+  if (timedOut) problems.push('超时：超过 ' + timeout + 'ms 被杀掉（调大 shell.timeoutMs，最大 120000）')
+  else if (code !== shell.expectExit) problems.push('退出码 ' + code + '（期望 ' + shell.expectExit + '）')
   if (shell.expectContains !== '' && !combined.includes(shell.expectContains)) problems.push('输出里没有「' + shell.expectContains + '」')
   if (shell.expectNotContains !== '' && combined.includes(shell.expectNotContains)) problems.push('输出里有不该出现的「' + shell.expectNotContains + '」')
   return {

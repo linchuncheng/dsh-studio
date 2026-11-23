@@ -126,7 +126,7 @@ studio_task_check          { id, itemId, note }         // 清单逐项勾，附
 | 组 | 工具 |
 | --- | --- |
 | 看板/卡 | `studio_task_list` `studio_task_get` `studio_task_create` `studio_task_update` `studio_task_block` `studio_task_unblock` `studio_task_comment` `studio_task_check` |
-| 需求 | `studio_requirement_list` `studio_requirement_get` `studio_requirement_save` `studio_requirement_review` `studio_requirement_split` `studio_requirement_signoff` `studio_requirement_folder` |
+| 需求 | `studio_requirement_list` `studio_requirement_get` `studio_requirement_save` `studio_requirement_review` `studio_requirement_split` `studio_requirement_signoff` `studio_requirement_folder` `studio_requirement_questions` |
 | 设计/交付物 | `studio_task_design` `studio_task_artifact` |
 | 执行/评审 | `studio_task_coding` `studio_task_quality` `studio_merge_gate` |
 | 测试 | `studio_task_case` `studio_task_add_cases` `studio_task_generate_cases` `studio_test_run` `studio_test_suite` |

@@ -17,7 +17,10 @@ export function requirementMatrix(state, requirement) {
     const cases = []
     for (const card of cards) {
       for (const item of card.cases ?? []) {
-        if (item.pointId !== '' && item.pointId !== point.id) continue
+        /* 用例没写 pointId 时**继承卡的**功能点（issue #108 的根因之一）：
+           以前 undefined !== '' 成立，这类用例被整条丢掉，卡挂了 p1 也没用，需求覆盖永远 0。 */
+        const casePoint = String(item.pointId ?? '').trim() === '' ? String(card.pointId ?? '').trim() : String(item.pointId).trim()
+        if (casePoint !== '' && casePoint !== point.id) continue
         cases.push({ ...item, taskId: card.id, taskCode: card.code || card.id, taskTitle: card.title })
       }
     }
@@ -75,7 +78,12 @@ export function requirementMatrix(state, requirement) {
     artifacts: points.reduce((sum, point) => sum + point.artifacts, 0),
   }
   summary.passRate = summary.cases === 0 ? 0 : Math.round((summary.pass / summary.cases) * 100)
-  summary.coverageRate = summary.points === 0 ? 0 : Math.round(((summary.points - summary.pointsWithoutCases) / summary.points) * 100)
+  /* 两个口径，以前都叫「覆盖率」，于是同一份数据里同时出现 coverageRate=100 与 coveredPoints=0（issue #109）：
+     · pointsWithCasesRate：有多少功能点**至少有一条用例**（哪怕还没跑）
+     · coverageRate：有多少功能点**被通过的用例逐条覆盖了验收条件**（= coveredPoints/points）
+     后者才是签字闸门认的口径，coverageRate 现在就是它；前者保留新名字。 */
+  summary.pointsWithCasesRate = summary.points === 0 ? 0 : Math.round(((summary.points - summary.pointsWithoutCases) / summary.points) * 100)
+  summary.coverageRate = summary.points === 0 ? 0 : Math.round((summary.coveredPoints / summary.points) * 100)
   return {
     points,
     loose: loose.map(card => ({ id: card.id, code: card.code, title: card.title, status: card.status })),
@@ -147,7 +155,7 @@ export function requirementGate(state, requirement) {
   }
   const uncovered = matrix.points.filter(point => !point.covered)
   if (uncovered.length > 0) warnings.push(`${uncovered.length} 个功能点还没有通过的用例覆盖：${uncovered.slice(0, 3).map(point => point.id).join('、')}`)
-  if (matrix.summary.pointsWithoutCases > 0) warnings.push(`${matrix.summary.pointsWithoutCases} 个功能点还没有任何用例（测试覆盖率 ${matrix.summary.coverageRate}%）`)
+  if (matrix.summary.pointsWithoutCases > 0) warnings.push(`${matrix.summary.pointsWithoutCases} 个功能点还没有任何用例（有用例的功能点占 ${matrix.summary.pointsWithCasesRate}%）`)
   if (matrix.summary.looseCards > 0) warnings.push(`${matrix.summary.looseCards} 张卡还没归到功能点`)
   // 证据：整条需求下**一条跑过的用例都没有**就不许交付——"做完了"和"验过了"是两件事。
   // 只要求"跑过"（pass/fail 都算），不要求全绿：失败会走上面那条 blockers。
