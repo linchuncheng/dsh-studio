@@ -1083,6 +1083,15 @@ export function safeFileName(text) {
   return String(text ?? '').replace(/[\\/:*?"<>|\n\r\t]/g, '-').replace(/\s+/g, ' ').trim().slice(0, 120)
 }
 
+/** 交付物在云盘里的文件名：前缀 + 类型 + 标题，**截断后再补 .md**。
+ *  以前是先拼 `.md` 再 slice(0,120)，长标题会把后缀截掉，lark-cli 报
+ *  「--file must end with .md」——这类交付物永远归档失败（2026-11-23 真机 13 件）。 */
+export function artifactFileName(task, artifact) {
+  const prefix = String(task?.code ?? '').length > 0 ? `${task.code}-` : `${task?.id ?? ''}-`
+  const label = ARTIFACT_FILE_LABEL[artifact?.kind] ?? '交付物'
+  return `${safeFileName(`${prefix}${label}-${artifact?.title ?? ''}`)}.md`
+}
+
 /** 需求在云盘里的文件夹名：`REQ-2026-001 会员积分抵扣`。 */
 export function requirementFolderName(requirement) {
   return requirementFolderNameOf(requirement)
@@ -1199,8 +1208,7 @@ async function syncArtifactToFeishu(store, taskId, artifactId) {
       kindError = String(error?.message ?? error).slice(0, 200)
     }
   }
-  const prefix = task.code.length > 0 ? `${task.code}-` : `${task.id}-`
-  const name = safeFileName(`${prefix}${ARTIFACT_FILE_LABEL[artifact.kind] ?? '交付物'}-${artifact.title}.md`)
+  const name = artifactFileName(task, artifact)
   const filled = { ...artifact, content: await artifactBody(task, artifact, state.config) }
   const body = artifactMarkdown(task, filled, requirement)
   const tmpDir = join(host.dshHomePath('tmp'), `artifact-${artifact.id}`)
@@ -1215,7 +1223,31 @@ async function syncArtifactToFeishu(store, taskId, artifactId) {
   try {
     const existing = String(artifact.doc?.token ?? '').trim()
     const upload = uploadFor(existing)
-    const result = await larkJson(upload.args, 45000, { cwd: upload.cwd })
+    let result = await larkJson(upload.args, 45000, { cwd: upload.cwd })
+    /* 缓存的文件夹 token 从不校验（ensureRequirementFolder 只看 token 非空就复用），
+       文件夹在飞书那边被删掉之后，这里会一直撞 "parent node not exist"，归档永远失败。
+       自愈：遇到这类「父节点不存在」就**作废缓存并重试一次**（重建文件夹再传）。 */
+    if (!result.ok && /parent node not exist|1061044|not_found/i.test(String(result.error ?? ''))) {
+      await store.mutate(draft => {
+        const target = draft.requirements.find(item => item.id === task.requirementId)
+        if (target !== undefined) target.folder = { token: '', url: '', name: '', at: 0, error: '文件夹已不存在，已作废缓存准备重建' }
+        draft.fallbackFolder = null
+      })
+      const rebuilt = await ensureArtifactFolder(store, task)
+      const retryTarget = rebuilt.folder
+      if (String(retryTarget.token ?? '').trim() !== '') {
+        target = retryTarget
+        const retry = uploadFor(existing)
+        result = await larkJson(retry.args, 45000, { cwd: retry.cwd })
+      }
+    }
+    /* 覆盖失败也自愈：doc.token 指向的文件可能随文件夹一起被删了，
+       这时 +overwrite 会一直报 unknown error。降级成「新建一份」并刷新 token。 */
+    if (!result.ok && existing !== '') {
+      const fresh = uploadFor('')
+      const created = await larkJson(fresh.args, 45000, { cwd: fresh.cwd })
+      if (created.ok) result = created
+    }
     if (!result.ok) {
       await store.mutate(draft => {
         const target = draft.tasks.find(item => item.id === taskId)?.artifacts?.find(item => item.id === artifactId)
