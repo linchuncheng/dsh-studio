@@ -7,6 +7,7 @@
  * 整块被顶到视口外，打 @ 什么都看不见）。
  */
 
+import { SegmentedControl } from '../boardui/index'
 import { uiIcon } from './icons.js'
 import { filterRoster } from './roster.js'
 
@@ -65,12 +66,17 @@ export function createMentionPicker({ h, React, TextField, SearchField }) {
       style: { position: 'relative', zIndex: 5, margin: '8px 0' },
       onKeyDown,
     },
-      h('div', { className: TABS_WRAP },
-      h('div', { className: TABS, role: 'tablist', 'data-mention-tabs': '' },
-        h('button', { type: 'button', role: 'tab', 'aria-selected': tab === 'expert', 'data-mention-tab': 'expert', className: tab === 'expert' ? TAB_ON : TAB_OFF, onMouseDown: ev => { ev.preventDefault(); setTab('expert'); onActive(0) }, onClick: () => { setTab('expert'); onActive(0) } }, '专家'),
-        h('button', { type: 'button', role: 'tab', 'aria-selected': tab === 'team', 'data-mention-tab': 'team', className: tab === 'team' ? TAB_ON : TAB_OFF, onMouseDown: ev => { ev.preventDefault(); setTab('team'); onActive(0) }, onClick: () => { setTab('team'); onActive(0) } }, '专家团'),
-      )),
-      h('div', { className: 'shrink-0 border-b border-separator-border p-2' },
+      h('div', { className: TABS_WRAP, 'data-mention-tabs': '' },
+        h(SegmentedControl, {
+          value: tab,
+          onChange: next => { setTab(next); onActive(0) },
+          options: [{ value: 'expert', label: '专家' }, { value: 'team', label: '专家团' }],
+          'data-mention-tab': 'expert',
+        }),
+      ),
+      h('div', { className: 'shrink-0 border-b border-separator-border p-3' },
+        h('div', { className: 'flex items-center gap-2 rounded-lg border border-separator-border bg-background-primary-default px-3' },
+        uiIcon(h, 'search') ?? null,
         h(SearchField ?? TextField, {
           autoFocus: true, value: query,
           placeholder: '搜名字、领域或关键词',
@@ -78,6 +84,7 @@ export function createMentionPicker({ h, React, TextField, SearchField }) {
           onFocus: () => onQuery(query),
           'data-mention-search': '',
         }),
+        ),
       ),
       h('div', { className: 'max-h-[260px] overflow-y-auto py-1', 'data-mention-list': '' },
         hits.length === 0
