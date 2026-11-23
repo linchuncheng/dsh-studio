@@ -70,6 +70,22 @@ const analyticsBody = {
   },
 }
 // 项目页要的形状（照 /studio-api/metrics 的真实回包给一份最小数据）
+/* 工作台（/dashboard）的回包：以前这个路由落到「其它 studio-api 一律 ok+state」的分支上，
+   页面永远拿不到 dashboard，于是永远停在「加载中」骨架——空态排版坏了也看不出来。
+   这里按真机形状给一份**列表全空**的数据（正好走空态分支）。 */
+const dashboardBody = {
+  ok: true,
+  regression: null,
+  dashboard: {
+    at: Date.now(),
+    scope: { tasks: 5, open: 5 },
+    risks: { overdue: 0, blocked: 0, stalled: 0, slaOverdue: 0, gateFailed: 4, pipelineFailed: 0, integrationsBroken: 1, overrideOver: 0, overrideMax: 3, requirementBlocked: 0, releaseBlocked: 0 },
+    flow: { review: 1, test: 1, accept: 3, doneToday: 0, doneWeek: 2 },
+    ai: { running: 0, todayRuns: 0 },
+    list: { overdue: [], blocked: [], stalled: [], slaOverdue: [], gateFailed: [], pipelineFailed: [], requirementBlocked: [], releaseBlocked: [] },
+  },
+}
+
 const metricsBody = {
   ok: true,
   metrics: {
@@ -102,6 +118,7 @@ const server = createServer(async (req, res) => {
   const sendJson = (code, body) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(body)) }
   if (url.pathname === '/studio-api/state') return sendJson(200, { ok: true, state })
   if (url.pathname === '/studio-api/analytics') return sendJson(200, analyticsBody)
+  if (url.pathname === '/studio-api/dashboard') return sendJson(200, dashboardBody)
   if (url.pathname === '/studio-api/metrics') return sendJson(200, metricsBody)
   if (url.pathname.startsWith('/studio-api/')) return sendJson(200, { ok: true, state })
   if (url.pathname === '/') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(html); return }
@@ -188,6 +205,46 @@ try {
     check(`「${label}」没有可聚焦却被 aria-hidden 的节点`, trapped === 0, String(trapped))
     await page.screenshot({ path: join(outDir, `${label}.png`) })
   }
+
+  /* 工作台（加载完成态）：空分区必须真的写出「没有逾期的卡」这类文字。
+     2026-11-23 真机截图里几个分区只剩一个空框——因为假宿主以前永远给不到 dashboard，
+     加载态从没被渲染过。 */
+  await page.evaluate(() => { [...document.querySelectorAll('[data-dsh-studio] [data-head-tabs] [role="tab"]')].find(n => (n.textContent || '').trim() === '工作台')?.click() })
+  await sleep(1500)
+  const insights = await page.evaluate(() => {
+    const root = document.querySelector('[data-dsh-studio] [data-insights-page]')
+    if (!root) return { mounted: false }
+    const emptyNodes = [...root.querySelectorAll('[data-empty-state]')]
+    const panels = [...root.querySelectorAll('.rounded-xl.border')].length
+    return {
+      mounted: true,
+      pending: root.getAttribute('data-insights-pending') !== null,
+      emptyNodes: emptyNodes.length,
+      emptyWithText: emptyNodes.filter(n => (n.innerText || '').trim().length > 0).length,
+      panelCount: panels,
+      text: (root.innerText || '').length,
+    }
+  })
+  check('工作台加载完成（不是永远停在骨架）', insights.mounted === true && insights.pending === false, JSON.stringify(insights).slice(0, 120))
+  check('工作台的空分区都写出了空态文字', insights.emptyNodes > 0 && insights.emptyWithText === insights.emptyNodes, `空态 ${insights.emptyNodes} 处 · 有字 ${insights.emptyWithText}`)
+  /* 空态必须**画得出来**：以前分区在纵向 flex 里被 flex-shrink 压扁，
+     空态框虽然还在 DOM 里、getBoundingClientRect 也有尺寸，但被外框 overflow-hidden 裁掉，
+     截图里就是一条空条（真机 2026-11-23 截图）。这里量「空态框底边不超过分区底边」。 */
+  const clipped = await page.evaluate(() => {
+    const root = document.querySelector('[data-dsh-studio] [data-insights-page]')
+    const bad = []
+    for (const empty of root?.querySelectorAll('[data-empty-state]') ?? []) {
+      let panel = empty.parentElement
+      while (panel && getComputedStyle(panel).overflow !== 'hidden') panel = panel.parentElement
+      if (!panel) continue
+      const box = empty.getBoundingClientRect()
+      const holder = panel.getBoundingClientRect()
+      if (box.bottom > holder.bottom + 1 || box.height < 20) bad.push({ text: (empty.innerText || '').trim().slice(0, 12), emptyH: Math.round(box.height), holderH: Math.round(holder.height) })
+    }
+    return bad
+  })
+  check('工作台的空态没有被分区裁掉', clipped.length === 0, clipped.slice(0, 2).map(item => `「${item.text}」框高 ${item.emptyH} / 分区高 ${item.holderH}`).join(' | '))
+  await page.screenshot({ path: join(outDir, '工作台-加载完成.png') })
 
   // 卡片抽屉：dialog 要有名字，里面的交互节点也要有名字（键盘/读屏都能用）
   await page.evaluate(() => { const tab = [...document.querySelectorAll('[data-dsh-studio] [data-head-tabs] [role="tab"]')].find(n => (n.textContent || '').trim() === '看板'); if (tab) tab.click() })
