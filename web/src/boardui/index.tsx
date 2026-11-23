@@ -278,15 +278,15 @@ export function DateField({ value, onChange, disabled, ...rest }: any) {
 }
 
 /** 分段控件（BoardUI segmented-control）：value + onChange，和 studio 其它控件同一种回调形状。 */
-export function SegmentedControl({ value, onChange, options = [], ...rest }: any) {
+export function SegmentedControl({ value, onChange, options = [], className, ...rest }: any) {
   const items: Array<{ value: string; label: string }> = Array.isArray(options) ? options : [];
   return (
-    <BoarduiSegmented {...rest} selectedKeys={[String(value ?? "")]} onSelectionChange={(keys: any) => {
+    <BoarduiSegmented {...rest} className={["flex w-full", className].filter(Boolean).join(" ")} selectedKeys={[String(value ?? "")]} onSelectionChange={(keys: any) => {
       const next = Array.from(keys as Set<string>)[0];
       if (typeof onChange === "function" && next !== undefined) onChange(String(next));
     }}>
       {items.map((item) => (
-        <BoarduiSegmentedItem key={item.value} id={item.value}>{item.label}</BoarduiSegmentedItem>
+        <BoarduiSegmentedItem key={item.value} id={item.value} className="flex-1">{item.label}</BoarduiSegmentedItem>
       ))}
     </BoarduiSegmented>
   );
