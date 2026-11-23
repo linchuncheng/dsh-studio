@@ -205,7 +205,11 @@ GIT_SSH_COMMAND="ssh -p 443" git push
   只有用户**亲自验证过功能**并明确说「发布 / 发版」，才做「改版本号 + 改 CHANGELOG + 打 tag + 推 tag」。
   2026-11-23 我连着 22 个版本自己合并自己 tag（v0.9.78～v0.9.99），全部没等人验证，这是违规；这条写在这里防止再犯。
 - **并行**：多个任务可以同时各占一个工作树并行开发；**改到同一个文件的任务不能并行**，要么串行、要么合成一个；每个 PR 合并前要先把自己的分支同步到最新 `main`。
-- **提 PR 之前必须先完成评审**（自查清单 + 证据贴进 PR 正文；有第二个人时由他 approve）。评审没完成就提 PR，等于把评审推迟到合并前一刻。
+- **先真机验证，再提 PR**：改完代码 → 构建（`pnpm build` + `cmp` 产物）→ 部署到目标机（`tools/deploy.mjs`）→
+  在**目标机的真数据**上跑探针/截图确认没问题 → 把这份证据贴进 PR 正文 → 才提 PR。
+  `npm test` / `verify:pages` 只是入场券，不能替代真机验证：假宿主夹具太简单，`PANE is not defined`、
+  空态被 flex 压扁、`button{padding:0}` 吃掉内边距这几类问题都只在目标机暴露。
+- - **提 PR 之前必须先完成评审**（自查清单 + 证据贴进 PR 正文；有第二个人时由他 approve）。评审没完成就提 PR，等于把评审推迟到合并前一刻。
 - 分支上改完就推分支（`git push -u origin <branch>`），PR 合并由人（或 `gh pr merge`）完成，**合并前 CI 必须绿**。
 - **合并进 `main` 之后才打 tag**：`vX.Y.Z` 触发 `release.yml`（npm 发布 + GitHub Release）与 `publish-github-packages.yml`，发完用 `npm run verify:release` 核对「发版一致」。
 - **合并即清理分支与工作树**：`gh pr merge <n> --merge --delete-branch`；然后 `git worktree remove .agents/worktrees/<name> --force && git worktree prune`；
