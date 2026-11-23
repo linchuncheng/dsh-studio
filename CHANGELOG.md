@@ -1,6 +1,47 @@
 # 更新日志
 
 
+## [0.10.0] — 2026-11-23
+
+这一版把仓库里开着的 10 个 issue 一次清完，都先在目标机真机验证过才提 PR。
+
+### 交付物与用例（#107 / #108 / #112）
+
+- **#107** `studio_task_artifact(action: update)` 只写传进来的字段。以前 7 个键无条件写一遍，
+  没传的就是 `undefined`，展开时把已有值覆盖掉 —— 改个标题就把 `ref` / `content` / `stage` / `by` 全清空。
+- **#108** `studio_task_case` 补上 `acceptanceId` 与 `db`（update 也能改 `pointId` / `acceptanceId`）；
+  需求矩阵里「用例没写 pointId」改为**继承卡上的功能点** —— 以前 `undefined !== ''` 成立，这类用例被整条丢掉，
+  于是卡挂了 p1 也没用、需求覆盖永远是 0。
+- **#112** 登记交付物时不再把请求体顶层的**卡 id** 当成交付物 id（新增共享 helper `artifactInputFromBody`），
+  交付物 id 回到 `a1-xxxx` 形态。
+
+### 门禁与统计口径（#109 / #111）
+
+- **#109** 两个「覆盖率」分开命名：`coverageRate` 现在就是「验收条件被通过用例覆盖的功能点占比」（= `coveredPoints/points`），
+  另给 `pointsWithCasesRate`；警告文案不再出现「N 个功能点还没有任何用例（覆盖率 100%）」这种自相矛盾的话。
+- **#111** shell 用例暴露 `timeoutMs`（1000–120000）；超时明确报「超时：超过 N ms 被杀掉」，
+  不再报成「退出码 1」——以前 51 秒的编译验证看起来像编译失败。
+
+### 需求级协作入口（#110 / #115 / #116 / #117）
+
+- **#110** 新增 `studio_requirement_questions`（ask / answer / remove）：澄清问答终于有工具入口。
+- **#115** 需求有了自己的讨论区：`requirement.comments` + `/requirement/comment` + `studio_requirement_comment`
+  （改与删都留旧版 `edits`）。以前讨论只能覆盖正文或散到卡上，需求页看到的永远是静止的正文。
+- **#116** 需求历史覆盖扩到**功能点 / 文档链接 / 澄清三问 / 依赖**，`from → to` 逐字段记，`by` 用调用方
+  （agent 改需求不再记成「人」）；路由里只看 7 个标量字段的历史逻辑挪进 `saveRequirement`，避免一次改动记两遍。
+- **#117** 新增 `studio_requirement_doc`（add / update / remove / baseline / rollback）与
+  `studio_requirement_requester`；`saveRequirement` 白名单补 `requester` / `source`。
+
+### 归档与删除（#113）
+
+- **#113** 建云盘文件夹失败也必须落 `artifact.doc.error`。`ensureArtifactFolder` 自己会 throw
+  （没配根目录 / lark 缺 scope），以前那条 throw 绕过了判空，交付物在看板上长得跟「已归档」一样。
+
+### 自查
+
+`npm test` **422 → 433**（新增 `tests/issues-107-113.test.mjs` 6 条、`tests/requirement-collab.test.mjs` 5 条）。
+真机验证记录在 PR #118 / #119 正文里（交付物 id、改标题字段保留、历史字段与 by、提出人、文档正文、`doc.error`）。
+
 ## [0.9.99] — 2026-11-23
 
 ### @ 名单左侧终于有留白了（真因：全局按钮重置把 padding 清零）
