@@ -488,6 +488,7 @@ export function BusinessPanel({ config, onChanged }) {
         h('div', { className: FIELD, style: { flex: 1 } },
           h('div', { className: LABEL }, '状态'),
           h(SelectField, {
+            size: 'md',
             value: draft.status ?? 'active',
             'aria-label': '项目状态',
             onChange: e => set('status', e.target.value),
@@ -559,6 +560,7 @@ export function BusinessPanel({ config, onChanged }) {
                     : h('div', { className: FIELD, style: { flex: '0 0 150px' } },
                       h('div', { className: LABEL }, 'GitLab 仓库'),
                       h(SelectField, {
+                        size: 'md',
                         value: service.repoId ?? '',
                         'aria-label': `第 ${index + 1} 个服务的 GitLab 仓库`,
                         onChange: e => setService(index, 'repoId', e.target.value),
@@ -640,6 +642,7 @@ export function BusinessPanel({ config, onChanged }) {
         h('div', { className: FIELD, style: { flex: 1 } },
           h('div', { className: LABEL }, '状态'),
           h(SelectField, {
+            size: 'md',
             value: iter.status,
             'aria-label': '迭代状态',
             onChange: e => setIter({ ...iter, status: e.target.value }),

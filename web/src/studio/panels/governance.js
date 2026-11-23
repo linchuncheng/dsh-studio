@@ -144,6 +144,7 @@ export function AccessPanel({ state, config, onChanged }) {
           ),
           h('div', { className: LISTROW_ACTIONS },
             h(SelectField, {
+              size: 'md',
               value: member.role, disabled: busy,
               'aria-label': `成员 ${member.name} 的角色`,
               onChange: event => void act('/access/save', { member: { name: member.name, role: event.target.value } }),
@@ -158,6 +159,7 @@ export function AccessPanel({ state, config, onChanged }) {
           onChange: event => setDraft({ ...draft, name: event.target.value }),
         }),
         h(SelectField, {
+          size: 'md',
           value: draft.role, style: { flex: '0 0 130px' }, 'aria-label': '新成员角色',
           onChange: event => setDraft({ ...draft, role: event.target.value }),
         }, ACCESS_ROLE_OPTIONS.map(option => h('option', { key: option.id, value: option.id }, option.label))),
@@ -178,6 +180,7 @@ export function AccessPanel({ state, config, onChanged }) {
             onChange: event => setQueryText(event.target.value),
           }),
           h(SelectField, {
+            size: 'md',
             value: onlyBy === '' ? '__all__' : onlyBy, style: { minWidth: 150 }, 'aria-label': '按操作人筛选',
             onChange: event => setOnlyBy(event.target.value === '__all__' ? '' : event.target.value),
           },
@@ -392,6 +395,7 @@ export function ColumnsPanel({ state, onChanged }) {
               }, openFor === column.id ? '收起' : '加候选'),
               members.length >= 2
                 ? h(SelectField, {
+                  size: 'md',
                   value: strategy, disabled: busy, style: { width: 240 },
                   'aria-label': `${column.label ?? column.id} 的派单策略`,
                   onChange: e => void save(column.id, members, e.target.value),

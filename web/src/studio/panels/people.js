@@ -243,6 +243,7 @@ export function ExpertsPanel({ config, onChanged }) {
           h('div', { className: FIELD, style: { flex: '0 0 132px' } },
             labelTip(h, tipOf, '角色位', '决定它对应看板上的哪一列；列负责人按角色位挑人时用得上'),
             h(SelectField, {
+              size: 'md',
               value: draft.role ?? '',
               'aria-label': '角色位',
               onChange: e => set('role', e.target.value),
@@ -309,6 +310,7 @@ export function ExpertsPanel({ config, onChanged }) {
           h('div', { className: FIELD, style: { flex: 1 } },
             labelTip(h, tipOf, '沙箱档位', 'read-only 只能看；workspace-write 能改工作区；danger-full-access 不做限制'),
             h(SelectField, {
+              size: 'md',
               value: draft.sandbox ?? '',
               'aria-label': '沙箱档位',
               onChange: e => set('sandbox', e.target.value),
@@ -432,6 +434,7 @@ export function TeamsPanel({ config, onChanged }) {
         ),
         fieldOf(h, '团长（负责拆活和汇总）',
           h(SelectField, {
+            size: 'md',
             value: draft.lead ?? '',
             'aria-label': '团长',
             onChange: e => set('lead', e.target.value),
@@ -757,6 +760,7 @@ export function EnvironmentsPanel({ config, onChanged }) {
           h('div', { className: FIELD, style: { flex: '0 0 120px' } },
             h('div', { className: LABEL }, '类型'),
             h(SelectField, {
+              size: 'md',
               value: row.kind,
               'aria-label': `第 ${index + 1} 个环境的类型`,
               onChange: event => setRow(index, { kind: event.target.value }),

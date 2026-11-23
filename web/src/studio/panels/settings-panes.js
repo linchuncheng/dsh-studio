@@ -90,7 +90,7 @@ export function AutoDispatchPane({ form, setForm, saveBar }) {
   const field = (key, label, hint, type) => h(SettingsField, { key, form, setForm, fieldKey: key, label, hint, type })
   const selectOf = (label, key, options) => h('div', { className: FIELD },
     h('div', { className: LABEL }, label),
-    h(SelectField, { 'aria-label': label, value: form[key], onChange: e => setForm({ ...form, [key]: e.target.value }) },
+    h(SelectField, { size: 'md', 'aria-label': label, value: form[key], onChange: e => setForm({ ...form, [key]: e.target.value }) },
       options.map(([id, text]) => h('option', { key: id, value: id }, text))),
   )
   return h('div', { className: PANE, 'data-settings-pane': 'agents' },
