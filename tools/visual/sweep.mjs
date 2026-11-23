@@ -116,6 +116,29 @@ for (const label of navItems) {
   if (!clicked || info.text < 20 || info.broken) { navOk = false; console.log(`  分区「${label}」异常：clicked=${clicked} text=${info.text} broken=${info.broken}`) }
 }
 check(`设置页 ${navItems.length} 个分区逐个切换`, navOk === true)
+/* 专家团「编辑」抽屉：成员勾选框旁边必须有文字。
+   2026-11-23 真机反馈「成员显示是空的，只有勾选项」——BoardUI 的 Checkbox 适配层把 children 丢了。 */
+await goTab('设置')
+await sleep(500)
+await page.evaluate(() => { [...document.querySelectorAll('[data-dsh-studio] [data-settings-nav-item]')].find(n => (n.textContent || '').trim().startsWith('专家团'))?.click() })
+await sleep(900)
+const teamOpened = await page.evaluate(() => {
+  const row = document.querySelector('[data-dsh-studio] [data-team-row]')
+  const edit = row && [...row.querySelectorAll('button')].find(b => (b.textContent || '').trim() === '编辑')
+  if (!edit) return false
+  edit.click()
+  return true
+})
+await sleep(900)
+const teamForm = await page.evaluate(() => {
+  const drawer = document.querySelector('[data-dsh-studio] [data-drawer], [data-dsh-studio] [role="dialog"]')
+  const boxes = [...(drawer?.querySelectorAll('input[type="checkbox"]') ?? [])]
+  const labelOf = b => (b.closest('label')?.innerText || b.getAttribute('aria-label') || '').trim()
+  return { boxes: boxes.length, empty: boxes.filter(b => labelOf(b) === '').length, checked: boxes.filter(b => b.checked).length }
+})
+await page.keyboard.press('Escape')
+check('专家团编辑表单的成员勾选框都有文字', teamOpened === false || (teamForm.boxes > 0 && teamForm.empty === 0), `勾选框 ${teamForm.boxes} · 无文字 ${teamForm.empty} · 已勾 ${teamForm.checked}`)
+
 check('全程无 pageerror', errors.length === 0, errors.join(' | '))
 await browser.close()
 

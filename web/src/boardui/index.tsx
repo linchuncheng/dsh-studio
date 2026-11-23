@@ -149,18 +149,26 @@ export function SearchInput({ className, style, value, onChange, placeholder, ..
   );
 }
 
-export function Checkbox({ className, checked, onChange, disabled, bare, ...rest }: any) {
+export function Checkbox({ className, checked, onChange, disabled, bare, children, ...rest }: any) {
   void className;
   void bare; // legacy 的 SwitchBox 开关标记，BoardUI 的 Checkbox 不需要
+  /* children 是勾选框旁边的文字（legacy 用法：h(CheckField, {...}, '隐藏空列')）。
+     BoardUI 的 Checkbox 自带 label 关联：传 children 进去它会渲染 <label>+文字，
+     可访问名也由它给出。以前这里把 children 丢了 —— 专家团「成员」只剩一排没有文字的
+     方框，就是这条走的。没有 children 时保持裸控件（外面自己用 <label> 包着的那些调用点
+     不能套出嵌套 label）。 */
+  const hasText = children !== undefined && children !== null && children !== "";
   return (
     <BoarduiCheckboxBase
       isSelected={checked === true}
       isDisabled={disabled === true}
-      aria-label={typeof rest["aria-label"] === "string" ? rest["aria-label"] : rest.title}
+      aria-label={hasText ? undefined : (typeof rest["aria-label"] === "string" ? rest["aria-label"] : rest.title)}
       onChange={(next: boolean) => {
         if (typeof onChange === "function") onChange({ target: { checked: next } });
       }}
-    />
+    >
+      {hasText ? children : null}
+    </BoarduiCheckboxBase>
   );
 }
 
