@@ -42,7 +42,7 @@ const roleOf = item => {
 const HINT = 'block truncate text-caption-2-regular text-text-tertiary'
 const EMPTY = 'px-3 py-4 text-caption-1-regular text-text-tertiary'
 
-export function createMentionPicker({ h, React, TextField }) {
+export function createMentionPicker({ h, React, TextField, SearchField }) {
   function MentionPicker({ roster, query, active, onQuery, onActive, onPick, onClose }) {
     const [tab, setTab] = React.useState('expert')
     /* 页签决定看哪一类：专家页签含「角色位」（按角色派单的兜底），专家团页签只看团。 */
@@ -71,7 +71,7 @@ export function createMentionPicker({ h, React, TextField }) {
         h('button', { type: 'button', role: 'tab', 'aria-selected': tab === 'team', 'data-mention-tab': 'team', className: tab === 'team' ? TAB_ON : TAB_OFF, onMouseDown: ev => { ev.preventDefault(); setTab('team'); onActive(0) }, onClick: () => { setTab('team'); onActive(0) } }, '专家团'),
       )),
       h('div', { className: 'shrink-0 border-b border-separator-border p-2' },
-        h(TextField, {
+        h(SearchField ?? TextField, {
           autoFocus: true, value: query,
           placeholder: '搜名字、领域或关键词',
           onChange: event => onQuery(event.target.value),

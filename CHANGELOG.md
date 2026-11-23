@@ -1,6 +1,18 @@
 # 更新日志
 
 
+## [0.9.96] — 2026-11-23
+
+### @ 面板的搜索框改用官方 SearchField
+
+弹层里的搜索框原来走的是通用 `TextField`（= BoardUI `input/input` 的 TextField+InputBase）。它在弹层里自动聚焦后顶出一圈很重的焦点环，看着不像搜索框。
+
+现在改用 BoardUI 的 **SearchField**（`components/base/search-field`）：自带放大镜图标、清除键、`role=searchbox`，焦点样式也是搜索框那一套。
+
+顺带确认：全库 143 处输入框都走同一个适配层（`TextField` → BoardUI `input/input`），没有第二套实现。
+
+自查：`npm test` 422 项、产物一致、真机探针（专家 8 条 / 专家团 1 条 / 间距 16px）、已部署。
+
 ## [0.9.95] — 2026-11-23
 
 ### @ 面板：去掉角色位、页签真能切、与上方留出 16px
