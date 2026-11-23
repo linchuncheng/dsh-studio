@@ -1,6 +1,31 @@
 # 更新日志
 
 
+## [0.9.87] — 2026-11-23
+
+### 数据修复脚本 `tools/repair-data.mjs`（一次性的三件事已办完）
+
+模块体检报出的历史数据问题，按用户要求做了修复。脚本留在仓库里，可复核、可重跑（默认只预览）：
+
+| 修复 | 做法 | 结果 |
+| --- | --- | --- |
+| 历史撞号 | 同前缀的卡按创建时间**全局重排**；需求型卡首张用需求编号、其余加 `-2/-3` 后缀 | 67 张有编号的卡，**0 重复** |
+| 3 张悬空父卡 | 重建一张父卡（`TEST-001`），把 3 张子卡改挂过去，历史里留痕 | 悬空父卡 **0** |
+| `expert-2d22ad` | 改名 **通用助手** | 已生效 |
+
+跑法（必须在目标机**停掉 dsh-web 之后**：运行中的进程把状态握在内存里，直接改库会被覆盖）：
+
+```bash
+sudo systemctl stop dsh-web
+cp ~/.dsh/dsh-studio.db* /tmp/dbbackup/          # 先备份
+node tools/repair-data.mjs --db ~/.dsh/dsh-studio.db            # 预览
+node tools/repair-data.mjs --db ~/.dsh/dsh-studio.db --apply    # 写入
+sudo systemctl start dsh-web
+```
+
+跑完 `npm run verify:data`：**13 条 → 1 条**（只剩「REQ-2026-007 标了已交付但没签字」，需要人签）。
+界面 `verify:modules`：42 项全过。
+
 ## [0.9.86] — 2026-11-23
 
 ### 修复：工作台几个分区只剩一条空框（内容被裁掉）
