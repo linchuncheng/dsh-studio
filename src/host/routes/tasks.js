@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { readArtifactImage } from '../artifact-image.js'
+import { clearDeletedReferences } from '../domain.js'
 import { designPatchFrom } from '../design.js'
 import { rejectUnknownFields } from '../route-contract.js'
 import { resolveRequirement, requirementRefHint, saveTaskDesign } from '../reviews.js'
@@ -317,6 +318,14 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
     const id = String(body.id ?? '')
     await store.mutate(state => {
       state.tasks = state.tasks.filter(t => t.id !== id)
+      /* 删掉的卡可能还有子卡/重复标记指向它：不清掉就是死链（模块体检会报「父卡不存在」）。 */
+      for (const touched of clearDeletedReferences(state.tasks, id)) {
+        touched.task.updatedAt = Date.now()
+        touched.task.history = [...(touched.task.history ?? []), {
+          at: Date.now(), by: '系统', status: touched.task.status,
+          note: `引用的卡 ${id} 已被删除，已清掉 ${touched.field === 'parent' ? '父卡' : '重复标记'}`,
+        }]
+      }
     })
     // 卡没了，替它跑着的会话也要收摊，否则槽位一直被占着。
     host.getDispatcher()?.abortTask?.(id)
