@@ -10,14 +10,16 @@
 import { uiIcon } from './icons.js'
 import { filterRoster } from './roster.js'
 
-const POP = 'flex w-full max-w-[360px] flex-col overflow-hidden rounded-xl border border-separator-border bg-background-primary-default shadow-2xl'
-const TABS = 'flex shrink-0 items-center gap-1 border-b border-separator-border p-1'
-const TAB_ON = 'flex-1 rounded-lg bg-background-secondary-default px-3 py-1.5 text-caption-1-medium text-text-primary'
-const TAB_OFF = 'flex-1 rounded-lg px-3 py-1.5 text-caption-1-medium text-text-tertiary hover:bg-background-secondary-default'
-const GROUP = 'px-3 pt-2 pb-1 text-caption-2-medium text-text-tertiary'
-const ITEM = 'flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-body-2-regular text-text-primary hover:bg-background-secondary-default data-[active="1"]:bg-background-secondary-default'
-const AVATAR = 'flex size-6 shrink-0 items-center justify-center rounded-full bg-background-secondary-default text-caption-2-medium'
-const HINT = 'min-w-0 truncate text-caption-1-regular text-text-tertiary'
+/* unslop 口径：间距只用 4/8/12/16，圆角只用 8/16，阴影只有一枚中性软阴影，图形符号一律线性图标。 */
+const POP = 'flex w-full max-w-[344px] flex-col overflow-hidden rounded-2xl border border-separator-border bg-background-primary-default shadow-lg'
+const TABS = 'flex shrink-0 items-center gap-1 rounded-lg bg-background-secondary-default p-1'
+const TABS_WRAP = 'shrink-0 border-b border-separator-border p-2'
+const TAB_ON = 'flex-1 rounded-md bg-background-primary-default px-3 py-1 text-caption-1-medium text-text-primary shadow-sm'
+const TAB_OFF = 'flex-1 rounded-md px-3 py-1 text-caption-1-medium text-text-tertiary'
+const GROUP = 'sticky top-0 z-10 bg-background-primary-default px-3 pb-1 pt-2 text-caption-2-medium text-text-tertiary'
+const ITEM = 'flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-body-2-regular text-text-primary hover:bg-background-secondary-default data-[active="1"]:bg-background-secondary-default'
+const AVATAR = 'flex size-6 shrink-0 items-center justify-center rounded-full bg-background-secondary-default text-text-secondary'
+const HINT = 'block truncate text-caption-2-regular text-text-tertiary'
 const EMPTY = 'px-3 py-4 text-caption-1-regular text-text-tertiary'
 
 export function createMentionPicker({ h, React, TextField }) {
@@ -42,10 +44,11 @@ export function createMentionPicker({ h, React, TextField }) {
       style: { position: 'relative', zIndex: 5, marginBottom: 8 },
       onKeyDown,
     },
+      h('div', { className: TABS_WRAP },
       h('div', { className: TABS, role: 'tablist', 'data-mention-tabs': '' },
         h('button', { type: 'button', role: 'tab', 'aria-selected': tab === 'expert', 'data-mention-tab': 'expert', className: tab === 'expert' ? TAB_ON : TAB_OFF, onClick: () => { setTab('expert'); onActive(0) } }, '专家'),
         h('button', { type: 'button', role: 'tab', 'aria-selected': tab === 'team', 'data-mention-tab': 'team', className: tab === 'team' ? TAB_ON : TAB_OFF, onClick: () => { setTab('team'); onActive(0) } }, '专家团'),
-      ),
+      )),
       h('div', { className: 'shrink-0 border-b border-separator-border p-2' },
         h(TextField, {
           autoFocus: true, value: query,
