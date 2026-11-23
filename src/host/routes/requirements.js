@@ -2,6 +2,7 @@ import { INTAKE_HTML, MINE_HTML, STATUS_HTML } from '../intake-pages.js'
 import { checklistFromAcceptance } from '../acceptance.js'
 import { resolveRequirement, requirementRefHint, reviewRequirement } from '../reviews.js'
 import { splitRequirement } from '../split.js'
+import { childSignoffBlockers } from '../executor.js'
 import { resolveSigner } from '../access.js'
 import { rejectUnknownFields } from '../route-contract.js'
 import { signoffActorKind } from '../intervention.js'
@@ -163,6 +164,12 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     const task = await store.mutate(state => {
       const entry = state.tasks.find(item => item.id === id)
       if (entry === undefined) throw new Error('任务不存在')
+      /* 子卡（缺陷卡/拆出来的卡）没全部完成并签过字的，主卡不许签收：
+         「bug 还开着就让人签主卡」等于在没修完的时候验收（2026-11-23 真机踩到）。 */
+      if (action !== 'clear') {
+        const childBlockers = childSignoffBlockers(state, entry)
+        if (childBlockers.length > 0) throw new Error('先收口子卡再签主卡：' + childBlockers.join('；'))
+      }
       if (action === 'clear') {
         entry.signoff = null
         entry.history.push({ at: Date.now(), by, status: entry.status, note: 'signoff-cleared' })
