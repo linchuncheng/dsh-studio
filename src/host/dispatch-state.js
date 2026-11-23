@@ -36,6 +36,11 @@ export function dispatchPhase(task, ctx = {}) {
   const dispatch = task?.dispatch ?? null
   if (dispatch === null || typeof dispatch !== 'object') return 'queued'
   if (dispatch.status !== task?.status) return 'queued'
+  /* 主动停止（面板/工具点了停止，dispatcher.abortTask 写的）不是故障：
+     它保留列名、只把 state 置成 stopped。崩溃恢复那条路会同时把 status 清空，
+     所以「stopped 且列名匹配」只可能是人主动停的——当成 stalled 会让看板永远挂一个
+     假的「停摆 N 张」红点（2026-11-23 真机就是这个）。 */
+  if (dispatch.state === 'stopped') return 'idle'
   if (dispatch.state !== 'running') return 'stalled'
   const isLive = typeof ctx.isLive === 'function' ? ctx.isLive : null
   if (isLive !== null) return isLive(dispatch.sessionId) ? 'running' : 'stalled'

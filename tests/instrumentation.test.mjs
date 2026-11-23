@@ -23,7 +23,8 @@ const card = (overrides = {}) => ({
 })
 
 test('工作台数得清「停摆」：派单印记还在这一列、但会话已经不在跑', () => {
-  const stalled = card({ dispatch: { status: 'dev', state: 'stopped', attempts: 2 } })
+  // 真停摆 = 印记匹配这一列但没人收：用 abandoned（停止键写的是 stopped，那是人主动停的，不算故障）
+  const stalled = card({ dispatch: { status: 'dev', state: 'abandoned', attempts: 2 } })
   const running = card({ id: 't-2', code: 'DEV-002', dispatch: { status: 'dev', state: 'running' } })
   const queued = card({ id: 't-3', code: 'DEV-003', dispatch: null })
   const dash = buildDashboard({ tasks: [stalled, running, queued], requirements: [], releases: [], config: { experts: [] } })

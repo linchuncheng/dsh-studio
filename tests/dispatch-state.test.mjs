@@ -20,8 +20,14 @@ describe('dispatch-state: 派单阶段判定', () => {
     assert.equal(dispatchPhase({ status: 'dev', dispatch: { status: 'dev', state: 'running' } }), 'running')
   })
 
-  it('印记匹配但已不在跑 → stalled（这就是崩溃后的形状，必须报警）', () => {
+  it('主动停止（stopped + 列名匹配）→ idle，不该计入停摆', () => {
     const task = { status: 'dev', dispatch: { status: 'dev', state: 'stopped' } }
+    assert.equal(dispatchPhase(task), 'idle')
+    assert.equal(isStalled(task), false)
+  })
+
+  it('没人收的兜底：unknown 状态且列名匹配 → stalled（真异常还是要报警）', () => {
+    const task = { status: 'dev', dispatch: { status: 'dev', state: 'abandoned' } }
     assert.equal(dispatchPhase(task), 'stalled')
     assert.equal(isStalled(task), true)
   })
@@ -39,7 +45,7 @@ describe('dispatch-state: 派单阶段判定', () => {
 
   it('countStalled 能一次数出所有停摆的卡', () => {
     const tasks = [
-      { id: 'a', status: 'dev', dispatch: { status: 'dev', state: 'stopped' } },   // 停摆
+      { id: 'a', status: 'dev', dispatch: { status: 'dev', state: 'abandoned' } }, // 停摆（没人收）
       { id: 'b', status: 'dev', dispatch: { status: 'dev', state: 'running' } },   // 正常
       { id: 'c', status: 'test', dispatch: null },                                  // 排队
       { id: 'd', status: 'test', dispatch: { status: 'dev', state: 'stopped' } },  // 换列了
