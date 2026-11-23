@@ -215,6 +215,10 @@ studio_task_check          { id, itemId, note }         // 清单逐项勾，附
 | 　· 错误里有 `unsafe file path` | lark-cli 只认当前工作目录子树 | 已修（0.9.44）：上传用 cwd + 相对文件名。升级即可 |
 | 　· 错误里有 `larkJson is not a function` | 调用处漏传参数 | 已修（0.9.46）：`drive-sync` 四个函数有参数守卫，报错会点名 |
 | 　· 错误里有 `unsafe`/`&`/`|` 被截断 | Windows 上 cmd.exe 把 `& \|` 当语法 | 已修（0.9.45）：参数逐个加引号 + `windowsVerbatimArguments` |
+| 　· 错误里有 `parent node not exist` | 缓存的云盘文件夹 token 已经失效（文件夹在飞书被删了） | 0.10.1 起**自动自愈**：作废缓存 → 重建文件夹 → 重试一次。老版本请升级；临时应急可先把这条需求重新建一次文件夹（`studio_requirement_folder`） |
+| 　· 错误里有 `--file must end with .md` | 交付物标题太长，文件名被截断时把 `.md` 一起截掉了 | 0.10.1 起 `artifactFileName()` **先截断再补后缀**；老版本临时把标题改短一点再同步 |
+| 　· 错误里有 `unknown error` 且反复重试 | `doc.token` 指向的文件随文件夹一起被删了，`+overwrite` 必然失败 | 0.10.1 起覆盖失败会**降级成新建一份**并刷新 token；手动可在抽屉里对该交付物再点一次「同步到云盘」 |
+| 交付物大量同步失败，想一次性补齐 | 哪些件没有 `doc.token` | 需求级：`POST /studio-api/requirement/sync {id}` 逐条跑（会自动重建失效文件夹）；零散件：`POST /studio-api/task/artifact/sync {id, artifactId}`。跑完看 `doc.token` 非空、`doc.error` 为空即成功 |
 | 产物落在需求根目录而不是 `01 需求文档` | `doc.error` 是否为空 | 空 = 子目录已建好；非空按提示修。历史文档不会自动移动，新文档才进子目录 |
 | 云盘根目录一堆同名文件夹 | `npm run drive:gc -- --base <端口>` | 先体检；`--apply` 才删（只删孤儿） |
 | 面板白屏 / 一行「渲染失败：xxx is not defined」 | 浏览器 console | 这是前端 `ReferenceError`；`node --check` 查不出，重启/升级后复现就报 issue |
