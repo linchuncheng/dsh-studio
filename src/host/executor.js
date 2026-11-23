@@ -557,14 +557,21 @@ export async function saveRequirement(store, input) {
       return
     }
     // 变更影响面：先记下旧值，覆盖之后再比，才能说清楚「改了哪几处」。
-    const before = {
-      title: existing.title,
-      description: existing.description,
-      points: requirementPointsFingerprint(existing.points),
-      links: JSON.stringify(existing.links ?? {}),
-    }
+    /* 留痕口径（issue #116）：以前只有路由盯 7 个标量字段，改功能点 / 文档链接 / 澄清三问 /
+       依赖一个字都不记 —— 而这几项恰恰决定要不要让研发重做。这里在覆盖前后各拍一张快照。 */
+    const snapshotOf = item => ({
+      title: String(item.title ?? ''),
+      description: String(item.description ?? ''),
+      points: requirementPointsFingerprint(item.points),
+      links: JSON.stringify(item.links ?? {}),
+      discovery: JSON.stringify(item.discovery ?? {}),
+      dependsOn: JSON.stringify(item.dependsOn ?? []),
+      questions: JSON.stringify((item.questions ?? []).map(question => [question.text, question.status, question.answer])),
+    })
+    const before = snapshotOf(existing)
+    const beforeText = { title: before.title, description: before.description }
     // 更新时的字段白名单：漏一个就会「保存成功但字段没变」（discovery 就是这样丢过一次）
-    for (const key of ['title', 'description', 'project', 'iteration', 'owner', 'domain', 'priority', 'status', 'links', 'discovery']) {
+    for (const key of ['title', 'description', 'project', 'iteration', 'owner', 'domain', 'priority', 'status', 'links', 'discovery', 'requester', 'source']) {
       existing[key] = draft[key]
     }
     // 排序与依赖单独处理：显式给了才覆盖，避免详情页保存别的字段时把它们清空。
@@ -574,9 +581,19 @@ export async function saveRequirement(store, input) {
     // 功能点是需求的骨架：显式给了才覆盖，避免别的保存动作把矩阵清空。
     if (input.points !== undefined) existing.points = draft.points
     if (existing.code.length === 0) existing.code = nextRequirementCode(state.requirements)
+    /* 逐字段写 history：from → to，by 用调用方给的名字（工具现在也传 by 了）。 */
+    const after = snapshotOf(existing)
+    const clipped = value => (String(value ?? '').length > 300 ? `${String(value).slice(0, 300)}…` : String(value ?? ''))
+    const fieldLabel = { points: '功能点', links: '文档链接', discovery: '澄清三问', dependsOn: '依赖', title: '标题', description: '需求明细' }
+    const historyRows = []
+    for (const key of ['title', 'description', 'points', 'links', 'discovery', 'dependsOn']) {
+      if (before[key] === after[key]) continue
+      historyRows.push({ at: Date.now(), by: String(input.by ?? input.operator ?? '').trim().slice(0, 60) || '人', field: fieldLabel[key] ?? key, from: clipped(before[key]), to: clipped(after[key]) })
+    }
+    if (historyRows.length > 0) existing.history = [...(existing.history ?? []), ...historyRows].slice(-100)
     const changedParts = []
-    if (existing.title !== before.title) changedParts.push('标题')
-    if (existing.description !== before.description) changedParts.push('需求明细')
+    if (existing.title !== beforeText.title) changedParts.push('标题')
+    if (existing.description !== beforeText.description) changedParts.push('需求明细')
     if (requirementPointsFingerprint(existing.points) !== before.points) changedParts.push('功能点')
     if (JSON.stringify(existing.links ?? {}) !== before.links) changedParts.push('文档链接')
     if (changedParts.length > 0) {

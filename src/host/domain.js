@@ -1,4 +1,5 @@
 /** dsh-studio 的领域层：板列、卡片/需求/发布的数据形状与清洗、默认配置、编号生成。纯函数，可单测。 */
+import { sanitizeRequirementComments } from './requirement-comments.js'
 import { sanitizeProjectFolders, sanitizeRequirementFolder } from './drive-folders.js'
 import { sanitizeArtifactDocs, sanitizeDocsConfig } from './doc-sink.js'
 // 面板/配置补丁也要能清洗它（index.js 从 domain 取这批 sanitize*）
@@ -1007,6 +1008,7 @@ export function sanitizeRequirement(raw) {
       contact: String(raw.requester.contact ?? '').slice(0, 80),
       at: Number(raw.requester.at) > 0 ? Number(raw.requester.at) : 0,
     },
+    comments: sanitizeRequirementComments(raw.comments),
     questions: sanitizeRequirementQuestions(raw.questions),
     pool: sanitizeRequirementPool(raw.pool),
     history: sanitizeRequirementHistory(raw.history),

@@ -3,6 +3,7 @@ import { checklistFromAcceptance } from '../acceptance.js'
 import { resolveRequirement, requirementRefHint, reviewRequirement } from '../reviews.js'
 import { splitRequirement } from '../split.js'
 import { childSignoffBlockers } from '../executor.js'
+import { appendRequirementComment, removeRequirementComment, updateRequirementComment } from '../requirement-comments.js'
 import { resolveSigner } from '../access.js'
 import { rejectUnknownFields } from '../route-contract.js'
 import { signoffActorKind } from '../intervention.js'
@@ -203,23 +204,8 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     }
     if (incoming.id !== undefined && String(incoming.id).trim() !== '') incoming.id = reqRef(store, incoming.id)
     const beforeRecord = typeof incoming.id === 'string' ? store.snapshot().requirements.find(item => item.id === incoming.id) : undefined
-    const watch = ['title', 'description', 'priority', 'status', 'owner', 'project', 'iteration']
-    const before = beforeRecord === undefined ? null : Object.fromEntries(watch.map(key => [key, String(beforeRecord[key] ?? '')]))
+    /* 字段级历史统一由 saveRequirement 写（issue #116：原来这里只盯 7 个标量字段）。 */
     const requirement = await saveRequirement(store, incoming)
-    if (before !== null) {
-      const diffs = watch
-        .map(key => ({ field: key, from: before[key], to: String(requirement[key] ?? '') }))
-        .filter(item => item.from !== item.to)
-      if (diffs.length > 0) {
-        const by = String(incoming.by ?? incoming.operator ?? '人').slice(0, 40)
-        await store.mutate(state => {
-          const target = state.requirements.find(item => item.id === requirement.id)
-          if (target === undefined) return
-          const clipped = value => value.length > 300 ? `${value.slice(0, 300)}…` : value
-          target.history = [...(target.history ?? []), ...diffs.map(item => ({ at: Date.now(), by, field: item.field, from: clipped(item.from), to: clipped(item.to) }))].slice(-100)
-        })
-      }
-    }
     const snapshot = store.snapshot()
     const saved = snapshot.requirements.find(item => item.id === requirement.id) ?? requirement
     host.sendJson(res, 200, { ok: true, requirement, progress: requirementProgress(snapshot, saved), state: host.publicState(store) })
@@ -402,6 +388,27 @@ export async function handleRequirementRoute({ method, route, req, res, store, u
     return true
   }
 
+  if (method === 'POST' && route === '/requirement/comment') {
+    /* 需求级评论（issue #115）：卡片有 comments，需求以前没有——讨论只能覆盖正文或散到卡上。 */
+    const body = await host.readJsonBody(req)
+    const requirementId = reqRef(store, body.id)
+    const action = String(body.action ?? 'add')
+    const by = String(body.by ?? '人').slice(0, 60)
+    let list = []
+    await store.mutate(state => {
+      const requirement = state.requirements.find(item => item.id === requirementId)
+      if (requirement === undefined) throw new Error(`no requirement ${requirementId}`)
+      if (action === 'update') requirement.comments = updateRequirementComment(requirement.comments, { commentId: body.commentId, body: body.body, by })
+      else if (action === 'remove') {
+        requirement.comments = removeRequirementComment(requirement.comments, body.commentId)
+        requirement.history = [...(requirement.history ?? []), { at: Date.now(), by, field: '评论', from: String(body.commentId ?? ''), to: '已删除' }]
+      } else requirement.comments = appendRequirementComment(requirement.comments, { body: body.body, by })
+      requirement.updatedAt = Date.now()
+      list = requirement.comments
+    })
+    host.sendJson(res, 200, { ok: true, comments: list, state: host.publicState(store) })
+    return true
+  }
   if (method === 'POST' && route === '/requirement/questions') {
     const body = await host.readJsonBody(req)
     const id = cleanId(body.id, 'req')
