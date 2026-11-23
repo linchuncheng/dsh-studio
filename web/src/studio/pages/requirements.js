@@ -35,7 +35,7 @@ const SECTION_BODY = 'flex min-w-0 flex-col gap-2'
 const MOUNT = 'rounded-xl border border-separator-border bg-background-secondary-default px-3 py-3'
 
 export     function IntakePage({ state, onChanged, mode }) {
-  const { h, React, api, toast, currentUser, confirmDialog, promptDialog, renderMarkdown, TextField, TextAreaField, CheckField, MdField } = client()
+  const { h, React, api, toast, currentUser, confirmDialog, promptDialog, renderMarkdown, TextField, TextAreaField, SelectField, CheckField, MdField } = client()
       const business = (state.requirements ?? []).filter(item => item.source === 'business')
       const [note, setNote] = React.useState('')
       const [result, setResult] = React.useState('')
@@ -78,10 +78,15 @@ export     function IntakePage({ state, onChanged, mode }) {
             h('div', { className: FIELD }, h('div', { className: LABEL }, '标题'), h(TextField, { id: 'ip-title', placeholder: '一句话说清要做什么' })),
             h('div', { className: FIELD }, h('div', { className: LABEL }, '描述（至少 10 字）'), h(TextAreaField, { id: 'ip-desc', rows: 4, placeholder: '现状、期望、影响范围' })),
 h('div', { className: 'grid grid-cols-2 gap-3' },
-h('div', { className: FIELD }, h('div', { className: LABEL }, '项目'), h('select', { id: 'ip-project', className: 'w-full rounded-lg border border-separator-border bg-background-primary-default px-2 py-1.5 text-body-2-regular text-text-primary' }, h('option', { value: '' }, '不指定（先进需求池）'), ((state.config && state.config.projects) || state.projects || []).map(item => h('option', { key: item.id, value: item.id }, item.name)))),
+h('div', { className: FIELD }, h('div', { className: LABEL }, '项目'), h(SelectField, { id: 'ip-project', 'aria-label': '项目' },
+                h('option', { value: '' }, '不指定（先进需求池）'),
+                ((state.config && state.config.projects) || state.projects || []).map(item => h('option', { key: item.id, value: item.id }, item.name)))),
 h('div', { className: FIELD }, h('div', { className: LABEL }, '迭代'), h(TextField, { id: 'ip-iteration', placeholder: '如 2026-11' })),
 ),
-h('div', { className: FIELD }, h('div', { className: LABEL }, '优先级'), h('select', { id: 'ip-priority', className: 'w-full rounded-lg border border-separator-border bg-background-primary-default px-2 py-1.5 text-body-2-regular text-text-primary' }, h('option', { value: 'normal' }, '普通'), h('option', { value: 'urgent' }, '紧急'), h('option', { value: 'relaxed' }, '不急'))),
+h('div', { className: FIELD }, h('div', { className: LABEL }, '优先级'), h(SelectField, { id: 'ip-priority', 'aria-label': '优先级' },
+                h('option', { value: 'normal' }, '普通'),
+                h('option', { value: 'urgent' }, '紧急'),
+                h('option', { value: 'relaxed' }, '不急'))),
 h('div', { className: FIELD }, h('div', { className: LABEL }, 'PRD 链接'), h(TextField, { id: 'ip-prd', placeholder: 'https://…' })),
 h('div', { className: FIELD }, h('div', { className: LABEL }, '原型链接'), h(TextField, { id: 'ip-proto', placeholder: 'https://…' })),
 h('div', { className: FIELD }, h('div', { className: LABEL }, '验收标准链接'), h(TextField, { id: 'ip-acceptance', placeholder: 'https://…' })),
@@ -119,7 +124,7 @@ h('div', { className: FIELD }, h('div', { className: LABEL }, '验收标准链�
     }
 
 export     function RequirementsPage({ state, onOpenTask, onChanged, createSignal, focusReq }) {
-  const { h, React, api, toast, currentUser, confirmDialog, promptDialog, renderMarkdown, TextField, TextAreaField, CheckField, MdField } = client()
+  const { h, React, api, toast, currentUser, confirmDialog, promptDialog, renderMarkdown, TextField, TextAreaField, SelectField, CheckField, MdField } = client()
       const requirements = state.requirements ?? []
       const projects = state.config.projects ?? []
       const statusOptions = REQ_STATUS_ORDER.map(id => ({ value: id, label: REQ_STATUS_LABEL[id] }))
