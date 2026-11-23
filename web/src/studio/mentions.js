@@ -30,7 +30,9 @@ function MentionPicker({ roster, query, active, onQuery, onActive, onPick, onClo
   return h('div', {
     className: POP,
     'data-mention-pop': '',
-    style: { position: 'absolute', left: 20, right: 20, bottom: 'calc(100% - 4px)', zIndex: 60, maxHeight: 260 },
+    /* 以前是 position:absolute + bottom:100%：锚到的祖先没有定位，整块被顶到视口上方（实测 y=-256），
+       用户打 @ 什么都看不见。改成正常流内的一块，紧贴输入框上方，永远不会被裁。 */
+    style: { position: 'relative', zIndex: 5, maxHeight: 260, marginBottom: 8 },
     onKeyDown,
   },
     h('div', { className: 'border-b border-separator-border p-2' },
