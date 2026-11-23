@@ -9,6 +9,7 @@ import { Select as BoarduiSelect, SelectItem as BoarduiSelectItem } from "../com
 import { SearchField as BoarduiSearchField } from "../components/base/search-field/search-field";
 import { Chip as BoarduiChip } from "../components/base/badges/chip";
 import { Switch as BoarduiSwitch } from "../components/base/switch/switch";
+import { SegmentedControl as BoarduiSegmented, SegmentedControlItem as BoarduiSegmentedItem } from "../components/base/segmented-control/segmented-control";
 import { DatePicker as BoarduiDatePicker } from "../components/base/date-picker/date-picker";
 import { CalendarDate, parseDate } from "@internationalized/date";
 
@@ -273,5 +274,20 @@ export function DateField({ value, onChange, disabled, ...rest }: any) {
         if (typeof onChange === "function") onChange({ target: { value: next === null ? "" : next.toString() } });
       }}
     />
+  );
+}
+
+/** 分段控件（BoardUI segmented-control）：value + onChange，和 studio 其它控件同一种回调形状。 */
+export function SegmentedControl({ value, onChange, options = [], ...rest }: any) {
+  const items: Array<{ value: string; label: string }> = Array.isArray(options) ? options : [];
+  return (
+    <BoarduiSegmented {...rest} selectedKeys={[String(value ?? "")]} onSelectionChange={(keys: any) => {
+      const next = Array.from(keys as Set<string>)[0];
+      if (typeof onChange === "function" && next !== undefined) onChange(String(next));
+    }}>
+      {items.map((item) => (
+        <BoarduiSegmentedItem key={item.value} id={item.value}>{item.label}</BoarduiSegmentedItem>
+      ))}
+    </BoarduiSegmented>
   );
 }
