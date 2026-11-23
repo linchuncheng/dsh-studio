@@ -11,6 +11,7 @@ import type { ReactNode } from "react";
 import { useRef } from "react";
 import { Dialog, Heading, Modal, ModalOverlay } from "react-aria-components";
 import { Button } from "../components/base/buttons/button";
+import { Textarea } from "../components/base/textarea/textarea";
 import { cx } from "../utils/cx";
 import { useEscapeFallback, useFocusOnMount, OVERLAY_ATTR } from "./overlay-escape";
 
@@ -82,19 +83,15 @@ export function ConfirmDialog({
             </p>
           )}
           {input ? (
-            <textarea
+            /* 用 BoardUI 的 Textarea：以前这里是手写样式的原生 <textarea>，
+               迁移后成了全库唯一一处「长得像 BoardUI 但不是 BoardUI」的输入框。 */
+            <Textarea
               autoFocus
               rows={3}
               value={value}
               placeholder={placeholder}
               onChange={(event) => onChange?.(event.target.value)}
-              className={cx(
-                "mt-3 box-border w-full min-w-0 resize-y rounded-2lg",
-                "border border-border-button-default bg-background-primary-default",
-                "px-2 py-2 text-body-2-regular leading-relaxed text-text-primary",
-                "placeholder:text-text-placeholder",
-                "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
-              )}
+              className="mt-3"
             />
           ) : null}
           <div className="mt-4 flex items-center justify-end gap-2">

@@ -1,6 +1,34 @@
 # 更新日志
 
 
+## [0.9.90] — 2026-11-23
+
+### 还剩两处不是 BoardUI 的表单控件
+
+查了一遍全库的表单控件用量：
+
+| 控件 | 用量 | 是不是 BoardUI |
+| --- | --- | --- |
+| `TextField` | 143 | ✅（BoardUI Input） |
+| `Button` | 246 | ✅（BoardUI Button） |
+| `SelectField` | 43 | ✅（BoardUI Select） |
+| `TextAreaField` | 9 | ✅（BoardUI Textarea） |
+
+只剩两处是手写的：
+
+1. **需求页「自助提单」里的两个原生 `<select>`**（项目、优先级）——手写 Tailwind 描边，
+   和同页其它 SelectField 长得不一样。改成 `SelectField`。
+2. **`boardui/dialog.tsx` 的弹窗输入框**是手写样式的原生 `<textarea>`——全库唯一一处
+   「长得像 BoardUI 但不是 BoardUI」的输入框。改成 BoardUI `Textarea`。
+
+剩下的原生 `<button>` 都在结构化位置（页签条、⌘K 列表项、@ 选择器列表、效能页可点行），
+它们本来就不是按钮语义上的 Button，保留。
+
+### 顺手
+
+改完发现自助提单那个组件没从 `client()` 解构 `SelectField`，被仓库的
+「studio 模块只能用自己声明/导入/拿到的名字」契约测试当场拦住——这条守门又一次生效。
+
 ## [0.9.89] — 2026-11-23
 
 ### 门禁文案里的卡片编号按 id 现查
