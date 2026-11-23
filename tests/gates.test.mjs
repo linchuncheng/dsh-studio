@@ -113,3 +113,31 @@ test('设计闸门关着时，推进到闸门列要在历史里留痕（不拦�
     rmSync(dir, { recursive: true, force: true })
   }
 })
+
+test('子卡没完成/没签字时，主卡不许签收（childSignoffBlockers）', async () => {
+  const { childSignoffBlockers, taskExitGate } = await import('../src/host/executor.js')
+  const parent = { id: 'p1', type: 'dev', status: 'accept', checklist: [], cases: [], signoff: null }
+  const openBug = { id: 'b1', code: 'BUG-001', parent: 'p1', status: 'accept', signoff: null }
+  const state = (tasks) => ({ tasks, config: {}, requirements: [] })
+
+  // 子卡还在待验收 → 拦
+  let blockers = childSignoffBlockers(state([parent, openBug]), parent)
+  assert.equal(blockers.length, 1)
+  assert.match(blockers[0], /1 张子卡没完成.*BUG-001/)
+
+  // 子卡完成但没签字 → 也拦
+  blockers = childSignoffBlockers(state([parent, { ...openBug, status: 'done', signoff: null }]), parent)
+  assert.equal(blockers.length, 1)
+  assert.match(blockers[0], /没验收签字/)
+
+  // 子卡完成且签过 → 放行
+  blockers = childSignoffBlockers(state([parent, { ...openBug, status: 'done', signoff: { by: '人', at: 1, note: 'ok' } }]), parent)
+  assert.deepEqual(blockers, [])
+
+  // 没有子卡 → 不拦
+  assert.deepEqual(childSignoffBlockers(state([parent]), parent), [])
+
+  // 准出门禁里也要出现这一条（agent 读到 gate 就知道该先收口子卡）
+  const gate = taskExitGate(state([{ ...parent, signoff: { by: '人', at: 1, note: 'ok' } }, openBug]), parent)
+  assert.ok(gate.blockers.some(line => /子卡没完成/.test(line)), JSON.stringify(gate.blockers))
+})

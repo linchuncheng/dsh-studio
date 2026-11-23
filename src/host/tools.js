@@ -7,7 +7,7 @@ import {
 } from './domain.js'
 import {
   buildDashboard, commentTask, ensureReqFolder, requirementMatrix, requirementProgress, requirementRollup,
-  runSuite, runTaskCases, runTaskQuality, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask,
+  runSuite, runTaskCases, childSignoffBlockers, runTaskQuality, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask,
 } from './executor.js'
 import { runSummary } from './dispatcher.js'
 import { mineSkillFromCard } from './skill-mine.js'
@@ -562,6 +562,11 @@ export function registerTools(ctx, store) {
       await store.mutate(state => {
         const entry = state.tasks.find(item => item.id === id)
         if (entry === undefined) throw new Error(`no task ${id}`)
+        // 子卡没完成/没签字的，主卡不许签收（同 HTTP 路由的判据）。
+        if (action !== 'clear') {
+          const childBlockers = childSignoffBlockers(state, entry)
+          if (childBlockers.length > 0) throw new Error('先收口子卡再签主卡：' + childBlockers.join('；'))
+        }
         if (action === 'clear') {
           entry.signoff = null
           entry.history.push({ at: Date.now(), by, status: entry.status, note: 'signoff-cleared' })

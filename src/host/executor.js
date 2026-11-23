@@ -729,6 +729,32 @@ const safeClone = value => {
   try { return JSON.parse(JSON.stringify(value)) } catch { return null }
 }
 
+/**
+ * 子卡闸门：一张卡只要有子卡（缺陷卡、拆出来的卡），就必须**所有子卡都完成并且都签过字**，
+ * 才允许主卡验收签收。
+ *
+ * 真机场景（2026-11-23）：主卡 REQ-2026-007-4 被要求签字时，它的子卡 BUG-038 还在待验收、
+ * 用例刚复跑通过、字也没签——用户签了主卡，等于在 bug 还开着的时候就验收了。
+ * 规则改成：主卡的签字要等子卡全部收口。
+ */
+export function childSignoffBlockers(state, task) {
+  const parentId = String(task?.id ?? '')
+  if (parentId === '') return []
+  const children = (state?.tasks ?? []).filter(item => String(item.parent ?? '') === parentId)
+  if (children.length === 0) return []
+  const name = item => item.code || item.id
+  const blockers = []
+  const pending = children.filter(item => item.status !== 'done')
+  if (pending.length > 0) {
+    blockers.push(`还有 ${pending.length} 张子卡没完成（${pending.slice(0, 3).map(name).join('、')}）：子卡没过不许签收主卡`)
+  }
+  const unsigned = children.filter(item => item.status === 'done' && (item.signoff === undefined || item.signoff === null))
+  if (unsigned.length > 0) {
+    blockers.push(`还有 ${unsigned.length} 张子卡没验收签字（${unsigned.slice(0, 3).map(name).join('、')}）：先签子卡再签主卡`)
+  }
+  return blockers
+}
+
 export function taskExitGate(state, task) {
   const blockers = []
   const warnings = []
@@ -753,6 +779,8 @@ export function taskExitGate(state, task) {
   // CI 门禁：真跑过流水线且失败，不允许收口（没接 GitLab 时这个字段是空的，不会误伤）。
   if (task.gitlabMR?.pipeline?.status === 'failed') blockers.push(`CI 流水线没通过：${task.gitlabMR.pipeline.id ? `#${task.gitlabMR.pipeline.id}` : '最近一次运行'}`)
   if (task.blocked !== undefined && task.blocked !== null) blockers.push('这张卡还挂着阻塞标记')
+  /* 子卡没完成 / 没签字时，主卡连「要人签字」都不该提——先收口子卡。 */
+  blockers.push(...childSignoffBlockers(state, task))
   if (task.signoff === undefined || task.signoff === null) blockers.push('还没有验收签字')
   // AI 不能代签：自己验、自己签、自己推到完成，等于验收这一环没人看过。
   else if (isAiSignoff(task.signoff, state.config)) blockers.push(`验收签字是 AI 写的（${task.signoff.by}）：卡准出要人签。让人签一次，或者走 override 写明为什么这次可以例外`)
