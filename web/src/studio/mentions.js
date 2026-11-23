@@ -16,9 +16,29 @@ const TABS = 'flex shrink-0 items-center gap-1 rounded-lg bg-background-secondar
 const TABS_WRAP = 'shrink-0 border-b border-separator-border p-2'
 const TAB_ON = 'flex-1 rounded-md bg-background-primary-default px-3 py-1 text-caption-1-medium text-text-primary shadow-sm'
 const TAB_OFF = 'flex-1 rounded-md px-3 py-1 text-caption-1-medium text-text-tertiary'
-const GROUP = 'sticky top-0 z-10 bg-background-primary-default px-3 pb-1 pt-2 text-caption-2-medium text-text-tertiary'
-const ITEM = 'flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-body-2-regular text-text-primary hover:bg-background-secondary-default data-[active="1"]:bg-background-secondary-default'
-const AVATAR = 'flex size-6 flex-none items-center justify-center rounded-full bg-background-secondary-default text-text-secondary'
+const GROUP = 'sticky top-0 z-10 bg-background-primary-default px-3 pb-1 pt-3 text-caption-2-medium text-text-tertiary'
+const ITEM = 'flex h-10 w-full cursor-pointer items-center gap-2.5 px-3 text-left text-body-2-regular text-text-primary hover:bg-background-secondary-default data-[active="1"]:bg-background-secondary-default'
+const AVATAR = 'flex size-7 flex-none items-center justify-center rounded-full'
+/* 参考稿的头像是彩色圆形底。它的颜色按「角色」分：产品紫 / 架构蓝 / 研发绿 / 测试橙 / 团灰。
+   用内联 hsl 而不是 Tailwind 调色板类——后者要看主题里有没有那几个 scale，缺了就是白底。 */
+const TONE = {
+  product: ['hsl(258 70% 95%)', 'hsl(258 55% 48%)'],
+  architect: ['hsl(214 80% 94%)', 'hsl(214 65% 46%)'],
+  dev: ['hsl(160 55% 92%)', 'hsl(160 55% 34%)'],
+  qa: ['hsl(32 90% 93%)', 'hsl(28 75% 45%)'],
+  team: ['hsl(220 14% 93%)', 'hsl(220 12% 40%)'],
+}
+const roleOf = item => {
+  const key = String(item.key ?? '')
+  if (key === 'r:product' || key === 'r:architect' || key === 'r:dev' || key === 'r:qa') return key.slice(2)
+  if (item.group === '专家团') return 'team'
+  const icon = String(item.icon ?? '')
+  if (icon === 'expertProduct') return 'product'
+  if (icon === 'expertArchitect') return 'architect'
+  if (icon === 'expertDev') return 'dev'
+  if (icon === 'expertQa') return 'qa'
+  return 'team'
+}
 const HINT = 'block truncate text-caption-2-regular text-text-tertiary'
 const EMPTY = 'px-3 py-4 text-caption-1-regular text-text-tertiary'
 
@@ -26,7 +46,8 @@ export function createMentionPicker({ h, React, TextField }) {
   function MentionPicker({ roster, query, active, onQuery, onActive, onPick, onClose }) {
     const [tab, setTab] = React.useState('expert')
     /* 页签决定看哪一类：专家页签含「角色位」（按角色派单的兜底），专家团页签只看团。 */
-    const inTab = item => (tab === 'team' ? item.group === '专家团' : item.group !== '专家团')
+    /* 只要专家（和团）。「角色位」是给 AI 按角色派单的兜底，人挑的时候用不上，反而把名单撑长。 */
+    const inTab = item => (item.group === '专家团' ? tab === 'team' : item.group === '专家' && tab === 'expert')
     const hits = filterRoster(roster, query).filter(inTab)
     const move = delta => {
       if (hits.length === 0) return
@@ -41,13 +62,13 @@ export function createMentionPicker({ h, React, TextField }) {
     return h('div', {
       className: POP,
       'data-mention-pop': '',
-      style: { position: 'relative', zIndex: 5, marginBottom: 8 },
+      style: { position: 'relative', zIndex: 5, margin: '8px 0' },
       onKeyDown,
     },
       h('div', { className: TABS_WRAP },
       h('div', { className: TABS, role: 'tablist', 'data-mention-tabs': '' },
-        h('button', { type: 'button', role: 'tab', 'aria-selected': tab === 'expert', 'data-mention-tab': 'expert', className: tab === 'expert' ? TAB_ON : TAB_OFF, onClick: () => { setTab('expert'); onActive(0) } }, '专家'),
-        h('button', { type: 'button', role: 'tab', 'aria-selected': tab === 'team', 'data-mention-tab': 'team', className: tab === 'team' ? TAB_ON : TAB_OFF, onClick: () => { setTab('team'); onActive(0) } }, '专家团'),
+        h('button', { type: 'button', role: 'tab', 'aria-selected': tab === 'expert', 'data-mention-tab': 'expert', className: tab === 'expert' ? TAB_ON : TAB_OFF, onMouseDown: ev => { ev.preventDefault(); setTab('expert'); onActive(0) }, onClick: () => { setTab('expert'); onActive(0) } }, '专家'),
+        h('button', { type: 'button', role: 'tab', 'aria-selected': tab === 'team', 'data-mention-tab': 'team', className: tab === 'team' ? TAB_ON : TAB_OFF, onMouseDown: ev => { ev.preventDefault(); setTab('team'); onActive(0) }, onClick: () => { setTab('team'); onActive(0) } }, '专家团'),
       )),
       h('div', { className: 'shrink-0 border-b border-separator-border p-2' },
         h(TextField, {
@@ -71,7 +92,10 @@ export function createMentionPicker({ h, React, TextField }) {
                 onMouseEnter: () => onActive(index),
                 onClick: () => onPick(item.name),
               },
-              h('span', { className: AVATAR }, uiIcon(h, item.icon) ?? (item.name ?? '?').slice(0, 1)),
+              h('span', {
+                className: AVATAR,
+                style: { background: TONE[roleOf(item)][0], color: TONE[roleOf(item)][1] },
+              }, uiIcon(h, item.icon) ?? (item.name ?? '?').slice(0, 1)),
               h('span', { className: 'min-w-0 flex-1 truncate text-body-2-regular text-text-primary' }, item.name)),
             ]
           }).flat().filter(Boolean),
