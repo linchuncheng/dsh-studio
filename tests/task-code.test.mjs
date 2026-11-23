@@ -70,3 +70,18 @@ test('撞号兜底逻辑：循环到空位时不会重复（模拟一批并发�
   }
   assert.equal(new Set(codes).size, codes.length, `编号撞了：${codes.join(',')}`)
 })
+
+test('clearDeletedReferences：删卡后清掉别人指向它的父卡/重复标记', async () => {
+  const { clearDeletedReferences } = await import('../src/host/domain.js')
+  const tasks = [
+    { id: 'a', parent: 'gone', duplicateOf: '' },
+    { id: 'b', parent: '', duplicateOf: 'gone' },
+    { id: 'c', parent: 'a', duplicateOf: '' },
+  ]
+  const touched = clearDeletedReferences(tasks, 'gone')
+  assert.equal(touched.length, 2)
+  assert.equal(tasks[0].parent, '', '父卡被删 → 清空')
+  assert.equal(tasks[1].duplicateOf, '', '重复标记指向被删卡 → 清空')
+  assert.equal(tasks[2].parent, 'a', '指向别人的不动')
+  assert.deepEqual(clearDeletedReferences(tasks, ''), [], '空 id 不动任何东西')
+})

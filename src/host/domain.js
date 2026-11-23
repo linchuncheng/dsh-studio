@@ -1044,6 +1044,30 @@ export function sanitizeRequirements(input) {
   return out
 }
 
+/**
+ * 删掉一张卡之后，把别人指向它的引用清掉（父卡、重复标记）。
+ *
+ * 以前 /task/delete 只做 filter，被删卡的子卡还留着 parent 指向不存在的 id——
+ * 界面上点进去是死链，模块体检（tools/module-audit.mjs）会把它报成「父卡不存在」。
+ * 返回被改动的卡（调用方据此写历史）。
+ */
+export function clearDeletedReferences(tasks, deletedId) {
+  const id = String(deletedId ?? '')
+  if (id === '') return []
+  const touched = []
+  for (const task of tasks) {
+    if (String(task.parent ?? '') === id) {
+      task.parent = ''
+      touched.push({ task, field: 'parent' })
+    }
+    if (String(task.duplicateOf ?? '') === id) {
+      task.duplicateOf = ''
+      touched.push({ task, field: 'duplicateOf' })
+    }
+  }
+  return touched
+}
+
 /** 同一需求下，DEV-001 / TEST-001 各自递增。 */
 export function nextTaskCode(tasks, requirementId, prefix) {
   const pattern = new RegExp(`^${prefix}-(\\d+)$`)
