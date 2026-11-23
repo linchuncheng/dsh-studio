@@ -18,7 +18,7 @@ const TAB_ON = 'flex-1 rounded-md bg-background-primary-default px-3 py-1 text-c
 const TAB_OFF = 'flex-1 rounded-md px-3 py-1 text-caption-1-medium text-text-tertiary'
 const GROUP = 'sticky top-0 z-10 bg-background-primary-default px-3 pb-1 pt-2 text-caption-2-medium text-text-tertiary'
 const ITEM = 'flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-body-2-regular text-text-primary hover:bg-background-secondary-default data-[active="1"]:bg-background-secondary-default'
-const AVATAR = 'flex size-6 shrink-0 items-center justify-center rounded-full bg-background-secondary-default text-text-secondary'
+const AVATAR = 'flex size-6 flex-none items-center justify-center rounded-full bg-background-secondary-default text-text-secondary'
 const HINT = 'block truncate text-caption-2-regular text-text-tertiary'
 const EMPTY = 'px-3 py-4 text-caption-1-regular text-text-tertiary'
 
@@ -67,14 +67,12 @@ export function createMentionPicker({ h, React, TextField }) {
               first ? h('div', { key: `g-${item.group}`, className: GROUP }, item.group) : null,
               h('button', {
                 key: item.key, type: 'button', className: ITEM, 'data-mention-item': '', 'data-active': index === active ? '1' : '0',
+                title: item.hint,
                 onMouseEnter: () => onActive(index),
                 onClick: () => onPick(item.name),
               },
               h('span', { className: AVATAR }, uiIcon(h, item.icon) ?? (item.name ?? '?').slice(0, 1)),
-              h('span', { className: 'min-w-0 flex-1' },
-                h('span', { className: 'block truncate text-body-2-medium text-text-primary' }, item.name),
-                item.hint === undefined || item.hint === '' ? null : h('span', { className: `block ${HINT}` }, item.hint),
-              )),
+              h('span', { className: 'min-w-0 flex-1 truncate text-body-2-regular text-text-primary' }, item.name)),
             ]
           }).flat().filter(Boolean),
       ),
