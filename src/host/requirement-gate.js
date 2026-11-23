@@ -215,7 +215,13 @@ export function requirementGate(state, requirement) {
   // 需求中途改过内容：已经产出过的卡是按旧版做的，签字作废、必须重新走一遍确认。
   const change = requirement.change ?? null
   if (change !== null && change.invalidated) {
-    const names = change.affected.slice(0, 3).map(item => item.code || item.id).join('、')
+    /* affected 里存的是**变更当时**的编号快照；卡片编号之后可能被重排（0.9.87 的撞号重排就干过），
+       直接显示旧编号会让人拿着「REQ-003」去找一张现在叫 REQ-2026-007-3 的卡。按 id 现查当前编号。 */
+    const currentCode = item => {
+      const live = (state.tasks ?? []).find(task => task.id === item.id)
+      return (live !== undefined && String(live.code ?? '') !== '') ? live.code : (item.code || item.id)
+    }
+    const names = change.affected.slice(0, 3).map(currentCode).join('、')
     blockers.push(`需求改过（${change.parts.join('、')}）：${change.affected.length} 张已产出的卡要复核${names === '' ? '' : `（${names}）`}，验收签字已作废`)
   } else if (change !== null && change.affected.length > 0) {
     warnings.push(`需求上一次变更影响 ${change.affected.length} 张卡，建议逐张复核再签字`)
