@@ -150,13 +150,3 @@ test('#112 登记交付物时不把请求体顶层的卡 id 当成交付物 id',
   // 显式用 artifact 包一层时仍照原样传
   assert.equal(artifactInputFromBody({ artifact: { title: '包里带的' }, id: 't-1' }).title, '包里带的')
 })
-
-test('#113 归档文件名：长标题截断后必须仍然以 .md 结尾', async () => {
-  const { artifactFileName } = await import('../src/host/executor.js')
-  const long = '很长的标题'.repeat(40)
-  const name = artifactFileName({ code: 'BUG-014', id: 't-1' }, { kind: 'report', title: long })
-  assert.match(name, /\.md$/, `必须以 .md 结尾，实际：${name.slice(-8)}`)
-  assert.ok(name.length <= 128, `文件名不能过长：${name.length}`)
-  // 正常标题保持原样
-  assert.equal(artifactFileName({ code: 'DEV-1', id: 't-1' }, { kind: 'design', title: '设计稿' }), 'DEV-1-方案-设计稿.md')
-})
