@@ -7,12 +7,13 @@ import {
 } from './domain.js'
 import {
   buildDashboard, commentTask, ensureReqFolder, requirementMatrix, requirementProgress, requirementRollup,
-  runSuite, runTaskCases, childSignoffBlockers, runTaskQuality, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask,
+  mutateReqDoc, runSuite, runTaskCases, childSignoffBlockers, runTaskQuality, saveRequirement, syncArtifact, syncRequirementArtifacts, taskExitGate, updateTask,
 } from './executor.js'
 import { runSummary } from './dispatcher.js'
 import { mineSkillFromCard } from './skill-mine.js'
 import { removeTaskComment, updateTaskComment } from './comments.js'
 import { resolveRequirement, requirementRefHint, reviewRequirement, saveTaskDesign } from './reviews.js'
+import { appendRequirementComment, removeRequirementComment, updateRequirementComment } from './requirement-comments.js'
 import { splitRequirement } from './split.js'
 import { skillUsage, skillUsageLine } from './skill-usage.js'
 import { mergeGateFor, mergeGateLine } from './merge-gate.js'
@@ -310,6 +311,13 @@ export function registerTools(ctx, store) {
         additionalProperties: true,
         description: 'RICE 需求池打分：{reach, impact, confidence, effort}（四条都填才会算分）',
       },
+      requester: {
+        type: 'object',
+        additionalProperties: true,
+        description: '需求提出人 {name, dept, contact}：以前只有匿名 intake 能写，agent 建的需求永远是 null（issue #117）。',
+      },
+      source: { type: 'string', description: '来源：human / business / agent …（以前只有 intake 能写）。' },
+      by: { type: 'string', description: '谁改的：会写进需求 history（以前 agent 改需求，历史里记的永远是「人」）。' },
     },
     async execute(args) {
       const input = { ...args }
@@ -325,6 +333,92 @@ export function registerTools(ctx, store) {
       }
       const requirement = await saveRequirement(store, input)
       return `已保存需求 ${requirement.code}（${REQ_STATUS_LABEL[requirement.status] ?? requirement.status}）：${requirement.title}${readbackRequirement(requirement.id)}`
+    },
+  }))
+
+  register(defineStudioTool({
+    name: 'studio_requirement_comment',
+    description: '需求级评论：add / update / remove。需求以前没有对话渠道（issue #115）——讨论只能覆盖正文或散到卡上，需求页看到的永远是静止的正文。改与删都留旧版（edits）。',
+    parameters: {
+      id: { type: 'string', required: true, description: 'Requirement id or code.' },
+      action: { type: 'string', description: 'add | update | remove（默认 add）' },
+      body: { type: 'string', description: 'add / update: 评论正文（Markdown）。' },
+      commentId: { type: 'string', description: 'update / remove: 评论 id。' },
+      by: { type: 'string', description: '谁说的（你的专家名或人名）。' },
+    },
+    async execute(args) {
+      const action = String(args.action ?? 'add')
+      const by = String(args.by ?? '人').slice(0, 60)
+      const written = await store.mutate(state => {
+        const requirement = resolveRequirement(state, String(args.id ?? ''))
+        if (requirement === undefined) throw new Error(requirementRefHint(state, String(args.id ?? '')))
+        if (action === 'update') requirement.comments = updateRequirementComment(requirement.comments, { commentId: args.commentId, body: args.body, by })
+        else if (action === 'remove') {
+          requirement.comments = removeRequirementComment(requirement.comments, args.commentId)
+          requirement.history = [...(requirement.history ?? []), { at: Date.now(), by, field: '评论', from: String(args.commentId ?? ''), to: '已删除' }]
+        } else requirement.comments = appendRequirementComment(requirement.comments, { body: args.body, by })
+        requirement.updatedAt = Date.now()
+        return requirement
+      })
+      const list = written.comments ?? []
+      return [`${written.code || written.id} 需求评论 ${list.length} 条：`,
+        ...list.slice(-8).map(item => `- [${item.by}] ${String(item.body).slice(0, 120)}`)].join(String.fromCharCode(10))
+    },
+  }))
+
+  register(defineStudioTool({
+    name: 'studio_requirement_doc',
+    description: '需求文档正文：add / update / remove / baseline / rollback / clear-baseline。'
+      + '以前只有 HTTP /requirement/doc 能写（含版本号 v1.0→v1.1、基线冻结、回滚），agent 写不了 PRD 正文，只能把路径塞进 links.prd（issue #117）。',
+    parameters: {
+      id: { type: 'string', required: true, description: 'Requirement id or code.' },
+      action: { type: 'string', description: 'add | update | remove | baseline | rollback | clear-baseline（默认 add）' },
+      docId: { type: 'string', description: 'update / remove / baseline / rollback: 文档 id。' },
+      kind: { type: 'string', description: 'add: 文档类型（prd / design / acceptance / other）。' },
+      title: { type: 'string', description: 'add / update: 文档标题。' },
+      content: { type: 'string', description: 'add / update: 文档正文（Markdown）。' },
+      version: { type: 'string', description: '可选版本号，如 v1.0。' },
+      by: { type: 'string', description: '谁改的。' },
+    },
+    async execute(args) {
+      const snapshotForDoc = store.snapshot()
+      const docTarget = resolveRequirement(snapshotForDoc, String(args.id ?? ''))
+      if (docTarget === undefined) throw new Error(requirementRefHint(snapshotForDoc, String(args.id ?? '')))
+      const result = await mutateReqDoc(store, {
+        id: docTarget.id, action: String(args.action ?? 'add'), docId: args.docId,
+        // mutateReqDoc 收的是 doc 包（add/update 共用），不是拍平的字段
+        doc: { kind: args.kind, title: args.title, content: args.content, version: args.version },
+        by: String(args.by ?? '人'),
+      })
+      const docs = result?.docs ?? []
+      return [`文档已处理（当前 ${docs.length} 份）：`,
+        ...docs.map(doc => `- ${doc.id} ${doc.kind} ${doc.title} ${doc.version} ${doc.status}`)].join(String.fromCharCode(10))
+    },
+  }))
+
+  register(defineStudioTool({
+    name: 'studio_requirement_requester',
+    description: '设置 / 更正需求的提出人（谁提的、哪个部门、怎么联系）与来源。以前只有匿名 intake 页面能写，agent 建的需求 requester 永远是 null（issue #117）。',
+    parameters: {
+      id: { type: 'string', required: true, description: 'Requirement id or code.' },
+      name: { type: 'string', description: '提出人姓名。' },
+      dept: { type: 'string', description: '部门。' },
+      contact: { type: 'string', description: '联系方式。' },
+      source: { type: 'string', description: '来源：human / business / agent …' },
+      action: { type: 'string', description: 'set（默认）| clear' },
+      by: { type: 'string', description: '谁改的（写进 history）。' },
+    },
+    async execute(args) {
+      const snapshotForRequester = store.snapshot()
+      const requesterTarget = resolveRequirement(snapshotForRequester, String(args.id ?? ''))
+      if (requesterTarget === undefined) throw new Error(requirementRefHint(snapshotForRequester, String(args.id ?? '')))
+      const cleared = String(args.action ?? 'set') === 'clear'
+      const requester = cleared ? null : { name: String(args.name ?? '').trim().slice(0, 40), dept: String(args.dept ?? '').trim().slice(0, 40), contact: String(args.contact ?? '').trim().slice(0, 80), at: Date.now() }
+      const requirement = await saveRequirement(store, { id: requesterTarget.id, requester, ...(args.source !== undefined ? { source: String(args.source) } : {}), by: String(args.by ?? '人') })
+      const shown = requirement.requester
+      return cleared || shown === null || shown === undefined
+        ? `已清空 ${requirement.code || requirement.id} 的提出人`
+        : `${requirement.code || requirement.id} 提出人：${shown.name || '（未填）'} / ${shown.dept || '（未填）'} / ${shown.contact || '（未填）'}`
     },
   }))
 
