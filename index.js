@@ -1215,7 +1215,13 @@ async function createTask(store, input) {
     id: newTaskId(),
     title,
     type,
-    code: requirementId === '' ? '' : nextTaskCode(store.snapshot().tasks, requirementId, CODE_PREFIX[type] ?? 'TASK'),
+    /* 需求卡直接用需求自己的编号（REQ-2026-00x）：按「需求内序号」编号的话，
+       每条需求的卡都会叫 REQ-001，界面上根本分不清（真机数据里 7 条需求各有一张 REQ-001）。 */
+    code: requirementId === ''
+      ? ''
+      : (type === 'requirement'
+        ? String(store.snapshot().requirements.find(entry => entry.id === requirementId)?.code ?? nextTaskCode(store.snapshot().tasks, requirementId, 'REQ'))
+        : nextTaskCode(store.snapshot().tasks, requirementId, CODE_PREFIX[type] ?? 'TASK')),
     requirementId,
     pointId: patch.pointId ?? '',
     releaseId: patch.releaseId ?? '',
@@ -1272,9 +1278,16 @@ async function createTask(store, input) {
     if (owner === undefined || !(owner.services ?? []).some(entry => entry.id === task.service)) task.service = ''
   }
   await store.mutate(state => {
-    // 编号必须在临界区里再校验一次：并发开卡（一次跑多条用例）时，快照里算出的编号会撞号。
-    if (task.code !== '' && state.tasks.some(entry => entry.requirementId === task.requirementId && entry.code === task.code)) {
-      task.code = nextTaskCode(state.tasks, task.requirementId, CODE_PREFIX[task.type] ?? 'TASK')
+    /* 编号必须在临界区里再校验：并发开卡（一次跑多条用例会连着开一批）时，快照里算出的编号会撞号。
+       只补一次不够——补出来的值也可能已被同一批里的另一张占掉，所以循环到真正空位。
+       需求卡不参与重排：它的编号就是需求编号，撞了说明数据本身有问题，交给模块体检报出来。 */
+    if (task.code !== '' && task.type !== 'requirement') {
+      const taken = new Set(state.tasks.filter(entry => entry.requirementId === task.requirementId).map(entry => String(entry.code ?? '')))
+      let guard = 0
+      while (taken.has(task.code) && guard < 1000) {
+        task.code = nextTaskCode(state.tasks, task.requirementId, CODE_PREFIX[task.type] ?? 'TASK')
+        guard += 1
+      }
     }
     state.tasks.unshift(task)
   })
