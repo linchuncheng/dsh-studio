@@ -535,6 +535,7 @@ export function DocsSinkPanel({ config, onChanged }) {
       h('div', { className: DESC }, '交付物永远以本地 artifact 为真源；这里只决定同步时投递到哪。both 时飞书为主，WeKnora 失败只记 error、不阻塞交付物登记。'),
       fieldOf(h, '出口',
         h(SelectField, {
+          size: 'md',
           value: provider,
           'aria-label': '交付物投递出口',
           onChange: event => setProvider(event.target.value),
