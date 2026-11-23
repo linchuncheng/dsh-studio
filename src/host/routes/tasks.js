@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { readArtifactImage } from '../artifact-image.js'
-import { clearDeletedReferences } from '../domain.js'
+import { artifactInputFromBody, clearDeletedReferences } from '../domain.js'
 import { designPatchFrom } from '../design.js'
 import { rejectUnknownFields } from '../route-contract.js'
 import { resolveRequirement, requirementRefHint, saveTaskDesign } from '../reviews.js'
@@ -451,7 +451,9 @@ export async function handleTaskRoute({ method, route, req, res, store, url }) {
       const task = state.tasks.find(t => t.id === id)
       if (task === undefined) throw new Error(`no task ${id}`)
       if (action === 'add') {
-        const created = sanitizeArtifact(body.artifact ?? body, task.artifacts.length)
+        /* body.artifact 没给时别把整个请求体当交付物：请求体顶层的 id 是**卡 id**，
+         直接透传会把交付物 id 写成卡 id（issue #112）。只取交付物自己的字段。 */
+      const created = sanitizeArtifact(artifactInputFromBody(body), task.artifacts.length)
         if (created === undefined) throw new Error('交付物至少要有标题')
         created.by = String(body.by ?? created.by ?? '')
         created.at = Date.now()

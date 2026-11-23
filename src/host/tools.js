@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto'
 import {
   CASE_RESULTS, CODING_REVIEW_STATUS, RELEASE_STATUS_LABEL, REQ_STATUS_LABEL, ROLE_IDS, STATUSES, STATUS_IDS,
   TASK_TYPES, cleanId, codingSummary, defineStudioTool, mergeCoding, sanitizeArtifact, sanitizeCaseHttp,
-  sanitizeCases, sanitizeCoding, sanitizeRelease, text,
+  sanitizeCases, sanitizeCoding, sanitizeRelease, sanitizeRequirementQuestions, text,
 } from './domain.js'
 import {
   buildDashboard, commentTask, ensureReqFolder, requirementMatrix, requirementProgress, requirementRollup,
@@ -325,6 +325,53 @@ export function registerTools(ctx, store) {
       }
       const requirement = await saveRequirement(store, input)
       return `已保存需求 ${requirement.code}（${REQ_STATUS_LABEL[requirement.status] ?? requirement.status}）：${requirement.title}${readbackRequirement(requirement.id)}`
+    },
+  }))
+
+  register(defineStudioTool({
+    name: 'studio_requirement_questions',
+    description: 'Ask / answer / delete clarification questions on a requirement. 需求沟通的问答就落在这里：agent 问出来的待澄清项写进 questions[]，人答了 agent 再写回答案。'
+      + '（以前只有 HTTP /requirement/questions，工具层没有入口，agent 只能把问题塞进评论里，issue #110。）',
+    parameters: {
+      id: { type: 'string', required: true, description: 'Requirement id (req-xxx) or code (REQ-2026-001).' },
+      action: { type: 'string', description: 'ask | answer | remove（默认 ask）' },
+      text: { type: 'string', description: 'For ask: 要澄清的问题。' },
+      questionId: { type: 'string', description: 'For answer / remove: 问题 id。' },
+      answer: { type: 'string', description: 'For answer: 答案。' },
+      owner: { type: 'string', description: 'For ask: 该谁答（人/角色）。' },
+    },
+    async execute(args) {
+      const action = String(args.action ?? 'ask')
+      const written = await store.mutate(state => {
+        const requirement = resolveRequirement(state, String(args.id ?? ''))
+        if (requirement === undefined) throw new Error(`no requirement ${args.id}`)
+        const list = Array.isArray(requirement.questions) ? requirement.questions : []
+        if (action === 'answer') {
+          const target = list.find(item => item.id === String(args.questionId ?? ''))
+          if (target === undefined) throw new Error(`no question ${args.questionId}`)
+          target.answer = String(args.answer ?? '').trim().slice(0, 1000)
+          target.status = 'answered'
+          target.answeredAt = Date.now()
+        } else if (action === 'remove') {
+          requirement.questions = list.filter(item => item.id !== String(args.questionId ?? ''))
+        } else {
+          const text = String(args.text ?? '').trim().slice(0, 300)
+          if (text === '') throw new Error('问什么要写出来：text 不能为空')
+          if (list.length >= 50) throw new Error('一条需求最多 50 个待澄清问题：先答完或删掉旧的')
+          requirement.questions = sanitizeRequirementQuestions([...list, {
+            id: `q-${randomBytes(3).toString('hex')}`,
+            text, status: 'open', owner: String(args.owner ?? '').trim().slice(0, 40),
+            answer: '', at: Date.now(), answeredAt: 0,
+          }])
+        }
+        requirement.updatedAt = Date.now()
+        return requirement
+      })
+      const list = written.questions ?? []
+      const open = list.filter(item => item.status === "open").length
+      const head = `${written.code || written.id} 澄清问题 ${list.length} 条（待答 ${open}）：`
+      const rows = list.map(item => `${item.status === "answered" ? "[已答]" : "[待答]"} ${item.id} ${item.text}${item.answer ? " -> " + item.answer : ""}`)
+      return [head, ...rows].join(String.fromCharCode(10))
     },
   }))
 
@@ -1100,15 +1147,14 @@ export function registerTools(ctx, store) {
     },
     async execute(args) {
       const action = String(args.action ?? 'add')
-      const artifact = {
-        kind: args.kind,
-        title: args.title,
-        ref: args.ref,
-        content: args.content,
-        stage: args.stage,
-        status: args.status,
-        by: String(args.by ?? 'agent'),
+      /* 只把**传进来的**字段放进补丁：以前这里无条件写全 7 个键，没传的就是 undefined，
+         展开时会把已有值覆盖成 undefined，sanitize 再补默认值 —— 于是「只改标题」一次
+         就把 ref / content / stage / by 全清空（issue #107）。 */
+      const patch = {}
+      for (const key of ['kind', 'title', 'ref', 'content', 'stage', 'status', 'by']) {
+        if (args[key] !== undefined && args[key] !== null) patch[key] = args[key]
       }
+      if (action === 'add' && patch.by === undefined) patch.by = 'agent'
       /* store.mutate 返回的是整份 state（见 store.js 的注释），不是回调的返回值。
          以前这里把它当任务对象用，于是写完之后读 task.artifacts 抛 TypeError —— 报错但真写了，
          用户重试一次就多一条重复产物（issue #8）。改成在回调里把任务对象带出来。 */
@@ -1123,7 +1169,7 @@ export function registerTools(ctx, store) {
              现在到顶直接报错，让人去删过期的，而不是静默丢数据。 */
           const maxArtifacts = Math.max(1, Number(state.config?.limits?.artifactsPerTask) || 40)
           if ((target.artifacts ?? []).length >= maxArtifacts) throw new Error(`一张卡最多 ${maxArtifacts} 个交付物：先删掉过期的再加`)
-          const created = sanitizeArtifact({ ...artifact, at: Date.now() }, target.artifacts.length)
+          const created = sanitizeArtifact({ ...patch, at: Date.now() }, target.artifacts.length)
           if (created === undefined) throw new Error('交付物至少要有标题')
           created.at = Date.now()
           target.artifacts = [...target.artifacts, created]
@@ -1133,7 +1179,7 @@ export function registerTools(ctx, store) {
         } else {
           const wantedId = String(args.artifactId ?? '')
           if (!(target.artifacts ?? []).some(item => item.id === wantedId)) throw new Error(`找不到交付物「${wantedId}」`)
-          target.artifacts = target.artifacts.map(item => (item.id === wantedId ? { ...item, ...sanitizeArtifact({ ...item, ...artifact }, 0) } : item))
+          target.artifacts = target.artifacts.map(item => (item.id === wantedId ? sanitizeArtifact({ ...item, ...patch }, target.artifacts.indexOf(item)) : item))
           touchedId = wantedId
         }
         target.updatedAt = Date.now()
@@ -1376,12 +1422,14 @@ export function registerTools(ctx, store) {
             title: { type: 'string', description: 'What you do, e.g. 用错误密码登录 5 次' },
             expected: { type: 'string', description: 'Expected result, e.g. 第 5 次返回 429 并锁定 10 分钟' },
             pointId: { type: 'string', description: 'Optional: 对应的需求功能点 id（可追溯矩阵靠它对齐）。' },
+            acceptanceId: { type: 'string', description: 'Optional: 验的是哪条验收条件（矩阵按它逐条判覆盖）。' },
+            db: { type: 'object', description: 'Optional database case: {file, sql, expectColumn?, expectValue?}. Needs allowDb.' },
             method: { type: 'string', description: 'Optional HTTP method so the platform can run this case itself: GET | POST | PUT | PATCH | DELETE | HEAD.' },
             url: { type: 'string', description: 'Optional request path (relative to the test env baseUrl) or absolute URL on an allowed host.' },
             body: { type: 'string', description: 'Optional request body (JSON string) for POST/PUT/PATCH.' },
             expectStatus: { type: 'number', description: 'Optional expected HTTP status; 0 or omitted means any 2xx/3xx passes.' },
             expectContains: { type: 'string', description: 'Optional substring the response body must contain.' },
-            shell: { type: 'object', description: 'Optional shell case: {command, expectExit, expectContains?, cwd?}. Needs allowShell.' },
+            shell: { type: 'object', description: 'Optional shell case: {command, expectExit, expectContains?, cwd?, timeoutMs?}. timeoutMs 1000-120000（默认 30000）；超时会明确报「超时」而不是「退出码 1」。Needs allowShell.' },
             browser: {
               type: 'object',
               description: 'Optional browser case: {url | path, expectText?, expectSelector?, expectUrl?, expectStatus?, steps?: [{click}|{fill,text}|{wait}|{waitFor}]}. Really opens Chrome/Edge; needs allowBrowser.',
@@ -1394,6 +1442,8 @@ export function registerTools(ctx, store) {
       title: { type: 'string', description: 'For update: new case title.' },
       expected: { type: 'string', description: 'For update: new expected result.' },
       note: { type: 'string', description: 'Evidence or failure detail: command, output, environment.' },
+      pointId: { type: 'string', description: 'For update: 改归到哪个需求功能点。' },
+      acceptanceId: { type: 'string', description: 'For update: 改挂到哪条验收条件。' },
       by: { type: 'string', description: 'Who recorded it (your expert name).' },
     },
     async execute(args) {
@@ -1416,6 +1466,10 @@ export function registerTools(ctx, store) {
             if (args.title !== undefined) merged.title = String(args.title).trim().slice(0, 200) || item.title
             if (args.expected !== undefined) merged.expected = String(args.expected).trim().slice(0, 300)
             if (args.note !== undefined) merged.note = String(args.note).trim().slice(0, 400)
+            // 归到功能点/验收条件：不传就保持原值（issue #108）
+            if (args.pointId !== undefined) merged.pointId = String(args.pointId).trim().slice(0, 24)
+            if (args.acceptanceId !== undefined) merged.acceptanceId = String(args.acceptanceId).trim().slice(0, 24)
+            if (args.db !== undefined) merged.db = args.db
             if (http !== undefined) merged.http = sanitizeCaseHttp(http)
             return merged
           })

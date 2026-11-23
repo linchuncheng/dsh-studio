@@ -1144,8 +1144,31 @@ async function syncArtifactToFeishu(store, taskId, artifactId) {
   if (task === undefined) throw new Error(`no task ${taskId}`)
   const artifact = (task.artifacts ?? []).find(item => item.id === artifactId)
   if (artifact === undefined) throw new Error(`no artifact ${artifactId}`)
-  const { folder, requirement } = await ensureArtifactFolder(store, task)
-  if (String(folder.token ?? '').trim() === '') throw new Error(folder.error ?? '创建云盘文件夹失败')
+  /* 建文件夹失败必须落库（issue #113）：ensureArtifactFolder 自己会 throw
+     （没配根文件夹 / lark 缺 scope 都走这条路），以前那条 throw 直接绕过下面的判空，
+     artifact.doc.error 一直是空串，看板上跟「已归档」没区别。这里把两种失败都兜住。 */
+  const markDocError = async reason => {
+    const textReason = String(reason ?? '创建云盘文件夹失败').slice(0, 300)
+    await store.mutate(draft => {
+      const row = (draft.tasks.find(item => item.id === task.id)?.artifacts ?? []).find(item => item.id === artifact.id)
+      if (row !== undefined) row.doc = { ...(row.doc ?? {}), token: '', url: '', name: '', at: Date.now(), error: textReason }
+    })
+    return textReason
+  }
+  let folder = null
+  let requirement
+  try {
+    const ensured = await ensureArtifactFolder(store, task)
+    folder = ensured.folder
+    requirement = ensured.requirement
+  } catch (error) {
+    throw new Error(await markDocError(error?.message ?? error))
+  }
+  /* 建文件夹失败必须落库（issue #113）：以前只 throw，artifact.doc.error 留在空串，
+     看板上这件交付物长得跟「已归档」一样，事后完全看不出它没进云盘。 */
+  if (String(folder.token ?? '').trim() === '') {
+    throw new Error(await markDocError(folder.error ?? '创建云盘文件夹失败'))
+  }
   // 按产物类型落到子文件夹（01 需求文档 / 02 设计文档 …）；子文件夹没建好就退回需求根目录
   let target = folder
   let kindError = ''
